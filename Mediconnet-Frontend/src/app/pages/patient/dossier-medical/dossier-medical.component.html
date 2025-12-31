@@ -1,0 +1,23 @@
+<app-dashboard-layout [sidebarTitle]="sidebarTitle" [menuItems]="menuItems">
+  <div class="dossier-content">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h1>
+          <lucide-icon name="folder-open" [size]="28"></lucide-icon>
+          Mon Dossier Médical
+        </h1>
+        <p class="subtitle" *ngIf="dossier">N° {{ dossier.patient.numeroDossier }}</p>
+      </div>
+    </div>
+
+    <!-- Composant partagé pour l'affichage du dossier -->
+    <app-dossier-medical-view
+      mode="patient"
+      [dossier]="dossierData"
+      [isLoading]="isLoading"
+      [error]="error"
+      (retry)="loadDossierMedical()">
+    </app-dossier-medical-view>
+  </div>
+</app-dashboard-layout>

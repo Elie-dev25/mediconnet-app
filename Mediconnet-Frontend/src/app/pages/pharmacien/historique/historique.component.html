@@ -1,0 +1,102 @@
+<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+  <div class="historique-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1><lucide-icon name="history" [size]="28"></lucide-icon> Historique des mouvements</h1>
+        <p>Consultez l'historique des entrées et sorties de stock</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>Du</label>
+        <input type="date" [(ngModel)]="dateDebut" (change)="onFilterChange()">
+      </div>
+      <div class="filter-group">
+        <label>Au</label>
+        <input type="date" [(ngModel)]="dateFin" (change)="onFilterChange()">
+      </div>
+      <div class="filter-group">
+        <label>Type</label>
+        <select [(ngModel)]="typeMouvement" (change)="onFilterChange()">
+          <option *ngFor="let type of typesMouvement" [value]="type.value">{{ type.label }}</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" (click)="clearFilters()">
+        <lucide-icon name="x" [size]="16"></lucide-icon>
+        Réinitialiser
+      </button>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="stats-summary">
+      <span class="stat-item">
+        <strong>{{ totalItems }}</strong> mouvements trouvés
+      </span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="spinner"></div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Médicament</th>
+            <th>Quantité</th>
+            <th>Stock après</th>
+            <th>Motif</th>
+            <th>Par</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mvt of mouvements">
+            <td class="date-cell">{{ formatDate(mvt.dateMouvement) }}</td>
+            <td>
+              <div class="type-badge" [ngClass]="getTypeClass(mvt.typeMouvement)">
+                <lucide-icon [name]="getTypeIcon(mvt.typeMouvement)" [size]="14"></lucide-icon>
+                {{ getTypeLabel(mvt.typeMouvement) }}
+              </div>
+            </td>
+            <td>
+              <strong>{{ mvt.nomMedicament }}</strong>
+            </td>
+            <td>
+              <span class="quantity" [ngClass]="getTypeClass(mvt.typeMouvement)">
+                {{ getQuantitySign(mvt.typeMouvement) }}{{ mvt.quantite }}
+              </span>
+            </td>
+            <td>{{ mvt.stockApresMouvement }}</td>
+            <td class="motif-cell">{{ mvt.motif || '-' }}</td>
+            <td>{{ mvt.nomUtilisateur }}</td>
+          </tr>
+          <tr *ngIf="mouvements.length === 0 && !isLoading">
+            <td colspan="7" class="empty-state">
+              <lucide-icon name="inbox" [size]="48"></lucide-icon>
+              <p>Aucun mouvement trouvé</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
+        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+        Précédent
+      </button>
+      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
+        Suivant
+        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+      </button>
+    </div>
+  </div>
+</app-sidebar>

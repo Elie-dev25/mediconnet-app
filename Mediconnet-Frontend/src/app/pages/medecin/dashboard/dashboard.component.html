@@ -1,0 +1,253 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Passez une excellente journée de travail">
+    </app-welcome-banner>
+
+    <!-- Section Statistiques -->
+    <app-stats-grid
+      [stats]="stats"
+      title="Rapport"
+      [showPeriod]="true">
+    </app-stats-grid>
+
+    <!-- Layout 2 colonnes: Agenda + RDV en attente -->
+    <div class="dashboard-grid">
+      <!-- Colonne gauche: File d'attente + Agenda -->
+      <div class="left-column">
+        <!-- File d'attente -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2>File d'attente (aujourd'hui)</h2>
+            <a routerLink="/medecin/rendez-vous" class="view-all">Voir tout</a>
+          </div>
+
+          <div *ngIf="isLoadingQueue" class="queue-loading">Chargement...</div>
+
+          <div *ngIf="!isLoadingQueue && queueError" class="queue-error">{{ queueError }}</div>
+
+          <div *ngIf="!isLoadingQueue && !queueError && fileAttente.length === 0" class="empty-state">
+            <lucide-icon name="user-x" [size]="40"></lucide-icon>
+            <p>Aucun patient en attente</p>
+          </div>
+
+          <div *ngIf="!isLoadingQueue && !queueError && fileAttente.length > 0" class="queue-list">
+            <div class="queue-item" [class.queue-item-pending]="isRdvConfirme(rdv)" *ngFor="let rdv of fileAttente">
+              <div class="queue-time">{{ formatTime(rdv.dateHeure) }}</div>
+              <div class="queue-info">
+                <div class="queue-patient">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</div>
+                <div class="queue-origin" [class.origin-pending]="isRdvConfirme(rdv)">
+                  <lucide-icon [name]="isRdvConfirme(rdv) ? 'clock' : 'check-circle'" [size]="12"></lucide-icon>
+                  {{ getOrigineLabel(rdv) }}
+                </div>
+              </div>
+              <div class="queue-actions">
+                <button 
+                  class="btn-action btn-action-primary" 
+                  type="button" 
+                  (click)="openFichePatientForConsultation(rdv)"
+                  [disabled]="isRdvConfirme(rdv)">
+                  <lucide-icon name="folder-open" [size]="16"></lucide-icon>
+                  {{ isRdvConfirme(rdv) ? 'En attente' : 'Ouvrir' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Agenda -->
+        <div class="agenda-section">
+          <app-mini-agenda
+            [nombreJours]="7"
+            [showLegend]="true"
+            (slotClick)="onSlotClick($event)"
+            (rdvClick)="onRdvClick($event)">
+          </app-mini-agenda>
+        </div>
+      </div>
+
+      <!-- Colonne droite: RDV en attente -->
+      <div class="actions-section">
+        <!-- RDV en attente de validation -->
+        <div class="section-card pending-section">
+          <div class="section-header">
+            <h2>
+              <lucide-icon name="clock" [size]="20"></lucide-icon>
+              RDV en attente de validation
+              <span class="badge" *ngIf="rdvEnAttente.length > 0">{{ rdvEnAttente.length }}</span>
+            </h2>
+          </div>
+
+          <div *ngIf="isLoadingPending" class="queue-loading">Chargement...</div>
+
+          <div *ngIf="!isLoadingPending && pendingError" class="queue-error">{{ pendingError }}</div>
+
+          <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length === 0" class="empty-state">
+            <lucide-icon name="check-circle" [size]="40"></lucide-icon>
+            <p>Aucun RDV en attente</p>
+          </div>
+
+          <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length > 0" class="pending-list-compact">
+            <div class="pending-row" *ngFor="let rdv of rdvEnAttente">
+              <div class="pending-info" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" style="cursor: pointer;" title="Voir fiche patient">
+                <span class="pending-name">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+                <span class="pending-datetime">{{ formatDate(rdv.dateHeure) }} · {{ formatTime(rdv.dateHeure) }}</span>
+              </div>
+              <div class="pending-btns">
+                <button class="btn-icon btn-icon-info" type="button" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" [disabled]="isProcessing" title="Voir fiche">
+                  <lucide-icon name="user" [size]="14"></lucide-icon>
+                </button>
+                <button class="btn-icon btn-icon-success" type="button" (click)="validerRdv(rdv)" [disabled]="isProcessing" title="Valider">
+                  <lucide-icon name="check" [size]="14"></lucide-icon>
+                </button>
+                <button class="btn-icon btn-icon-warning" type="button" (click)="openSuggererModal(rdv)" [disabled]="isProcessing" title="Suggérer">
+                  <lucide-icon name="calendar-clock" [size]="14"></lucide-icon>
+                </button>
+                <button class="btn-icon btn-icon-danger" type="button" (click)="openAnnulerModal(rdv)" [disabled]="isProcessing" title="Annuler">
+                  <lucide-icon name="x" [size]="14"></lucide-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions rapides (déplacées en bas) -->
+        <div class="quick-actions">
+          <h2>Actions rapides</h2>
+          <div class="actions-grid">
+            <a routerLink="/medecin/planning" class="action-card">
+              <div class="action-icon planning">
+                <lucide-icon name="calendar" [size]="24"></lucide-icon>
+              </div>
+              <span>Gérer mon planning</span>
+            </a>
+            <a routerLink="/medecin/rendez-vous" class="action-card">
+              <div class="action-icon rdv">
+                <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+              </div>
+              <span>Mes rendez-vous</span>
+            </a>
+            <a routerLink="/medecin/patients" class="action-card">
+              <div class="action-icon patients">
+                <lucide-icon name="users" [size]="24"></lucide-icon>
+              </div>
+              <span>Mes patients</span>
+            </a>
+            <a routerLink="/medecin/consultations" class="action-card">
+              <div class="action-icon consultations">
+                <lucide-icon name="stethoscope" [size]="24"></lucide-icon>
+              </div>
+              <span>Consultations</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Questionnaire avec composant unifié -->
+  <app-modal
+    [isOpen]="showQuestionnaire"
+    title="Questionnaire de consultation"
+    icon="clipboard-list"
+    size="lg"
+    (closed)="closeQuestionnaire()">
+    <app-consultation-questionnaire-form
+      *ngIf="selectedRdvForQuestionnaire"
+      [consultationId]="selectedRdvForQuestionnaire.idConsultation"
+      [patientNom]="selectedRdvForQuestionnaire.patientPrenom + ' ' + selectedRdvForQuestionnaire.patientNom"
+      [mode]="'medecin'"
+      [compact]="false"
+      [specialiteId]="selectedRdvForQuestionnaire.specialiteId || 0"
+      [typeVisite]="selectedRdvForQuestionnaire.isPremiereConsultation ? 'premiere' : 'suivante'"
+      (saved)="onQuestionnaireSaved()"
+      (cancelled)="closeQuestionnaire()">
+    </app-consultation-questionnaire-form>
+  </app-modal>
+
+  <!-- Modal Annulation RDV -->
+  <app-modal
+    [isOpen]="showAnnulerModal"
+    title="Annuler le rendez-vous"
+    icon="x-circle"
+    size="md"
+    (closed)="closeAnnulerModal()">
+    <div class="modal-form" *ngIf="selectedRdvForAction">
+      <p class="modal-info">
+        Vous êtes sur le point d'annuler le rendez-vous de 
+        <strong>{{ selectedRdvForAction.patientPrenom }} {{ selectedRdvForAction.patientNom }}</strong>
+        prévu le <strong>{{ formatDate(selectedRdvForAction.dateHeure) }} à {{ formatTime(selectedRdvForAction.dateHeure) }}</strong>.
+      </p>
+      <p class="modal-warning">Le patient sera notifié par email.</p>
+      <div class="form-group">
+        <label for="motifAnnulation">Motif d'annulation *</label>
+        <textarea 
+          id="motifAnnulation" 
+          [(ngModel)]="motifAnnulation" 
+          rows="3" 
+          placeholder="Indiquez la raison de l'annulation..."
+          class="form-control"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeAnnulerModal()">Annuler</button>
+        <button type="button" class="btn btn-danger" (click)="confirmAnnuler()" [disabled]="!motifAnnulation.trim() || isProcessing">
+          <lucide-icon name="x" [size]="16" *ngIf="!isProcessing"></lucide-icon>
+          <span *ngIf="isProcessing">...</span>
+          Confirmer l'annulation
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Modal Suggestion de créneau -->
+  <app-modal
+    [isOpen]="showSuggererModal"
+    title="Suggérer un nouveau créneau"
+    icon="calendar-clock"
+    size="md"
+    (closed)="closeSuggererModal()">
+    <div class="modal-form" *ngIf="selectedRdvForAction">
+      <p class="modal-info">
+        Proposer un nouveau créneau pour le rendez-vous de 
+        <strong>{{ selectedRdvForAction.patientPrenom }} {{ selectedRdvForAction.patientNom }}</strong>.
+      </p>
+      <p class="modal-info-current">
+        Créneau actuel : <strong>{{ formatDate(selectedRdvForAction.dateHeure) }} à {{ formatTime(selectedRdvForAction.dateHeure) }}</strong>
+      </p>
+      <div class="form-group">
+        <label for="nouveauCreneau">Nouveau créneau *</label>
+        <input 
+          type="datetime-local" 
+          id="nouveauCreneau" 
+          [(ngModel)]="nouveauCreneau" 
+          class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="messageSuggestion">Message au patient (optionnel)</label>
+        <textarea 
+          id="messageSuggestion" 
+          [(ngModel)]="messageSuggestion" 
+          rows="2" 
+          placeholder="Message complémentaire..."
+          class="form-control"></textarea>
+      </div>
+      <p class="modal-warning">Le patient sera notifié par email du nouveau créneau proposé.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeSuggererModal()">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="confirmSuggerer()" [disabled]="!nouveauCreneau || isProcessing">
+          <lucide-icon name="send" [size]="16" *ngIf="!isProcessing"></lucide-icon>
+          <span *ngIf="isProcessing">...</span>
+          Envoyer la proposition
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+
+</app-dashboard-layout>

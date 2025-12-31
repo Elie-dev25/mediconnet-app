@@ -1,0 +1,217 @@
+// Variables
+$white: #ffffff;
+$primary-color: #667eea;
+$primary-light: rgba(102, 126, 234, 0.1);
+$bg-light: #f5f7fa;
+$border-color: #e0e0e0;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin box-shadow {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.auth-layout-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  @include flex-center;
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+  padding: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 1400px;
+  height: 90vh;
+  background: $white;
+  border-radius: 1rem;
+  @include box-shadow;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+}
+
+// Colonne gauche - Image persistante
+.auth-left {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #f0f0f0;
+  
+  // Motif de séparation CSS (ligne diagonale élégante)
+  &::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 40px;
+    height: 100%;
+    background: linear-gradient(
+      110deg,
+      transparent 0%,
+      transparent 48%,
+      $primary-light 48%,
+      $primary-light 52%,
+      transparent 52%,
+      transparent 100%
+    );
+    background-size: 100% 80px;
+    z-index: 2;
+  }
+
+  // Overlay pour meilleure lisibilité
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(102, 126, 234, 0.1) 0%,
+      rgba(92, 107, 192, 0.2) 100%
+    );
+    z-index: 1;
+  }
+}
+
+// Colonne droite - Contenu dynamique
+.auth-right {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: $white;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // Motif décoratif en haut à gauche (subtle)
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, $primary-light 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .auth-content {
+    width: 100%;
+    height: 100%;
+    padding: 3rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    position: relative;
+  }
+}
+
+// Animations fluides pour le contenu
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+}
+
+// Scrollbar personnalisée pour la colonne droite
+.auth-right {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $primary-color;
+    border-radius: 3px;
+
+    &:hover {
+      background: darken($primary-color, 10%);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .auth-container {
+    grid-template-columns: 1fr 1fr;
+    height: 85vh;
+  }
+
+  .auth-right .auth-content {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-layout-wrapper {
+    padding: 0.5rem;
+  }
+
+  .auth-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .auth-left {
+    display: none;
+  }
+
+  .auth-right {
+    &::before {
+      display: none;
+    }
+
+    .auth-content {
+      padding: 1.5rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-layout-wrapper {
+    padding: 0;
+  }
+
+  .auth-right .auth-content {
+    padding: 1rem;
+  }
+}

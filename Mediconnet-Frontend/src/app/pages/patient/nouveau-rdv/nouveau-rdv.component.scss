@@ -1,0 +1,760 @@
+@use '../../../shared/styles/variables' as *;
+
+.nouveau-rdv-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+// Header
+.page-header {
+  margin-bottom: 2rem;
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
+
+  .header-content {
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.5rem;
+    }
+
+    .subtitle {
+      color: $text-secondary;
+      margin: 0;
+    }
+  }
+}
+
+// Stepper
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: $border-color;
+      color: $text-secondary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.3s;
+    }
+
+    .step-label {
+      font-size: 0.75rem;
+      color: $text-secondary;
+      font-weight: 500;
+    }
+
+    &.active .step-number {
+      background: $primary-color;
+      color: white;
+    }
+
+    &.completed .step-number {
+      background: $success-color;
+      color: white;
+    }
+  }
+
+  .step-line {
+    width: 60px;
+    height: 2px;
+    background: $border-color;
+    margin: 0 1rem;
+    margin-bottom: 1.5rem;
+    transition: background 0.3s;
+
+    &.active {
+      background: $primary-color;
+    }
+  }
+}
+
+// Step Container
+.step-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.step-content {
+  .step-header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      color: $text-secondary;
+      margin: 0;
+    }
+  }
+}
+
+// Service Filter
+.service-filter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: $bg-light;
+  border-radius: 8px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $text-secondary;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  select {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+}
+
+// Médecins Grid
+.medecins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.medecin-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: $primary-color;
+    box-shadow: 0 4px 12px rgba($primary-color, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .medecin-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .medecin-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .medecin-name {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .medecin-service {
+      font-size: 0.75rem;
+      color: $text-secondary;
+    }
+  }
+
+  .arrow-icon {
+    color: $text-light;
+  }
+}
+
+// Selected Medecin Banner
+.selected-medecin-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+  border: 1px solid rgba($primary-color, 0.2);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  color: $primary-color;
+
+  span {
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: $primary-color;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover {
+      color: darken($primary-color, 10%);
+    }
+  }
+}
+
+// Médecin Indisponible
+.medecin-indisponible {
+  text-align: center;
+  padding: 3rem 2rem;
+
+  .indispo-icon {
+    color: $warning-color;
+    margin-bottom: 1rem;
+  }
+
+  h4 {
+    font-size: 1.125rem;
+    color: $text-primary;
+    margin: 0 0 0.5rem;
+  }
+
+  p {
+    color: $text-secondary;
+    margin: 0 0 1.5rem;
+  }
+}
+
+// DateTime Grid
+.datetime-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Calendar Section
+.calendar-section {
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+
+    .month-name {
+      font-weight: 600;
+      color: $text-primary;
+      text-transform: capitalize;
+    }
+
+    .nav-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid $border-color;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-secondary;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: $primary-color;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 0.5rem;
+
+    span {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $text-secondary;
+      padding: 0.5rem 0;
+    }
+  }
+
+  .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .calendar-day {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: $text-primary;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: rgba($primary-color, 0.1);
+    }
+
+    &.other-month {
+      color: $text-light;
+    }
+
+    &.today {
+      font-weight: 700;
+      color: $primary-color;
+    }
+
+    &.selected {
+      background: $primary-color;
+      color: white;
+    }
+
+    &.disabled,
+    &:disabled {
+      color: $text-light;
+      cursor: not-allowed;
+      background: $bg-light;
+    }
+  }
+}
+
+// Slots Section
+.slots-section {
+  h5 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 1rem;
+  }
+
+  .slots-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: $bg-light;
+    border-radius: 8px;
+    color: $text-secondary;
+    font-size: 0.875rem;
+  }
+
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .slot-btn {
+    padding: 0.75rem 0.5rem;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &.available:hover {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.05);
+    }
+
+    &.selected {
+      background: $primary-color;
+      border-color: $primary-color;
+      color: white;
+    }
+
+    &.unavailable {
+      background: $bg-light;
+      color: $text-light;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+  }
+
+  .no-slots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: $text-secondary;
+    text-align: center;
+    grid-column: 1 / -1;
+  }
+}
+
+// Confirmation Summary
+.confirmation-summary {
+  margin-bottom: 2rem;
+
+  h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 1rem;
+  }
+
+  .summary-card {
+    background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.03));
+    border: 1px solid rgba($primary-color, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      color: $text-primary;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid rgba($primary-color, 0.1);
+      }
+
+      lucide-icon {
+        color: $primary-color;
+      }
+    }
+  }
+}
+
+// RDV Form
+.rdv-form {
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $text-secondary;
+      margin-bottom: 0.5rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  }
+}
+
+// Alerts
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+
+  &.alert-error {
+    background: rgba($error-color, 0.1);
+    color: $error-color;
+    border: 1px solid rgba($error-color, 0.2);
+  }
+}
+
+// Page Actions
+.page-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  .btn-secondary,
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary {
+    background: white;
+    border: 1px solid $border-color;
+    color: $text-secondary;
+
+    &:hover {
+      border-color: $primary-color;
+      color: $primary-color;
+    }
+  }
+
+  .btn-primary {
+    background: $primary-color;
+    border: none;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: darken($primary-color, 8%);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: $text-secondary;
+
+  lucide-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// Modal Overlay
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+// Confirmation Popup
+.confirmation-popup {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+
+  .confirmation-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+
+    &.success {
+      background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
+      color: white;
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    color: $text-primary;
+    margin: 0 0 0.5rem;
+  }
+
+  .confirmation-message {
+    color: $text-secondary;
+    margin: 0 0 1.5rem;
+  }
+
+  .confirmation-details {
+    background: $bg-light;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: $text-primary;
+      font-size: 0.875rem;
+
+      lucide-icon {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .confirmation-note {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0 0 1.5rem;
+  }
+
+  .btn-full {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: $primary-color;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: darken($primary-color, 8%);
+    }
+  }
+}
+
+// Animations
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@media (max-width: 600px) {
+  .nouveau-rdv-page {
+    padding: 1rem;
+  }
+
+  .stepper {
+    padding: 1rem;
+    
+    .step-label {
+      display: none;
+    }
+
+    .step-line {
+      width: 30px;
+      margin-bottom: 0;
+    }
+  }
+
+  .step-container {
+    padding: 1.25rem;
+  }
+
+  .medecins-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-actions {
+    flex-direction: column-reverse;
+
+    .btn-secondary,
+    .btn-primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

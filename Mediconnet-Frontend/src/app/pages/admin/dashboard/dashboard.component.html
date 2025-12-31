@@ -1,0 +1,46 @@
+<app-dashboard-layout 
+  sidebarTitle="Administration" 
+  [menuItems]="menuItems">
+  
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Gérez les utilisateurs et les paramètres du système">
+    </app-welcome-banner>
+
+    <!-- Section Statistiques -->
+    <app-stats-grid
+      [stats]="stats"
+      title="Vue d'ensemble"
+      [showPeriod]="false">
+    </app-stats-grid>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <h2>Actions rapides</h2>
+      <div class="actions-grid">
+        <a routerLink="/admin/users" class="action-card">
+          <div class="action-icon">
+            <lucide-icon name="user-plus" [size]="28"></lucide-icon>
+          </div>
+          <span>Créer un utilisateur</span>
+        </a>
+        <div class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="building-2" [size]="28"></lucide-icon>
+          </div>
+          <span>Gérer les services</span>
+        </div>
+        <div class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="bar-chart-3" [size]="28"></lucide-icon>
+          </div>
+          <span>Voir les statistiques</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>

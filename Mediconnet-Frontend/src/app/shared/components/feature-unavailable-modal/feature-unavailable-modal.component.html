@@ -1,0 +1,31 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)" @fadeIn>
+  <div class="modal-container" @slideIn>
+    <button class="close-btn" (click)="onClose()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+    
+    <div class="modal-header">
+      <div class="icon-wrapper">
+        <lucide-icon name="construction" [size]="32"></lucide-icon>
+      </div>
+      <h2>Fonctionnalite en cours de developpement</h2>
+    </div>
+    
+    <div class="modal-body">
+      <p class="message">
+        Cette fonctionnalite n'est pas encore disponible. 
+        Notre equipe travaille activement pour vous l'offrir prochainement.
+      </p>
+      <p class="sub-message">
+        Merci de votre patience !
+      </p>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-primary" (click)="onClose()">
+        <lucide-icon name="check" [size]="18"></lucide-icon>
+        Compris
+      </button>
+    </div>
+  </div>
+</div>

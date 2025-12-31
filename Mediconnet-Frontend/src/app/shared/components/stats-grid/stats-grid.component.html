@@ -1,0 +1,22 @@
+<div class="stats-section">
+  <div class="section-header" *ngIf="title">
+    <h2>{{ title }}</h2>
+    <div class="period-selector" *ngIf="showPeriod">
+      <span>Ce mois</span>
+      <lucide-icon name="trending-up" [size]="16"></lucide-icon>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div 
+      *ngFor="let stat of stats" 
+      class="stat-card"
+      [ngClass]="'stat-' + stat.colorClass">
+      <div class="stat-icon">
+        <lucide-icon [name]="stat.icon" [size]="24"></lucide-icon>
+      </div>
+      <span class="stat-label">{{ stat.label }}</span>
+      <span class="stat-value">{{ formatValue(stat.value) }}</span>
+    </div>
+  </div>
+</div>

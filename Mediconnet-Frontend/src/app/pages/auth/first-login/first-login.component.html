@@ -1,0 +1,210 @@
+<div class="internal-form-page">
+  <!-- Header -->
+  <header class="internal-form-header">
+    <div class="logo">
+      <lucide-icon name="stethoscope" [size]="28" class="logo-icon"></lucide-icon>
+      <span class="logo-text">MediConnect</span>
+    </div>
+    <div class="user-info" *ngIf="patientInfo">
+      <lucide-icon name="user" [size]="18"></lucide-icon>
+      <span>Bienvenue, <strong>{{ patientInfo.prenom }} {{ patientInfo.nom }}</strong></span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="internal-form-main">
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="48" class="spinner"></lucide-icon>
+      <p>Chargement de vos informations...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-container" *ngIf="loadError">
+      <lucide-icon name="alert-circle" [size]="48"></lucide-icon>
+      <p>{{ loadError }}</p>
+      <button class="btn-retry" (click)="loadPatientInfo()">
+        <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="internal-form-card first-login-card" *ngIf="!isLoading && !loadError && patientInfo">
+      <!-- Card Header -->
+      <div class="internal-card-header">
+        <div class="header-icon">
+          <lucide-icon name="clipboard-list" [size]="32"></lucide-icon>
+        </div>
+        <h1>Vérification de vos informations</h1>
+        <p>Veuillez vérifier les informations enregistrées et accepter la déclaration sur l'honneur</p>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="internal-alert alert-error">
+        <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Numéro de dossier en haut -->
+      <div class="dossier-badge" *ngIf="patientInfo.numeroDossier">
+        <lucide-icon name="folder" [size]="18"></lucide-icon>
+        <span>Dossier N° <strong>{{ patientInfo.numeroDossier }}</strong></span>
+      </div>
+
+      <!-- Informations du patient -->
+      <div class="info-sections">
+        <!-- Informations personnelles -->
+        <div class="info-section">
+          <h3><lucide-icon name="user" [size]="20"></lucide-icon> Informations personnelles</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Nom complet</span>
+              <span class="value">{{ patientInfo.prenom }} {{ patientInfo.nom }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Date de naissance</span>
+              <span class="value">{{ formatDate(patientInfo.dateNaissance) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Sexe</span>
+              <span class="value">{{ formatSexe(patientInfo.sexe) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Téléphone</span>
+              <span class="value">{{ patientInfo.telephone || '-' }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.email && !patientInfo.email.includes('@temp.')">
+              <span class="label">Email</span>
+              <span class="value">{{ patientInfo.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Adresse</span>
+              <span class="value">{{ patientInfo.adresse || '-' }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.nationalite">
+              <span class="label">Nationalité</span>
+              <span class="value">{{ patientInfo.nationalite }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.situationMatrimoniale">
+              <span class="label">Situation matrimoniale</span>
+              <span class="value">{{ patientInfo.situationMatrimoniale }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.profession">
+              <span class="label">Profession</span>
+              <span class="value">{{ patientInfo.profession }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations médicales -->
+        <div class="info-section">
+          <h3><lucide-icon name="heart-pulse" [size]="20"></lucide-icon> Informations médicales</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="patientInfo.groupeSanguin">
+              <span class="label">Groupe sanguin</span>
+              <span class="value">{{ patientInfo.groupeSanguin }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.maladiesChroniques">
+              <span class="label">Maladies chroniques</span>
+              <span class="value">{{ patientInfo.maladiesChroniques }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Opérations chirurgicales</span>
+              <span class="value">{{ formatBoolean(patientInfo.operationsChirurgicales) }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.operationsDetails">
+              <span class="label">Détails opérations</span>
+              <span class="value">{{ patientInfo.operationsDetails }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Allergies connues</span>
+              <span class="value">{{ formatBoolean(patientInfo.allergiesConnues) }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.allergiesDetails">
+              <span class="label">Détails allergies</span>
+              <span class="value">{{ patientInfo.allergiesDetails }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Habitudes de vie -->
+        <div class="info-section">
+          <h3><lucide-icon name="activity" [size]="20"></lucide-icon> Habitudes de vie</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Consommation d'alcool</span>
+              <span class="value">{{ formatBoolean(patientInfo.consommationAlcool) }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.frequenceAlcool">
+              <span class="label">Fréquence</span>
+              <span class="value">{{ patientInfo.frequenceAlcool }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Tabagisme</span>
+              <span class="value">{{ formatBoolean(patientInfo.tabagisme) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Activité physique</span>
+              <span class="value">{{ formatBoolean(patientInfo.activitePhysique) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacts d'urgence -->
+        <div class="info-section" *ngIf="patientInfo.personneContact || patientInfo.numeroContact">
+          <h3><lucide-icon name="phone" [size]="20"></lucide-icon> Contact d'urgence</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="patientInfo.personneContact">
+              <span class="label">Personne à contacter</span>
+              <span class="value">{{ patientInfo.personneContact }}</span>
+            </div>
+            <div class="info-item" *ngIf="patientInfo.numeroContact">
+              <span class="label">Numéro</span>
+              <span class="value">{{ patientInfo.numeroContact }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Déclaration sur l'honneur -->
+      <form [formGroup]="declarationForm" (ngSubmit)="submitDeclaration()">
+        <div class="declaration-section">
+          <div class="declaration-text">
+            <h4>
+              <lucide-icon name="shield-check" [size]="20"></lucide-icon>
+              Déclaration sur l'honneur
+            </h4>
+            <p>Je soussigné(e) <strong>{{ patientInfo.prenom }} {{ patientInfo.nom }}</strong>,</p>
+            <ul>
+              <li>Certifie que les informations ci-dessus sont exactes et complètes.</li>
+              <li>M'engage à informer l'établissement de tout changement.</li>
+              <li>Autorise le personnel médical à accéder à mon dossier dans le cadre de ma prise en charge.</li>
+              <li>Accepte les conditions générales d'utilisation de MediConnect.</li>
+            </ul>
+          </div>
+
+          <div class="declaration-checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="declarationAcceptee">
+              <span class="checkmark"></span>
+              <span class="checkbox-text">
+                Je certifie avoir lu et j'accepte la déclaration sur l'honneur
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="internal-form-actions">
+          <button type="submit" 
+                  class="internal-btn-success"
+                  [disabled]="declarationForm.invalid || isSubmitting">
+            <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spinner"></lucide-icon>
+            <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+            <span>{{ isSubmitting ? 'Validation...' : 'Valider et continuer' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>

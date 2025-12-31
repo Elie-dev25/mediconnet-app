@@ -1,0 +1,110 @@
+<app-dashboard-layout 
+  sidebarTitle="Espace Infirmier" 
+  [menuItems]="menuItems">
+  
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Bienvenue dans votre espace de soins">
+    </app-welcome-banner>
+
+    <!-- Section Statistiques -->
+    <app-stats-grid
+      [stats]="stats"
+      title="Rapport"
+      [showPeriod]="true">
+    </app-stats-grid>
+
+    <div class="queue-section">
+      <div class="queue-header">
+        <h2>File d'attente infirmier</h2>
+        <button class="icon-btn" type="button" (click)="loadQueue()" aria-label="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="alert alert-error" *ngIf="errorQueue">
+        {{ errorQueue }}
+      </div>
+
+      <div class="queue-loading" *ngIf="isLoadingQueue">
+        Chargement...
+      </div>
+
+      <div class="queue-empty" *ngIf="!isLoadingQueue && queue.length === 0">
+        Aucun patient en attente de paramètres.
+      </div>
+
+      <div class="queue-list" *ngIf="!isLoadingQueue && queue.length > 0">
+        <div class="queue-card" *ngFor="let item of queue">
+          <div class="queue-main">
+            <div class="queue-title">
+              <div class="queue-line">
+                <strong class="patient-name">{{ item.patientPrenom }} {{ item.patientNom }}</strong>
+                <div class="badges-row">
+                  <span class="badge badge-dossier" *ngIf="item.numeroDossier">Dossier {{ item.numeroDossier }}</span>
+                  <span class="badge badge-medecin" *ngIf="item.medecinPrenom || item.medecinNom">Dr {{ item.medecinPrenom }} {{ item.medecinNom }}</span>
+                  <span class="badge badge-info">Consult #{{ item.idConsultation }}</span>
+                  <span class="badge badge-info" *ngIf="item.idRendezVous">RDV #{{ item.idRendezVous }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="queue-actions">
+            <button class="btn btn-primary btn-strong" type="button" (click)="openParamForm(item)">
+              <lucide-icon name="activity" [size]="18"></lucide-icon>
+              Paramètres
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <h2>Actions rapides</h2>
+      <div class="actions-grid">
+        <div class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="syringe" [size]="28"></lucide-icon>
+          </div>
+          <span>Enregistrer un soin</span>
+        </div>
+        <div class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="activity" [size]="28"></lucide-icon>
+          </div>
+          <span>Constantes vitales</span>
+        </div>
+        <div class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="clipboard-list" [size]="28"></lucide-icon>
+          </div>
+          <span>Rapport de garde</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Paramètres avec composant unifié -->
+  <app-modal
+    [isOpen]="showParamForm && !!selectedItem"
+    title="Paramètres vitaux"
+    icon="activity"
+    size="lg"
+    (closed)="closeParamForm()">
+    <app-parametres-form
+      *ngIf="selectedItem"
+      [consultationId]="selectedItem.idConsultation"
+      [patientNom]="selectedItem.patientPrenom + ' ' + selectedItem.patientNom"
+      [mode]="'create'"
+      [compact]="false"
+      (saved)="onParametresSaved()"
+      (cancelled)="closeParamForm()">
+    </app-parametres-form>
+  </app-modal>
+
+</app-dashboard-layout>

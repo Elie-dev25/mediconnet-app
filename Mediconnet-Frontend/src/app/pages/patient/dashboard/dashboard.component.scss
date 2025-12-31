@@ -1,0 +1,258 @@
+// Styles spécifiques au dashboard patient
+@use '../../../shared/styles/variables' as *;
+
+.dashboard-content {
+  max-width: 1400px;
+}
+
+// Quick actions
+.quick-actions {
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.action-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+
+  .action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-color;
+  }
+
+  span {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: $text-dark;
+  }
+
+  &:hover:not(.disabled) {
+    border-color: $primary-color;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(92, 107, 192, 0.15);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    .action-icon {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+  }
+}
+
+// Visites sections
+.visites-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  @media (min-width: 992px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.visites-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin: 0;
+    }
+
+    .voir-tout {
+      font-size: 0.85rem;
+      color: $primary-color;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.visites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.visite-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f1f5f9;
+  }
+
+  &.upcoming {
+    border-left: 3px solid $primary-color;
+  }
+
+  &.past {
+    border-left: 3px solid #94a3b8;
+    opacity: 0.85;
+  }
+
+  .visite-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+    .day {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $text-dark;
+      text-transform: capitalize;
+    }
+
+    .time {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $primary-color;
+    }
+  }
+
+  .visite-info {
+    flex: 1;
+
+    h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin: 0 0 0.25rem;
+    }
+
+    p {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 0;
+
+      &.medecin {
+        font-weight: 500;
+        color: #475569;
+      }
+    }
+  }
+
+  .visite-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    text-transform: capitalize;
+
+    &.planifie {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    &.confirme {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    &.termine {
+      background: #e0e7ff;
+      color: $primary-color;
+    }
+
+    &.annule {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+
+  p {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .btn-primary {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: darken($primary-color, 10%);
+    }
+  }
+}

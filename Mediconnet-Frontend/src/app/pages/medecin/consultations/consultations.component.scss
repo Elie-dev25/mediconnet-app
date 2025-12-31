@@ -1,0 +1,273 @@
+// Styles spécifiques aux consultations
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/common';
+
+// Variables couleurs (utilise les variables partagées)
+$consult-primary: $secondary-color;
+$consult-success: $success-color;
+$consult-warning: $warning-color;
+$consult-danger: $error-color;
+$consult-purple: #7c3aed;
+$consult-purple-light: #ede9fe;
+
+.consultations-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// NOTE: .page-header, .btn-icon sont dans _common.scss
+// Extensions spécifiques ci-dessous
+.consultations-header {
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    lucide-icon { color: $consult-primary; }
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 50;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+// ==================== STATS GRID ====================
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 500px) { grid-template-columns: 1fr; }
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.today { background: rgba($consult-primary, 0.1); color: $consult-primary; }
+  &.week { background: rgba($consult-purple, 0.1); color: $consult-purple; }
+  &.progress { background: rgba($consult-warning, 0.1); color: $consult-warning; }
+  &.total { background: rgba($consult-success, 0.1); color: $consult-success; }
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+
+  .stat-value { font-size: 1.5rem; font-weight: 700; color: #1f2937; }
+  .stat-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; }
+}
+
+// ==================== FILTERS ====================
+.filters-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+
+.filter-tabs {
+  display: flex; gap: 0.5rem; background: #f3f4f6; padding: 0.25rem;
+  border-radius: 10px;
+}
+
+.filter-tab {
+  padding: 0.5rem 1rem; background: transparent; border: none;
+  border-radius: 8px; font-size: 0.875rem; font-weight: 500;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+  
+  &:hover { color: #374151; }
+  &.active { background: white; color: $consult-primary; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+}
+
+.filter-right {
+  display: flex; gap: 0.75rem; align-items: center;
+}
+
+.search-box {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
+  background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+  
+  lucide-icon { color: #9ca3af; }
+  input { border: none; outline: none; font-size: 0.875rem; width: 180px;
+    &::placeholder { color: #9ca3af; }
+  }
+}
+
+select {
+  padding: 0.5rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 0.875rem; background: white; cursor: pointer;
+  &:focus { outline: none; border-color: $consult-primary; }
+}
+
+// ==================== DATE NAV ====================
+.date-nav {
+  display: flex; align-items: center; justify-content: center; gap: 1rem;
+  margin-bottom: 1.5rem;
+  
+  .date-label {
+    font-size: 1.125rem; font-weight: 600; color: #1f2937; cursor: pointer;
+    padding: 0.5rem 1rem; border-radius: 8px; text-transform: capitalize;
+    &:hover { background: #f3f4f6; }
+  }
+}
+
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e5e7eb;
+  background: white; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: #6b7280;
+  &:hover { background: #f3f4f6; color: $consult-primary; }
+}
+
+// ==================== CONSULTATIONS LIST ====================
+.consultations-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.loading, .empty-state {
+  text-align: center; padding: 3rem; color: #6b7280;
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  lucide-icon { opacity: 0.3; }
+}
+
+.consultation-card {
+  display: grid;
+  grid-template-columns: 100px 1fr 1.5fr 120px 120px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  
+  &:hover { 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+    border-left: 3px solid $consult-primary;
+  }
+  
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.consultation-time {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  padding-right: 1rem; border-right: 1px solid #e5e7eb;
+  
+  @media (max-width: 900px) { 
+    flex-direction: row; gap: 0.5rem; border: none; padding: 0;
+    justify-content: flex-start;
+  }
+  
+  .time { font-size: 1.125rem; font-weight: 700; color: $consult-primary; }
+  .duration { font-size: 0.75rem; color: #9ca3af; }
+}
+
+.consultation-patient {
+  display: flex; align-items: center; gap: 0.75rem;
+  
+  .patient-avatar {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, $consult-primary 0%, darken($consult-primary, 10%) 100%);
+    display: flex; align-items: center; justify-content: center; color: white;
+  }
+  
+  .patient-info {
+    display: flex; flex-direction: column;
+    .patient-name { font-weight: 600; color: #1f2937; }
+    .patient-dossier { 
+      font-size: 0.75rem; color: #6b7280;
+      display: flex; align-items: center; gap: 0.25rem;
+    }
+  }
+}
+
+.consultation-details {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  .consultation-motif { font-size: 0.875rem; color: #374151; font-weight: 500; }
+  .consultation-diagnostic { 
+    font-size: 0.75rem; color: #6b7280;
+    display: flex; align-items: center; gap: 0.25rem;
+  }
+}
+
+.consultation-status { text-align: center; }
+
+.status-badge {
+  display: inline-block; padding: 0.375rem 0.75rem; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  
+  &.status-pending { background: $warning-light; color: $consult-warning; }
+  &.status-progress { background: $consult-purple-light; color: $consult-purple; }
+  &.status-completed { background: $success-light; color: $consult-success; }
+}
+
+.consultation-actions {
+  display: flex; gap: 0.5rem; justify-content: flex-end;
+}
+
+.action-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s;
+  
+  &.primary { background: rgba($consult-primary, 0.1); color: $consult-primary;
+    &:hover { background: $consult-primary; color: white; }
+  }
+  &.success { background: $success-light; color: $consult-success;
+    &:hover { background: $consult-success; color: white; }
+  }
+  &.secondary { background: #f3f4f6; color: #6b7280;
+    &:hover { background: #e5e7eb; }
+    &.active { background: $consult-primary; color: white; }
+  }
+}
+
+.consultation-date {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.75rem; color: #6b7280;
+  padding-top: 0.75rem; border-top: 1px solid #f3f4f6;
+}
+
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

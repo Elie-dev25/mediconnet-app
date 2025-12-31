@@ -1,0 +1,121 @@
+// Import des styles partagés depuis shared/styles
+@use '../../../shared/styles/auth-forms' as *;
+
+// Styles spécifiques à la page de connexion
+
+// Email not confirmed state
+.email-not-confirmed {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.warning-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.warning-title {
+  color: #f59e0b !important;
+  margin-bottom: 1rem;
+}
+
+.warning-message {
+  font-size: 1rem;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+
+  strong {
+    color: #0e7490;
+    font-weight: 600;
+  }
+}
+
+.warning-instructions {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.success-alert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  color: #047857;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.email-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-resend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #0e7490 0%, #22d3ee 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 116, 144, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

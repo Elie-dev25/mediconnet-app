@@ -1,0 +1,205 @@
+<app-dashboard-layout 
+  sidebarTitle="Administration" 
+  [menuItems]="menuItems">
+  
+  <div class="services-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <lucide-icon name="building-2" [size]="28"></lucide-icon>
+        </div>
+        <div class="header-text">
+          <h1>Gestion des Services</h1>
+          <p>Gérez les services hospitaliers de votre établissement</p>
+        </div>
+      </div>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <lucide-icon name="plus" [size]="20"></lucide-icon>
+        Nouveau service
+      </button>
+    </header>
+
+    <!-- Barre de recherche -->
+    <div class="search-section">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          placeholder="Rechercher un service..." 
+          [(ngModel)]="searchQuery">
+      </div>
+      <div class="services-count">
+        <span class="count">{{ filteredServices.length }}</span>
+        <span class="label">service(s)</span>
+      </div>
+    </div>
+
+    <!-- Liste des services -->
+    <div class="services-grid">
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des services...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoading && filteredServices.length === 0">
+        <lucide-icon name="building-2" [size]="64"></lucide-icon>
+        <h3>Aucun service trouvé</h3>
+        <p>{{ searchQuery ? 'Aucun résultat pour votre recherche' : 'Commencez par créer un nouveau service' }}</p>
+        <button class="btn-primary" (click)="openCreateModal()" *ngIf="!searchQuery">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Créer un service
+        </button>
+      </div>
+
+      <div class="services-list" *ngIf="!isLoading && filteredServices.length > 0">
+        <div class="service-card" *ngFor="let service of filteredServices" @slideIn>
+          <div class="service-header">
+            <div class="service-icon">
+              <lucide-icon name="building-2" [size]="24"></lucide-icon>
+            </div>
+            <div class="service-actions">
+              <button class="btn-icon edit" title="Modifier" (click)="openEditModal(service)">
+                <lucide-icon name="edit" [size]="16"></lucide-icon>
+              </button>
+              <button 
+                class="btn-icon delete" 
+                title="Supprimer" 
+                (click)="confirmDelete(service)"
+                [disabled]="service.nombreMedecins > 0">
+                <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+          
+          <h3 class="service-name">{{ service.nomService }}</h3>
+          
+          <p class="service-description" *ngIf="service.description">
+            {{ service.description }}
+          </p>
+          <p class="service-description empty" *ngIf="!service.description">
+            Aucune description
+          </p>
+          
+          <div class="service-meta">
+            <div class="meta-item responsable">
+              <lucide-icon name="user" [size]="14"></lucide-icon>
+              <span *ngIf="service.responsableNom">{{ service.responsableNom }}</span>
+              <span *ngIf="!service.responsableNom" class="empty">Non assigné</span>
+            </div>
+            <div class="meta-item medecins">
+              <lucide-icon name="users" [size]="14"></lucide-icon>
+              <span>{{ service.nombreMedecins }} médecin(s)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>
+
+<!-- Modal Création/Modification -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()" @fadeIn>
+  <div class="modal-container" (click)="$event.stopPropagation()" @slideIn>
+    <div class="modal-header">
+      <div class="modal-title">
+        <div class="title-icon">
+          <lucide-icon [name]="isEditMode ? 'edit' : 'plus'" [size]="22"></lucide-icon>
+        </div>
+        <h2>{{ isEditMode ? 'Modifier le service' : 'Nouveau service' }}</h2>
+      </div>
+      <button class="close-btn" (click)="closeModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <form [formGroup]="serviceForm" (ngSubmit)="onSubmit()">
+      <div class="modal-body">
+        <!-- Messages -->
+        <div class="alert alert-error" *ngIf="errorMessage">
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          {{ errorMessage }}
+        </div>
+        <div class="alert alert-success" *ngIf="successMessage">
+          <lucide-icon name="check" [size]="18"></lucide-icon>
+          {{ successMessage }}
+        </div>
+
+        <!-- Nom du service -->
+        <div class="form-group">
+          <label>
+            <lucide-icon name="building-2" [size]="16"></lucide-icon>
+            Nom du service *
+          </label>
+          <input 
+            type="text" 
+            formControlName="nomService" 
+            placeholder="Ex: Cardiologie, Pédiatrie...">
+          <span class="error-text" *ngIf="hasError('nomService')">
+            Le nom est requis (2-150 caractères)
+          </span>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label>
+            <lucide-icon name="file-text" [size]="16"></lucide-icon>
+            Description
+          </label>
+          <textarea 
+            formControlName="description" 
+            placeholder="Description du service..."
+            rows="3"></textarea>
+          <span class="error-text" *ngIf="hasError('description')">
+            Maximum 500 caractères
+          </span>
+        </div>
+
+        <!-- Responsable -->
+        <div class="form-group">
+          <label>
+            <lucide-icon name="user" [size]="16"></lucide-icon>
+            Responsable du service
+          </label>
+          <select formControlName="responsableId">
+            <option [value]="null">-- Aucun responsable --</option>
+            <option *ngFor="let resp of responsables" [value]="resp.id">
+              {{ resp.nom }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeModal()">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          <lucide-icon [name]="isEditMode ? 'save' : 'plus'" [size]="18"></lucide-icon>
+          {{ isSubmitting ? 'Enregistrement...' : (isEditMode ? 'Enregistrer' : 'Créer') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Confirmation Suppression -->
+<div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()" @fadeIn>
+  <div class="modal-container delete-confirm" (click)="$event.stopPropagation()" @slideIn>
+    <div class="confirm-icon">
+      <lucide-icon name="alert-circle" [size]="48"></lucide-icon>
+    </div>
+    <h3>Confirmer la suppression</h3>
+    <p>Êtes-vous sûr de vouloir supprimer le service <strong>{{ serviceToDelete?.nomService }}</strong> ?</p>
+    <p class="warning">Cette action est irréversible.</p>
+    
+    <div class="confirm-actions">
+      <button class="btn-secondary" (click)="cancelDelete()">Annuler</button>
+      <button class="btn-danger" (click)="deleteService()">
+        <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+        Supprimer
+      </button>
+    </div>
+  </div>
+</div>

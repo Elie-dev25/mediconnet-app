@@ -1,0 +1,106 @@
+services:
+  mediconnet-db:
+    image: mysql:8.0
+    container_name: mediconnet-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: mediconnect
+      MYSQL_USER: "app"
+      MYSQL_PASSWORD: "app"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "app", "-papp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mediconnet-backend:
+    build:
+      context: ./Mediconnet-Backend
+      dockerfile: Dockerfile
+    container_name: mediconnet-backend
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=mediconnet-db;Port=3306;Database=mediconnect;User=app;Password=app;
+      - Jwt__Secret=your-super-secret-key-minimum-32-characters-long-!!!
+      - Jwt__Issuer=MediConnect
+      - Jwt__Audience=MediConnectUsers
+      - EmailSettings__SmtpServer=mailhog
+      - EmailSettings__SmtpPort=1025
+      - EmailSettings__UseSsl=false
+      - EmailSettings__SenderEmail=noreply@mediconnect.local
+      - EmailSettings__SenderName=MediConnect
+      - EmailSettings__EnableEmailConfirmation=true
+      - EmailSettings__TokenExpirationHours=24
+      - EmailSettings__DevMode=false
+      - AppSettings__FrontendUrl=http://localhost:4200
+      - AppSettings__ApiUrl=http://localhost:8080
+    depends_on:
+      mediconnet-db:
+        condition: service_healthy
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mediconnet-frontend:
+    build:
+      context: ./Mediconnet-Frontend
+      dockerfile: Dockerfile
+    container_name: mediconnet-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - mediconnet-backend
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: mediconnet-adminer
+    ports:
+      - "8888:8080"
+    depends_on:
+      - mediconnet-db
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mediconnet-db
+
+  # MailHog - Serveur SMTP de test pour le développement
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mediconnet-mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+
+networks:
+  mediconnet-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

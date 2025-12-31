@@ -1,0 +1,521 @@
+// ============================================
+// Styles partagés pour les formulaires internes du système
+// (Compléter profil, Changer mot de passe, Enregistrer patient, etc.)
+// ============================================
+
+// Variables spécifiques aux formulaires internes
+$if-primary: #0891b2;
+$if-primary-dark: #0e7490;
+$if-primary-light: #22d3ee;
+$if-success: #10b981;
+$if-warning: #f59e0b;
+$if-danger: #ef4444;
+$if-text-dark: #0f172a;
+$if-text-muted: #64748b;
+$if-border: #e2e8f0;
+$if-bg-light: #f8fafc;
+
+// ============================================
+// Container principal de page
+// ============================================
+.internal-form-page {
+  min-height: 100vh;
+  height: 100vh;
+  background: linear-gradient(135deg, #ecfeff 0%, #f0f9ff 50%, #f0fdfa 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// ============================================
+// Header de page
+// ============================================
+.internal-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  z-index: 10;
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .logo-icon {
+      color: $if-primary;
+    }
+
+    .logo-text {
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, $if-primary-dark, $if-primary-light);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: $if-text-muted;
+    padding: 0.5rem 1rem;
+    background: $if-bg-light;
+    border-radius: 25px;
+
+    strong {
+      color: $if-text-dark;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 1rem;
+
+    .user-info {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// ============================================
+// Contenu principal
+// ============================================
+.internal-form-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+  }
+}
+
+// ============================================
+// Carte de formulaire
+// ============================================
+.internal-form-card {
+  width: 100%;
+  max-width: 600px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
+}
+
+// ============================================
+// En-tête de carte
+// ============================================
+.internal-card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .header-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, $if-primary, $if-primary-light);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $if-text-dark;
+    margin: 0 0 0.5rem;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: $if-text-muted;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .header-icon {
+      width: 56px;
+      height: 56px;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+    }
+  }
+}
+
+// ============================================
+// Alertes
+// ============================================
+.internal-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  lucide-icon {
+    flex-shrink: 0;
+  }
+
+  &.alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: $if-danger;
+  }
+
+  &.alert-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: $if-success;
+  }
+
+  &.alert-warning {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #d97706;
+  }
+
+  &.alert-info {
+    background: #ecfeff;
+    border: 1px solid #a5f3fc;
+    color: $if-primary-dark;
+  }
+}
+
+// ============================================
+// Formulaire
+// ============================================
+.internal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.internal-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ============================================
+// Groupe de formulaire
+// ============================================
+.internal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $if-text-dark;
+
+    .required {
+      color: $if-danger;
+    }
+
+    lucide-icon {
+      color: $if-primary;
+    }
+  }
+}
+
+// ============================================
+// Champs de saisie
+// ============================================
+.internal-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid $if-border;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: $if-text-dark;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $if-primary;
+    box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
+  }
+
+  &:hover:not(:focus) {
+    border-color: darken($if-border, 10%);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &.is-error {
+    border-color: $if-danger;
+    background: #fef2f2;
+
+    &:focus {
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+  }
+
+  &.textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+// Wrapper pour input avec icône
+.internal-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    color: $if-text-muted;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .internal-input {
+    padding-left: 2.75rem;
+  }
+
+  // Bouton toggle password
+  .toggle-password {
+    position: absolute;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: $if-text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    z-index: 1;
+
+    &:hover {
+      color: $if-primary;
+    }
+  }
+
+  // Ajuster le padding si toggle visible
+  &.has-toggle .internal-input {
+    padding-right: 3rem;
+  }
+}
+
+// Select stylisé
+select.internal-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230891b2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+  padding-right: 2.75rem;
+}
+
+// Texte d'erreur
+.internal-error-text {
+  color: $if-danger;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+// ============================================
+// Indicateur de force mot de passe
+// ============================================
+.internal-password-strength {
+  margin-top: 0.5rem;
+
+  .strength-bar {
+    height: 4px;
+    background: $if-border;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+  }
+
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+
+    &.weak { background: $if-danger; }
+    &.medium { background: $if-warning; }
+    &.strong { background: $if-success; }
+  }
+
+  .strength-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    &.weak { color: $if-danger; }
+    &.medium { color: $if-warning; }
+    &.strong { color: $if-success; }
+  }
+}
+
+// ============================================
+// Note d'information
+// ============================================
+.internal-info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba($if-primary, 0.08);
+  border-radius: 12px;
+  color: $if-text-muted;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+
+  lucide-icon {
+    flex-shrink: 0;
+    color: $if-primary;
+    margin-top: 0.1rem;
+  }
+}
+
+// ============================================
+// Actions de formulaire
+// ============================================
+.internal-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid $if-border;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// ============================================
+// Boutons
+// ============================================
+.internal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    animation: internal-spin 1s linear infinite;
+  }
+}
+
+.internal-btn-secondary {
+  @extend .internal-btn;
+  color: $if-text-muted;
+  background: white;
+  border: 2px solid $if-border;
+
+  &:hover:not(:disabled) {
+    background: $if-bg-light;
+    border-color: darken($if-border, 10%);
+    color: $if-text-dark;
+  }
+}
+
+.internal-btn-primary {
+  @extend .internal-btn;
+  color: white;
+  background: linear-gradient(135deg, $if-primary-dark 0%, $if-primary-light 100%);
+  box-shadow: 0 4px 15px rgba(8, 145, 178, 0.25);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(8, 145, 178, 0.35);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.internal-btn-success {
+  @extend .internal-btn;
+  color: white;
+  background: linear-gradient(135deg, $if-success 0%, #34d399 100%);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  }
+}
+
+@keyframes internal-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,500 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="rdv-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Mes Rendez-vous</h1>
+        <p class="subtitle">Gérez vos consultations médicales</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+        <a routerLink="/patient/nouveau-rdv" class="btn-primary">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Nouveau rendez-vous
+        </a>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid" *ngIf="stats">
+      <div class="stat-card upcoming">
+        <div class="stat-icon">
+          <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.rendezVousAVenir }}</span>
+          <span class="stat-label">À venir</span>
+        </div>
+      </div>
+      <div class="stat-card completed">
+        <div class="stat-icon">
+          <lucide-icon name="history" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.rendezVousPasses }}</span>
+          <span class="stat-label">Passés</span>
+        </div>
+      </div>
+      <div class="stat-card cancelled">
+        <div class="stat-icon">
+          <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.rendezVousAnnules }}</span>
+          <span class="stat-label">Annulés</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prochain RDV -->
+    <section class="next-rdv-card" *ngIf="stats && stats.prochainRendezVous">
+      <div class="next-badge">PROCHAIN RENDEZ-VOUS</div>
+      <div class="next-content">
+        <div class="next-date">
+          <lucide-icon name="calendar" [size]="20"></lucide-icon>
+          <span>{{ formatDateTime(stats.prochainRendezVous.dateHeure) }}</span>
+        </div>
+        <div class="next-info">
+          <div class="next-doctor">
+            <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+            <span>Dr. {{ stats.prochainRendezVous.medecinPrenom }} {{ stats.prochainRendezVous.medecinNom }}</span>
+          </div>
+          <div class="next-service" *ngIf="stats.prochainRendezVous.serviceNom">
+            <lucide-icon name="building-2" [size]="18"></lucide-icon>
+            <span>{{ stats.prochainRendezVous.serviceNom }}</span>
+          </div>
+          <div class="next-motif" *ngIf="stats.prochainRendezVous.motif">
+            <lucide-icon name="file-text" [size]="18"></lucide-icon>
+            <span>{{ stats.prochainRendezVous.motif }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Propositions de créneaux -->
+    <section class="propositions-section" *ngIf="propositions.length > 0">
+      <div class="propositions-header">
+        <lucide-icon name="bell" [size]="20"></lucide-icon>
+        <h3>Propositions de créneaux</h3>
+        <span class="propositions-badge">{{ propositions.length }}</span>
+      </div>
+      <div class="propositions-list">
+        <div class="proposition-card" *ngFor="let prop of propositions">
+          <div class="proposition-info">
+            <div class="proposition-doctor">
+              <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+              Dr. {{ prop.medecinPrenom }} {{ prop.medecinNom }}
+            </div>
+            <div class="proposition-datetime">
+              <lucide-icon name="calendar" [size]="16"></lucide-icon>
+              {{ formatDateTime(prop.dateHeure) }}
+            </div>
+            <div class="proposition-service" *ngIf="prop.serviceNom">
+              <lucide-icon name="building-2" [size]="16"></lucide-icon>
+              {{ prop.serviceNom }}
+            </div>
+          </div>
+          <div class="proposition-actions">
+            <button 
+              class="btn-accept" 
+              (click)="accepterProposition(prop)" 
+              [disabled]="isProcessingProposition">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              Accepter
+            </button>
+            <button 
+              class="btn-refuse" 
+              (click)="openRefuserModal(prop)" 
+              [disabled]="isProcessingProposition">
+              <lucide-icon name="x" [size]="16"></lucide-icon>
+              Refuser
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'upcoming'"
+          (click)="setActiveTab('upcoming')">
+          <lucide-icon name="calendar-check" [size]="18"></lucide-icon>
+          À venir ({{ upcomingRdvs.length }})
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'history'"
+          (click)="setActiveTab('history')">
+          <lucide-icon name="history" [size]="18"></lucide-icon>
+          Historique ({{ historyRdvs.length }})
+        </button>
+      </div>
+    </div>
+
+    <!-- Liste RDV -->
+    <section class="rdv-list">
+      <div *ngIf="isLoading" class="loading">Chargement...</div>
+      
+      <div *ngIf="!isLoading && currentRdvs.length === 0" class="empty-state">
+        <lucide-icon name="calendar" [size]="48"></lucide-icon>
+        <p>Aucun rendez-vous {{ activeTab === 'upcoming' ? 'à venir' : 'dans l\'historique' }}</p>
+        <a routerLink="/patient/nouveau-rdv" class="btn-primary" *ngIf="activeTab === 'upcoming'">
+          Prendre un rendez-vous
+        </a>
+      </div>
+
+      <div class="rdv-cards" *ngIf="!isLoading && currentRdvs.length > 0">
+        <div class="rdv-card" *ngFor="let rdv of currentRdvs">
+          <div class="rdv-date-col">
+            <span class="rdv-day">{{ formatDate(rdv.dateHeure).split(' ')[1] }}</span>
+            <span class="rdv-month">{{ formatDate(rdv.dateHeure).split(' ')[2] }}</span>
+            <span class="rdv-time">{{ formatTime(rdv.dateHeure) }}</span>
+          </div>
+          <div class="rdv-info-col">
+            <div class="rdv-doctor">{{ rdv.medecinNom }}</div>
+            <div class="rdv-service" *ngIf="rdv.serviceNom">{{ rdv.serviceNom }}</div>
+            <div class="rdv-motif" *ngIf="rdv.motif">{{ rdv.motif }}</div>
+            <div class="rdv-type">{{ getTypeRdvLabel(rdv.typeRdv) }}</div>
+          </div>
+          <div class="rdv-status-col">
+            <span class="status-badge" [ngClass]="getStatutClass(rdv.statut)">
+              {{ getStatutLabel(rdv.statut) }}
+            </span>
+            <button 
+              class="btn-cancel" 
+              *ngIf="activeTab === 'upcoming' && rdv.statut !== 'annule'"
+              (click)="openCancelModal(rdv)">
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Nouveau RDV -->
+  <div class="modal-overlay" *ngIf="showNewRdvModal" (click)="closeNewRdvModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Nouveau rendez-vous</h3>
+        <button class="close-btn" (click)="closeNewRdvModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper">
+        <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+          <span class="step-number">1</span>
+          <span class="step-label">Médecin</span>
+        </div>
+        <div class="step-line" [class.active]="currentStep > 1"></div>
+        <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+          <span class="step-number">2</span>
+          <span class="step-label">Date & Heure</span>
+        </div>
+        <div class="step-line" [class.active]="currentStep > 2"></div>
+        <div class="step" [class.active]="currentStep >= 3">
+          <span class="step-number">3</span>
+          <span class="step-label">Confirmation</span>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Step 1: Choix médecin -->
+        <div class="step-content" *ngIf="currentStep === 1">
+          <h4>Choisissez un médecin</h4>
+          
+          <!-- Filtre par service -->
+          <div class="service-filter">
+            <label for="serviceFilter">
+              <lucide-icon name="building-2" [size]="16"></lucide-icon>
+              Filtrer par service :
+            </label>
+            <select 
+              id="serviceFilter" 
+              [ngModel]="selectedServiceId"
+              (ngModelChange)="onServiceChange($event)">
+              <option [ngValue]="null">Tous les services</option>
+              <option *ngFor="let service of services" [ngValue]="service.idService">
+                {{ service.nomService }}
+              </option>
+            </select>
+          </div>
+
+          <div class="medecins-grid">
+            <div 
+              class="medecin-card" 
+              *ngFor="let medecin of filteredMedecins"
+              (click)="selectMedecin(medecin)">
+              <div class="medecin-avatar">
+                <lucide-icon name="user" [size]="24"></lucide-icon>
+              </div>
+              <div class="medecin-info">
+                <span class="medecin-name">Dr. {{ medecin.prenom }} {{ medecin.nom }}</span>
+                <span class="medecin-service" *ngIf="medecin.serviceNom">{{ medecin.serviceNom }}</span>
+              </div>
+              <lucide-icon name="chevron-right" [size]="20" class="arrow-icon"></lucide-icon>
+            </div>
+            
+            <div class="empty-state" *ngIf="filteredMedecins.length === 0 && services.length > 0">
+              <lucide-icon name="user-x" [size]="32"></lucide-icon>
+              <p>Aucun médecin disponible pour ce service</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Choix date/heure -->
+        <div class="step-content" *ngIf="currentStep === 2">
+          <div class="selected-medecin-banner">
+            <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+            <span>Dr. {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</span>
+            <button class="btn-link" (click)="goBack()">Modifier</button>
+          </div>
+
+          <!-- Message médecin indisponible -->
+          <div class="medecin-indisponible" *ngIf="!medecinDisponible">
+            <div class="indispo-icon">
+              <lucide-icon name="calendar-x" [size]="48"></lucide-icon>
+            </div>
+            <h4>Médecin indisponible</h4>
+            <p>{{ messageIndisponibilite || 'Ce médecin n\'a pas encore défini ses créneaux de disponibilité' }}</p>
+            <button class="btn-secondary" (click)="goBack()">Choisir un autre médecin</button>
+          </div>
+
+          <div class="datetime-grid" *ngIf="medecinDisponible">
+            <!-- Calendrier -->
+            <div class="calendar-section">
+              <div class="calendar-header">
+                <button class="nav-btn" (click)="prevMonth()">
+                  <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+                </button>
+                <span class="month-name">{{ monthName }}</span>
+                <button class="nav-btn" (click)="nextMonth()">
+                  <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+                </button>
+              </div>
+              <div class="calendar-weekdays">
+                <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span>
+                <span>Ven</span><span>Sam</span><span>Dim</span>
+              </div>
+              <div class="calendar-days">
+                <button 
+                  *ngFor="let day of calendarDays"
+                  class="calendar-day"
+                  [class.other-month]="!day.isCurrentMonth"
+                  [class.today]="isToday(day.date)"
+                  [class.selected]="isDateSelected(day.date)"
+                  [class.disabled]="!day.hasSlots"
+                  [disabled]="!day.hasSlots"
+                  (click)="selectDate(day)">
+                  {{ day.date.getDate() }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Créneaux -->
+            <div class="slots-section">
+              <h5>Créneaux disponibles</h5>
+              <div class="slots-info" *ngIf="!selectedDate">
+                Sélectionnez une date pour voir les créneaux disponibles
+              </div>
+              <div class="slots-grid" *ngIf="selectedDate">
+                <button 
+                  *ngFor="let creneau of creneaux"
+                  class="slot-btn"
+                  [class.available]="creneau.disponible"
+                  [class.unavailable]="!creneau.disponible"
+                  [class.selected]="selectedCreneau === creneau"
+                  [disabled]="!creneau.disponible"
+                  (click)="selectCreneau(creneau)">
+                  {{ formatTime(creneau.dateHeure) }}
+                </button>
+                <div class="no-slots" *ngIf="creneaux.length === 0">
+                  Aucun créneau disponible ce jour
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="step-content" *ngIf="currentStep === 3">
+          <div class="confirmation-summary">
+            <h4>Récapitulatif</h4>
+            <div class="summary-card">
+              <div class="summary-row">
+                <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+                <span>Dr. {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</span>
+              </div>
+              <div class="summary-row">
+                <lucide-icon name="calendar" [size]="18"></lucide-icon>
+                <span>{{ selectedCreneau ? formatDateTime(selectedCreneau.dateHeure) : '' }}</span>
+              </div>
+              <div class="summary-row">
+                <lucide-icon name="clock" [size]="18"></lucide-icon>
+                <span>Durée: {{ selectedCreneau?.duree }} minutes</span>
+              </div>
+            </div>
+          </div>
+
+          <form [formGroup]="rdvForm" class="rdv-form">
+            <div class="form-group">
+              <label>Type de consultation</label>
+              <select formControlName="typeRdv">
+                <option value="consultation">Consultation</option>
+                <option value="suivi">Suivi</option>
+                <option value="examen">Examen</option>
+                <option value="vaccination">Vaccination</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Motif (optionnel)</label>
+              <input type="text" formControlName="motif" placeholder="Ex: Contrôle annuel">
+            </div>
+            <div class="form-group">
+              <label>Notes (optionnel)</label>
+              <textarea formControlName="notes" rows="2" placeholder="Informations complémentaires"></textarea>
+            </div>
+          </form>
+
+          <div class="alert alert-error" *ngIf="error">
+            <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+            {{ error }}
+          </div>
+          <div class="alert alert-success" *ngIf="success">
+            <lucide-icon name="check" [size]="16"></lucide-icon>
+            {{ success }}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" *ngIf="currentStep > 1" (click)="goBack()">Retour</button>
+        <button class="btn-secondary" *ngIf="currentStep === 1" (click)="closeNewRdvModal()">Annuler</button>
+        <button 
+          class="btn-primary" 
+          *ngIf="currentStep === 3"
+          [disabled]="isSubmitting"
+          (click)="submitRdv()">
+          <lucide-icon name="check" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+          <lucide-icon name="refresh-cw" [size]="18" class="spinning" *ngIf="isSubmitting"></lucide-icon>
+          Confirmer le rendez-vous
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup Confirmation Succès -->
+  <div class="modal-overlay confirmation-overlay" *ngIf="showConfirmationPopup" (click)="closeConfirmationPopup()">
+    <div class="confirmation-popup" (click)="$event.stopPropagation()">
+      <div class="confirmation-icon success">
+        <lucide-icon name="check" [size]="48"></lucide-icon>
+      </div>
+      <h2>Rendez-vous confirmé !</h2>
+      <p class="confirmation-message">Votre rendez-vous a été enregistré avec succès.</p>
+      
+      <div class="confirmation-details" *ngIf="confirmedRdv">
+        <div class="detail-row">
+          <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+          <span>Dr. {{ confirmedRdv.medecinPrenom }} {{ confirmedRdv.medecinNom }}</span>
+        </div>
+        <div class="detail-row">
+          <lucide-icon name="calendar" [size]="18"></lucide-icon>
+          <span>{{ formatDate(confirmedRdv.dateHeure) }}</span>
+        </div>
+        <div class="detail-row">
+          <lucide-icon name="clock" [size]="18"></lucide-icon>
+          <span>{{ formatTime(confirmedRdv.dateHeure) }} ({{ confirmedRdv.duree }} min)</span>
+        </div>
+        <div class="detail-row" *ngIf="confirmedRdv.serviceNom">
+          <lucide-icon name="building-2" [size]="18"></lucide-icon>
+          <span>{{ confirmedRdv.serviceNom }}</span>
+        </div>
+      </div>
+      
+      <p class="confirmation-note">
+        Un rappel vous sera envoyé avant votre rendez-vous.
+      </p>
+      
+      <button class="btn-primary btn-full" (click)="closeConfirmationPopup()">
+        <lucide-icon name="check" [size]="18"></lucide-icon>
+        Compris
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Annulation -->
+  <div class="modal-overlay" *ngIf="showCancelModal" (click)="closeCancelModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Annuler le rendez-vous</h3>
+        <button class="close-btn" (click)="closeCancelModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="cancel-info">
+          Vous êtes sur le point d'annuler votre rendez-vous du 
+          <strong>{{ rdvToCancel ? formatDateTime(rdvToCancel.dateHeure) : '' }}</strong>
+          avec <strong>{{ rdvToCancel?.medecinNom }}</strong>.
+        </p>
+        <div class="form-group">
+          <label>Motif de l'annulation *</label>
+          <textarea 
+            [(ngModel)]="cancelReason" 
+            rows="3" 
+            placeholder="Veuillez indiquer la raison de l'annulation"></textarea>
+        </div>
+        <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeCancelModal()">Retour</button>
+        <button class="btn-danger" [disabled]="!cancelReason.trim()" (click)="confirmCancel()">
+          Confirmer l'annulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Refus Proposition -->
+  <div class="modal-overlay" *ngIf="showRefuserModal" (click)="closeRefuserModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Refuser la proposition</h3>
+        <button class="close-btn" (click)="closeRefuserModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="cancel-info">
+          Vous êtes sur le point de refuser la proposition de rendez-vous du 
+          <strong>{{ propositionToRefuse ? formatDateTime(propositionToRefuse.dateHeure) : '' }}</strong>
+          avec <strong>Dr. {{ propositionToRefuse?.medecinPrenom }} {{ propositionToRefuse?.medecinNom }}</strong>.
+        </p>
+        <div class="form-group">
+          <label>Motif du refus (optionnel)</label>
+          <textarea 
+            [(ngModel)]="refuserMotif" 
+            rows="3" 
+            placeholder="Indiquez la raison si vous le souhaitez"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeRefuserModal()">Retour</button>
+        <button class="btn-danger" [disabled]="isProcessingProposition" (click)="confirmRefuser()">
+          Confirmer le refus
+        </button>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>

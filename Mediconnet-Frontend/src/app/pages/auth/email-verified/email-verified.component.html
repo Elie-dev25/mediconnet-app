@@ -1,0 +1,58 @@
+<app-auth-layout-wrapper [showDecorative]="true">
+  <div class="verification-container" @fadeIn>
+    
+    <!-- Success State -->
+    <ng-container *ngIf="success">
+      <div class="icon-wrapper success">
+        <lucide-icon name="check-circle" [size]="64"></lucide-icon>
+      </div>
+      
+      <h1 class="title success">Email vérifié avec succès !</h1>
+      
+      <p class="message">
+        Votre adresse e-mail a été validée avec succès.<br>
+        Vous pouvez maintenant vous connecter à votre compte.
+      </p>
+      
+      <div class="actions">
+        <button class="btn-primary" (click)="continueToLogin()">
+          <span>Continuer vers la connexion</span>
+          <lucide-icon name="arrow-right" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      
+      <p class="info-text">
+        Lors de votre première connexion, vous serez invité à compléter votre profil.
+      </p>
+    </ng-container>
+
+    <!-- Error State -->
+    <ng-container *ngIf="!success">
+      <div class="icon-wrapper error">
+        <lucide-icon name="x-circle" [size]="64"></lucide-icon>
+      </div>
+      
+      <h1 class="title error">Échec de la vérification</h1>
+      
+      <p class="message error-message">
+        {{ errorMessage }}
+      </p>
+      
+      <div class="actions">
+        <button class="btn-primary" (click)="goToRegister()">
+          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+          <span>Demander un nouveau lien</span>
+        </button>
+        
+        <button class="btn-secondary" (click)="continueToLogin()">
+          <span>Aller à la connexion</span>
+        </button>
+      </div>
+      
+      <p class="help-text">
+        Si vous avez déjà confirmé votre email, vous pouvez simplement vous connecter.
+      </p>
+    </ng-container>
+
+  </div>
+</app-auth-layout-wrapper>

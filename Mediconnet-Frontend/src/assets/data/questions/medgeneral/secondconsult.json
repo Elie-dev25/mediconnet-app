@@ -1,0 +1,51 @@
+{
+  "specialiteId": 1,
+  "specialiteNom": "Médecine Générale",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "mg-s1",
+      "texte": "Depuis notre dernière consultation, comment vous sentez-vous globalement ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "mg-s2",
+      "texte": "Les symptômes dont nous avions parlé se sont-ils améliorés, aggravés ou sont-ils restés stables ?",
+      "type": "choix",
+      "options": ["Améliorés", "Aggravés", "Stables"],
+      "obligatoire": true
+    },
+    {
+      "id": "mg-s3",
+      "texte": "Avez-vous ressenti de nouveaux symptômes depuis la dernière fois ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "mg-s4",
+      "texte": "Suivez-vous correctement le traitement prescrit ?",
+      "type": "choix",
+      "options": ["Oui, complètement", "Partiellement", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "mg-s5",
+      "texte": "Avez-vous eu des effets secondaires avec les médicaments ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "mg-s6",
+      "texte": "Avez-vous changé quelque chose dans votre mode de vie ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "mg-s7",
+      "texte": "Avez-vous des questions, des inquiétudes ou des difficultés particulières ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

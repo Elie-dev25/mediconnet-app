@@ -1,0 +1,197 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="profile-page">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Chargement du profil...</p>
+    </div>
+
+    <!-- Profile Content -->
+    <div *ngIf="!isLoading && profile" class="profile-content">
+      <!-- Profile Header Card -->
+      <div class="profile-header-card">
+        <div class="profile-cover"></div>
+        <div class="profile-header-content">
+          <div class="profile-avatar">
+            <img [src]="getAvatarUrl()" [alt]="getFullName()">
+            <div class="avatar-badge">
+              <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+            </div>
+          </div>
+          <div class="profile-header-info">
+            <h1>{{ getFullName() }}</h1>
+            <p class="specialite">{{ profile.specialite || 'Médecin' }}</p>
+            <div class="profile-badges">
+              <span class="badge badge-primary">
+                <lucide-icon name="award" [size]="14"></lucide-icon>
+                {{ profile.numeroOrdre }}
+              </span>
+              <span class="badge badge-secondary">
+                <lucide-icon name="building-2" [size]="14"></lucide-icon>
+                {{ profile.service }}
+              </span>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button *ngIf="!isEditing" class="btn-edit" (click)="startEditing()">
+              <lucide-icon name="edit" [size]="18"></lucide-icon>
+              Modifier le profil
+            </button>
+            <div *ngIf="isEditing" class="edit-actions">
+              <button class="btn-save" (click)="saveProfile()">
+                <lucide-icon name="save" [size]="18"></lucide-icon>
+                Enregistrer
+              </button>
+              <button class="btn-cancel" (click)="cancelEditing()">
+                <lucide-icon name="x" [size]="18"></lucide-icon>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon patients">
+            <lucide-icon name="users" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.totalPatients }}</span>
+            <span class="stat-label">Patients suivis</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon consultations">
+            <lucide-icon name="stethoscope" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.consultationsMonth }}</span>
+            <span class="stat-label">Consultations ce mois</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon rdv-today">
+            <lucide-icon name="calendar" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.rdvAujourdHui }}</span>
+            <span class="stat-label">RDV aujourd'hui</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon rdv-upcoming">
+            <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ stats.rdvAVenir }}</span>
+            <span class="stat-label">RDV à venir</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Details -->
+      <div class="profile-details-grid">
+        <!-- Informations personnelles -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h2>Informations personnelles</h2>
+          </div>
+          <div class="card-content">
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="user-cog" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Nom complet</span>
+                <span *ngIf="!isEditing" class="info-value">{{ getFullName() }}</span>
+                <div *ngIf="isEditing" class="edit-fields">
+                  <input type="text" [(ngModel)]="editedProfile.prenom" placeholder="Prénom">
+                  <input type="text" [(ngModel)]="editedProfile.nom" placeholder="Nom">
+                </div>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="mail" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Email</span>
+                <span *ngIf="!isEditing" class="info-value">{{ profile.email }}</span>
+                <input *ngIf="isEditing" type="email" [(ngModel)]="editedProfile.email" placeholder="Email">
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="phone" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Téléphone</span>
+                <span *ngIf="!isEditing" class="info-value">{{ profile.telephone || 'Non renseigné' }}</span>
+                <input *ngIf="isEditing" type="tel" [(ngModel)]="editedProfile.telephone" placeholder="Téléphone">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations professionnelles -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h2>Informations professionnelles</h2>
+          </div>
+          <div class="card-content">
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Spécialité</span>
+                <span class="info-value">{{ profile.specialite || 'Non renseignée' }}</span>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="building-2" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Service</span>
+                <span class="info-value">{{ profile.service || 'Non renseigné' }}</span>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="award" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Numéro d'ordre</span>
+                <span class="info-value">{{ profile.numeroOrdre || 'Non renseigné' }}</span>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <lucide-icon name="calendar" [size]="20"></lucide-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Membre depuis</span>
+                <span class="info-value">{{ getMemberSince() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>

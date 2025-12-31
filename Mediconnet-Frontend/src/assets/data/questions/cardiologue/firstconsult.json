@@ -1,0 +1,45 @@
+{
+  "specialiteId": 4,
+  "specialiteNom": "Cardiologie",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "card-p1",
+      "texte": "Quel est le motif de votre consultation cardiologique ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "card-p2",
+      "texte": "Avez-vous des douleurs thoraciques ? Si oui, décrivez-les.",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "card-p3",
+      "texte": "Ressentez-vous des palpitations ou des battements irréguliers ?",
+      "type": "choix",
+      "options": ["Oui, souvent", "Parfois", "Rarement", "Jamais"],
+      "obligatoire": true
+    },
+    {
+      "id": "card-p4",
+      "texte": "Avez-vous des difficultés respiratoires (essoufflement) ?",
+      "type": "choix",
+      "options": ["Au repos", "À l'effort léger", "À l'effort intense", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "card-p5",
+      "texte": "Avez-vous des antécédents cardiaques personnels ou familiaux ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "card-p6",
+      "texte": "Prenez-vous des médicaments pour le cœur ou la tension ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

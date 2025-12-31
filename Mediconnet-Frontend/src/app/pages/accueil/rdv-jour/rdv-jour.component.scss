@@ -1,0 +1,407 @@
+// Styles de la page RDV du jour - utilise les variables partagées
+@use '../../../shared/styles/variables' as *;
+
+.rdv-jour-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+
+  .header-left {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .subtitle {
+      color: $text-secondary;
+      margin: 0;
+    }
+  }
+
+  .btn-refresh {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: $bg-white;
+    border: 2px solid $border-light;
+    border-radius: $radius-lg;
+    font-weight: 500;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.stats-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  .stat-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+
+    &.warning { background: #fffbeb; }
+    &.success { background: #ecfdf5; }
+    &.info { background: #eff6ff; }
+
+    .stat-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    &.warning .stat-value { color: #d97706; }
+    &.success .stat-value { color: #059669; }
+    &.info .stat-value { color: #2563eb; }
+  }
+}
+
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+
+    &:focus-within {
+      border-color: #3b82f6;
+    }
+
+    lucide-icon {
+      color: #94a3b8;
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      background: none;
+      font-size: 0.95rem;
+      outline: none;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+    }
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 8px;
+
+    .filter-tab {
+      padding: 0.5rem 1rem;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        color: #1e293b;
+      }
+
+      &.active {
+        background: white;
+        color: #3b82f6;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+.loading-container,
+.error-container,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  color: #64748b;
+
+  p { margin: 0.5rem 0 0 0; }
+}
+
+.error-container {
+  color: #ef4444;
+
+  .btn-retry {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+}
+
+.empty-state {
+  h3 {
+    margin: 1rem 0 0 0;
+    color: #1e293b;
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rdv-table {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 1fr 120px 120px;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .table-body {
+    .table-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 1fr 1fr 120px 120px;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+      align-items: center;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #f8fafc;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+  .col-heure {
+    .heure {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+  }
+
+  .col-patient {
+    .patient-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .name {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .phone {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+    }
+  }
+
+  .col-medecin {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .medecin-name {
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .specialite {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  }
+
+  .col-motif {
+    .motif {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+  }
+
+  .col-statut {
+    .statut-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+
+      &.statut-planifie { background: #fef3c7; color: #d97706; }
+      &.statut-confirme { background: #d1fae5; color: #059669; }
+      &.statut-en-cours { background: #dbeafe; color: #2563eb; }
+      &.statut-termine { background: #e2e8f0; color: #64748b; }
+      &.statut-annule { background: #fee2e2; color: #dc2626; }
+    }
+  }
+
+  .col-actions {
+    .btn-arrivee {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #059669;
+      }
+    }
+
+    .deja-arrive {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+      color: #10b981;
+      font-weight: 500;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .rdv-table {
+    .table-header {
+      display: none;
+    }
+
+    .table-body .table-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+
+      .col-heure {
+        order: -1;
+      }
+
+      .col-actions {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f1f5f9;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .rdv-jour-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+
+    .btn-refresh {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
+
+    .stat-item {
+      flex: 1 1 45%;
+    }
+  }
+
+  .filters-bar {
+    flex-direction: column;
+
+    .filter-tabs {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

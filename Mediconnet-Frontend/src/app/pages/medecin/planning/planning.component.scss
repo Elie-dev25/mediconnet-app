@@ -1,0 +1,676 @@
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/common';
+
+// Couleurs thématiques pour le planning (utilise les variables partagées)
+$planning-primary: $primary-color;
+$planning-primary-dark: $primary-dark;
+$planning-success: $success-color;
+$planning-info: $info-color;
+$planning-warning: $warning-color;
+$planning-danger: $error-color;
+
+.planning-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// ==================== CALENDRIER ====================
+.week-nav {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calendar-day {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+
+  &.indispo {
+    border-color: rgba($planning-warning, 0.35);
+  }
+}
+
+.calendar-day-header {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.calendar-day-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calendar-day-name {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.calendar-day-date {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.calendar-day-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.calendar-day-body {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.calendar-empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.calendar-rdv {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.calendar-rdv-time {
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 56px;
+}
+
+.calendar-rdv-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-rdv-patient {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.calendar-rdv-motif {
+  font-size: 0.875rem;
+  color: #475569;
+  margin-top: 0.125rem;
+}
+
+.calendar-rdv-status {
+  font-size: 0.8125rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+// ==================== HEADER ====================
+// NOTE: Utilise .page-header de _common.scss, avec extensions spécifiques
+.planning-header {
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid $border-light;
+
+  h1 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, $planning-primary 0%, $planning-primary-dark 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+}
+
+// NOTE: .btn-icon, .btn-primary, .btn-secondary sont dans _common.scss
+
+// ==================== STATS ====================
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    transition: width 0.2s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    &::before {
+      width: 100%;
+      opacity: 0.05;
+    }
+  }
+
+  &.today::before { background: $planning-primary; }
+  &.week::before { background: $planning-success; }
+  &.month::before { background: $planning-info; }
+  &.leave::before { background: $planning-warning; }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &.today .stat-icon {
+    background: linear-gradient(135deg, rgba($planning-primary, 0.1) 0%, rgba($planning-primary-dark, 0.1) 100%);
+    color: $planning-primary;
+  }
+
+  &.week .stat-icon {
+    background: #d1fae5;
+    color: $planning-success;
+  }
+
+  &.month .stat-icon {
+    background: #e0f2fe;
+    color: $planning-info;
+  }
+
+  &.leave .stat-icon {
+    background: #fef3c7;
+    color: $planning-warning;
+  }
+
+  .stat-content {
+    display: flex;
+    flex-direction: column;
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1a237e;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: #475569;
+      font-weight: 500;
+    }
+  }
+}
+
+// NOTE: .tabs-container, .tabs, .tab sont dans _common.scss
+
+// ==================== SECTION ====================
+// NOTE: .section-header est dans _common.scss, extensions spécifiques ci-dessous
+.planning-section-header {
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.5rem;
+    color: $text-dark;
+  }
+
+  .section-desc {
+    color: $text-secondary;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+  }
+}
+
+// NOTE: .loading est dans _common.scss
+
+// ==================== HORAIRES HEADER ====================
+.horaires-header {
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba($planning-primary, 0.1);
+    color: $planning-primary;
+  }
+}
+
+.week-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 1rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba($planning-primary, 0.05);
+  }
+}
+
+.week-label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+  white-space: nowrap;
+
+  &.current {
+    color: $planning-primary;
+  }
+}
+
+.current-badge {
+  font-size: 0.75rem;
+  color: $planning-success;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+// ==================== WEEK GRID ====================
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.day-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  &.indisponible {
+    opacity: 0.8;
+
+    .day-header {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    }
+  }
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, $planning-primary 0%, $planning-primary-dark 100%);
+  color: white;
+
+  .day-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .day-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .day-date {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  .day-hours {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    font-weight: 500;
+
+    &.no-work {
+      opacity: 0.7;
+      font-style: italic;
+    }
+  }
+}
+
+.day-indispo-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  min-height: 140px;
+}
+
+.day-slots {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 140px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: white;
+    border-color: $planning-primary;
+    box-shadow: 0 2px 8px rgba($planning-primary, 0.1);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    background: #f1f5f9;
+  }
+
+  .slot-time {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+
+    lucide-icon {
+      color: $planning-primary;
+    }
+  }
+
+  .slot-duration {
+    font-size: 0.75rem;
+    color: #475569;
+    padding-left: 1.375rem;
+  }
+
+  .slot-actions {
+    display: flex;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f8fafc;
+    color: $planning-primary;
+    border-color: $planning-primary;
+  }
+
+  &.danger:hover {
+    background: #fee2e2;
+    color: $planning-danger;
+    border-color: $planning-danger;
+  }
+}
+
+.add-slot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  background: transparent;
+  border: 2px dashed #e2e8f0;
+  border-radius: 0.75rem;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: auto;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $planning-primary;
+    color: $planning-primary;
+    background: rgba($planning-primary, 0.03);
+  }
+}
+
+.week-summary {
+  display: flex;
+  gap: 3rem;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  .summary-item {
+    color: #475569;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    strong {
+      color: $planning-primary;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+  }
+}
+
+// ==================== INDISPONIBILITÉS ====================
+.indispo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.indispo-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #94a3b8;
+  background: white;
+  border-radius: 1rem;
+
+  lucide-icon {
+    opacity: 0.3;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.indispo-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(4px);
+  }
+}
+
+.indispo-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.conge {
+    background: #d1fae5;
+    color: $planning-success;
+  }
+
+  &.maladie {
+    background: #fee2e2;
+    color: $planning-danger;
+  }
+
+  &.formation {
+    background: #e0f2fe;
+    color: $planning-info;
+  }
+
+  &.autre {
+    background: #f8fafc;
+    color: #475569;
+  }
+}
+
+.indispo-info {
+  flex: 1;
+
+  .indispo-type {
+    font-weight: 600;
+    color: #1a237e;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .indispo-dates {
+    font-size: 0.9rem;
+    color: #475569;
+    margin-bottom: 0.25rem;
+
+    .indispo-days {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      font-weight: 500;
+      margin-left: 0.5rem;
+    }
+  }
+
+  .indispo-motif {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-style: italic;
+  }
+}
+
+// NOTE: .modal-overlay, .modal, .modal-header, .modal-body, .modal-footer sont dans _common.scss
+// NOTE: .form-group, .form-row sont dans _common.scss
+// NOTE: .alert, .alert-error sont dans _common.scss

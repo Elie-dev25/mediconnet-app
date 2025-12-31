@@ -1,0 +1,448 @@
+// Styles spécifiques au dashboard caissier
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/common';
+
+// Variables couleurs (utilise les variables partagées)
+$caisse-primary: $secondary-color;
+$caisse-success: $success-color;
+$caisse-warning: $warning-color;
+$caisse-danger: $error-color;
+$caisse-info: $info-color;
+
+.caisse-dashboard {
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// NOTE: .page-header, .btn-icon, .btn-primary, .btn-secondary, .btn-danger sont dans _common.scss
+
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; }
+
+.btn-link {
+  background: none; border: none; color: $caisse-primary; cursor: pointer;
+  font-size: 0.875rem; text-decoration: underline;
+  &:hover { color: darken($caisse-primary, 10%); }
+}
+
+// ==================== KPI GRID ====================
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+  @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+.kpi-card {
+  display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem;
+  background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid; transition: all 0.2s;
+  &:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+
+  &.revenue { border-color: $caisse-success; .kpi-icon { background: $success-light; color: $caisse-success; } }
+  &.pending { border-color: $caisse-warning; .kpi-icon { background: $warning-light; color: $caisse-warning; } }
+  &.cash { border-color: $caisse-primary; .kpi-icon { background: rgba($caisse-primary, 0.1); color: $caisse-primary; }
+    &.closed { border-color: #9ca3af; .kpi-icon { background: #f3f4f6; color: #6b7280; } }
+  }
+  &.refunds { border-color: $caisse-danger; .kpi-icon { background: $error-light; color: $caisse-danger; } }
+
+  .kpi-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kpi-content { display: flex; flex-direction: column; min-width: 0;
+    .kpi-value { font-size: 1.5rem; font-weight: 700; color: #1f2937; white-space: nowrap; }
+    .kpi-label { font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem; }
+    .kpi-sub { font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }
+  }
+}
+
+// ==================== MAIN GRID ====================
+.main-grid {
+  display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem;
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+}
+.left-column, .right-column { display: flex; flex-direction: column; gap: 1rem; }
+.left-column { gap: 1.5rem; }
+
+// ==================== PANELS ====================
+.panel {
+  background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); overflow: hidden;
+  .panel-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e5e7eb; background: #f9fafb;
+    h2 { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 600; color: #1f2937; margin: 0; }
+  }
+  .panel-body { padding: 1.25rem; }
+}
+
+.payment-panel .panel-header { background: linear-gradient(135deg, $caisse-primary 0%, #2563eb 100%); h2 { color: white; } }
+
+// ==================== PATIENT SEARCH ====================
+.patient-search {
+  margin-bottom: 1rem; position: relative;
+  label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem; }
+  .search-input-wrapper {
+    position: relative; display: flex; align-items: center;
+    lucide-icon { position: absolute; left: 12px; color: #9ca3af; }
+    input { width: 100%; padding: 0.75rem 2.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9375rem;
+      &:focus { outline: none; border-color: $caisse-primary; box-shadow: 0 0 0 3px rgba($caisse-primary, 0.1); }
+      &:disabled { background: #f3f4f6; }
+    }
+    .clear-btn { position: absolute; right: 8px; width: 28px; height: 28px; border-radius: 6px; border: none; background: #e5e7eb; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      &:hover { background: #d1d5db; }
+    }
+  }
+  .search-results {
+    position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb;
+    border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); z-index: 100; max-height: 240px; overflow-y: auto; margin-top: 4px;
+    .result-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; cursor: pointer;
+      &:hover { background: #f3f4f6; }
+      .patient-info { display: flex; flex-direction: column;
+        .name { font-weight: 500; color: #1f2937; }
+        .dossier { font-size: 0.8125rem; color: #6b7280; }
+      }
+      .badge { background: rgba($caisse-primary, 0.2); color: darken($caisse-primary, 10%); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+    }
+  }
+}
+
+// ==================== INVOICES ====================
+.patient-invoices {
+  margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;
+  .invoices-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; span { font-weight: 500; color: #374151; } }
+  .invoices-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; }
+  .invoice-item {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f9fafb;
+    border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    &:hover { border-color: $caisse-primary; }
+    &.selected { background: rgba($caisse-primary, 0.05); border-color: $caisse-primary; }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: $caisse-primary; }
+    .invoice-info { flex: 1; display: flex; flex-direction: column;
+      .invoice-num { font-weight: 500; color: #1f2937; }
+      .invoice-date { font-size: 0.8125rem; color: #6b7280; }
+    }
+    .invoice-amount { font-weight: 600; color: $caisse-primary; }
+  }
+}
+
+// ==================== PAYMENT FORM ====================
+.payment-form {
+  margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e5e7eb;
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;
+    @media (max-width: 640px) { grid-template-columns: 1fr; }
+  }
+  .form-group { margin-bottom: 1rem;
+    label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.375rem; }
+    input, select, textarea { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9375rem;
+      &:focus { outline: none; border-color: $caisse-primary; box-shadow: 0 0 0 3px rgba($caisse-primary, 0.1); }
+      &[readonly] { background: #f3f4f6; }
+    }
+  }
+  .rendu-display { padding: 0.625rem 0.875rem; background: $success-light; border: 1px solid $caisse-success; border-radius: 8px; font-weight: 600; color: $caisse-success; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+}
+
+// NOTE: .alert, .alert-error, .alert-success sont dans _common.scss
+
+// ==================== TRANSACTIONS TABLE ====================
+.transactions-table {
+  overflow-x: auto;
+  table { width: 100%; border-collapse: collapse;
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; background: #f9fafb; }
+    td { font-size: 0.875rem; color: #374151;
+      &.mono { font-family: 'Monaco', 'Consolas', monospace; font-size: 0.8125rem; }
+      &.amount { font-weight: 600; color: $caisse-success; }
+    }
+    tbody tr:hover { background: #f9fafb; }
+  }
+}
+
+.status-badge {
+  display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500;
+  &.status-pending { background: $warning-light; color: $caisse-warning; }
+  &.status-partial { background: $info-light; color: $caisse-info; }
+  &.status-paid { background: $success-light; color: $caisse-success; }
+  &.status-cancelled { background: $error-light; color: $caisse-danger; }
+}
+
+// ==================== WIDGETS ====================
+.widget {
+  background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); overflow: hidden;
+  .widget-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151; font-size: 0.875rem; }
+  .widget-body { padding: 1rem; }
+}
+
+.caisse-widget {
+  .widget-header { background: linear-gradient(135deg, $caisse-primary 0%, darken($caisse-primary, 10%) 100%); color: white; }
+  .session-info .session-row {
+    display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.875rem;
+    &:not(:last-child) { border-bottom: 1px solid #e5e7eb; }
+    &.total { font-weight: 600; color: $caisse-primary; background: rgba($caisse-primary, 0.05); margin: 0 -1rem; padding: 0.75rem 1rem; }
+    .highlight { font-weight: 600; color: $caisse-success; }
+  }
+  .session-closed { text-align: center; padding: 1.5rem; color: #6b7280;
+    lucide-icon { margin-bottom: 0.75rem; opacity: 0.5; }
+    p { margin-bottom: 1rem; }
+  }
+}
+
+.retard-list .retard-item {
+  display: flex; justify-content: space-between; align-items: center; padding: 0.625rem 0;
+  &:not(:last-child) { border-bottom: 1px solid #e5e7eb; }
+  .retard-info { display: flex; flex-direction: column;
+    .patient { font-weight: 500; color: #374151; font-size: 0.875rem; }
+    .delay { font-size: 0.75rem; color: $caisse-danger; }
+  }
+  .amount { font-weight: 600; color: $caisse-danger; font-size: 0.875rem; }
+}
+
+.repartition-list .repartition-item {
+  margin-bottom: 0.75rem;
+  .repartition-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 0.375rem;
+    .bar-fill { height: 100%; background: linear-gradient(90deg, $caisse-primary 0%, lighten($caisse-primary, 20%) 100%); border-radius: 4px; }
+  }
+  .repartition-info { display: flex; justify-content: space-between; font-size: 0.8125rem;
+    .mode { color: #374151; }
+    .percent { font-weight: 600; color: $caisse-primary; }
+  }
+}
+
+.quick-actions-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+  .quick-action {
+    display: flex; flex-direction: column; align-items: center; gap: 0.375rem; padding: 0.75rem;
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.75rem; color: #6b7280; cursor: pointer;
+    &:hover:not(:disabled) { background: white; border-color: $caisse-primary; color: $caisse-primary; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}
+
+// NOTE: .modal-overlay, .modal, .modal-header, .modal-body, .modal-footer sont dans _common.scss
+// Extensions spécifiques pour ce composant
+.caisse-modal {
+  max-width: 440px;
+  
+  .session-summary { 
+    background: #f9fafb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+    .summary-row { 
+      display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.875rem;
+      &:not(:last-child) { border-bottom: 1px solid #e5e7eb; }
+      &.total { font-weight: 600; color: $caisse-primary; }
+    }
+  }
+}
+
+// ==================== HELPERS ====================
+.no-data { text-align: center; color: #9ca3af; font-size: 0.875rem; padding: 1.5rem; }
+.loading { text-align: center; color: #6b7280; padding: 2rem; }
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+// ==================== FACTURES EN ATTENTE ====================
+.waiting-invoices-section {
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+
+    lucide-icon {
+      color: $caisse-warning;
+    }
+
+    .badge-count {
+      background: $caisse-warning;
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+  }
+
+  .waiting-invoices-list {
+    max-height: 350px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .waiting-invoice-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0fdfa;
+      border-color: $caisse-primary;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .invoice-left {
+      flex: 1;
+
+      .invoice-number {
+        font-weight: 600;
+        color: $caisse-primary;
+        font-size: 0.9rem;
+        font-family: 'Consolas', monospace;
+      }
+
+      .invoice-patient {
+        font-weight: 500;
+        color: #1f2937;
+        font-size: 0.875rem;
+        margin-top: 0.125rem;
+      }
+
+      .invoice-meta {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+
+        .dossier {
+          background: #e5e7eb;
+          padding: 0.125rem 0.375rem;
+          border-radius: 4px;
+        }
+      }
+    }
+
+    .invoice-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.375rem;
+
+      .amount {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .status-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+
+        &.en_attente {
+          background: $warning-light;
+          color: $caisse-warning;
+        }
+
+        &.partiel {
+          background: $info-light;
+          color: $caisse-info;
+        }
+      }
+    }
+  }
+}
+
+.empty-state, .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: #9ca3af;
+
+  lucide-icon {
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.loading-state {
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+// Récapitulatif paiement avec assurance
+.payment-summary {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0369a1;
+  }
+
+  .summary-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: 0.25rem 0;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .amount {
+      font-weight: 500;
+    }
+
+    &.assurance {
+      color: #059669;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin: 0.25rem 0;
+
+      .assurance-amount {
+        color: #059669;
+        font-weight: 600;
+      }
+    }
+
+    &.total {
+      border-top: 2px solid #0ea5e9;
+      padding-top: 0.75rem;
+      margin-top: 0.25rem;
+      font-weight: 600;
+
+      .patient-amount {
+        font-size: 1.1rem;
+        color: #0369a1;
+      }
+    }
+  }
+}

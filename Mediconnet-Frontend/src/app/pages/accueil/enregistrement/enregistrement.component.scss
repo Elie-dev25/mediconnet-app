@@ -1,0 +1,1423 @@
+// Styles de la page d'enregistrement - Workflow multi-étapes
+@use '../../../shared/styles/variables' as *;
+
+.enregistrement-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// Page Header
+.page-header {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.925rem;
+    margin-left: 2.5rem;
+  }
+}
+
+// Stepper
+.stepper {
+  margin-bottom: 2rem;
+  background: $bg-white;
+  border-radius: $radius-xl;
+  padding: 1.25rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+}
+
+.stepper-track {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  flex: 1;
+  max-width: 150px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(50% + 24px);
+    width: calc(100% - 48px);
+    height: 2px;
+    background: $border-light;
+    z-index: 0;
+  }
+
+  &:last-child::after {
+    display: none;
+  }
+
+  &.completed::after {
+    background: $success-color;
+  }
+
+  &.clickable {
+    cursor: pointer;
+  }
+
+  .step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    background: $bg-light;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all $transition-normal;
+    z-index: 1;
+    border: 2px solid $border-light;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    color: $text-muted;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  &.active {
+    .step-circle {
+      background: $primary-color;
+      color: $bg-white;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 4px rgba($primary-color, 0.2);
+    }
+    .step-label {
+      color: $primary-color;
+      font-weight: 600;
+    }
+  }
+
+  &.completed {
+    .step-circle {
+      background: $success-color;
+      color: $bg-white;
+      border-color: $success-color;
+    }
+    .step-label {
+      color: $success-color;
+    }
+  }
+}
+
+// Alerts
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: $radius-lg;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  &.alert-success {
+    background: $success-light;
+    color: darken($success-color, 25%);
+    border: 1px solid $success-color;
+  }
+
+  &.alert-error {
+    background: $error-light;
+    color: $error-color;
+    border: 1px solid $error-color;
+  }
+
+  .close-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: $radius-sm;
+    opacity: 0.7;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+// Step Content
+.step-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Step Card
+.step-card {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+
+  &.full-width {
+    max-width: none;
+  }
+}
+
+.step-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $border-light;
+
+  > lucide-icon {
+    color: $primary-color;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+
+  h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+
+  .btn-refresh {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: $bg-light;
+    border: 1px solid $border-light;
+    border-radius: $radius-md;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: $bg-white;
+      border-color: $primary-color;
+      color: $primary-color;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Search Wrapper
+.search-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+// Selected Patient Preview
+.selected-patient-preview {
+  background: $success-light;
+  border: 1px solid $success-color;
+  border-radius: $radius-lg;
+  padding: 1rem;
+  margin-top: 1rem;
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: $success-color;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .patient-avatar-small {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-full;
+    background: $success-color;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $bg-white;
+  }
+
+  .patient-info-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    strong {
+      color: $text-primary;
+      font-size: 1rem;
+    }
+
+    span {
+      color: $text-secondary;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+// Assurance Step Styles
+.existing-assurance-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: $info-light;
+  border: 1px solid $info-color;
+  border-radius: $radius-md;
+  margin-bottom: 1.5rem;
+
+  lucide-icon {
+    color: $info-color;
+    flex-shrink: 0;
+  }
+
+  span {
+    color: $info-color;
+    font-size: 0.9rem;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}
+
+.assurance-form {
+  .assurance-toggle {
+    margin-bottom: 1.5rem;
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 1rem 1.25rem;
+      background: $bg-light;
+      border: 2px solid $border-color;
+      border-radius: $radius-lg;
+      transition: all $transition-fast;
+
+      &:hover {
+        border-color: $primary-color;
+        background: $bg-white;
+      }
+
+      input[type="checkbox"] {
+        display: none;
+
+        &:checked + .toggle-switch {
+          background: $primary-color;
+
+          &::after {
+            transform: translateX(20px);
+          }
+        }
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: $border-color;
+        border-radius: 12px;
+        transition: background $transition-fast;
+        flex-shrink: 0;
+
+        &::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 20px;
+          height: 20px;
+          background: $bg-white;
+          border-radius: 50%;
+          transition: transform $transition-fast;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      .toggle-text {
+        font-weight: 500;
+        color: $text-primary;
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .assurance-details {
+    padding: 1.25rem;
+    background: $bg-light;
+    border-radius: $radius-lg;
+    margin-bottom: 1.5rem;
+    animation: slideDown 0.2s ease;
+  }
+
+  .no-assurance-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    background: $bg-light;
+    border-radius: $radius-lg;
+    color: $text-muted;
+
+    lucide-icon {
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Form
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: $text-primary;
+    font-size: 0.875rem;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid $border-light;
+    border-radius: $radius-lg;
+    font-size: 0.925rem;
+    color: $text-primary;
+    background: $bg-white;
+    transition: all $transition-fast;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &:disabled {
+      background: $bg-light;
+      cursor: not-allowed;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+.error-message {
+  margin-top: 0.375rem;
+  font-size: 0.8rem;
+  color: $error-color;
+}
+
+// Step Actions
+.step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid $border-light;
+  flex-wrap: wrap;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: $radius-lg;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.btn-secondary {
+  background: $bg-light;
+  color: $text-primary;
+  border: 1px solid $border-light;
+
+  &:hover:not(:disabled) {
+    background: $border-light;
+  }
+}
+
+.btn-primary {
+  background: $primary-color;
+  color: $bg-white;
+
+  &:hover:not(:disabled) {
+    background: $primary-dark;
+  }
+}
+
+.btn-success {
+  background: $success-color;
+  color: $bg-white;
+
+  &:hover:not(:disabled) {
+    background: darken($success-color, 8%);
+  }
+}
+
+.btn-outline-danger {
+  background: transparent;
+  color: $error-color;
+  border: 1px solid $error-color;
+
+  &:hover:not(:disabled) {
+    background: $error-light;
+  }
+}
+
+// Disponibilité Stats
+.disponibilite-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: $radius-lg;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  .stat-value {
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+
+  .stat-label {
+    color: inherit;
+    opacity: 0.8;
+  }
+
+  &.stat-disponible {
+    background: $success-light;
+    color: $success-color;
+  }
+
+  &.stat-occupe {
+    background: $warning-light;
+    color: $warning-color;
+  }
+
+  &.stat-absent {
+    background: $error-light;
+    color: $error-color;
+  }
+}
+
+// Loading
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: $text-muted;
+
+  p {
+    margin-top: 1rem;
+  }
+}
+
+// Empty Medecins
+.empty-medecins {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+
+  lucide-icon {
+    color: $text-muted;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    color: $text-secondary;
+  }
+}
+
+// Medecins Grid
+.medecins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.medecin-card {
+  background: $bg-white;
+  border: 2px solid $border-light;
+  border-radius: $radius-lg;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all $transition-normal;
+  position: relative;
+
+  &:hover:not(.disabled) {
+    border-color: $primary-light;
+    box-shadow: $shadow-md;
+  }
+
+  &.selected {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.2);
+    background: lighten($primary-light, 40%);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: $bg-light;
+  }
+
+  .medecin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .medecin-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-full;
+    background: linear-gradient(135deg, $primary-color, $secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $bg-white;
+  }
+
+  .medecin-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: $radius-full;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.status-disponible {
+      background: $success-light;
+      color: $success-color;
+    }
+
+    &.status-occupe {
+      background: $warning-light;
+      color: $warning-color;
+    }
+
+    &.status-absent {
+      background: $error-light;
+      color: $error-color;
+    }
+  }
+
+  .medecin-info {
+    margin-bottom: 0.75rem;
+
+    h4 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .specialite {
+      margin: 0;
+      font-size: 0.85rem;
+      color: $primary-color;
+      font-weight: 500;
+    }
+
+    .service {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.8rem;
+      color: $text-secondary;
+    }
+  }
+
+  .medecin-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: $text-secondary;
+      background: $bg-light;
+      padding: 0.25rem 0.5rem;
+      border-radius: $radius-sm;
+
+      &.temps-attente {
+        background: $warning-light;
+        color: $warning-color;
+      }
+    }
+  }
+
+  .medecin-raison {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: $text-muted;
+    font-style: italic;
+  }
+
+  .select-indicator {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: $primary-color;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+}
+
+// Recap Section
+.recap-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid $border-light;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
+
+.recap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.recap-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: $bg-light;
+  border-radius: $radius-lg;
+
+  .recap-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: $radius-md;
+    background: $primary-color;
+    color: $bg-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .recap-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+
+    .recap-label {
+      font-size: 0.75rem;
+      color: $text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    strong {
+      font-size: 0.95rem;
+      color: $text-primary;
+    }
+
+    .recap-detail {
+      font-size: 0.8rem;
+      color: $text-secondary;
+    }
+  }
+}
+
+// Confirmation Form
+.confirmation-form {
+  .form-group:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+// Animations
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@media (max-width: $breakpoint-md) {
+  .enregistrement-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    h1 { font-size: 1.25rem; }
+    p { margin-left: 0; }
+  }
+
+  .stepper-step {
+    .step-label { font-size: 0.65rem; }
+    &::after { display: none; }
+  }
+
+  .step-card { padding: 1.25rem; }
+
+  .step-actions {
+    flex-direction: column-reverse;
+    button { width: 100%; justify-content: center; }
+  }
+
+  .medecins-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .disponibilite-stats {
+    flex-direction: column;
+    .stat-item { width: 100%; }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .enregistrement-page { padding: 0.75rem; }
+  .step-card { padding: 1rem; }
+  .stepper { padding: 0.75rem; }
+}
+
+// Modal de confirmation
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: $shadow-xl;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.success-modal {
+  .modal-header.success-header {
+    background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
+    color: $bg-white;
+    padding: 2rem;
+    text-align: center;
+    border-radius: $radius-xl $radius-xl 0 0;
+
+    .success-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: $radius-full;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+
+      lucide-icon {
+        color: $bg-white;
+      }
+    }
+
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .confirmation-ticket {
+    background: $bg-light;
+    border: 2px dashed $border-color;
+    border-radius: $radius-lg;
+    padding: 1.25rem;
+
+    .ticket-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: $primary-color;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid $border-light;
+    }
+
+    .ticket-number {
+      text-align: center;
+      margin-bottom: 1.25rem;
+      padding: 1rem;
+      background: $bg-white;
+      border-radius: $radius-md;
+
+      .label {
+        display: block;
+        font-size: 0.75rem;
+        color: $text-muted;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+      }
+
+      .number {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $primary-color;
+        font-family: monospace;
+      }
+    }
+
+    .ticket-details {
+      margin-bottom: 1.25rem;
+
+      .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid $border-light;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        lucide-icon {
+          color: $text-muted;
+          flex-shrink: 0;
+        }
+
+        .label {
+          font-size: 0.8rem;
+          color: $text-secondary;
+          min-width: 80px;
+        }
+
+        .value {
+          font-weight: 500;
+          color: $text-primary;
+          flex: 1;
+        }
+      }
+    }
+
+    .ticket-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: $primary-color;
+      color: $bg-white;
+      border-radius: $radius-md;
+      margin-bottom: 1rem;
+
+      .label {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .amount {
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+    }
+
+    .ticket-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: $text-muted;
+      text-align: center;
+      justify-content: center;
+
+      lucide-icon {
+        color: $warning-color;
+      }
+    }
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem 1.5rem;
+
+    button {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem;
+      border: none;
+      border-radius: $radius-lg;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all $transition-fast;
+    }
+
+    .btn-secondary {
+      background: $bg-light;
+      color: $text-primary;
+      border: 1px solid $border-light;
+
+      &:hover {
+        background: $border-light;
+      }
+    }
+
+    .btn-primary {
+      background: $primary-color;
+      color: $bg-white;
+
+      &:hover {
+        background: $primary-dark;
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .enregistrement-page {
+    padding: 0;
+  }
+
+  .page-header,
+  .stepper,
+  .step-content,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .modal-content.success-modal {
+    position: static;
+    box-shadow: none;
+    max-width: 100%;
+    display: block !important;
+
+    .modal-actions {
+      display: none;
+    }
+  }
+
+  .confirmation-ticket {
+    border: 1px solid #000;
+    background: #fff !important;
+  }
+}
+
+// Badge paiement valide
+.paiement-valide-badge {
+  margin-bottom: 1.5rem;
+  
+  .badge-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.05));
+    border: 2px solid $success-color;
+    border-radius: $radius-lg;
+    
+    lucide-icon {
+      color: $success-color;
+      flex-shrink: 0;
+    }
+    
+    .badge-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      
+      strong {
+        font-size: 1.1rem;
+        color: darken($success-color, 10%);
+      }
+      
+      span {
+        font-size: 0.925rem;
+        color: $text-secondary;
+      }
+      
+      small {
+        font-size: 0.8rem;
+        color: $text-muted;
+        font-family: monospace;
+      }
+    }
+  }
+}
+
+// Loading check
+.loading-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  
+  lucide-icon {
+    color: $primary-color;
+  }
+}
+
+// ==================== CRÉNEAUX MÉDECIN ====================
+.creneaux-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba($primary-color, 0.03), rgba($primary-color, 0.08));
+  border-radius: $radius-lg;
+  border: 1px solid rgba($primary-color, 0.15);
+}
+
+.creneaux-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  
+  lucide-icon { color: $primary-color; }
+  
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-primary;
+    flex: 1;
+  }
+  
+  .cout-badge {
+    background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+  }
+}
+
+.creneaux-legende {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+}
+
+.legende-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: $text-secondary;
+}
+
+.legende-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  
+  &.disponible { background: #22c55e; }
+  &.occupe { background: #ef4444; }
+  &.passe { background: #9ca3af; }
+}
+
+.creneaux-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.creneau-slot {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  text-align: center;
+  
+  &.disponible {
+    background: #dcfce7;
+    color: #16a34a;
+    border-color: #22c55e;
+    
+    &:hover:not(:disabled) {
+      background: #22c55e;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+  }
+  
+  &.occupe {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #ef4444;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  &.passe {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  &.selected {
+    background: $primary-color !important;
+    color: white !important;
+    border-color: darken($primary-color, 10%) !important;
+    box-shadow: 0 4px 12px rgba($primary-color, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.empty-creneaux {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: $text-muted;
+  
+  lucide-icon { opacity: 0.5; }
+  p { margin: 0; font-size: 0.9rem; }
+}
+
+.creneau-selected-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.05));
+  border: 1px solid $success-color;
+  border-radius: $radius-md;
+  color: darken($success-color, 10%);
+  font-size: 0.9rem;
+  
+  lucide-icon { color: $success-color; }
+  strong { font-weight: 600; }
+}
+
+.loading-container.small {
+  padding: 1rem;
+  
+  lucide-icon { width: 24px; height: 24px; }
+  p { font-size: 0.85rem; margin: 0.5rem 0 0; }
+}
+
+// Champ prix lecture seule
+.readonly-input {
+  background-color: #f3f4f6 !important;
+  cursor: not-allowed;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.label-info {
+  font-size: 0.75rem;
+  color: $text-muted;
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+
+.prix-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: $text-muted;
+  
+  lucide-icon { color: $primary-color; }
+}
+
+.recap-icon-price {
+  background: linear-gradient(135deg, rgba($success-color, 0.15), rgba($success-color, 0.1)) !important;
+  
+  lucide-icon { color: $success-color !important; }
+}
+
+.price-highlight {
+  color: $success-color !important;
+  font-size: 1.1rem;
+}

@@ -1,0 +1,121 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="'infirmier'"
+      subtitle="Rechercher et consulter les dossiers patients">
+    </app-welcome-banner>
+
+    <!-- Search Section -->
+    <section class="search-section">
+      <div class="section-header">
+        <h2>
+          <lucide-icon name="search" [size]="20"></lucide-icon>
+          Rechercher un patient
+        </h2>
+        <button class="icon-btn" type="button" (click)="loadRecentPatients()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+        </button>
+      </div>
+      
+      <div class="search-wrapper">
+        <app-patient-search 
+          [showRecentOnLoad]="false"
+          (patientSelected)="onPatientSelected($event)">
+        </app-patient-search>
+      </div>
+
+      <div class="search-info" *ngIf="searchPerformed && !isLoading">
+        <lucide-icon name="info" [size]="16"></lucide-icon>
+        <span>{{ filteredPatients.length }} résultat(s) trouvé(s)</span>
+      </div>
+    </section>
+
+    <!-- Patients Section -->
+    <section class="patients-section">
+      <div class="section-header">
+        <h2>
+          <lucide-icon name="users" [size]="20"></lucide-icon>
+          Patients récents
+        </h2>
+        <span class="badge badge-info" *ngIf="!isLoading && filteredPatients.length > 0">
+          {{ filteredPatients.length }} patient(s)
+        </span>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoading">
+        <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+        <span>Chargement des patients...</span>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-state" *ngIf="errorMessage && !isLoading">
+        <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+        <button class="btn btn-primary btn-sm" (click)="loadRecentPatients()">
+          <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+          Réessayer
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading && !errorMessage && filteredPatients.length === 0">
+        <lucide-icon name="user-x" [size]="48"></lucide-icon>
+        <h3>Aucun patient trouvé</h3>
+        <p>Utilisez la recherche ci-dessus pour trouver un patient</p>
+      </div>
+
+      <!-- Patients List -->
+      <div class="patients-list" *ngIf="!isLoading && !errorMessage && filteredPatients.length > 0">
+        <div class="patient-card" *ngFor="let patient of filteredPatients">
+          <div class="patient-main">
+            <div class="patient-avatar">
+              <lucide-icon name="user" [size]="22"></lucide-icon>
+            </div>
+            <div class="patient-info">
+              <div class="patient-name">{{ patient.prenom }} {{ patient.nom }}</div>
+              <div class="badges-row">
+                <span class="badge badge-dossier" *ngIf="patient.numeroDossier">
+                  <lucide-icon name="folder" [size]="12"></lucide-icon>
+                  {{ patient.numeroDossier }}
+                </span>
+                <span class="badge badge-info" *ngIf="patient.dateNaissance">
+                  {{ calculateAge(patient.dateNaissance) }} ans
+                </span>
+                <span class="badge badge-sexe" *ngIf="patient.sexe">
+                  {{ patient.sexe === 'M' ? 'H' : 'F' }}
+                </span>
+                <span class="badge badge-blood" *ngIf="patient.groupeSanguin">
+                  <lucide-icon name="droplet" [size]="12"></lucide-icon>
+                  {{ patient.groupeSanguin }}
+                </span>
+              </div>
+              <div class="patient-contact">
+                <span *ngIf="patient.telephone">
+                  <lucide-icon name="phone" [size]="12"></lucide-icon>
+                  {{ patient.telephone }}
+                </span>
+                <span *ngIf="patient.email">
+                  <lucide-icon name="mail" [size]="12"></lucide-icon>
+                  {{ patient.email }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="patient-actions">
+            <button class="btn btn-outline btn-sm" (click)="viewPatientDetails(patient)">
+              <lucide-icon name="eye" [size]="16"></lucide-icon>
+              Voir
+            </button>
+            <button class="btn btn-primary btn-sm" (click)="takeVitals(patient)">
+              <lucide-icon name="activity" [size]="16"></lucide-icon>
+              Paramètres
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</app-dashboard-layout>

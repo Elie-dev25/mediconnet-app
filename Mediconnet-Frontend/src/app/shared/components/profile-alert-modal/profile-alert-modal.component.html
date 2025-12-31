@@ -1,0 +1,39 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)" @fadeIn>
+  <div class="modal-container" @slideIn>
+    <button class="close-btn" (click)="onCancel()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+    
+    <div class="modal-header">
+      <div class="icon-wrapper warning">
+        <lucide-icon name="alert-circle" [size]="32"></lucide-icon>
+      </div>
+      <h2>Profil incomplet</h2>
+    </div>
+    
+    <div class="modal-body">
+      <p class="message">
+        Bienvenue sur MediConnect ! Pour profiter pleinement de nos services, 
+        veuillez compléter votre profil avec vos informations personnelles.
+      </p>
+      
+      <div class="missing-fields" *ngIf="missingFields.length > 0">
+        <p class="fields-title">Informations manquantes :</p>
+        <ul>
+          <li *ngFor="let field of missingFields">{{ field }}</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="onCancel()">
+        Plus tard
+      </button>
+      <button class="btn btn-primary" (click)="onComplete()">
+        <lucide-icon name="user-cog" [size]="18"></lucide-icon>
+        Compléter mon profil
+        <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+      </button>
+    </div>
+  </div>
+</div>

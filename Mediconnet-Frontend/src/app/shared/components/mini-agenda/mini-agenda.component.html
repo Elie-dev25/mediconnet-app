@@ -1,0 +1,143 @@
+<div class="mini-agenda">
+  <!-- Header avec navigation -->
+  <div class="agenda-header">
+    <div class="header-title">
+      <lucide-icon name="calendar" [size]="20"></lucide-icon>
+      <h3>Mon Agenda</h3>
+      <span *ngIf="isCurrentWeek()" class="current-week-badge">Semaine en cours</span>
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn" (click)="previousWeek()" title="Semaine précédente">
+        <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+      </button>
+      <button class="today-btn" (click)="goToToday()" [class.active]="isCurrentWeek()">Aujourd'hui</button>
+      <button class="nav-btn" (click)="nextWeek()" title="Semaine suivante">
+        <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="week-range">{{ getWeekRange() }}</div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+    <span>Chargement...</span>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-state">
+    <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+    <span>{{ error }}</span>
+    <button class="retry-btn" (click)="loadAgenda()">Réessayer</button>
+  </div>
+
+  <!-- Agenda Grid -->
+  <div *ngIf="!isLoading && !error" class="agenda-content">
+    <!-- Jours de la semaine -->
+    <div class="days-grid">
+      <div 
+        *ngFor="let jour of jours; trackBy: trackByDate"
+        class="day-column"
+        [class.today]="isToday(jour.date)">
+        
+        <div class="day-header">
+          <span class="day-name">{{ formatDayName(jour.date) }}</span>
+          <span class="day-number" [class.today-number]="isToday(jour.date)">
+            {{ formatDayNumber(jour.date) }}
+          </span>
+        </div>
+
+        <div class="day-stats">
+          <span class="stat disponible" title="Disponibles">
+            <lucide-icon name="check" [size]="12"></lucide-icon>
+            {{ jour.totalDisponibles }}
+          </span>
+          <span class="stat occupe" title="Occupés">
+            <lucide-icon name="user" [size]="12"></lucide-icon>
+            {{ jour.totalOccupes }}
+          </span>
+        </div>
+
+        <div class="slots-list">
+          <div 
+            *ngFor="let slot of jour.slots; trackBy: trackBySlot"
+            class="slot-item"
+            [ngClass]="getSlotClass(slot.statut)"
+            [class.clickable]="slot.statut !== 'passe'"
+            (click)="onSlotClick(slot)"
+            [title]="slot.raison || (slot.patientNom ? slot.patientNom + ' ' + slot.patientPrenom : '')">
+            
+            <span class="slot-time">{{ formatTime(slot.dateHeure) }}</span>
+            <lucide-icon [name]="getSlotIcon(slot.statut)" [size]="12"></lucide-icon>
+            
+            <span *ngIf="slot.patientNom" class="slot-patient">
+              {{ slot.patientNom }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message si pas de créneaux -->
+    <div *ngIf="jours.length === 0" class="empty-agenda">
+      <lucide-icon name="calendar-x" [size]="32"></lucide-icon>
+      <p>Aucun créneau configuré pour cette période</p>
+    </div>
+  </div>
+
+  <!-- Légende -->
+  <div *ngIf="showLegend && !isLoading && !error" class="agenda-legend">
+    <div class="legend-item">
+      <span class="legend-dot disponible"></span>
+      <span>Disponible</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot occupe"></span>
+      <span>Occupé</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot indisponible"></span>
+      <span>Indisponible</span>
+    </div>
+  </div>
+
+  <!-- Prochain RDV -->
+  <div *ngIf="prochainRdv && !isLoading" class="prochain-rdv">
+    <div class="rdv-header">
+      <lucide-icon name="clock" [size]="16"></lucide-icon>
+      <span>Prochain rendez-vous</span>
+    </div>
+    <div class="rdv-card" (click)="onRdvClick(prochainRdv)">
+      <div class="rdv-time">{{ formatTime(prochainRdv.dateHeure) }}</div>
+      <div class="rdv-patient">{{ prochainRdv.patientPrenom }} {{ prochainRdv.patientNom }}</div>
+      <div *ngIf="prochainRdv.motif" class="rdv-motif">{{ prochainRdv.motif }}</div>
+    </div>
+  </div>
+
+  <!-- RDV de la période -->
+  <div *ngIf="rdvPeriode.length > 0 && !isLoading" class="rdv-periode">
+    <div class="section-title">
+      <lucide-icon name="calendar-check" [size]="16"></lucide-icon>
+      <span>RDV cette semaine ({{ rdvPeriode.length }})</span>
+    </div>
+    <div class="rdv-list">
+      <div 
+        *ngFor="let rdv of rdvPeriode" 
+        class="rdv-item"
+        [class.completed]="rdv.statut === 'termine'"
+        [class.cancelled]="rdv.statut === 'annule'"
+        (click)="onRdvClick(rdv)">
+        <span class="rdv-date">{{ formatDayName(rdv.dateHeure) }} {{ formatDayNumber(rdv.dateHeure) }}</span>
+        <span class="rdv-time">{{ formatTime(rdv.dateHeure) }}</span>
+        <span class="rdv-patient">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State pour la période -->
+  <div *ngIf="rdvPeriode.length === 0 && !isLoading && !error" class="empty-today">
+    <lucide-icon name="calendar" [size]="24"></lucide-icon>
+    <span>Aucun rendez-vous cette semaine</span>
+  </div>
+</div>

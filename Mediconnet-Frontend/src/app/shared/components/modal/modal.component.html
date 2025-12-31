@@ -1,0 +1,24 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)" @fadeIn>
+  <div class="modal-container" [ngClass]="getSizeClass()" @slideIn (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header" *ngIf="showHeader">
+      <h2 class="modal-title">
+        <lucide-icon *ngIf="icon" [name]="icon" [size]="24"></lucide-icon>
+        {{ title }}
+      </h2>
+      <button class="modal-close-btn" type="button" (click)="close()" aria-label="Fermer">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      <ng-content></ng-content>
+    </div>
+
+    <!-- Footer (optional) -->
+    <div class="modal-footer" *ngIf="showFooter">
+      <ng-content select="[modal-footer]"></ng-content>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,313 @@
+@use '../../styles/variables' as *;
+
+.parametres-form {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+
+  &.compact {
+    padding: 1rem;
+    box-shadow: none;
+    border: 1px solid $border-light;
+  }
+}
+
+.form-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $border-light;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.5rem;
+  }
+
+  .patient-info {
+    font-size: 0.9rem;
+    color: $text-secondary;
+    margin: 0;
+
+    strong {
+      color: $primary-color;
+    }
+  }
+}
+
+// Alertes
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-radius: $radius-md;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+
+  &.alert-error {
+    background: $error-light;
+    color: $error-color;
+    border: 1px solid rgba($error-color, 0.2);
+  }
+
+  &.alert-success {
+    background: $success-light;
+    color: $success-color;
+    border: 1px solid rgba($success-color, 0.2);
+  }
+}
+
+// Grille de formulaire
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid $border-light;
+    border-radius: $radius-md;
+    font-size: 0.95rem;
+    transition: all $transition-normal;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+
+    &.is-error {
+      border-color: $error-color;
+      background: $error-light;
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+
+  .error-text {
+    font-size: 0.8rem;
+    color: $error-color;
+    margin-top: 0.375rem;
+  }
+
+  &.calculated {
+    .calculated-value {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: $bg-gray;
+      border-radius: $radius-md;
+      border: 2px solid $border-light;
+
+      .value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: $text-primary;
+      }
+
+      .interpretation {
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Input avec statut
+.input-with-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  input {
+    flex: 1;
+  }
+}
+
+// Badge de statut
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: $radius-full;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.status-success {
+    background: $success-light;
+    color: $success-color;
+  }
+
+  &.status-warning {
+    background: $warning-light;
+    color: $warning-color;
+  }
+
+  &.status-danger {
+    background: $error-light;
+    color: $error-color;
+  }
+
+  &.status-info {
+    background: $info-light;
+    color: $info-color;
+  }
+
+  &.status-gray {
+    background: $bg-gray;
+    color: $text-muted;
+  }
+}
+
+// Groupe tension
+.tension-group {
+  grid-column: span 2;
+
+  @media (max-width: $breakpoint-md) {
+    grid-column: span 1;
+  }
+}
+
+.tension-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tension-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  input {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .tension-label {
+    font-size: 0.75rem;
+    color: $text-muted;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+}
+
+.tension-separator {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $text-muted;
+  padding: 0 0.25rem;
+}
+
+// Actions
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $border-light;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: $radius-md;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all $transition-normal;
+  border: none;
+
+  &.btn-primary {
+    background: $primary-color;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $primary-dark;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-secondary {
+    background: $bg-gray;
+    color: $text-secondary;
+    border: 2px solid $border-light;
+
+    &:hover {
+      background: darken($bg-gray, 3%);
+      border-color: $border-color;
+    }
+  }
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@media (max-width: $breakpoint-sm) {
+  .parametres-form {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tension-group {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}

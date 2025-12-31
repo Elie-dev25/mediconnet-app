@@ -1,0 +1,555 @@
+@use '../../../shared/styles/variables' as *;
+
+.assurances-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// Header
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  .header-left {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: $text-secondary;
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: $primary-color;
+  color: $bg-white;
+  border: none;
+  border-radius: $radius-lg;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $primary-dark;
+  }
+}
+
+// Filters
+.filters-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+    lucide-icon {
+      color: $text-muted;
+    }
+  }
+
+  select {
+    padding: 0.5rem 1rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    background: $bg-white;
+    font-size: 0.9rem;
+    min-width: 150px;
+  }
+
+  .btn-icon {
+    padding: 0.5rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background: $bg-white;
+    cursor: pointer;
+
+    &:hover {
+      background: $bg-light;
+    }
+  }
+}
+
+// Loading
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: $text-muted;
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    margin-top: 0.75rem;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Grid
+.assurances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.assurance-card {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  transition: all $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $primary-light;
+  }
+
+  &.inactive {
+    opacity: 0.7;
+    background: $bg-light;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid $border-light;
+
+    .assurance-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, $primary-light, $primary-color);
+      border-radius: $radius-lg;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $bg-white;
+      flex-shrink: 0;
+    }
+
+    .assurance-info {
+      flex: 1;
+
+      h3 {
+        margin: 0 0 0.375rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .type-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border-radius: $radius-sm;
+        text-transform: uppercase;
+
+        &.privee {
+          background: #dbeafe;
+          color: #2563eb;
+        }
+
+        &.publique {
+          background: #dcfce7;
+          color: #16a34a;
+        }
+
+        &.mutuelle {
+          background: #fef3c7;
+          color: #d97706;
+        }
+
+        &.micro_assurance {
+          background: #fce7f3;
+          color: #db2777;
+        }
+
+        &.programme_public {
+          background: #e0e7ff;
+          color: #4f46e5;
+        }
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.25rem;
+
+      .btn-icon-sm {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        border-radius: $radius-sm;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $text-muted;
+        transition: all $transition-fast;
+
+        &:hover {
+          background: $bg-light;
+          color: $primary-color;
+        }
+
+        &.danger:hover {
+          background: $error-light;
+          color: $error-color;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    padding: 0.875rem 1rem;
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: $text-secondary;
+      margin-bottom: 0.375rem;
+
+      lucide-icon {
+        color: $text-muted;
+      }
+    }
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: $bg-light;
+
+    .patients-count {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      color: $text-muted;
+    }
+
+    .status-indicator {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.125rem 0.5rem;
+      border-radius: $radius-sm;
+      background: $error-light;
+      color: $error-color;
+
+      &.active {
+        background: $success-light;
+        color: $success-color;
+      }
+    }
+  }
+}
+
+// Empty state
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: $text-muted;
+
+  lucide-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0 0 1.5rem;
+  }
+}
+
+// Modal
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid $border-light;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: $radius-sm;
+    color: $text-muted;
+
+    &:hover {
+      background: $bg-light;
+      color: $text-primary;
+    }
+  }
+}
+
+// Stepper
+.modal-stepper {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: $bg-light;
+  border-bottom: 1px solid $border-light;
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all $transition-fast;
+
+    &.active, &.completed {
+      opacity: 1;
+    }
+
+    &.active .step-icon {
+      background: $primary-color;
+      color: $bg-white;
+    }
+
+    &.completed .step-icon {
+      background: $success-color;
+      color: $bg-white;
+    }
+
+    .step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: $border-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-muted;
+    }
+
+    .step-title {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+  }
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: $radius-md;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+
+    &.alert-error {
+      background: $error-light;
+      color: $error-color;
+    }
+
+    &.alert-success {
+      background: $success-light;
+      color: $success-color;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $text-primary;
+      margin-bottom: 0.375rem;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid $border-color;
+      border-radius: $radius-md;
+      font-size: 0.9rem;
+      transition: border-color $transition-fast;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+    }
+
+    &.checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        width: auto;
+      }
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    @media (max-width: 500px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid $border-light;
+  background: $bg-light;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: $bg-white;
+  color: $text-primary;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $bg-light;
+  }
+}
+
+.btn-success {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: $success-color;
+  color: $bg-white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: darken($success-color, 5%);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

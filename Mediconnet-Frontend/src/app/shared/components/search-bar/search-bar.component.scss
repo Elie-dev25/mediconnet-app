@@ -1,0 +1,91 @@
+@use '../../styles/variables' as *;
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0 1rem;
+  height: 48px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+  max-width: 400px;
+  width: 100%;
+
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  &.focused {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+  transition: color 0.2s;
+
+  .focused & {
+    color: $primary-color;
+  }
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: $text-dark;
+  background: transparent;
+  height: 100%;
+  min-width: 0;
+
+  &::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+  }
+}
+
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #6b7280;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #e5e7eb;
+    color: $text-dark;
+  }
+}
+
+// Variante compacte pour les filtres
+:host(.compact) .search-bar {
+  height: 40px;
+  border-radius: 10px;
+
+  .search-input {
+    font-size: 0.875rem;
+  }
+}
+
+// Variante pleine largeur
+:host(.full-width) .search-bar {
+  max-width: 100%;
+}

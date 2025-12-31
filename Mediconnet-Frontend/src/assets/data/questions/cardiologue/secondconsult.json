@@ -1,0 +1,39 @@
+{
+  "specialiteId": 4,
+  "specialiteNom": "Cardiologie",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "card-s1",
+      "texte": "Comment vous sentez-vous depuis la dernière consultation ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "card-s2",
+      "texte": "Avez-vous eu des épisodes de douleurs thoraciques ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "card-s3",
+      "texte": "Prenez-vous régulièrement vos médicaments ?",
+      "type": "choix",
+      "options": ["Oui", "Parfois j'oublie", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "card-s4",
+      "texte": "Avez-vous noté des effets secondaires ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "card-s5",
+      "texte": "Votre activité physique a-t-elle changé ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="patients-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>
+          <lucide-icon name="users" [size]="28"></lucide-icon>
+          Mes Patients
+        </h1>
+        <p class="subtitle">Liste de vos patients et leur historique</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid" *ngIf="stats">
+      <div class="stat-card">
+        <div class="stat-icon total">
+          <lucide-icon name="users" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.totalPatients }}</span>
+          <span class="stat-label">Total patients</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon new">
+          <lucide-icon name="user" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.nouveauxCeMois }}</span>
+          <span class="stat-label">Nouveaux ce mois</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon scheduled">
+          <lucide-icon name="calendar" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.avecRdvPlanifie }}</span>
+          <span class="stat-label">Avec RDV planifié</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barre de recherche -->
+    <div class="search-section">
+      <div class="search-box large">
+        <lucide-icon name="search" [size]="20"></lucide-icon>
+        <input 
+          type="text" 
+          placeholder="Rechercher par nom, prénom, N° dossier ou téléphone..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+          (input)="onSearch()">
+      </div>
+    </div>
+
+    <!-- Liste des patients -->
+    <section class="patients-list">
+      <div *ngIf="isLoading" class="loading">
+        <lucide-icon name="refresh-cw" [size]="24" class="spinning"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div *ngIf="!isLoading && filteredPatients.length === 0" class="empty-state">
+        <lucide-icon name="users" [size]="48"></lucide-icon>
+        <p>Aucun patient trouvé</p>
+      </div>
+
+      <div class="patient-card" *ngFor="let patient of filteredPatients" (click)="openPatientDetail(patient)">
+        <div class="patient-avatar">
+          <lucide-icon name="user" [size]="24"></lucide-icon>
+        </div>
+
+        <div class="patient-info">
+          <span class="patient-name">{{ patient.prenom }} {{ patient.nom }}</span>
+          <div class="patient-meta">
+            <span *ngIf="patient.numeroDossier" class="meta-item">
+              <lucide-icon name="file-text" [size]="12"></lucide-icon>
+              {{ patient.numeroDossier }}
+            </span>
+            <span *ngIf="patient.age" class="meta-item">
+              {{ patient.age }} ans
+            </span>
+            <span *ngIf="patient.sexe" class="meta-item">
+              {{ getSexeLabel(patient.sexe) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="patient-contact">
+          <span *ngIf="patient.telephone" class="contact-item">
+            <lucide-icon name="phone" [size]="14"></lucide-icon>
+            {{ patient.telephone }}
+          </span>
+          <span *ngIf="patient.email" class="contact-item email">
+            <lucide-icon name="mail" [size]="14"></lucide-icon>
+            {{ patient.email }}
+          </span>
+        </div>
+
+        <div class="patient-visits">
+          <div class="visit-info">
+            <span class="visit-label">Dernière visite</span>
+            <span class="visit-value">{{ getRelativeTime(patient.derniereVisite) }}</span>
+          </div>
+          <div class="visit-info" *ngIf="patient.prochaineVisite">
+            <span class="visit-label">Prochaine</span>
+            <span class="visit-value future">{{ getFutureTime(patient.prochaineVisite) }}</span>
+          </div>
+        </div>
+
+        <div class="patient-stats">
+          <div class="stat-badge">
+            <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+            {{ patient.nombreConsultations }}
+          </div>
+        </div>
+
+        <div class="patient-actions">
+          <button class="btn-dossier" (click)="requestDossierAccess(patient, $event)" title="Voir le dossier patient">
+            <lucide-icon name="folder-open" [size]="16"></lucide-icon>
+            Dossier
+          </button>
+        </div>
+
+        <div class="patient-arrow">
+          <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Panneau Fiche Patient (composant partagé) -->
+  <app-fiche-patient-panel
+    [patientId]="selectedPatientId"
+    [isOpen]="isDetailOpen"
+    (close)="closeDetail()">
+  </app-fiche-patient-panel>
+
+  <!-- Modale Validation Code Email -->
+  <div class="code-validation-modal" *ngIf="showCodeModal" (click)="closeCodeModal()">
+    <div class="code-modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <lucide-icon name="shield-check" [size]="20"></lucide-icon>
+          Validation d'accès au dossier
+        </h3>
+        <button class="btn-close" (click)="closeCodeModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="code-info" *ngIf="!codeSent">
+          <lucide-icon name="mail" [size]="48"></lucide-icon>
+          <p>Pour accéder au dossier de <strong>{{ pendingPatient?.prenom }} {{ pendingPatient?.nom }}</strong>, un code de validation à 5 chiffres va être envoyé à l'adresse email du patient.</p>
+          <button class="btn btn-primary" (click)="sendValidationCode()" [disabled]="isSendingCode">
+            <lucide-icon name="send" [size]="16" *ngIf="!isSendingCode"></lucide-icon>
+            <lucide-icon name="loader-2" [size]="16" class="spinning" *ngIf="isSendingCode"></lucide-icon>
+            {{ isSendingCode ? 'Envoi en cours...' : 'Envoyer le code' }}
+          </button>
+        </div>
+
+        <div class="code-input-section" *ngIf="codeSent">
+          <lucide-icon name="check-circle" [size]="48" class="success-icon"></lucide-icon>
+          <p>Un code a été envoyé à <strong>{{ pendingPatient?.email || 'l\'email du patient' }}</strong></p>
+          
+          <div class="code-input-container">
+            <input 
+              type="text" 
+              [(ngModel)]="validationCode" 
+              placeholder="Entrez le code à 5 chiffres"
+              maxlength="5"
+              pattern="[0-9]*"
+              class="code-input"
+              (keyup.enter)="verifyCode()">
+          </div>
+          
+          <div class="code-error" *ngIf="codeError">
+            <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+            {{ codeError }}
+          </div>
+
+          <div class="code-actions">
+            <button class="btn btn-secondary" (click)="sendValidationCode()" [disabled]="isSendingCode">
+              <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+              Renvoyer le code
+            </button>
+            <button class="btn btn-primary" (click)="verifyCode()" [disabled]="isVerifyingCode || validationCode.length !== 5">
+              <lucide-icon name="check" [size]="16" *ngIf="!isVerifyingCode"></lucide-icon>
+              <lucide-icon name="loader-2" [size]="16" class="spinning" *ngIf="isVerifyingCode"></lucide-icon>
+              {{ isVerifyingCode ? 'Vérification...' : 'Valider' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>

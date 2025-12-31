@@ -1,0 +1,537 @@
+<app-dashboard-layout 
+  sidebarTitle="Espace Caisse" 
+  [menuItems]="menuItems">
+  
+  <div class="caisse-dashboard">
+    <!-- Header avec titre et actions -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Tableau de bord Caisse</h1>
+        <p class="subtitle">Bienvenue, {{ userName }}</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+        @if (!sessionActive) {
+          <button class="btn-primary" (click)="openOuvrirCaisseModal()">
+            <lucide-icon name="unlock" [size]="18"></lucide-icon>
+            Ouvrir la caisse
+          </button>
+        } @else {
+          <button class="btn-danger" (click)="openFermerCaisseModal()">
+            <lucide-icon name="lock" [size]="18"></lucide-icon>
+            Fermer la caisse
+          </button>
+        }
+      </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card revenue">
+        <div class="kpi-icon">
+          <lucide-icon name="dollar-sign" [size]="24"></lucide-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ kpis ? formatMontant(kpis.revenuJour) : '...' }}</span>
+          <span class="kpi-label">Revenu du jour</span>
+          <span class="kpi-sub">{{ kpis?.nombreTransactionsJour || 0 }} transactions</span>
+        </div>
+      </div>
+
+      <div class="kpi-card pending">
+        <div class="kpi-icon">
+          <lucide-icon name="clock" [size]="24"></lucide-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ kpis?.facturesEnAttente || 0 }}</span>
+          <span class="kpi-label">Factures en attente</span>
+          <span class="kpi-sub">À recouvrer</span>
+        </div>
+      </div>
+
+      <div class="kpi-card cash" [class.closed]="!sessionActive">
+        <div class="kpi-icon">
+          <lucide-icon name="wallet" [size]="24"></lucide-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ kpis ? formatMontant(kpis.soldeCaisse) : '...' }}</span>
+          <span class="kpi-label">Solde en caisse</span>
+          <span class="kpi-sub">{{ sessionActive ? 'Caisse ouverte' : 'Caisse fermée' }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card refunds">
+        <div class="kpi-icon">
+          <lucide-icon name="arrow-down-right" [size]="24"></lucide-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ kpis ? formatMontant(kpis.remboursementsJour) : '...' }}</span>
+          <span class="kpi-label">Remboursements</span>
+          <span class="kpi-sub">{{ kpis?.annulationsJour || 0 }} annulation(s)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+      <!-- Left Column - Operations -->
+      <div class="left-column">
+        <!-- Nouveau Paiement Panel -->
+        <section class="panel payment-panel">
+          <div class="panel-header">
+            <h2>
+              <lucide-icon name="plus" [size]="20"></lucide-icon>
+              Nouveau paiement
+            </h2>
+          </div>
+          <div class="panel-body">
+            <!-- Recherche Patient -->
+            <div class="patient-search">
+              <label>Rechercher un patient</label>
+              <div class="search-input-wrapper">
+                <lucide-icon name="search" [size]="18"></lucide-icon>
+                <input 
+                  type="text" 
+                  [(ngModel)]="patientSearch"
+                  (input)="onPatientSearchChange()"
+                  placeholder="Nom, prénom ou N° dossier..."
+                  [disabled]="!!selectedPatient">
+                @if (selectedPatient) {
+                  <button class="clear-btn" (click)="clearPatient()">
+                    <lucide-icon name="x" [size]="16"></lucide-icon>
+                  </button>
+                }
+              </div>
+              
+              <!-- Résultats recherche -->
+              @if (patientResults.length > 0) {
+                <div class="search-results">
+                  @for (patient of patientResults; track patient.idPatient) {
+                    <div class="result-item" (click)="selectPatient(patient)">
+                      <div class="patient-info">
+                        <span class="name">{{ patient.prenom }} {{ patient.nom }}</span>
+                        <span class="dossier">{{ patient.numeroDossier || 'N/A' }}</span>
+                      </div>
+                      @if (patient.facturesEnAttente > 0) {
+                        <span class="badge">{{ patient.facturesEnAttente }} facture(s)</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Liste des factures en attente (visible quand pas de patient sélectionné) -->
+            @if (!selectedPatient && facturesEnAttente.length > 0) {
+              <div class="waiting-invoices-section">
+                <div class="section-header">
+                  <lucide-icon name="clock" [size]="18"></lucide-icon>
+                  <span>Factures en attente de paiement</span>
+                  <span class="badge-count">{{ facturesEnAttente.length }}</span>
+                </div>
+                <div class="waiting-invoices-list">
+                  @for (facture of facturesEnAttente; track facture.idFacture) {
+                    <div class="waiting-invoice-item" (click)="selectFactureDirecte(facture)">
+                      <div class="invoice-left">
+                        <div class="invoice-number">{{ facture.numeroFacture }}</div>
+                        <div class="invoice-patient">{{ facture.patientNom }}</div>
+                        <div class="invoice-meta">
+                          <span class="dossier">{{ facture.numeroDossier || 'N/A' }}</span>
+                          <span class="date">{{ facture.dateCreation | date:'dd/MM HH:mm' }}</span>
+                        </div>
+                      </div>
+                      <div class="invoice-right">
+                        <span class="amount">{{ formatMontant(facture.montantRestant) }}</span>
+                        <span class="status-badge" [class]="facture.statut">
+                          {{ facture.statut === 'en_attente' ? 'À payer' : 'Partiel' }}
+                        </span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (!selectedPatient && facturesEnAttente.length === 0 && !isLoadingFactures) {
+              <div class="empty-state">
+                <lucide-icon name="inbox" [size]="40"></lucide-icon>
+                <p>Aucune facture en attente</p>
+              </div>
+            }
+
+            @if (!selectedPatient && isLoadingFactures) {
+              <div class="loading-state">
+                <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
+                <p>Chargement des factures...</p>
+              </div>
+            }
+
+            <!-- Factures du patient -->
+            @if (selectedPatient) {
+              <div class="patient-invoices">
+                <div class="invoices-header">
+                  <span>Factures de {{ selectedPatient.prenom }} {{ selectedPatient.nom }}</span>
+                  @if (patientFactures.length > 0) {
+                    <button class="btn-link" (click)="selectAllFactures()">Tout sélectionner</button>
+                  }
+                </div>
+                
+                @if (patientFactures.length === 0) {
+                  <p class="no-data">Aucune facture en attente</p>
+                } @else {
+                  <div class="invoices-list">
+                    @for (facture of patientFactures; track facture.idFacture) {
+                      <div class="invoice-item" 
+                           [class.selected]="isFactureSelected(facture.idFacture)"
+                           (click)="toggleFactureSelection(facture.idFacture)">
+                        <input type="checkbox" [checked]="isFactureSelected(facture.idFacture)">
+                        <div class="invoice-info">
+                          <span class="invoice-num">{{ facture.numeroFacture }}</span>
+                          <span class="invoice-date">{{ facture.dateCreation | date:'dd/MM/yyyy' }}</span>
+                        </div>
+                        <span class="invoice-amount">{{ formatMontant(facture.montantRestant) }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Récapitulatif avec détails assurance -->
+              @if (selectedFactures.length > 0) {
+                <div class="payment-summary">
+                  <h4>
+                    <lucide-icon name="calculator" [size]="18"></lucide-icon>
+                    Récapitulatif
+                  </h4>
+                  <div class="summary-details">
+                    <div class="summary-row">
+                      <span>Montant total</span>
+                      <span class="amount">{{ formatMontant(getTotalMontant()) }}</span>
+                    </div>
+                    @if (hasAssuranceCoverage()) {
+                      <div class="summary-row assurance">
+                        <span>
+                          <lucide-icon name="shield-check" [size]="14"></lucide-icon>
+                          Part Assurance ({{ getAssuranceTaux() }}%)
+                        </span>
+                        <span class="amount assurance-amount">- {{ formatMontant(getTotalAssurance()) }}</span>
+                      </div>
+                    }
+                    <div class="summary-row total">
+                      <span>Reste à payer par le patient</span>
+                      <span class="amount patient-amount">{{ formatMontant(getTotalPatient()) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <form [formGroup]="paiementForm" (ngSubmit)="submitPaiement()" class="payment-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Mode de paiement</label>
+                      <select formControlName="modePaiement">
+                        @for (mode of modesPaiement; track mode.value) {
+                          <option [value]="mode.value">{{ mode.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Montant à payer</label>
+                      <input type="number" formControlName="montant" readonly>
+                    </div>
+                  </div>
+
+                  @if (paiementForm.value.modePaiement === 'especes') {
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Montant reçu</label>
+                        <input type="number" formControlName="montantRecu" placeholder="Montant reçu">
+                      </div>
+                      <div class="form-group">
+                        <label>Rendu monnaie</label>
+                        <div class="rendu-display">{{ formatMontant(renduMonnaie) }}</div>
+                      </div>
+                    </div>
+                  }
+
+                  <div class="form-group">
+                    <label>Référence (optionnel)</label>
+                    <input type="text" formControlName="reference" placeholder="N° chèque, carte...">
+                  </div>
+
+                  @if (paiementError) {
+                    <div class="alert alert-error">
+                      <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+                      {{ paiementError }}
+                    </div>
+                  }
+                  @if (paiementSuccess) {
+                    <div class="alert alert-success">
+                      <lucide-icon name="check" [size]="16"></lucide-icon>
+                      {{ paiementSuccess }}
+                    </div>
+                  }
+
+                  <div class="form-actions">
+                    <button type="button" class="btn-secondary" (click)="clearPatient()">Annuler</button>
+                    <button type="submit" class="btn-primary" [disabled]="isSubmitting || paiementForm.invalid || selectedFactures.length === 0">
+                      @if (isSubmitting) {
+                        <lucide-icon name="refresh-cw" [size]="18" class="spinning"></lucide-icon>
+                      } @else {
+                        <lucide-icon name="check" [size]="18"></lucide-icon>
+                      }
+                      Valider le paiement
+                    </button>
+                  </div>
+                </form>
+              }
+            }
+          </div>
+        </section>
+
+        <!-- Transactions récentes -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>
+              <lucide-icon name="receipt" [size]="20"></lucide-icon>
+              Transactions récentes
+            </h2>
+          </div>
+          <div class="panel-body">
+            @if (isLoadingTransactions) {
+              <div class="loading">Chargement...</div>
+            } @else if (transactionsJour.length === 0) {
+              <p class="no-data">Aucune transaction aujourd'hui</p>
+            } @else {
+              <div class="transactions-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Heure</th>
+                      <th>N° Transaction</th>
+                      <th>Patient</th>
+                      <th>Mode</th>
+                      <th>Montant</th>
+                      <th>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (trans of transactionsJour.slice(0, 10); track trans.idTransaction) {
+                      <tr>
+                        <td>{{ trans.dateTransaction | date:'HH:mm' }}</td>
+                        <td class="mono">{{ trans.numeroTransaction }}</td>
+                        <td>{{ trans.patientNom }}</td>
+                        <td>{{ getModePaiementLabel(trans.modePaiement) }}</td>
+                        <td class="amount">{{ formatMontant(trans.montant) }}</td>
+                        <td>
+                          <span class="status-badge" [ngClass]="getStatutClass(trans.statut)">
+                            {{ getStatutLabel(trans.statut) }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column - Widgets -->
+      <div class="right-column">
+        <!-- Session Caisse Widget -->
+        <section class="widget caisse-widget">
+          <div class="widget-header">
+            <lucide-icon name="wallet" [size]="20"></lucide-icon>
+            <span>Session Caisse</span>
+          </div>
+          <div class="widget-body">
+            @if (sessionActive) {
+              <div class="session-info">
+                <div class="session-row">
+                  <span>Ouverture</span>
+                  <span>{{ sessionActive.dateOuverture | date:'HH:mm' }}</span>
+                </div>
+                <div class="session-row">
+                  <span>Fond de caisse</span>
+                  <span>{{ formatMontant(sessionActive.montantOuverture) }}</span>
+                </div>
+                <div class="session-row">
+                  <span>Encaissé (espèces)</span>
+                  <span class="highlight">{{ formatMontant(sessionActive.totalEncaisse) }}</span>
+                </div>
+                <div class="session-row total">
+                  <span>Total théorique</span>
+                  <span>{{ formatMontant(sessionActive.montantOuverture + sessionActive.totalEncaisse) }}</span>
+                </div>
+                <div class="session-row">
+                  <span>Transactions</span>
+                  <span>{{ sessionActive.nombreTransactions }}</span>
+                </div>
+              </div>
+            } @else {
+              <div class="session-closed">
+                <lucide-icon name="lock" [size]="32"></lucide-icon>
+                <p>Caisse fermée</p>
+                <button class="btn-primary btn-sm" (click)="openOuvrirCaisseModal()">Ouvrir la caisse</button>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Factures en retard -->
+        <section class="widget">
+          <div class="widget-header">
+            <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+            <span>Factures en retard</span>
+          </div>
+          <div class="widget-body">
+            @if (facturesRetard.length === 0) {
+              <p class="no-data">Aucune facture en retard</p>
+            } @else {
+              <div class="retard-list">
+                @for (facture of facturesRetard; track facture.idFacture) {
+                  <div class="retard-item">
+                    <div class="retard-info">
+                      <span class="patient">{{ facture.patientNom }}</span>
+                      <span class="delay">{{ facture.joursRetard }} jour(s) de retard</span>
+                    </div>
+                    <span class="amount">{{ formatMontant(facture.montantRestant) }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Répartition paiements -->
+        <section class="widget">
+          <div class="widget-header">
+            <lucide-icon name="bar-chart-3" [size]="20"></lucide-icon>
+            <span>Répartition (aujourd'hui)</span>
+          </div>
+          <div class="widget-body">
+            @if (repartitionPaiements.length === 0) {
+              <p class="no-data">Aucune donnée</p>
+            } @else {
+              <div class="repartition-list">
+                @for (rep of repartitionPaiements; track rep.modePaiement) {
+                  <div class="repartition-item">
+                    <div class="repartition-bar">
+                      <div class="bar-fill" [style.width.%]="rep.pourcentage"></div>
+                    </div>
+                    <div class="repartition-info">
+                      <span class="mode">{{ getModePaiementLabel(rep.modePaiement) }}</span>
+                      <span class="percent">{{ rep.pourcentage }}%</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Actions rapides -->
+        <section class="widget">
+          <div class="widget-header">
+            <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+            <span>Actions rapides</span>
+          </div>
+          <div class="widget-body">
+            <div class="quick-actions-grid">
+              <button class="quick-action" disabled>
+                <lucide-icon name="download" [size]="18"></lucide-icon>
+                Export CSV
+              </button>
+              <button class="quick-action" disabled>
+                <lucide-icon name="file-text" [size]="18"></lucide-icon>
+                Rapport PDF
+              </button>
+              <button class="quick-action" disabled>
+                <lucide-icon name="calculator" [size]="18"></lucide-icon>
+                Z-Report
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ouvrir Caisse -->
+  <app-modal
+    [isOpen]="showOuvrirCaisseModal"
+    title="Ouvrir la caisse"
+    icon="unlock"
+    size="sm"
+    (closed)="closeOuvrirCaisseModal()">
+    <form [formGroup]="ouvrirCaisseForm" (ngSubmit)="ouvrirCaisse()">
+      <div class="form-group">
+        <label>Fond de caisse (FCFA)</label>
+        <input type="number" formControlName="montantOuverture" min="0">
+      </div>
+      <div class="form-group">
+        <label>Notes (optionnel)</label>
+        <textarea formControlName="notes" rows="2"></textarea>
+      </div>
+      @if (caisseError) {
+        <div class="alert alert-error">{{ caisseError }}</div>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeOuvrirCaisseModal()">Annuler</button>
+        <button type="submit" class="btn-primary">
+          <lucide-icon name="unlock" [size]="18"></lucide-icon>
+          Ouvrir
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal Fermer Caisse -->
+  <app-modal
+    [isOpen]="showFermerCaisseModal"
+    title="Fermer la caisse"
+    icon="lock"
+    size="sm"
+    (closed)="closeFermerCaisseModal()">
+    <form [formGroup]="fermerCaisseForm" (ngSubmit)="fermerCaisse()">
+      @if (sessionActive) {
+        <div class="session-summary">
+          <div class="summary-row">
+            <span>Fond de caisse</span>
+            <span>{{ formatMontant(sessionActive.montantOuverture) }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Encaissé (espèces)</span>
+            <span>{{ formatMontant(sessionActive.totalEncaisse) }}</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total attendu</span>
+            <span>{{ formatMontant(sessionActive.montantOuverture + sessionActive.totalEncaisse) }}</span>
+          </div>
+        </div>
+      }
+      <div class="form-group">
+        <label>Montant déclaré (FCFA)</label>
+        <input type="number" formControlName="montantFermeture" min="0">
+      </div>
+      <div class="form-group">
+        <label>Notes (optionnel)</label>
+        <textarea formControlName="notes" rows="2"></textarea>
+      </div>
+      @if (caisseError) {
+        <div class="alert alert-error">{{ caisseError }}</div>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeFermerCaisseModal()">Annuler</button>
+        <button type="submit" class="btn-danger">
+          <lucide-icon name="lock" [size]="18"></lucide-icon>
+          Fermer la caisse
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+</app-dashboard-layout>

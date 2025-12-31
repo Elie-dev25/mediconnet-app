@@ -1,0 +1,97 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Gérez les arrivées et les rendez-vous du jour">
+    </app-welcome-banner>
+
+    <!-- Section Statistiques -->
+    <app-stats-grid
+      [stats]="stats"
+      title="Activité du jour"
+      [showPeriod]="false">
+    </app-stats-grid>
+
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="loading">
+      <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+      <p>Chargement...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-container" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+      <p>{{ error }}</p>
+    </div>
+
+    <!-- Layout 2 colonnes -->
+    <div class="dashboard-grid" *ngIf="!loading && !error">
+      <!-- Actions rapides -->
+      <div class="quick-actions-section">
+        <h2>Actions rapides</h2>
+        <div class="actions-grid">
+          <a routerLink="/accueil/enregistrement" class="action-card">
+            <div class="action-icon primary">
+              <lucide-icon name="user-plus" [size]="24"></lucide-icon>
+            </div>
+            <span>Enregistrer un patient</span>
+          </a>
+          <a routerLink="/accueil/rdv-jour" class="action-card">
+            <div class="action-icon info">
+              <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+            </div>
+            <span>RDV du jour</span>
+          </a>
+          <div class="action-card disabled">
+            <div class="action-icon">
+              <lucide-icon name="users" [size]="24"></lucide-icon>
+            </div>
+            <span>Liste patients</span>
+          </div>
+          <div class="action-card disabled">
+            <div class="action-icon">
+              <lucide-icon name="stethoscope" [size]="24"></lucide-icon>
+            </div>
+            <span>Médecins</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prochains RDV -->
+      <div class="rdv-section" *ngIf="prochainRdvs.length > 0">
+        <h2>Prochains rendez-vous</h2>
+        <div class="rdv-list">
+          <div class="rdv-item" *ngFor="let rdv of prochainRdvs">
+            <div class="rdv-time">
+              <span class="heure">{{ formatHeure(rdv.dateHeure) }}</span>
+            </div>
+            <div class="rdv-info">
+              <span class="patient-name">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+              <span class="medecin">Dr. {{ rdv.medecinPrenom }} {{ rdv.medecinNom }}</span>
+              <span class="motif" *ngIf="rdv.motif">{{ rdv.motif }}</span>
+            </div>
+            <div class="rdv-actions">
+              <span class="statut" [class]="getStatutClass(rdv.statut)">
+                {{ getStatutLabel(rdv.statut) }}
+              </span>
+              <button 
+                class="btn-arrivee" 
+                *ngIf="!rdv.patientArrive"
+                (click)="marquerArrivee(rdv)"
+                title="Marquer l'arrivée">
+                <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+                Arrivée
+              </button>
+            </div>
+          </div>
+        </div>
+        <a routerLink="/accueil/rdv-jour" class="voir-tout">
+          Voir tous les RDV
+          <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+        </a>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

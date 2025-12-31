@@ -1,0 +1,17 @@
+<div class="auth-layout-wrapper" @fadeIn>
+  <div class="auth-container">
+    
+    <!-- Left Column - Image persistante -->
+    <div class="auth-left" [style.backgroundImage]="backgroundImageStyle">
+      <div class="overlay"></div>
+    </div>
+
+    <!-- Right Column - Contenu dynamique avec animation -->
+    <div class="auth-right" @slideInRight>
+      <div class="auth-content">
+        <ng-content></ng-content>
+      </div>
+    </div>
+
+  </div>
+</div>

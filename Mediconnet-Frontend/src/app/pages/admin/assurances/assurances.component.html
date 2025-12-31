@@ -1,0 +1,264 @@
+<app-dashboard-layout
+  [menuItems]="menuItems"
+  [sidebarTitle]="sidebarTitle"
+  pageTitle="Gestion des Assurances">
+
+  <div class="assurances-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>
+          <lucide-icon name="shield-check" [size]="28"></lucide-icon>
+          Assurances
+        </h1>
+        <p class="subtitle">Gérez le catalogue des compagnies d'assurance</p>
+      </div>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <lucide-icon name="plus" [size]="18"></lucide-icon>
+        Nouvelle assurance
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          (input)="onSearch()"
+          placeholder="Rechercher une assurance...">
+      </div>
+      <select [(ngModel)]="filterType" (change)="onFilterChange()">
+        <option value="">Tous les types</option>
+        <option *ngFor="let type of typesAssurance" [value]="type.value">{{ type.label }}</option>
+      </select>
+      <select [(ngModel)]="filterActive" (change)="onFilterChange()">
+        <option [ngValue]="null">Tous les statuts</option>
+        <option [ngValue]="true">Actives</option>
+        <option [ngValue]="false">Inactives</option>
+      </select>
+      <button class="btn-icon" (click)="clearFilters()" title="Réinitialiser les filtres">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+      <p>Chargement...</p>
+    </div>
+
+    <!-- Liste des assurances -->
+    <div class="assurances-grid" *ngIf="!isLoading">
+      <div class="assurance-card" *ngFor="let assurance of assurances" [class.inactive]="!assurance.isActive">
+        <div class="card-header">
+          <div class="assurance-icon">
+            <lucide-icon name="shield" [size]="24"></lucide-icon>
+          </div>
+          <div class="assurance-info">
+            <h3>{{ assurance.nom }}</h3>
+            <span class="type-badge" [class]="assurance.typeAssurance">{{ getTypeLabel(assurance.typeAssurance) }}</span>
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon-sm" (click)="openEditModal(assurance)" title="Modifier">
+              <lucide-icon name="edit" [size]="16"></lucide-icon>
+            </button>
+            <button class="btn-icon-sm" (click)="toggleStatus(assurance)" [title]="assurance.isActive ? 'Désactiver' : 'Activer'">
+              <lucide-icon [name]="assurance.isActive ? 'toggle-right' : 'toggle-left'" [size]="16"></lucide-icon>
+            </button>
+            <button class="btn-icon-sm danger" (click)="deleteAssurance(assurance)" title="Supprimer">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="info-row" *ngIf="assurance.groupe">
+            <lucide-icon name="building-2" [size]="14"></lucide-icon>
+            <span>{{ assurance.groupe }}</span>
+          </div>
+          <div class="info-row" *ngIf="assurance.zoneCouverture">
+            <lucide-icon name="map-pin" [size]="14"></lucide-icon>
+            <span>{{ assurance.zoneCouverture }}</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="patients-count">
+            <lucide-icon name="users" [size]="14"></lucide-icon>
+            {{ assurance.nombrePatientsAssures }} patient(s)
+          </span>
+          <span class="status-indicator" [class.active]="assurance.isActive">
+            {{ assurance.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="assurances.length === 0">
+        <lucide-icon name="shield-off" [size]="48"></lucide-icon>
+        <h3>Aucune assurance trouvée</h3>
+        <p>Ajoutez une première assurance pour commencer</p>
+        <button class="btn-primary" (click)="openCreateModal()">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Ajouter une assurance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal création/édition -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <lucide-icon [name]="isEditing ? 'edit' : 'plus'" [size]="22"></lucide-icon>
+          {{ isEditing ? 'Modifier l\'assurance' : 'Nouvelle assurance' }}
+        </h2>
+        <button class="close-btn" (click)="closeModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="modal-stepper">
+        <div class="step" *ngFor="let step of steps" 
+             [class.active]="currentStep === step.id"
+             [class.completed]="currentStep > step.id"
+             (click)="goToStep(step.id)">
+          <div class="step-icon">
+            <lucide-icon [name]="step.icon" [size]="18"></lucide-icon>
+          </div>
+          <span class="step-title">{{ step.title }}</span>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Messages -->
+        <div class="alert alert-error" *ngIf="errorMessage">
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          {{ errorMessage }}
+        </div>
+        <div class="alert alert-success" *ngIf="successMessage">
+          <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+          {{ successMessage }}
+        </div>
+
+        <!-- Étape 1: Identification -->
+        <form [formGroup]="step1Form" *ngIf="currentStep === 1">
+          <div class="form-group">
+            <label>Nom de l'assurance *</label>
+            <input type="text" formControlName="nom" placeholder="Ex: AXA Assurances Cameroun">
+          </div>
+          <div class="form-group">
+            <label>Type d'assurance *</label>
+            <select formControlName="typeAssurance">
+              <option *ngFor="let type of typesAssurance" [value]="type.value">{{ type.label }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Téléphone service client</label>
+              <input type="tel" formControlName="telephoneServiceClient" placeholder="+237 6XX XXX XXX">
+            </div>
+            <div class="form-group">
+              <label>Site web</label>
+              <input type="url" formControlName="siteWeb" placeholder="https://www.exemple.com">
+            </div>
+          </div>
+        </form>
+
+        <!-- Étape 2: Administration -->
+        <form [formGroup]="step2Form" *ngIf="currentStep === 2">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Groupe / Maison-mère</label>
+              <input type="text" formControlName="groupe" placeholder="Ex: Groupe AXA">
+            </div>
+            <div class="form-group">
+              <label>Pays d'origine</label>
+              <input type="text" formControlName="paysOrigine" placeholder="Ex: Cameroun">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Statut juridique</label>
+            <select formControlName="statutJuridique">
+              <option value="">-- Sélectionner --</option>
+              <option *ngFor="let statut of statutsJuridiques" [value]="statut.value">{{ statut.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" rows="3" placeholder="Brève description de l'organisme..."></textarea>
+          </div>
+        </form>
+
+        <!-- Étape 3: Couverture -->
+        <form [formGroup]="step3Form" *ngIf="currentStep === 3">
+          <div class="form-group">
+            <label>Types de couverture</label>
+            <input type="text" formControlName="typeCouverture" placeholder="Ex: hospitalisation, maternité, accidents">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Catégorie de bénéficiaires</label>
+              <input type="text" formControlName="categorieBeneficiaires" placeholder="Ex: salariés, familles">
+            </div>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" formControlName="isComplementaire">
+              <span>Assurance complémentaire santé</span>
+            </label>
+          </div>
+        </form>
+
+        <!-- Étape 4: Fonctionnement -->
+        <form [formGroup]="step4Form" *ngIf="currentStep === 4">
+          <div class="form-group">
+            <label>Conditions d'adhésion</label>
+            <textarea formControlName="conditionsAdhesion" rows="3" placeholder="Ex: Affiliation CNPS obligatoire, cotisation mensuelle..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Zone de couverture</label>
+              <select formControlName="zoneCouverture">
+                <option *ngFor="let zone of zonesCouverture" [value]="zone.value">{{ zone.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Mode de paiement</label>
+              <select formControlName="modePaiement">
+                <option value="">-- Sélectionner --</option>
+                <option *ngFor="let mode of modesPaiement" [value]="mode.value">{{ mode.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" formControlName="isActive">
+              <span>Assurance active (visible dans les formulaires)</span>
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="prevStep()" *ngIf="currentStep > 1">
+          <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+          Précédent
+        </button>
+        <button type="button" class="btn-secondary" (click)="closeModal()" *ngIf="currentStep === 1">
+          Annuler
+        </button>
+        <button type="button" class="btn-primary" (click)="nextStep()" *ngIf="currentStep < 4" [disabled]="!canProceed()">
+          Suivant
+          <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
+        </button>
+        <button type="button" class="btn-success" (click)="submitForm()" *ngIf="currentStep === 4" [disabled]="isSubmitting">
+          <lucide-icon [name]="isSubmitting ? 'loader-2' : 'check'" [size]="18" [class.spin]="isSubmitting"></lucide-icon>
+          {{ isSubmitting ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Créer l\'assurance') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

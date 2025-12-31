@@ -1,0 +1,50 @@
+{
+  "specialiteId": 1,
+  "specialiteNom": "Médecine Générale",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "mg-p1",
+      "texte": "Quelle est la raison de votre venue aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "mg-p2",
+      "texte": "Depuis quand avez-vous ces symptômes ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "mg-p3",
+      "texte": "Pouvez-vous décrire précisément ce que vous ressentez ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "mg-p4",
+      "texte": "Est-ce que quelque chose aggrave ou soulage ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "mg-p5",
+      "texte": "Avez-vous d'autres symptômes associés ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "mg-p6",
+      "texte": "Est-ce que vous avez déjà vu un médecin pour ce cas ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "mg-p7",
+      "texte": "Avez-vous pris des médicaments ou essayé un traitement ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

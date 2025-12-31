@@ -1,0 +1,14 @@
+{
+  "specialites": [
+    {
+      "id": 1,
+      "key": "medgeneral",
+      "nom": "Médecine Générale"
+    },
+    {
+      "id": 4,
+      "key": "cardiologue",
+      "nom": "Cardiologie"
+    }
+  ]
+}

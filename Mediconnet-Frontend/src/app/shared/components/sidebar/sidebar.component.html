@@ -1,0 +1,43 @@
+<div class="layout-container">
+  <aside class="sidebar" [class.collapsed]="collapsed" [class.mobile-open]="mobileOpen">
+    <div class="sidebar-overlay" (click)="closeMobile.emit()"></div>
+    
+    <nav class="sidebar-nav">
+      <div class="sidebar-header">
+        <span class="sidebar-title">{{ title }}</span>
+        <button class="close-btn" (click)="closeMobile.emit()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      
+      <ul class="menu-list">
+        <li *ngFor="let item of menuItems" class="menu-item">
+          <!-- Item avec navigation normale -->
+          <a *ngIf="!item.action && isImplemented(item)"
+             [routerLink]="item.route" 
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{exact: item.route.endsWith('dashboard')}"
+             class="menu-link">
+            <lucide-icon [name]="item.icon" [size]="20" class="menu-icon"></lucide-icon>
+            <span class="menu-label">{{ item.label }}</span>
+            <span *ngIf="item.badge" class="menu-badge">{{ item.badge }}</span>
+          </a>
+          <!-- Item avec action ou non implemente -->
+          <a *ngIf="item.action || !isImplemented(item)"
+             href="javascript:void(0)"
+             (click)="onMenuItemClick($event, item)"
+             class="menu-link"
+             [class.not-implemented]="!isImplemented(item)">
+            <lucide-icon [name]="item.icon" [size]="20" class="menu-icon"></lucide-icon>
+            <span class="menu-label">{{ item.label }}</span>
+            <span *ngIf="item.badge" class="menu-badge">{{ item.badge }}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+  
+  <main class="main-content">
+    <ng-content></ng-content>
+  </main>
+</div>

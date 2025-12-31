@@ -1,0 +1,527 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="enregistrement-page">
+    <!-- Header -->
+    <header class="page-header">
+      <h1>
+        <lucide-icon name="clipboard-list" [size]="24"></lucide-icon>
+        Enregistrement de Consultation
+      </h1>
+      <p>Processus en {{ steps.length }} étapes pour enregistrer une consultation</p>
+    </header>
+
+    <!-- Stepper -->
+    <div class="stepper">
+      <div class="stepper-track">
+        <div 
+          *ngFor="let step of steps; let i = index" 
+          class="stepper-step"
+          [class.active]="currentStep === step.id"
+          [class.completed]="step.completed"
+          [class.clickable]="step.id < currentStep || (step.id === currentStep + 1 && canProceed())"
+          (click)="goToStep(step.id)">
+          <div class="step-circle">
+            <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check" [size]="16"></lucide-icon>
+            <lucide-icon *ngIf="!step.completed || currentStep === step.id" [name]="step.icon" [size]="16"></lucide-icon>
+          </div>
+          <span class="step-label">{{ step.title }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alert alert-success" *ngIf="successMessage">
+      <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+      <span>{{ successMessage }}</span>
+      <button type="button" class="close-btn" (click)="successMessage = null">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="close-btn" (click)="errorMessage = null">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Step 1: Patient Search -->
+    <section class="step-content" *ngIf="currentStep === 1">
+      <div class="step-card">
+        <div class="step-card-header">
+          <lucide-icon name="user-search" [size]="24"></lucide-icon>
+          <div>
+            <h2>Rechercher un patient</h2>
+            <p>Recherchez par numéro de dossier, nom, prénom ou email</p>
+          </div>
+        </div>
+        
+        <div class="search-wrapper">
+          <app-patient-search 
+            [showRecentOnLoad]="true"
+            placeholder="Rechercher un patient..."
+            (patientSelected)="onPatientSelected($event)">
+          </app-patient-search>
+        </div>
+
+        <div class="selected-patient-preview" *ngIf="selectedPatient">
+          <div class="preview-header">
+            <lucide-icon name="user-check" [size]="20"></lucide-icon>
+            <span>Patient sélectionné</span>
+          </div>
+          <div class="preview-content">
+            <div class="patient-avatar-small">
+              <lucide-icon name="user" [size]="24"></lucide-icon>
+            </div>
+            <div class="patient-info-preview">
+              <strong>{{ selectedPatient.prenom }} {{ selectedPatient.nom }}</strong>
+              <span>{{ selectedPatient.numeroDossier }} • {{ selectedPatient.email }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Step 2: Service -->
+    <section class="step-content" *ngIf="currentStep === 2">
+      <div class="step-card">
+        <div class="step-card-header">
+          <lucide-icon name="building-2" [size]="24"></lucide-icon>
+          <div>
+            <h2>Choisir le service</h2>
+            <p>Sélectionnez un service pour filtrer les médecins disponibles (optionnel)</p>
+          </div>
+        </div>
+
+        <form [formGroup]="serviceForm" class="service-form">
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label for="service">
+                <lucide-icon name="building-2" [size]="16"></lucide-icon>
+                Service hospitalier
+              </label>
+              <select id="service" formControlName="idService" [disabled]="isLoadingServices">
+                <option value="">{{ isLoadingServices ? 'Chargement...' : 'Tous les services' }}</option>
+                <option *ngFor="let service of services" [value]="service.idService">
+                  {{ service.nomService }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <div class="step-actions">
+          <button type="button" class="btn-secondary" (click)="prevStep()">
+            <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+            Retour
+          </button>
+          <button type="button" class="btn-primary" (click)="nextStep()">
+            Voir les médecins disponibles
+            <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Médecins Disponibles -->
+    <section class="step-content" *ngIf="currentStep === 3">
+      <div class="step-card full-width">
+        <div class="step-card-header">
+          <lucide-icon name="stethoscope" [size]="24"></lucide-icon>
+          <div>
+            <h2>Sélectionner un médecin</h2>
+            <p>{{ getSelectedServiceName() }}</p>
+          </div>
+          <button type="button" class="btn-refresh" (click)="loadMedecinsDisponibilite()" [disabled]="isLoadingMedecins">
+            <lucide-icon name="refresh-cw" [size]="16" [class.spin]="isLoadingMedecins"></lucide-icon>
+            Actualiser
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="disponibilite-stats">
+          <div class="stat-item stat-disponible">
+            <lucide-icon name="user-check" [size]="18"></lucide-icon>
+            <span class="stat-value">{{ totalDisponibles }}</span>
+            <span class="stat-label">Disponibles</span>
+          </div>
+          <div class="stat-item stat-occupe">
+            <lucide-icon name="clock" [size]="18"></lucide-icon>
+            <span class="stat-value">{{ totalOccupes }}</span>
+            <span class="stat-label">Occupés</span>
+          </div>
+          <div class="stat-item stat-absent">
+            <lucide-icon name="user-x" [size]="18"></lucide-icon>
+            <span class="stat-value">{{ totalAbsents }}</span>
+            <span class="stat-label">Absents</span>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-container" *ngIf="isLoadingMedecins">
+          <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+          <p>Chargement des disponibilités...</p>
+        </div>
+
+        <!-- Empty -->
+        <div class="empty-medecins" *ngIf="!isLoadingMedecins && medecinsDisponibilite.length === 0">
+          <lucide-icon name="user-x" [size]="48"></lucide-icon>
+          <h3>Aucun médecin disponible</h3>
+          <p>Aucun médecin ne correspond aux critères sélectionnés.</p>
+          <button type="button" class="btn-secondary" (click)="prevStep()">
+            Modifier les critères
+          </button>
+        </div>
+
+        <!-- Médecins List -->
+        <div class="medecins-grid" *ngIf="!isLoadingMedecins && medecinsDisponibilite.length > 0">
+          <div 
+            *ngFor="let medecin of medecinsDisponibilite" 
+            class="medecin-card"
+            [class.selected]="selectedMedecin?.idMedecin === medecin.idMedecin"
+            [class.disponible]="medecin.statut === 'disponible'"
+            [class.occupe]="medecin.statut === 'occupe'"
+            [class.absent]="medecin.statut === 'absent'"
+            [class.disabled]="!medecin.estDisponible"
+            (click)="selectMedecin(medecin)">
+            
+            <div class="medecin-header">
+              <div class="medecin-avatar">
+                <lucide-icon name="user" [size]="24"></lucide-icon>
+              </div>
+              <div class="medecin-status-badge" [class]="'status-' + medecin.statut">
+                {{ medecin.statut === 'disponible' ? 'Disponible' : (medecin.statut === 'occupe' ? 'Occupé' : 'Absent') }}
+              </div>
+            </div>
+
+            <div class="medecin-info">
+              <h4>Dr {{ medecin.prenom }} {{ medecin.nom }}</h4>
+              <p class="service" *ngIf="medecin.service">{{ medecin.service }}</p>
+            </div>
+
+            <div class="medecin-stats">
+              <div class="stat" *ngIf="medecin.patientsEnAttente > 0">
+                <lucide-icon name="users" [size]="14"></lucide-icon>
+                <span>{{ medecin.patientsEnAttente }} en attente</span>
+              </div>
+              <div class="stat" *ngIf="medecin.patientsEnConsultation > 0">
+                <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                <span>En consultation</span>
+              </div>
+              <div class="stat temps-attente" *ngIf="medecin.tempsAttenteEstime">
+                <lucide-icon name="clock" [size]="14"></lucide-icon>
+                <span>{{ formatTempsAttente(medecin.tempsAttenteEstime) }}</span>
+              </div>
+            </div>
+
+            <div class="medecin-raison" *ngIf="medecin.raisonIndisponibilite">
+              <lucide-icon name="info" [size]="14"></lucide-icon>
+              <span>{{ medecin.raisonIndisponibilite }}</span>
+            </div>
+
+            <div class="select-indicator" *ngIf="selectedMedecin?.idMedecin === medecin.idMedecin">
+              <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+              Sélectionné
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Créneaux du médecin sélectionné -->
+        <div class="creneaux-section" *ngIf="selectedMedecin">
+          <div class="creneaux-header">
+            <lucide-icon name="clock" [size]="20"></lucide-icon>
+            <h3>Créneaux disponibles - Dr {{ selectedMedecin.prenom }} {{ selectedMedecin.nom }}</h3>
+            <span class="cout-badge" *ngIf="coutConsultation > 0">
+              {{ coutConsultation | number }} FCFA
+            </span>
+          </div>
+
+          <!-- Loading créneaux -->
+          <div class="loading-container small" *ngIf="isLoadingCreneaux">
+            <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
+            <p>Chargement des créneaux...</p>
+          </div>
+
+          <!-- Légende -->
+          <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxMedecin.length > 0">
+            <div class="legende-item">
+              <span class="legende-dot disponible"></span>
+              Disponible
+            </div>
+            <div class="legende-item">
+              <span class="legende-dot occupe"></span>
+              Occupé
+            </div>
+            <div class="legende-item">
+              <span class="legende-dot passe"></span>
+              Passé
+            </div>
+          </div>
+
+          <!-- Grille des créneaux -->
+          <div class="creneaux-grid" *ngIf="!isLoadingCreneaux && creneauxMedecin.length > 0">
+            <button 
+              *ngFor="let creneau of creneauxMedecin"
+              type="button"
+              class="creneau-slot"
+              [class.disponible]="creneau.statut === 'disponible'"
+              [class.occupe]="creneau.statut === 'occupe'"
+              [class.passe]="creneau.statut === 'passe'"
+              [class.selected]="selectedCreneau?.heureDebut === creneau.heureDebut"
+              [disabled]="!creneau.selectionnable"
+              (click)="selectCreneau(creneau)">
+              {{ creneau.heureDebut }}
+            </button>
+          </div>
+
+          <!-- Aucun créneau -->
+          <div class="empty-creneaux" *ngIf="!isLoadingCreneaux && creneauxMedecin.length === 0">
+            <lucide-icon name="calendar-x" [size]="32"></lucide-icon>
+            <p>Aucun créneau disponible aujourd'hui</p>
+          </div>
+
+          <!-- Créneau sélectionné -->
+          <div class="creneau-selected-info" *ngIf="selectedCreneau">
+            <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+            <span>Créneau sélectionné : <strong>{{ selectedCreneau.heureDebut }} - {{ selectedCreneau.heureFin }}</strong></span>
+          </div>
+        </div>
+
+        <div class="step-actions" *ngIf="!isLoadingMedecins">
+          <button type="button" class="btn-secondary" (click)="prevStep()">
+            <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+            Retour
+          </button>
+          <button type="button" class="btn-primary" [disabled]="!selectedMedecin || !selectedCreneau" (click)="confirmMedecinAndProceed()">
+            Continuer
+            <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Confirmation -->
+    <section class="step-content" *ngIf="currentStep === 4">
+      <div class="step-card">
+        <div class="step-card-header">
+          <lucide-icon name="clipboard-check" [size]="24"></lucide-icon>
+          <div>
+            <h2>Confirmation de la consultation</h2>
+            <p>Vérifiez les informations et complétez l'enregistrement</p>
+          </div>
+        </div>
+
+        <!-- Récapitulatif -->
+        <div class="recap-section">
+          <h3>Récapitulatif</h3>
+          
+          <div class="recap-grid">
+            <!-- Patient -->
+            <div class="recap-item">
+              <div class="recap-icon">
+                <lucide-icon name="user" [size]="20"></lucide-icon>
+              </div>
+              <div class="recap-content">
+                <span class="recap-label">Patient</span>
+                <strong>{{ selectedPatient?.prenom }} {{ selectedPatient?.nom }}</strong>
+                <span class="recap-detail">{{ selectedPatient?.numeroDossier }}</span>
+              </div>
+            </div>
+
+            <!-- Médecin -->
+            <div class="recap-item">
+              <div class="recap-icon">
+                <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
+              </div>
+              <div class="recap-content">
+                <span class="recap-label">Médecin</span>
+                <strong>Dr {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</strong>
+                <span class="recap-detail" *ngIf="selectedMedecin?.service">{{ selectedMedecin?.service }}</span>
+              </div>
+            </div>
+
+            <!-- Service -->
+            <div class="recap-item" *ngIf="selectedMedecin?.service">
+              <div class="recap-icon">
+                <lucide-icon name="building-2" [size]="20"></lucide-icon>
+              </div>
+              <div class="recap-content">
+                <span class="recap-label">Service</span>
+                <strong>{{ selectedMedecin?.service }}</strong>
+              </div>
+            </div>
+
+            <!-- Créneau -->
+            <div class="recap-item" *ngIf="selectedCreneau">
+              <div class="recap-icon">
+                <lucide-icon name="clock" [size]="20"></lucide-icon>
+              </div>
+              <div class="recap-content">
+                <span class="recap-label">Créneau</span>
+                <strong>{{ selectedCreneau.heureDebut }} - {{ selectedCreneau.heureFin }}</strong>
+              </div>
+            </div>
+
+            <!-- Coût consultation -->
+            <div class="recap-item" *ngIf="coutConsultation > 0 && !paiementValide">
+              <div class="recap-icon recap-icon-price">
+                <lucide-icon name="banknote" [size]="20"></lucide-icon>
+              </div>
+              <div class="recap-content">
+                <span class="recap-label">Tarif consultation</span>
+                <strong class="price-highlight">{{ coutConsultation | number }} FCFA</strong>
+                <span class="recap-detail">Tarif de la spécialité</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulaire -->
+        <form [formGroup]="consultationForm" (ngSubmit)="submitConsultation()" class="confirmation-form">
+          <div class="form-group">
+            <label for="motif">
+              <lucide-icon name="message-square" [size]="16"></lucide-icon>
+              Motif de la consultation *
+            </label>
+            <textarea 
+              id="motif"
+              formControlName="motif"
+              rows="3"
+              placeholder="Décrivez le motif de la consultation...">
+            </textarea>
+            <div class="error-message" *ngIf="consultationForm.get('motif')?.invalid && consultationForm.get('motif')?.touched">
+              <span *ngIf="consultationForm.get('motif')?.errors?.['required']">Le motif est obligatoire</span>
+              <span *ngIf="consultationForm.get('motif')?.errors?.['minlength']">Le motif doit contenir au moins 3 caractères</span>
+            </div>
+          </div>
+
+          <!-- Badge paiement valide -->
+          <div class="paiement-valide-badge" *ngIf="paiementValide && paiementInfo">
+            <div class="badge-content">
+              <lucide-icon name="badge-check" [size]="24"></lucide-icon>
+              <div class="badge-text">
+                <strong>Paiement encore valide</strong>
+                <span>{{ paiementInfo.message }}</span>
+                <small>Facture: {{ paiementInfo.numeroFacture }}</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Champ prix - lecture seule si pré-rempli par spécialité -->
+          <div class="form-group" *ngIf="!paiementValide">
+            <label for="prix">
+              <lucide-icon name="banknote" [size]="16"></lucide-icon>
+              Prix de la consultation (FCFA)
+              <span class="label-info" *ngIf="coutConsultation > 0">(tarif spécialité)</span>
+            </label>
+            <div class="loading-check" *ngIf="isCheckingPaiement">
+              <lucide-icon name="loader-2" [size]="16" class="spin"></lucide-icon>
+              <span>Vérification du paiement...</span>
+            </div>
+            <input 
+              *ngIf="!isCheckingPaiement"
+              type="number"
+              id="prix"
+              formControlName="prixConsultation"
+              placeholder="Ex: 5000"
+              min="0"
+              [readonly]="coutConsultation > 0"
+              [class.readonly-input]="coutConsultation > 0">
+            <div class="prix-info" *ngIf="coutConsultation > 0">
+              <lucide-icon name="info" [size]="14"></lucide-icon>
+              <span>Ce tarif est défini par la spécialité du médecin</span>
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="isSubmitting">
+              <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+              Retour
+            </button>
+            <button type="button" class="btn-outline-danger" (click)="clearPatient()" [disabled]="isSubmitting">
+              <lucide-icon name="x" [size]="18"></lucide-icon>
+              Annuler
+            </button>
+            <button type="submit" class="btn-success" [disabled]="consultationForm.invalid || isSubmitting">
+              <lucide-icon name="check" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+              <lucide-icon name="loader-2" [size]="18" class="spin" *ngIf="isSubmitting"></lucide-icon>
+              {{ isSubmitting ? 'Enregistrement...' : 'Confirmer l\'enregistrement' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Modal de confirmation de succès -->
+    <div class="modal-overlay" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+      <div class="modal-content success-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header success-header">
+          <div class="success-icon-wrapper">
+            <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+          </div>
+          <h2>Enregistrement réussi !</h2>
+          <p>La consultation a été enregistrée avec succès</p>
+        </div>
+
+        <div class="modal-body" *ngIf="confirmationData">
+          <div class="confirmation-ticket">
+            <div class="ticket-header">
+              <lucide-icon name="receipt" [size]="20"></lucide-icon>
+              <span>Ticket de consultation</span>
+            </div>
+            
+            <div class="ticket-number">
+              <span class="label">N° de paiement</span>
+              <span class="number">{{ confirmationData.numeroPaiement }}</span>
+            </div>
+
+            <div class="ticket-details">
+              <div class="detail-row">
+                <lucide-icon name="user" [size]="16"></lucide-icon>
+                <span class="label">Patient</span>
+                <span class="value">{{ confirmationData.patientPrenom }} {{ confirmationData.patientNom }}</span>
+              </div>
+              <div class="detail-row">
+                <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+                <span class="label">Médecin</span>
+                <span class="value">Dr {{ confirmationData.medecinPrenom }} {{ confirmationData.medecinNom }}</span>
+              </div>
+              <div class="detail-row">
+                <lucide-icon name="building-2" [size]="16"></lucide-icon>
+                <span class="label">Service</span>
+                <span class="value">{{ confirmationData.service }}</span>
+              </div>
+              <div class="detail-row">
+                <lucide-icon name="message-square" [size]="16"></lucide-icon>
+                <span class="label">Motif</span>
+                <span class="value">{{ confirmationData.motif }}</span>
+              </div>
+            </div>
+
+            <div class="ticket-total">
+              <span class="label">Montant à payer</span>
+              <span class="amount">{{ confirmationData.prix | number }} FCFA</span>
+            </div>
+
+            <div class="ticket-footer">
+              <lucide-icon name="info" [size]="14"></lucide-icon>
+              <span>Présentez ce ticket à la caisse pour effectuer le paiement</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="printConfirmation()">
+            <lucide-icon name="printer" [size]="18"></lucide-icon>
+            Imprimer
+          </button>
+          <button type="button" class="btn-primary" (click)="closeSuccessModal()">
+            <lucide-icon name="plus" [size]="18"></lucide-icon>
+            Nouvel enregistrement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

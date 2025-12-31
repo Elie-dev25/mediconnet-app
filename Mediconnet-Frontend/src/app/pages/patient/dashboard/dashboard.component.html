@@ -1,0 +1,111 @@
+<app-dashboard-layout [sidebarTitle]="sidebarTitle" [menuItems]="menuItems">
+  <div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Gérez vos rendez-vous et consultez votre dossier médical">
+    </app-welcome-banner>
+
+    <!-- Section Statistiques -->
+    <app-stats-grid
+      [stats]="stats"
+      title="Mon suivi"
+      [showPeriod]="false">
+    </app-stats-grid>
+
+    <!-- Visites Section -->
+    <div class="visites-container">
+      <!-- Visites à venir -->
+      <section class="visites-section">
+        <div class="section-header">
+          <h2>
+            <lucide-icon name="calendar" [size]="20"></lucide-icon>
+            Visites à venir ({{ visitesAVenir.length }})
+          </h2>
+          <a routerLink="/patient/rendez-vous" class="voir-tout">Voir tout</a>
+        </div>
+        
+        <div class="visites-list" *ngIf="!isLoading">
+          <div class="visite-card upcoming" *ngFor="let visite of visitesAVenir">
+            <div class="visite-date">
+              <span class="day">{{ formatDate(visite.dateHeure) }}</span>
+              <span class="time">{{ formatTime(visite.dateHeure) }}</span>
+            </div>
+            <div class="visite-info">
+              <h4>{{ getTypeLabel(visite.typeRdv) }}</h4>
+              <p class="medecin">{{ visite.nomMedecin }}</p>
+              <p class="service" *ngIf="visite.service">{{ visite.service }}</p>
+            </div>
+            <div class="visite-status" [class]="visite.statut">
+              {{ getStatutLabel(visite.statut) }}
+            </div>
+          </div>
+          
+          <div class="empty-state" *ngIf="visitesAVenir.length === 0">
+            <lucide-icon name="calendar" [size]="32"></lucide-icon>
+            <p>Aucune visite à venir</p>
+            <a routerLink="/patient/rendez-vous" class="btn-primary">Prendre rendez-vous</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visites passées -->
+      <section class="visites-section">
+        <div class="section-header">
+          <h2>
+            <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+            Visites passées ({{ visitesPassees.length }})
+          </h2>
+        </div>
+        
+        <div class="visites-list" *ngIf="!isLoading">
+          <div class="visite-card past" *ngFor="let visite of visitesPassees">
+            <div class="visite-date">
+              <span class="day">{{ formatDate(visite.dateHeure) }}</span>
+              <span class="time">{{ formatTime(visite.dateHeure) }}</span>
+            </div>
+            <div class="visite-info">
+              <h4>{{ getTypeLabel(visite.typeRdv) }}</h4>
+              <p class="medecin">{{ visite.nomMedecin }}</p>
+              <p class="motif" *ngIf="visite.motif">{{ visite.motif }}</p>
+            </div>
+            <div class="visite-status termine">
+              Terminé
+            </div>
+          </div>
+          
+          <div class="empty-state" *ngIf="visitesPassees.length === 0">
+            <lucide-icon name="clock" [size]="32"></lucide-icon>
+            <p>Aucune visite passée</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <h2>Actions rapides</h2>
+      <div class="actions-grid">
+        <a routerLink="/patient/rendez-vous" class="action-card">
+          <div class="action-icon">
+            <lucide-icon name="calendar-plus" [size]="28"></lucide-icon>
+          </div>
+          <span>Prendre rendez-vous</span>
+        </a>
+        <a routerLink="/patient/dossier" class="action-card">
+          <div class="action-icon">
+            <lucide-icon name="folder-open" [size]="28"></lucide-icon>
+          </div>
+          <span>Voir mon dossier</span>
+        </a>
+        <button class="action-card disabled">
+          <div class="action-icon">
+            <lucide-icon name="pill" [size]="28"></lucide-icon>
+          </div>
+          <span>Mes ordonnances</span>
+        </button>
+      </div>
+    </section>
+  </div>
+</app-dashboard-layout>

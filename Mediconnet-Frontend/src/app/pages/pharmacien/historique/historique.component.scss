@@ -1,0 +1,277 @@
+.historique-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+
+  .header-content {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0 0 0.25rem 0;
+    }
+
+    p {
+      color: #64748b;
+      margin: 0;
+    }
+  }
+}
+
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #64748b;
+    }
+
+    input, select {
+      padding: 0.625rem 0.875rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.9rem;
+      min-width: 150px;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+    }
+  }
+}
+
+.stats-summary {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+
+  .stat-item {
+    font-size: 0.9rem;
+    color: #64748b;
+
+    strong {
+      color: #1e293b;
+    }
+  }
+}
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .date-cell {
+    white-space: nowrap;
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+
+  .motif-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem !important;
+    color: #94a3b8;
+
+    lucide-icon {
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  &.type-entree {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.type-sortie {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.type-ajustement {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.type-perte {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.type-retour {
+    background: #f3e8ff;
+    color: #6b21a8;
+  }
+}
+
+.quantity {
+  font-weight: 600;
+  font-size: 1rem;
+
+  &.type-entree, &.type-retour {
+    color: #059669;
+  }
+
+  &.type-sortie, &.type-perte, &.type-ajustement {
+    color: #dc2626;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+
+    &:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  .page-info {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .historique-page {
+    padding: 1rem;
+  }
+
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+
+    .filter-group {
+      input, select {
+        width: 100%;
+      }
+    }
+  }
+
+  .data-table {
+    display: block;
+    overflow-x: auto;
+
+    th, td {
+      padding: 0.75rem;
+      white-space: nowrap;
+    }
+  }
+}

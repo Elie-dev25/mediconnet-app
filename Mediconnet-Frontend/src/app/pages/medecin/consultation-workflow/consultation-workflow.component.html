@@ -1,0 +1,67 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="consultation-page">
+    <!-- Header -->
+    <app-page-header
+      title="Consultation médicale"
+      subtitle="Effectuer une consultation complète"
+      icon="stethoscope"
+      backLabel="Retour"
+      (onBack)="goBack()">
+      <button class="btn-toggle-dossier" (click)="toggleDossierPanel()" [class.active]="showDossierPanel">
+        <lucide-icon name="folder-open" [size]="16"></lucide-icon>
+        <span>{{ showDossierPanel ? 'Masquer dossier' : 'Voir dossier' }}</span>
+      </button>
+    </app-page-header>
+
+    <!-- Loading -->
+    <app-loading-state 
+      *ngIf="isLoading" 
+      message="Chargement de la consultation...">
+    </app-loading-state>
+
+    <!-- Error -->
+    <div class="error-container" *ngIf="error && !isLoading">
+      <app-alert-message [message]="error" type="error"></app-alert-message>
+      <button class="btn-primary" (click)="goBack()">Retour au tableau de bord</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content" *ngIf="!isLoading && !error && consultationId && patientId">
+      <!-- Patient card -->
+      <app-patient-card 
+        *ngIf="patientData" 
+        [patient]="patientData">
+      </app-patient-card>
+
+      <!-- Workflow content -->
+      <div class="workflow-layout">
+        <!-- Panneau dossier patient (gauche) -->
+        <aside class="dossier-sidebar" [class.collapsed]="!showDossierPanel">
+          <app-dossier-patient
+            *ngIf="showDossierPanel && patientId"
+            [patientId]="patientId"
+            [consultationId]="consultationId"
+            (close)="toggleDossierPanel()">
+          </app-dossier-patient>
+        </aside>
+
+        <!-- Zone principale (workflow multi-étapes) -->
+        <main class="workflow-main" [class.full-width]="!showDossierPanel">
+          <app-form-section title="Déroulement de la consultation" icon="clipboard-list">
+            <app-consultation-multi-etapes
+              [consultationId]="consultationId"
+              [patientId]="patientId"
+              [patientNom]="patientNom"
+              (completed)="onConsultationCompleted()"
+              (cancelled)="onConsultationCancelled()">
+            </app-consultation-multi-etapes>
+          </app-form-section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+</app-dashboard-layout>

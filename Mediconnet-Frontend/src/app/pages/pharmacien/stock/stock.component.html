@@ -1,0 +1,256 @@
+<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+  <div class="stock-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1><lucide-icon name="package" [size]="28"></lucide-icon> Gestion du Stock</h1>
+        <p>Gérez votre inventaire de médicaments</p>
+      </div>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <lucide-icon name="plus" [size]="18"></lucide-icon>
+        Nouveau médicament
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          placeholder="Rechercher un médicament..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+        >
+      </div>
+      <div class="filter-group">
+        <select [(ngModel)]="selectedStatut" (change)="onStatutChange()">
+          <option value="">Tous les statuts</option>
+          <option value="normal">Stock normal</option>
+          <option value="alerte">Stock bas</option>
+          <option value="rupture">Rupture</option>
+          <option value="inactif">Inactifs</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" (click)="onSearch()">
+        <lucide-icon name="filter" [size]="16"></lucide-icon>
+        Filtrer
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="spinner"></div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Médicament</th>
+            <th>Forme</th>
+            <th>Stock</th>
+            <th>Seuil</th>
+            <th>Prix</th>
+            <th>Péremption</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let med of medicaments">
+            <td>
+              <div class="med-info">
+                <strong>{{ med.nom }}</strong>
+                <span class="dosage" *ngIf="med.dosage">{{ med.dosage }}</span>
+              </div>
+            </td>
+            <td>{{ med.formeGalenique || '-' }}</td>
+            <td>
+              <span class="stock-value" [class.low]="med.statutStock === 'alerte'" [class.out]="med.statutStock === 'rupture'">
+                {{ med.stock ?? 0 }}
+              </span>
+            </td>
+            <td>{{ med.seuilStock ?? '-' }}</td>
+            <td>{{ formatPrice(med.prix) }}</td>
+            <td>
+              <span [class.expiring]="med.joursAvantPeremption != null && med.joursAvantPeremption <= 30">
+                {{ formatDate(med.datePeremption) }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getStatutBadgeClass(med.statutStock)">
+                {{ getStatutLabel(med.statutStock) }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="btn-icon" title="Ajuster stock" (click)="openAjustementModal(med)">
+                  <lucide-icon name="sliders-horizontal" [size]="16"></lucide-icon>
+                </button>
+                <button class="btn-icon" title="Modifier" (click)="openEditModal(med)">
+                  <lucide-icon name="pencil" [size]="16"></lucide-icon>
+                </button>
+                <button class="btn-icon danger" title="Supprimer" (click)="openDeleteModal(med)">
+                  <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="medicaments.length === 0 && !isLoading">
+            <td colspan="8" class="empty-state">
+              <lucide-icon name="inbox" [size]="48"></lucide-icon>
+              <p>Aucun médicament trouvé</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
+        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+        Précédent
+      </button>
+      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
+        Suivant
+        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+      </button>
+    </div>
+  </div>
+</app-sidebar>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal || showEditModal" (click)="showCreateModal ? closeCreateModal() : closeEditModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ showCreateModal ? 'Nouveau médicament' : 'Modifier le médicament' }}</h2>
+      <button class="btn-close" (click)="showCreateModal ? closeCreateModal() : closeEditModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Nom du médicament *</label>
+          <input type="text" [(ngModel)]="medicamentForm.nom" required>
+        </div>
+        <div class="form-group">
+          <label>Dosage</label>
+          <input type="text" [(ngModel)]="medicamentForm.dosage" placeholder="Ex: 500mg">
+        </div>
+        <div class="form-group">
+          <label>Forme galénique</label>
+          <select [(ngModel)]="medicamentForm.formeGalenique">
+            <option value="">Sélectionner</option>
+            <option *ngFor="let forme of formesGaleniques" [value]="forme">{{ forme }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Laboratoire</label>
+          <input type="text" [(ngModel)]="medicamentForm.laboratoire">
+        </div>
+        <div class="form-group">
+          <label>Code ATC</label>
+          <input type="text" [(ngModel)]="medicamentForm.codeATC">
+        </div>
+        <div class="form-group" *ngIf="showCreateModal">
+          <label>Stock initial *</label>
+          <input type="number" [(ngModel)]="medicamentForm.stock" min="0">
+        </div>
+        <div class="form-group">
+          <label>Seuil d'alerte *</label>
+          <input type="number" [(ngModel)]="medicamentForm.seuilStock" min="0">
+        </div>
+        <div class="form-group">
+          <label>Prix (FCFA) *</label>
+          <input type="number" [(ngModel)]="medicamentForm.prix" min="0">
+        </div>
+        <div class="form-group">
+          <label>Date de péremption</label>
+          <input type="date" [(ngModel)]="medicamentForm.datePeremption">
+        </div>
+        <div class="form-group">
+          <label>Emplacement/Rayon</label>
+          <input type="text" [(ngModel)]="medicamentForm.emplacementRayon" placeholder="Ex: A-12">
+        </div>
+        <div class="form-group">
+          <label>Conditionnement</label>
+          <input type="text" [(ngModel)]="medicamentForm.conditionnement" placeholder="Ex: Boîte de 20">
+        </div>
+        <div class="form-group">
+          <label>Température conservation</label>
+          <input type="text" [(ngModel)]="medicamentForm.temperatureConservation" placeholder="Ex: 15-25°C">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showCreateModal ? closeCreateModal() : closeEditModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="showCreateModal ? createMedicament() : updateMedicament()">
+        {{ showCreateModal ? 'Créer' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Ajustement Stock Modal -->
+<div class="modal-overlay" *ngIf="showAjustementModal" (click)="closeAjustementModal()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Ajustement de stock</h2>
+      <button class="btn-close" (click)="closeAjustementModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="med-summary" *ngIf="selectedMedicament">
+        <strong>{{ selectedMedicament.nom }}</strong>
+        <span>Stock actuel: {{ selectedMedicament.stock ?? 0 }}</span>
+      </div>
+      <div class="form-group">
+        <label>Type de mouvement</label>
+        <select [(ngModel)]="ajustementForm.typeMouvement">
+          <option value="entree">Entrée (+)</option>
+          <option value="sortie">Sortie (-)</option>
+          <option value="ajustement">Ajustement</option>
+          <option value="perte">Perte</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantité *</label>
+        <input type="number" [(ngModel)]="ajustementForm.quantite" min="1">
+      </div>
+      <div class="form-group">
+        <label>Motif</label>
+        <textarea [(ngModel)]="ajustementForm.motif" rows="2" placeholder="Raison de l'ajustement..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeAjustementModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="ajusterStock()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header danger">
+      <h2>Confirmer la suppression</h2>
+      <button class="btn-close" (click)="closeDeleteModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir désactiver ce médicament ?</p>
+      <p class="med-name" *ngIf="selectedMedicament">{{ selectedMedicament.nom }}</p>
+      <p class="warning-text">Cette action peut être annulée en réactivant le médicament.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()">Annuler</button>
+      <button class="btn btn-danger" (click)="deleteMedicament()">Désactiver</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,330 @@
+// Styles du dashboard accueil - utilise les variables partagées
+@use '../../../shared/styles/variables' as *;
+
+.dashboard-content {
+  max-width: 1400px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+
+  @media (max-width: $breakpoint-lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Quick actions section
+.quick-actions-section {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 1rem;
+  }
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.action-card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: $shadow-sm;
+  border: 2px solid transparent;
+  text-decoration: none;
+  color: $text-primary;
+
+  .action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-color;
+
+    &.primary {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
+    }
+
+    &.info {
+      background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+      color: #0891b2;
+    }
+  }
+
+  span {
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  &:hover:not(.disabled) {
+    border-color: $primary-color;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(92, 107, 192, 0.15);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    .action-icon {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+  }
+}
+
+// RDV Section
+.rdv-section {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 1rem;
+  }
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #64748b;
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    margin-top: 1rem;
+  }
+}
+
+.error-container {
+  color: #ef4444;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.section-card {
+  background: $bg-white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border-light;
+  }
+}
+
+.quick-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+
+    &.primary {
+      background: #3b82f6;
+      color: white;
+      &:hover { background: #2563eb; }
+    }
+
+    &.info {
+      background: #06b6d4;
+      color: white;
+      &:hover { background: #0891b2; }
+    }
+  }
+}
+
+.rdv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rdv-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: $bg-gray;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #e8eaed;
+  }
+
+  .rdv-time {
+    .heure {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+  }
+
+  .rdv-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .patient-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .medecin {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .motif {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
+  }
+
+  .rdv-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .statut {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+
+      &.statut-planifie { background: #fef3c7; color: #d97706; }
+      &.statut-confirme { background: #d1fae5; color: #059669; }
+      &.statut-en-cours { background: #dbeafe; color: #2563eb; }
+      &.statut-termine { background: #e2e8f0; color: #64748b; }
+      &.statut-annule { background: #fee2e2; color: #dc2626; }
+    }
+
+    .btn-arrivee {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 0.875rem;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #059669;
+      }
+    }
+  }
+}
+
+.voir-tout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid $border-light;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #2563eb;
+  }
+}
+
+@media (max-width: 768px) {
+  .accueil-dashboard {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rdv-item {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .rdv-actions {
+      width: 100%;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+    }
+  }
+
+  .quick-actions {
+    flex-direction: column;
+
+    .action-btn {
+      justify-content: center;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

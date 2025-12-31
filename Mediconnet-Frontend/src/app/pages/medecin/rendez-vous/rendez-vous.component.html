@@ -1,0 +1,171 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="rdv-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Mes Rendez-vous</h1>
+        <p class="subtitle">Gérez vos consultations et patients</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats rapides -->
+    <section class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value">{{ rdvCount.total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat-item confirmed">
+        <span class="stat-value">{{ rdvCount.confirmes }}</span>
+        <span class="stat-label">Confirmés</span>
+      </div>
+      <div class="stat-item pending">
+        <span class="stat-value">{{ rdvCount.enAttente }}</span>
+        <span class="stat-label">En attente</span>
+      </div>
+    </section>
+
+    <!-- Filtres -->
+    <div class="filters-bar">
+      <div class="filter-tabs">
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'jour'"
+          (click)="setActiveFilter('jour')">
+          Aujourd'hui
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'semaine'"
+          (click)="setActiveFilter('semaine')">
+          Cette semaine
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'tous'"
+          (click)="setActiveFilter('tous')">
+          Tous
+        </button>
+      </div>
+
+      <div class="filter-right">
+        <div class="search-box">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher un patient..." 
+            [(ngModel)]="searchTerm"
+            (input)="applyFilters()">
+        </div>
+        <select [(ngModel)]="statutFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="planifie">Planifié</option>
+          <option value="confirme">Confirmé</option>
+          <option value="en_cours">En cours</option>
+          <option value="termine">Terminé</option>
+          <option value="annule">Annulé</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Navigation date (pour vue jour) -->
+    <div class="date-nav" *ngIf="activeFilter === 'jour'">
+      <button class="nav-btn" (click)="prevDay()">
+        <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+      </button>
+      <span class="date-label" (click)="goToToday()">{{ dateLabel }}</span>
+      <button class="nav-btn" (click)="nextDay()">
+        <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Liste des RDV -->
+    <section class="rdv-list">
+      <div *ngIf="isLoading" class="loading">
+        <lucide-icon name="refresh-cw" [size]="24" class="spinning"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div *ngIf="!isLoading && filteredRdv.length === 0" class="empty-state">
+        <lucide-icon name="calendar" [size]="48"></lucide-icon>
+        <p>Aucun rendez-vous {{ activeFilter === 'jour' ? 'pour ce jour' : '' }}</p>
+      </div>
+
+      <div class="rdv-card" *ngFor="let rdv of filteredRdv">
+        <div class="rdv-time">
+          <lucide-icon name="clock" [size]="16"></lucide-icon>
+          <span class="time">{{ formatTime(rdv.dateHeure) }}</span>
+          <span class="duration">{{ rdv.duree }} min</span>
+        </div>
+
+        <div class="rdv-patient">
+          <div class="patient-avatar">
+            <lucide-icon name="user" [size]="20"></lucide-icon>
+          </div>
+          <div class="patient-info">
+            <span class="patient-name">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+            <span class="patient-dossier" *ngIf="rdv.numeroDossier">
+              <lucide-icon name="file-text" [size]="12"></lucide-icon>
+              {{ rdv.numeroDossier }}
+            </span>
+          </div>
+        </div>
+
+        <div class="rdv-details">
+          <span class="rdv-motif" *ngIf="rdv.motif">{{ rdv.motif }}</span>
+          <span class="rdv-type">{{ rdv.typeRdv }}</span>
+        </div>
+
+        <div class="rdv-status">
+          <span class="status-badge" [ngClass]="getStatutClass(rdv.statut)">
+            {{ getStatutLabel(rdv.statut) }}
+          </span>
+        </div>
+
+        <div class="rdv-actions">
+          <button 
+            class="action-btn success" 
+            *ngIf="rdv.statut === 'planifie'"
+            (click)="updateStatut(rdv, 'confirme')"
+            title="Confirmer">
+            <lucide-icon name="check" [size]="16"></lucide-icon>
+          </button>
+          <button 
+            class="action-btn primary" 
+            *ngIf="rdv.statut === 'confirme'"
+            (click)="updateStatut(rdv, 'en_cours')"
+            title="Démarrer">
+            <lucide-icon name="play" [size]="16"></lucide-icon>
+          </button>
+          <button 
+            class="action-btn success" 
+            *ngIf="rdv.statut === 'en_cours'"
+            (click)="updateStatut(rdv, 'termine')"
+            title="Terminer">
+            <lucide-icon name="user-check" [size]="16"></lucide-icon>
+          </button>
+          <button 
+            class="action-btn danger" 
+            *ngIf="rdv.statut !== 'annule' && rdv.statut !== 'termine'"
+            (click)="updateStatut(rdv, 'absent')"
+            title="Patient absent">
+            <lucide-icon name="x" [size]="16"></lucide-icon>
+          </button>
+        </div>
+
+        <div class="rdv-date" *ngIf="activeFilter !== 'jour'">
+          <lucide-icon name="calendar" [size]="14"></lucide-icon>
+          {{ formatDate(rdv.dateHeure) }}
+        </div>
+      </div>
+    </section>
+  </div>
+
+</app-dashboard-layout>

@@ -1,0 +1,411 @@
+// ============================================
+// Register Component - Multi-Step Form Styles
+// Cohérent avec le design de login
+// ============================================
+
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/auth-forms';
+
+// Extension du form-container pour le register (plus large)
+.register-form {
+  max-width: 420px;
+  
+  @media (max-width: 480px) {
+    max-width: 100%;
+  }
+}
+
+// Steps Indicator
+.steps-indicator {
+  margin-bottom: 1rem;
+
+  .steps-list {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+
+    .step-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: $bg-light;
+      color: $text-lighter;
+      border: 2px solid $border-color;
+      transition: all 0.2s;
+    }
+
+    .step-title {
+      font-size: 0.65rem;
+      color: $text-lighter;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    &.active {
+      .step-circle {
+        background: $primary-color;
+        border-color: $primary-color;
+        color: white;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+      }
+      .step-title {
+        color: $primary-color;
+        font-weight: 600;
+      }
+    }
+
+    &.completed {
+      .step-circle {
+        background: $success-color;
+        border-color: $success-color;
+        color: white;
+      }
+      .step-title {
+        color: $success-color;
+      }
+    }
+  }
+}
+
+// Step Form
+.step-form {
+  margin-bottom: 0.5rem;
+}
+
+// Form Row (2 colonnes)
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Phone group styling
+.phone-group {
+  ::ng-deep .phone-input-container {
+    .input-group {
+      border: 1px solid $border-color;
+      border-radius: 0.4rem;
+      
+      &:focus-within {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+    }
+    
+    input {
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+// Radio Group
+.radio-group {
+  display: flex;
+  gap: 0.5rem;
+  height: 100%;
+
+  .radio-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border: 1px solid $border-color;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    input {
+      display: none;
+    }
+
+    span {
+      font-size: 0.85rem;
+      color: $text-light;
+    }
+
+    &:hover {
+      border-color: $primary-color;
+    }
+
+    &.selected {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.05);
+
+      span {
+        color: $primary-color;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Field label
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: $text-light;
+  margin-bottom: 0.4rem;
+}
+
+// Checkbox Grid
+.checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+
+  .checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid $border-color;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: $text-light;
+    transition: all 0.2s;
+
+    input {
+      display: none;
+    }
+
+    &:hover {
+      border-color: $primary-color;
+    }
+
+    &.selected {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.08);
+      color: $primary-color;
+    }
+  }
+}
+
+// Toggle Group
+.toggle-group {
+  margin-bottom: 0.5rem;
+  
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      display: none;
+    }
+
+    .toggle-switch {
+      width: 36px;
+      height: 20px;
+      background: $border-color;
+      border-radius: 10px;
+      position: relative;
+      transition: all 0.2s;
+      flex-shrink: 0;
+
+      &::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        top: 2px;
+        left: 2px;
+        transition: all 0.2s;
+      }
+    }
+
+    input:checked + .toggle-switch {
+      background: $primary-color;
+
+      &::after {
+        left: 18px;
+      }
+    }
+
+    span:last-child {
+      font-size: 0.8rem;
+      color: $text-light;
+    }
+  }
+
+  .conditional-input {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid $border-color;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+  }
+}
+
+// Section Label
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $text-dark;
+  margin-bottom: 0.6rem;
+
+  lucide-icon {
+    color: $primary-color;
+  }
+}
+
+// Declaration Box
+.declaration-box {
+  background: $bg-light;
+  border: 1px solid $border-color;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+
+  .declaration-text {
+    font-size: 0.75rem;
+    color: $text-light;
+    line-height: 1.4;
+    margin-bottom: 0.6rem;
+  }
+
+  .checkbox-declaration {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+
+    input {
+      display: none;
+    }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid $border-color;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      
+      lucide-icon {
+        color: transparent;
+      }
+    }
+
+    span {
+      font-size: 0.8rem;
+      color: $text-light;
+    }
+
+    &.checked .check-box {
+      background: $primary-color;
+      border-color: $primary-color;
+      
+      lucide-icon {
+        color: white;
+      }
+    }
+  }
+}
+
+// Form Actions
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+
+  .spacer {
+    flex: 1;
+  }
+  
+  .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid $border-color;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    color: $text-light;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: $bg-light;
+      border-color: $text-lighter;
+    }
+  }
+}
+
+// Success Container
+.success-container {
+  text-align: center;
+  padding: 1.5rem 0;
+
+  .success-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    background: linear-gradient(135deg, $success-color, lighten($success-color, 10%));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+
+  .success-title {
+    color: $success-color;
+  }
+
+  .success-message {
+    font-size: 0.9rem;
+    color: $text-light;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+
+    strong {
+      color: $primary-color;
+    }
+  }
+
+  .success-instructions {
+    font-size: 0.8rem;
+    color: $text-lighter;
+    margin-bottom: 1.5rem;
+  }
+}

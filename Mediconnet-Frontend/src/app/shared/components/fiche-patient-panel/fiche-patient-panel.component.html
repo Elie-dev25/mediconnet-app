@@ -1,0 +1,226 @@
+<div class="detail-overlay" *ngIf="isOpen" (click)="onOverlayClick()">
+  <div class="detail-panel" (click)="$event.stopPropagation()">
+    <div class="detail-header">
+      <h2>Fiche patient</h2>
+      <button class="close-btn" (click)="onClose()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">
+      <lucide-icon name="loader-2" [size]="24" class="spinning"></lucide-icon>
+      Chargement...
+    </div>
+
+    <!-- Bouton Commencer la consultation -->
+    <div class="consultation-action" *ngIf="showStartConsultation && !isLoading && selectedPatient">
+      <button class="btn-start-consultation" (click)="onStartConsultation()">
+        <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
+        Commencer la consultation
+      </button>
+    </div>
+
+    <div class="detail-content" *ngIf="selectedPatient && !isLoading">
+      <!-- Infos générales -->
+      <section class="detail-section">
+        <div class="patient-header">
+          <div class="avatar-large">
+            <lucide-icon name="user" [size]="32"></lucide-icon>
+          </div>
+          <div class="patient-identity">
+            <h3>{{ selectedPatient.prenom }} {{ selectedPatient.nom }}</h3>
+            <span class="dossier" *ngIf="selectedPatient.numeroDossier">
+              N° {{ selectedPatient.numeroDossier }}
+            </span>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item" *ngIf="selectedPatient.naissance">
+            <span class="info-label">Âge</span>
+            <span class="info-value">{{ getAge(selectedPatient.naissance) }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedPatient.sexe">
+            <span class="info-label">Sexe</span>
+            <span class="info-value">{{ getSexeLabel(selectedPatient.sexe) }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedPatient.groupeSanguin">
+            <span class="info-label">Groupe sanguin</span>
+            <span class="info-value blood">{{ selectedPatient.groupeSanguin }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedPatient.profession">
+            <span class="info-label">Profession</span>
+            <span class="info-value">{{ selectedPatient.profession }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section class="detail-section">
+        <h4>Contact</h4>
+        <div class="contact-list">
+          <div class="contact-row" *ngIf="selectedPatient.telephone">
+            <lucide-icon name="phone" [size]="16"></lucide-icon>
+            <span>{{ selectedPatient.telephone }}</span>
+          </div>
+          <div class="contact-row" *ngIf="selectedPatient.email">
+            <lucide-icon name="mail" [size]="16"></lucide-icon>
+            <span>{{ selectedPatient.email }}</span>
+          </div>
+          <div class="contact-row" *ngIf="selectedPatient.adresse">
+            <lucide-icon name="map-pin" [size]="16"></lucide-icon>
+            <span>{{ selectedPatient.adresse }}</span>
+          </div>
+        </div>
+        <div class="emergency-contact" *ngIf="selectedPatient.personneContact">
+          <h5>Personne à contacter</h5>
+          <p>{{ selectedPatient.personneContact }} - {{ selectedPatient.numeroContact }}</p>
+        </div>
+      </section>
+
+      <!-- Prochains RDV -->
+      <section class="detail-section" *ngIf="selectedPatient.prochainsRdv && selectedPatient.prochainsRdv.length > 0">
+        <h4>Prochains rendez-vous</h4>
+        <div class="rdv-list">
+          <div class="rdv-item" *ngFor="let rdv of selectedPatient.prochainsRdv">
+            <div class="rdv-date">
+              <lucide-icon name="calendar" [size]="14"></lucide-icon>
+              {{ formatDateTime(rdv.dateHeure) }}
+            </div>
+            <span class="rdv-motif">{{ rdv.motif || 'Consultation' }}</span>
+            <span class="rdv-statut" [ngClass]="rdv.statut">{{ rdv.statut }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Historique consultations -->
+      <section class="detail-section">
+        <h4>Dernières consultations</h4>
+        <div class="consultations-list" *ngIf="selectedPatient.dernieresConsultations && selectedPatient.dernieresConsultations.length > 0">
+          <div class="consultation-item" *ngFor="let c of selectedPatient.dernieresConsultations">
+            <div class="consultation-info">
+              <div class="consultation-date">
+                <lucide-icon name="clock" [size]="14"></lucide-icon>
+                {{ formatDate(c.dateConsultation) }}
+              </div>
+              <span class="consultation-motif">{{ c.motif }}</span>
+              <span class="consultation-diagnostic" *ngIf="c.diagnostic">{{ c.diagnostic }}</span>
+            </div>
+            <button class="btn-voir" (click)="viewConsultationDetails(c); $event.stopPropagation()" 
+                    *ngIf="c.idConsultation" title="Voir les détails">
+              <lucide-icon name="eye" [size]="16"></lucide-icon>
+              Voir
+            </button>
+          </div>
+        </div>
+        <p class="no-data" *ngIf="!selectedPatient.dernieresConsultations || selectedPatient.dernieresConsultations.length === 0">
+          Aucune consultation enregistrée
+        </p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Modale Détails Consultation -->
+<div class="consultation-modal-overlay" *ngIf="showConsultationModal" (click)="closeConsultationModal()">
+  <div class="consultation-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
+        Détails de la consultation
+      </h3>
+      <button class="btn-close" (click)="closeConsultationModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="isLoadingConsultation">
+      <div class="loading-state">
+        <lucide-icon name="loader-2" [size]="32" class="spinning"></lucide-icon>
+        <p>Chargement...</p>
+      </div>
+    </div>
+
+    <div class="modal-body" *ngIf="!isLoadingConsultation && selectedConsultation">
+      <!-- Infos générales -->
+      <div class="detail-section">
+        <div class="consultation-header-info">
+          <div class="info-item">
+            <lucide-icon name="calendar" [size]="16"></lucide-icon>
+            <span>{{ formatDateTime(selectedConsultation.dateConsultation) }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedConsultation.medecinNom">
+            <lucide-icon name="user" [size]="16"></lucide-icon>
+            <span>Dr. {{ selectedConsultation.medecinNom }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Motif -->
+      <div class="detail-section" *ngIf="selectedConsultation.anamnese?.motifConsultation">
+        <h4><lucide-icon name="clipboard" [size]="16"></lucide-icon> Motif</h4>
+        <p>{{ selectedConsultation.anamnese.motifConsultation }}</p>
+      </div>
+
+      <!-- Paramètres vitaux -->
+      <div class="detail-section" *ngIf="selectedConsultation.anamnese?.parametresVitaux">
+        <h4><lucide-icon name="heart-pulse" [size]="16"></lucide-icon> Paramètres vitaux</h4>
+        <div class="vitals-grid">
+          <div class="vital-item" *ngIf="selectedConsultation.anamnese.parametresVitaux.poids">
+            <span class="vital-label">Poids</span>
+            <span class="vital-value">{{ selectedConsultation.anamnese.parametresVitaux.poids }} kg</span>
+          </div>
+          <div class="vital-item" *ngIf="selectedConsultation.anamnese.parametresVitaux.taille">
+            <span class="vital-label">Taille</span>
+            <span class="vital-value">{{ selectedConsultation.anamnese.parametresVitaux.taille }} cm</span>
+          </div>
+          <div class="vital-item" *ngIf="selectedConsultation.anamnese.parametresVitaux.tensionArterielle">
+            <span class="vital-label">Tension</span>
+            <span class="vital-value">{{ selectedConsultation.anamnese.parametresVitaux.tensionArterielle }}</span>
+          </div>
+          <div class="vital-item" *ngIf="selectedConsultation.anamnese.parametresVitaux.temperature">
+            <span class="vital-label">Température</span>
+            <span class="vital-value">{{ selectedConsultation.anamnese.parametresVitaux.temperature }}°C</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagnostic -->
+      <div class="detail-section" *ngIf="selectedConsultation.diagnostic">
+        <h4><lucide-icon name="activity" [size]="16"></lucide-icon> Diagnostic</h4>
+        <p *ngIf="selectedConsultation.diagnostic.diagnosticPrincipal">
+          <strong>Principal:</strong> {{ selectedConsultation.diagnostic.diagnosticPrincipal }}
+        </p>
+        <p *ngIf="selectedConsultation.diagnostic.diagnosticsSecondaires">
+          <strong>Secondaires:</strong> {{ selectedConsultation.diagnostic.diagnosticsSecondaires }}
+        </p>
+        <p *ngIf="selectedConsultation.diagnostic.notesCliniques">
+          <em>{{ selectedConsultation.diagnostic.notesCliniques }}</em>
+        </p>
+      </div>
+
+      <!-- Ordonnance -->
+      <div class="detail-section" *ngIf="selectedConsultation.prescriptions?.ordonnance?.medicaments?.length">
+        <h4><lucide-icon name="pill" [size]="16"></lucide-icon> Ordonnance</h4>
+        <div class="medicaments-list">
+          <div class="medicament-item" *ngFor="let med of selectedConsultation.prescriptions.ordonnance.medicaments">
+            <div class="med-name">{{ med.nomMedicament }}</div>
+            <div class="med-details">
+              <span *ngIf="med.dosage">{{ med.dosage }}</span>
+              <span *ngIf="med.frequence"> - {{ med.frequence }}</span>
+              <span *ngIf="med.duree"> - {{ med.duree }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Examens -->
+      <div class="detail-section" *ngIf="selectedConsultation.prescriptions?.examens?.length">
+        <h4><lucide-icon name="flask-conical" [size]="16"></lucide-icon> Examens prescrits</h4>
+        <ul class="examens-list">
+          <li *ngFor="let ex of selectedConsultation.prescriptions.examens">{{ ex.nomExamen }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

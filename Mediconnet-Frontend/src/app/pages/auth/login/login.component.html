@@ -1,0 +1,137 @@
+<app-auth-layout-wrapper [showDecorative]="true">
+  <div class="form-container" @slideInRight>
+    <button class="back-btn" (click)="goToLanding()" type="button" title="Retour">
+      <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+    </button>
+
+    <!-- Email Not Confirmed State -->
+    <ng-container *ngIf="emailNotConfirmed; else loginFormTemplate">
+      <div class="email-not-confirmed">
+        <div class="warning-icon-wrapper">
+          <lucide-icon name="mail" [size]="48"></lucide-icon>
+        </div>
+        
+        <h2 class="form-title warning-title">Email non confirmé</h2>
+        
+        <p class="warning-message">
+          Votre adresse email <strong>{{ unconfirmedEmail }}</strong> n'a pas encore été vérifiée.
+        </p>
+        
+        <p class="warning-instructions">
+          Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation.
+        </p>
+        
+        <!-- Success message after resend -->
+        <div *ngIf="resendSuccess" class="success-alert">
+          <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+          <span>Un nouvel email de confirmation a été envoyé !</span>
+        </div>
+        
+        <div class="email-actions">
+          <button 
+            type="button" 
+            class="btn-resend" 
+            (click)="resendConfirmationEmail()"
+            [disabled]="isResendingEmail">
+            <lucide-icon *ngIf="!isResendingEmail" name="refresh-cw" [size]="18"></lucide-icon>
+            <lucide-icon *ngIf="isResendingEmail" name="loader-2" [size]="18" class="spinner"></lucide-icon>
+            <span>{{ isResendingEmail ? 'Envoi en cours...' : 'Renvoyer l\'email' }}</span>
+          </button>
+          
+          <button type="button" class="btn-back" (click)="backToLogin()">
+            <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+            <span>Retour à la connexion</span>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Login Form Template -->
+    <ng-template #loginFormTemplate>
+      <h2 class="form-title">Connexion</h2>
+      <p class="form-subtitle">Bienvenue sur MediConnect</p>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-alert">
+        <lucide-icon name="alert-circle" [size]="18" class="error-icon"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+      
+      <!-- Identifier Field (Email or Phone) -->
+      <div class="form-group">
+        <div class="input-wrapper">
+          <lucide-icon name="user" [size]="18" class="input-icon"></lucide-icon>
+          <input
+            type="text"
+            formControlName="identifier"
+            placeholder="Email ou numéro de téléphone"
+            class="form-input"
+            [class.is-error]="hasError('identifier')"
+            autocomplete="username"
+            required/>
+        </div>
+        <span *ngIf="hasError('identifier')" class="error-text">
+          {{ getErrorMessage('identifier') }}
+        </span>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <div class="input-wrapper">
+          <lucide-icon name="lock" [size]="18" class="input-icon"></lucide-icon>
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Mot de passe"
+            class="form-input"
+            [class.is-error]="hasError('password')"
+            autocomplete="current-password"
+            required/>
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+            [title]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+            <lucide-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="18"></lucide-icon>
+          </button>
+        </div>
+        <span *ngIf="hasError('password')" class="error-text">
+          {{ getErrorMessage('password') }}
+        </span>
+      </div>
+
+      <!-- Forgot Password Link -->
+      <div class="form-footer">
+        <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="loginForm.invalid || isLoading">
+        <span *ngIf="!isLoading">
+          <lucide-icon name="log-in" [size]="18"></lucide-icon>
+          Connexion
+        </span>
+        <lucide-icon *ngIf="isLoading" name="loader-2" [size]="18" class="spinner"></lucide-icon>
+      </button>
+
+      <!-- Register Link -->
+      <p class="register-link">
+        Pas encore de compte ?
+        <button
+          type="button"
+          class="link-btn"
+          (click)="goToRegister()">
+          Créer un compte
+        </button>
+      </p>
+
+    </form>
+    </ng-template>
+  </div>
+</app-auth-layout-wrapper>

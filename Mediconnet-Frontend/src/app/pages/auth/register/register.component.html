@@ -1,0 +1,312 @@
+<app-auth-layout-wrapper [showDecorative]="true">
+  <div class="form-container register-form" @slideIn>
+    <button class="back-btn" (click)="goToLanding()" type="button" title="Retour">
+      <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+    </button>
+
+    <!-- Email Confirmation Success -->
+    <ng-container *ngIf="registrationSuccess && requiresEmailConfirmation; else formTemplate">
+      <div class="success-container">
+        <div class="success-icon-wrapper">
+          <lucide-icon name="mail-check" [size]="48"></lucide-icon>
+        </div>
+        <h2 class="form-title success-title">Vérifiez votre email</h2>
+        <p class="success-message">
+          Un email de confirmation a été envoyé à<br>
+          <strong>{{ registeredEmail }}</strong>
+        </p>
+        <p class="success-instructions">Cliquez sur le lien dans l'email pour activer votre compte.</p>
+        <button class="btn-submit" (click)="goToLogin()">
+          <lucide-icon name="log-in" [size]="18"></lucide-icon>
+          Aller à la connexion
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Multi-Step Form -->
+    <ng-template #formTemplate>
+      <h2 class="form-title">Créer un compte</h2>
+      <p class="form-subtitle">Étape {{ currentStep }} sur {{ totalSteps }}</p>
+
+      <!-- Progress Steps -->
+      <div class="steps-indicator">
+        <div class="steps-list">
+          <div 
+            *ngFor="let step of steps" 
+            class="step-item"
+            [class.active]="step.id === currentStep"
+            [class.completed]="step.id < currentStep"
+            (click)="goToStep(step.id)">
+            <div class="step-circle">
+              <lucide-icon *ngIf="step.id < currentStep" name="check" [size]="12"></lucide-icon>
+              <span *ngIf="step.id >= currentStep">{{ step.id }}</span>
+            </div>
+            <span class="step-title">{{ step.title }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-alert" @fadeIn>
+        <lucide-icon name="alert-circle" [size]="18" class="error-icon"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Step 1: Account -->
+      <form *ngIf="currentStep === 1" [formGroup]="accountForm" class="step-form" @slideIn>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="user" [size]="18" class="input-icon"></lucide-icon>
+              <input type="text" formControlName="firstName" placeholder="Prénom *" class="form-input"
+                     [class.is-error]="hasError(accountForm, 'firstName')">
+            </div>
+            <span *ngIf="hasError(accountForm, 'firstName')" class="error-text">{{ getErrorMessage(accountForm, 'firstName') }}</span>
+          </div>
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="user" [size]="18" class="input-icon"></lucide-icon>
+              <input type="text" formControlName="lastName" placeholder="Nom *" class="form-input"
+                     [class.is-error]="hasError(accountForm, 'lastName')">
+            </div>
+            <span *ngIf="hasError(accountForm, 'lastName')" class="error-text">{{ getErrorMessage(accountForm, 'lastName') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="mail" [size]="18" class="input-icon"></lucide-icon>
+            <input type="email" formControlName="email" placeholder="Email *" class="form-input"
+                   [class.is-error]="hasError(accountForm, 'email')">
+          </div>
+          <span *ngIf="hasError(accountForm, 'email')" class="error-text">{{ getErrorMessage(accountForm, 'email') }}</span>
+        </div>
+
+        <div class="form-group phone-group">
+          <app-phone-input formControlName="telephone" [showLabel]="false" [showIcon]="false" defaultCountry="CM"></app-phone-input>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="lock" [size]="18" class="input-icon"></lucide-icon>
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" 
+                   placeholder="Mot de passe *" class="form-input" (input)="onPasswordInput($event)">
+            <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+              <lucide-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="18"></lucide-icon>
+            </button>
+          </div>
+          <app-password-strength-indicator [password]="passwordValue" [showCriteria]="true"></app-password-strength-indicator>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="shield-check" [size]="18" class="input-icon"></lucide-icon>
+            <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword" 
+                   placeholder="Confirmer le mot de passe *" class="form-input"
+                   [class.is-error]="passwordMismatch()">
+            <button type="button" class="toggle-password" (click)="toggleConfirmPasswordVisibility()">
+              <lucide-icon [name]="showConfirmPassword ? 'eye-off' : 'eye'" [size]="18"></lucide-icon>
+            </button>
+          </div>
+          <span *ngIf="passwordMismatch()" class="error-text">Les mots de passe ne correspondent pas</span>
+        </div>
+      </form>
+
+      <!-- Step 2: Identity -->
+      <form *ngIf="currentStep === 2" [formGroup]="identityForm" class="step-form" @slideIn>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="calendar" [size]="18" class="input-icon"></lucide-icon>
+              <input type="date" formControlName="dateNaissance" class="form-input"
+                     [class.is-error]="hasError(identityForm, 'dateNaissance')">
+            </div>
+            <span *ngIf="hasError(identityForm, 'dateNaissance')" class="error-text">{{ getErrorMessage(identityForm, 'dateNaissance') }}</span>
+          </div>
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-option" [class.selected]="identityForm.get('sexe')?.value === 'M'">
+                <input type="radio" formControlName="sexe" value="M">
+                <span>Homme</span>
+              </label>
+              <label class="radio-option" [class.selected]="identityForm.get('sexe')?.value === 'F'">
+                <input type="radio" formControlName="sexe" value="F">
+                <span>Femme</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="flag" [size]="18" class="input-icon"></lucide-icon>
+              <input type="text" formControlName="nationalite" placeholder="Nationalité" class="form-input">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="map-pin" [size]="18" class="input-icon"></lucide-icon>
+              <select formControlName="regionOrigine" class="form-input">
+                <option value="">Région d'origine</option>
+                <option *ngFor="let region of regions" [value]="region">{{ region }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="users" [size]="18" class="input-icon"></lucide-icon>
+              <select formControlName="situationMatrimoniale" class="form-input">
+                <option value="">Situation matrimoniale</option>
+                <option *ngFor="let sit of situationsMatrimoniales" [value]="sit">{{ sit }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="briefcase" [size]="18" class="input-icon"></lucide-icon>
+              <input type="text" formControlName="profession" placeholder="Profession" class="form-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="home" [size]="18" class="input-icon"></lucide-icon>
+            <input type="text" formControlName="adresse" placeholder="Adresse complète" class="form-input">
+          </div>
+        </div>
+      </form>
+
+      <!-- Step 3: Health -->
+      <form *ngIf="currentStep === 3" [formGroup]="healthForm" class="step-form" @slideIn>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="droplet" [size]="18" class="input-icon"></lucide-icon>
+            <select formControlName="groupeSanguin" class="form-input">
+              <option value="">Groupe sanguin</option>
+              <option *ngFor="let gs of groupesSanguins" [value]="gs">{{ gs }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Maladies chroniques</label>
+          <div class="checkbox-grid">
+            <label *ngFor="let maladie of maladiesOptions" 
+                   class="checkbox-option"
+                   [class.selected]="isMaladieSelected(maladie)">
+              <input type="checkbox" [checked]="isMaladieSelected(maladie)" (change)="toggleMaladie(maladie)">
+              <span>{{ maladie }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="allergiesConnues">
+            <span class="toggle-switch"></span>
+            <span>Allergies connues</span>
+          </label>
+          <input *ngIf="healthForm.get('allergiesConnues')?.value" type="text" 
+                 formControlName="allergiesDetails" placeholder="Précisez vos allergies..." class="form-input conditional-input">
+        </div>
+
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="operationsChirurgicales">
+            <span class="toggle-switch"></span>
+            <span>Opérations chirurgicales</span>
+          </label>
+          <input *ngIf="healthForm.get('operationsChirurgicales')?.value" type="text" 
+                 formControlName="operationsDetails" placeholder="Précisez les opérations..." class="form-input conditional-input">
+        </div>
+
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="antecedentsFamiliaux">
+            <span class="toggle-switch"></span>
+            <span>Antécédents familiaux</span>
+          </label>
+          <input *ngIf="healthForm.get('antecedentsFamiliaux')?.value" type="text" 
+                 formControlName="antecedentsFamiliauxDetails" placeholder="Précisez les antécédents..." class="form-input conditional-input">
+        </div>
+      </form>
+
+      <!-- Step 4: Emergency Contact -->
+      <form *ngIf="currentStep === 4" [formGroup]="emergencyForm" class="step-form" @slideIn>
+        <div class="section-label">
+          <lucide-icon name="phone-call" [size]="16"></lucide-icon>
+          <span>Contact d'urgence</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="user" [size]="18" class="input-icon"></lucide-icon>
+              <input type="text" formControlName="personneContact" placeholder="Nom du contact *" class="form-input"
+                     [class.is-error]="hasError(emergencyForm, 'personneContact')">
+            </div>
+            <span *ngIf="hasError(emergencyForm, 'personneContact')" class="error-text">{{ getErrorMessage(emergencyForm, 'personneContact') }}</span>
+          </div>
+          <div class="form-group">
+            <div class="input-wrapper">
+              <lucide-icon name="phone" [size]="18" class="input-icon"></lucide-icon>
+              <input type="tel" formControlName="numeroContact" placeholder="Téléphone *" class="form-input"
+                     [class.is-error]="hasError(emergencyForm, 'numeroContact')">
+            </div>
+            <span *ngIf="hasError(emergencyForm, 'numeroContact')" class="error-text">{{ getErrorMessage(emergencyForm, 'numeroContact') }}</span>
+          </div>
+        </div>
+
+        <div class="declaration-box">
+          <div class="section-label">
+            <lucide-icon name="shield-check" [size]="16"></lucide-icon>
+            <span>Déclaration sur l'honneur</span>
+          </div>
+          <p class="declaration-text">Je déclare sur l'honneur que les informations fournies sont exactes et complètes.</p>
+          <label class="checkbox-declaration" [class.checked]="emergencyForm.get('declarationAcceptee')?.value">
+            <input type="checkbox" formControlName="declarationAcceptee">
+            <div class="check-box">
+              <lucide-icon name="check" [size]="12"></lucide-icon>
+            </div>
+            <span>J'accepte et je confirme *</span>
+          </label>
+        </div>
+      </form>
+
+      <!-- Navigation Buttons -->
+      <div class="form-actions">
+        <button type="button" class="btn-back" *ngIf="currentStep > 1" (click)="previousStep()">
+          <lucide-icon name="arrow-left" [size]="16"></lucide-icon>
+          Retour
+        </button>
+        <div class="spacer" *ngIf="currentStep === 1"></div>
+        
+        <button type="button" class="btn-submit" *ngIf="currentStep < totalSteps" 
+                [disabled]="!isCurrentStepValid" (click)="nextStep()">
+          Suivant
+          <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
+        </button>
+        
+        <button type="button" class="btn-submit" *ngIf="currentStep === totalSteps" 
+                [disabled]="!isCurrentStepValid || isLoading" (click)="onSubmit()">
+          <span *ngIf="!isLoading">
+            <lucide-icon name="user-plus" [size]="16"></lucide-icon>
+            Créer mon compte
+          </span>
+          <lucide-icon *ngIf="isLoading" name="loader-2" [size]="18" class="spinner"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Login Link -->
+      <p class="register-link">
+        Vous avez déjà un compte ?
+        <button type="button" class="link-btn" (click)="goToLogin()">Se connecter</button>
+      </p>
+    </ng-template>
+  </div>
+</app-auth-layout-wrapper>

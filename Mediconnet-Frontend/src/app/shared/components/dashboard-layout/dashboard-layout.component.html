@@ -1,0 +1,33 @@
+<div class="dashboard-layout">
+  <app-header
+    [userName]="userName"
+    [userRole]="userRole"
+    (toggleSidebar)="toggleMobileSidebar()"
+    (logoutClick)="logout()"
+    (profileClick)="openProfileForm()">
+  </app-header>
+  
+  <div class="dashboard-body">
+    <app-sidebar
+      [title]="sidebarTitle"
+      [menuItems]="menuItems"
+      [mobileOpen]="sidebarMobileOpen"
+      (closeMobile)="sidebarMobileOpen = false"
+      (featureUnavailable)="onFeatureUnavailable($event)"
+      (profileClick)="openProfileForm()">
+    </app-sidebar>
+    
+    <main class="dashboard-main">
+      <ng-content></ng-content>
+    </main>
+  </div>
+</div>
+
+<!-- NOTE: Les modaux de profil ont été supprimés car le profil est maintenant complété lors de l'inscription -->
+<!-- La navigation vers le profil se fait via la page dédiée /[role]/profile -->
+
+<!-- Modal fonctionnalite non disponible -->
+<app-feature-unavailable-modal
+  [isOpen]="showFeatureUnavailable"
+  (close)="onFeatureUnavailableClose()">
+</app-feature-unavailable-modal>

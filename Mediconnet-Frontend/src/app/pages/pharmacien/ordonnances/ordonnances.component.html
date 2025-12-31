@@ -1,0 +1,188 @@
+<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+  <div class="ordonnances-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1><lucide-icon name="pill" [size]="28"></lucide-icon> Ordonnances à dispenser</h1>
+        <p>Gérez les prescriptions en attente de dispensation</p>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          placeholder="Rechercher par nom de patient..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+        >
+      </div>
+      <button class="btn btn-secondary" (click)="onSearch()">
+        <lucide-icon name="search" [size]="16"></lucide-icon>
+        Rechercher
+      </button>
+    </div>
+
+    <!-- Ordonnances List -->
+    <div class="ordonnances-list">
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="spinner"></div>
+      </div>
+
+      <div class="ordonnance-card" *ngFor="let ord of ordonnances">
+        <div class="card-header">
+          <div class="patient-info">
+            <lucide-icon name="user" [size]="20"></lucide-icon>
+            <div>
+              <strong>{{ ord.nomPatient }}</strong>
+              <span class="date">{{ formatDate(ord.date) }}</span>
+            </div>
+          </div>
+          <span class="badge" [ngClass]="getStatutBadgeClass(ord.statut)">
+            {{ getStatutLabel(ord.statut) }}
+          </span>
+        </div>
+
+        <div class="card-meta">
+          <span><lucide-icon name="stethoscope" [size]="14"></lucide-icon> {{ ord.nomMedecin }}</span>
+          <span *ngIf="ord.commentaire"><lucide-icon name="message-square" [size]="14"></lucide-icon> {{ ord.commentaire }}</span>
+        </div>
+
+        <div class="medicaments-list">
+          <div class="med-item" *ngFor="let med of ord.medicaments" [class.unavailable]="!canDispense(med)">
+            <div class="med-info">
+              <span class="med-name">{{ med.nomMedicament }}</span>
+              <span class="med-details" *ngIf="med.dosage">{{ med.dosage }}</span>
+            </div>
+            <div class="med-quantities">
+              <span class="qty">
+                <strong>{{ med.quantiteDispensee }}</strong>/{{ med.quantitePrescrite }}
+              </span>
+              <span class="stock" [class.low]="(med.stockDisponible || 0) < getRestant(med)">
+                Stock: {{ med.stockDisponible ?? 0 }}
+              </span>
+            </div>
+            <span class="price">{{ formatPrice(med.prixUnitaire) }}</span>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button 
+            class="btn btn-primary" 
+            (click)="openDispensationModal(ord)"
+            [disabled]="ord.statut === 'complete'"
+          >
+            <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+            Dispenser
+          </button>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="ordonnances.length === 0 && !isLoading">
+        <lucide-icon name="clipboard-check" [size]="64"></lucide-icon>
+        <h3>Aucune ordonnance en attente</h3>
+        <p>Toutes les ordonnances ont été dispensées</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
+        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+        Précédent
+      </button>
+      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
+        Suivant
+        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+      </button>
+    </div>
+  </div>
+</app-sidebar>
+
+<!-- Dispensation Modal -->
+<div class="modal-overlay" *ngIf="showDispensationModal" (click)="closeDispensationModal()">
+  <div class="modal modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Dispenser l'ordonnance</h2>
+      <button class="btn-close" (click)="closeDispensationModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="patient-summary" *ngIf="selectedOrdonnance">
+        <div class="summary-row">
+          <span><lucide-icon name="user" [size]="16"></lucide-icon> {{ selectedOrdonnance.nomPatient }}</span>
+          <span><lucide-icon name="stethoscope" [size]="16"></lucide-icon> {{ selectedOrdonnance.nomMedecin }}</span>
+        </div>
+      </div>
+
+      <div class="dispensation-table">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" disabled></th>
+              <th>Médicament</th>
+              <th>Prescrit</th>
+              <th>Déjà dispensé</th>
+              <th>Stock</th>
+              <th>À dispenser</th>
+              <th>Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ligne of dispensationLignes" [class.disabled]="!canDispense(ligne.med)">
+              <td>
+                <input 
+                  type="checkbox" 
+                  [(ngModel)]="ligne.selected"
+                  [disabled]="!canDispense(ligne.med)"
+                >
+              </td>
+              <td>
+                <strong>{{ ligne.med.nomMedicament }}</strong>
+                <span class="dosage">{{ ligne.med.dosage }}</span>
+              </td>
+              <td>{{ ligne.med.quantitePrescrite }}</td>
+              <td>{{ ligne.med.quantiteDispensee }}</td>
+              <td [class.low]="(ligne.med.stockDisponible || 0) < getRestant(ligne.med)">
+                {{ ligne.med.stockDisponible ?? 0 }}
+              </td>
+              <td>
+                <input 
+                  type="number" 
+                  [(ngModel)]="ligne.quantite"
+                  [min]="0"
+                  [max]="Math.min(getRestant(ligne.med), ligne.med.stockDisponible || 0)"
+                  [disabled]="!ligne.selected || !canDispense(ligne.med)"
+                  class="qty-input"
+                >
+              </td>
+              <td>{{ formatPrice(ligne.quantite * (ligne.med.prixUnitaire || 0)) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" class="total-label">Total</td>
+              <td class="total-value">{{ formatPrice(getTotalDispensation()) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="form-group">
+        <label>Notes (optionnel)</label>
+        <textarea [(ngModel)]="dispensationNotes" rows="2" placeholder="Notes sur la dispensation..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDispensationModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="dispenser()" [disabled]="getTotalDispensation() === 0">
+        <lucide-icon name="check" [size]="16"></lucide-icon>
+        Confirmer la dispensation
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,119 @@
+<div class="questionnaire" [class.compact]="compact">
+  <div class="header" *ngIf="!compact">
+    <h3>
+      <lucide-icon name="clipboard-list" [size]="22"></lucide-icon>
+      Consultation
+    </h3>
+    <p class="patient" *ngIf="patientNom">Patient: <strong>{{ patientNom }}</strong></p>
+  </div>
+
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+    {{ errorMessage }}
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+    {{ successMessage }}
+  </div>
+
+  <div class="loading" *ngIf="isLoading">Chargement...</div>
+
+  <form *ngIf="!isLoading" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="question-list" *ngIf="questions.length > 0 || questionsLibres.length > 0; else empty">
+      <!-- Questions prédéfinies -->
+      <div class="question-item" *ngFor="let q of questions; let i = index">
+        <div class="q-header">
+          <div class="q-title">
+            <span class="order">{{ i + 1 }}.</span>
+            <span class="text">{{ q.texte }}</span>
+            <span class="badge badge-predef">Standard</span>
+            <span class="required-mark" *ngIf="q.obligatoire">*</span>
+          </div>
+        </div>
+
+        <div class="q-input" [ngSwitch]="q.type">
+          <!-- Type texte -->
+          <textarea
+            *ngSwitchCase="'texte'"
+            [formControlName]="controlName(q.id)"
+            rows="3"
+            placeholder="Votre réponse"
+            [class.invalid]="form.get(controlName(q.id))?.invalid && form.get(controlName(q.id))?.touched">
+          </textarea>
+
+          <!-- Type choix -->
+          <div *ngSwitchCase="'choix'" class="choix-group">
+            <label *ngFor="let opt of q.options" class="choix-option">
+              <input type="radio" [formControlName]="controlName(q.id)" [value]="opt" />
+              <span>{{ opt }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions libres -->
+      <div class="question-item libre" *ngFor="let q of questionsLibres; let i = index">
+        <div class="q-header">
+          <div class="q-title">
+            <span class="order">{{ questions.length + i + 1 }}.</span>
+            <span class="text">{{ q.texte }}</span>
+            <span class="badge badge-libre">Libre</span>
+          </div>
+        </div>
+
+        <div class="q-input">
+          <textarea
+            [formControlName]="controlName(q.id)"
+            rows="3"
+            placeholder="Votre réponse">
+          </textarea>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #empty>
+      <div class="empty">Aucune question pour cette consultation.</div>
+    </ng-template>
+
+    <div class="add-question" *ngIf="isMedecin()">
+      <button type="button" class="btn btn-secondary" (click)="toggleAddQuestion()">
+        <lucide-icon name="plus" [size]="18"></lucide-icon>
+        Ajouter une question
+      </button>
+
+      <div class="add-panel" *ngIf="addQuestionOpen">
+        <div class="row">
+          <label>Question</label>
+          <input type="text" [(ngModel)]="newQuestionText" [ngModelOptions]="{ standalone: true }" name="newQuestionText" placeholder="Texte de la question" />
+        </div>
+        <div class="row">
+          <label>Type</label>
+          <select [(ngModel)]="newQuestionType" [ngModelOptions]="{ standalone: true }" name="newQuestionType">
+            <option value="texte">Texte</option>
+            <option value="textarea">Texte long</option>
+            <option value="nombre">Nombre</option>
+            <option value="date">Date</option>
+            <option value="oui_non">Oui/Non</option>
+          </select>
+        </div>
+        <div class="row actions">
+          <button type="button" class="btn btn-secondary" (click)="toggleAddQuestion()">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="addQuestionLibre()" [disabled]="isSaving">Ajouter</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()" *ngIf="!compact">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+        Fermer
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+        <lucide-icon name="loader-2" [size]="18" class="spin" *ngIf="isSaving"></lucide-icon>
+        <lucide-icon name="save" [size]="18" *ngIf="!isSaving"></lucide-icon>
+        {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,28 @@
+.dashboard-layout {
+  min-height: 100vh;
+  background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden; // Empêcher le scroll global
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto; // Scroll uniquement dans le contenu principal
+  height: calc(100vh - 64px); // Hauteur moins le header
+}
+
+@media (max-width: 768px) {
+  .dashboard-main {
+    padding: 1rem;
+    height: calc(100vh - 56px);
+  }
+}

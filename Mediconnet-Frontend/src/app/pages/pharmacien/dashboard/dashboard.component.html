@@ -1,0 +1,132 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="welcome-section">
+        <h1>Bonjour, {{ userName }}</h1>
+        <p class="subtitle">Bienvenue dans votre espace pharmacie</p>
+      </div>
+      <div class="header-actions">
+        <span class="date-display">
+          <lucide-icon name="calendar" [size]="16"></lucide-icon>
+          {{ today | date:'fullDate':'':'fr-FR' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card" routerLink="/pharmacien/ordonnances">
+        <div class="stat-icon ordonnances">
+          <lucide-icon name="clipboard-list" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ kpis.ordonnancesEnAttente }}</span>
+          <span class="stat-label">Ordonnances en attente</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon dispensations">
+          <lucide-icon name="pill" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ kpis.dispensationsJour }}</span>
+          <span class="stat-label">Dispensations aujourd'hui</span>
+        </div>
+      </div>
+      <div class="stat-card" routerLink="/pharmacien/stock" [queryParams]="{statut: 'alerte'}">
+        <div class="stat-icon alertes">
+          <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ kpis.medicamentsEnAlerte }}</span>
+          <span class="stat-label">Stock bas</span>
+        </div>
+      </div>
+      <div class="stat-card" routerLink="/pharmacien/stock" [queryParams]="{statut: 'rupture'}">
+        <div class="stat-icon rupture">
+          <lucide-icon name="package-x" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ kpis.medicamentsEnRupture }}</span>
+          <span class="stat-label">En rupture</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Stats -->
+    <div class="secondary-stats">
+      <div class="secondary-stat">
+        <lucide-icon name="package" [size]="18"></lucide-icon>
+        <span><strong>{{ kpis.totalMedicaments }}</strong> médicaments en stock</span>
+      </div>
+      <div class="secondary-stat">
+        <lucide-icon name="clock" [size]="18"></lucide-icon>
+        <span><strong>{{ kpis.medicamentsPerimesProches }}</strong> péremption proche (30j)</span>
+      </div>
+      <div class="secondary-stat">
+        <lucide-icon name="truck" [size]="18"></lucide-icon>
+        <span><strong>{{ kpis.commandesEnCours }}</strong> commandes en cours</span>
+      </div>
+      <div class="secondary-stat">
+        <lucide-icon name="wallet" [size]="18"></lucide-icon>
+        <span>Valeur stock: <strong>{{ formatPrice(kpis.valeurStock) }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="content-grid">
+      <!-- Alertes -->
+      <div class="content-card">
+        <div class="card-header">
+          <h3><lucide-icon name="alert-triangle" [size]="20"></lucide-icon> Alertes récentes</h3>
+          <a routerLink="/pharmacien/stock" class="view-all">Voir tout</a>
+        </div>
+        <div class="card-body">
+          <div class="loading-state" *ngIf="isLoading">
+            <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+            <p>Chargement...</p>
+          </div>
+          <div class="alerts-list" *ngIf="!isLoading && alertes.length > 0">
+            <div class="alert-item" *ngFor="let alerte of alertes" [ngClass]="getAlertClass(alerte.type)">
+              <lucide-icon [name]="getAlertIcon(alerte.type)" [size]="18"></lucide-icon>
+              <div class="alert-content">
+                <strong>{{ alerte.nomMedicament }}</strong>
+                <span *ngIf="alerte.type === 'rupture'">Rupture de stock</span>
+                <span *ngIf="alerte.type === 'alerte'">Stock: {{ alerte.stockActuel }} (seuil: {{ alerte.seuilAlerte }})</span>
+                <span *ngIf="alerte.type === 'peremption'">Péremption dans {{ alerte.joursRestants }} jours</span>
+              </div>
+            </div>
+          </div>
+          <div class="empty-state" *ngIf="!isLoading && alertes.length === 0">
+            <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+            <p>Aucune alerte</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="content-card">
+        <div class="card-header">
+          <h3><lucide-icon name="zap" [size]="20"></lucide-icon> Actions rapides</h3>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <a routerLink="/pharmacien/ordonnances" class="quick-action">
+              <lucide-icon name="pill" [size]="24"></lucide-icon>
+              <span>Dispenser une ordonnance</span>
+            </a>
+            <a routerLink="/pharmacien/stock" class="quick-action">
+              <lucide-icon name="package" [size]="24"></lucide-icon>
+              <span>Gérer le stock</span>
+            </a>
+            <a routerLink="/pharmacien/historique" class="quick-action">
+              <lucide-icon name="history" [size]="24"></lucide-icon>
+              <span>Voir l'historique</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

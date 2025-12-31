@@ -1,0 +1,223 @@
+<app-dashboard-layout 
+  sidebarTitle="Administration" 
+  [menuItems]="menuItems">
+  
+  <div class="users-page">
+    <header class="page-header">
+      <div class="header-content">
+        <h1>Gestion des utilisateurs</h1>
+        <p>Creer et gerer les comptes du personnel medical</p>
+      </div>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <lucide-icon name="user-plus" [size]="20"></lucide-icon>
+        Nouvel utilisateur
+      </button>
+    </header>
+
+    <!-- Filtres -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          placeholder="Rechercher un utilisateur..." 
+          [(ngModel)]="searchQuery"
+          [ngModelOptions]="{standalone: true}">
+      </div>
+      <div class="filter-group">
+        <select [(ngModel)]="selectedRole" [ngModelOptions]="{standalone: true}">
+          <option value="">Tous les roles</option>
+          <option *ngFor="let role of roles" [value]="role.value">{{ role.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="users-table-container">
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des utilisateurs...</p>
+      </div>
+
+      <table class="users-table" *ngIf="!isLoading">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Telephone</th>
+            <th>Role</th>
+            <th>Date creation</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers">
+            <td class="user-name">
+              <div class="user-avatar">
+                <lucide-icon [name]="getRoleIcon(user.role)" [size]="18"></lucide-icon>
+              </div>
+              <span>{{ user.prenom }} {{ user.nom }}</span>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.telephone || '-' }}</td>
+            <td>
+              <span class="role-badge" [class]="user.role">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+            <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+            <td class="actions">
+              <button class="btn-icon" title="Modifier" disabled>
+                <lucide-icon name="edit" [size]="16"></lucide-icon>
+              </button>
+              <button class="btn-icon danger" title="Supprimer" disabled>
+                <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredUsers.length === 0 && !isLoading">
+            <td colspan="6" class="empty-state">
+              <lucide-icon name="users" [size]="48"></lucide-icon>
+              <p>Aucun utilisateur trouve</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</app-dashboard-layout>
+
+<!-- Modal Creation Utilisateur -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()" @fadeIn>
+  <div class="modal-container" (click)="$event.stopPropagation()" @slideIn>
+    <div class="modal-header">
+      <h2>
+        <lucide-icon name="user-plus" [size]="24"></lucide-icon>
+        Creer un utilisateur
+      </h2>
+      <button class="close-btn" (click)="closeCreateModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+      <div class="modal-body">
+        <!-- Messages -->
+        <div class="alert alert-error" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+        <div class="alert alert-success" *ngIf="successMessage">
+          {{ successMessage }}
+        </div>
+
+        <!-- Role Selection -->
+        <div class="form-group">
+          <label>Role *</label>
+          <div class="role-selector">
+            <label 
+              *ngFor="let role of roles" 
+              class="role-option"
+              [class.selected]="userForm.get('role')?.value === role.value">
+              <input type="radio" formControlName="role" [value]="role.value">
+              <lucide-icon [name]="role.icon" [size]="24"></lucide-icon>
+              <span>{{ role.label }}</span>
+            </label>
+          </div>
+          <span class="error-text" *ngIf="hasError('role')">Veuillez selectionner un role</span>
+        </div>
+
+        <!-- Informations de base -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prenom *</label>
+            <input type="text" formControlName="prenom" placeholder="Prenom">
+            <span class="error-text" *ngIf="hasError('prenom')">Prenom requis (min 2 caracteres)</span>
+          </div>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" formControlName="nom" placeholder="Nom">
+            <span class="error-text" *ngIf="hasError('nom')">Nom requis (min 2 caracteres)</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" formControlName="email" placeholder="email@exemple.com">
+            <span class="error-text" *ngIf="hasError('email')">Email valide requis</span>
+          </div>
+          <div class="form-group">
+            <label>Telephone *</label>
+            <input type="tel" formControlName="telephone" placeholder="+237 6XX XXX XXX">
+            <span class="error-text" *ngIf="hasError('telephone')">Telephone requis</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Mot de passe *</label>
+          <div class="password-input">
+            <input 
+              [type]="showPassword ? 'text' : 'password'" 
+              formControlName="password" 
+              placeholder="Minimum 6 caracteres">
+            <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+              <lucide-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="18"></lucide-icon>
+            </button>
+          </div>
+          <span class="error-text" *ngIf="hasError('password')">Mot de passe requis (min 6 caracteres)</span>
+        </div>
+
+        <!-- Champs specifiques Medecin -->
+        <div class="role-specific-fields" *ngIf="userForm.get('role')?.value === 'medecin'">
+          <h3>Informations medicales</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Specialite *</label>
+              <select formControlName="idSpecialite">
+                <option [value]="null" disabled>Selectionnez une specialite</option>
+                <option *ngFor="let spec of specialites" [value]="spec.idSpecialite">
+                  {{ spec.nomSpecialite }}
+                </option>
+              </select>
+              <span class="error-text" *ngIf="hasError('idSpecialite')">Specialite requise</span>
+            </div>
+            <div class="form-group">
+              <label>Service *</label>
+              <select formControlName="idService">
+                <option [value]="null" disabled>Selectionnez un service</option>
+                <option *ngFor="let service of services" [value]="service.idService">
+                  {{ service.nomService }}
+                </option>
+              </select>
+              <span class="error-text" *ngIf="hasError('idService')">Service requis</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Numero d'ordre</label>
+            <input type="text" formControlName="numeroOrdre" placeholder="Ex: ORD-12345">
+          </div>
+        </div>
+
+        <!-- Champs specifiques Infirmier -->
+        <div class="role-specific-fields" *ngIf="userForm.get('role')?.value === 'infirmier'">
+          <h3>Informations infirmier</h3>
+          <div class="form-group">
+            <label>Matricule</label>
+            <input type="text" formControlName="matricule" placeholder="Ex: INF-12345">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeCreateModal()">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          <lucide-icon name="save" [size]="18"></lucide-icon>
+          {{ isSubmitting ? 'Creation...' : 'Creer l\'utilisateur' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

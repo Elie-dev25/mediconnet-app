@@ -1,0 +1,23 @@
+<div class="search-bar" [class.focused]="isFocused">
+  <div class="search-icon">
+    <lucide-icon name="search" [size]="18"></lucide-icon>
+  </div>
+  <input 
+    type="text" 
+    [placeholder]="placeholder"
+    [value]="value"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (focus)="isFocused = true"
+    (blur)="isFocused = false"
+    class="search-input"
+  />
+  <button 
+    *ngIf="value" 
+    class="clear-btn" 
+    (click)="clearSearch()"
+    type="button"
+    aria-label="Effacer la recherche">
+    <lucide-icon name="x" [size]="16"></lucide-icon>
+  </button>
+</div>

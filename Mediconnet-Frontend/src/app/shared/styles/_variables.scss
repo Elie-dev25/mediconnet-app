@@ -1,0 +1,72 @@
+// ============================================
+// Variables globales de l'application
+// ============================================
+
+// Couleurs principales
+$primary-color: #5c6bc0;
+$primary-dark: #3a3f99;
+$primary-light: #8e99f3;
+
+// Couleurs secondaires
+$secondary-color: #0ea5e9;
+$secondary-dark: #0284c7;
+
+// Couleurs de texte
+$text-dark: #1a237e;
+$text-primary: #1e293b;
+$text-secondary: #475569;
+$text-light: #666;
+$text-lighter: #999;
+$text-muted: #94a3b8;
+
+// Couleurs de fond
+$bg-white: #ffffff;
+$bg-light: #f5f5f5;
+$bg-gray: #f8fafc;
+$bg-dark: #1e293b;
+
+// Couleurs d'état
+$success-color: #10b981;
+$success-light: #d1fae5;
+$error-color: #d32f2f;
+$error-light: #fee2e2;
+$warning-color: #d97706;
+$warning-light: #fef3c7;
+$info-color: #0ea5e9;
+$info-light: #e0f2fe;
+
+// Bordures
+$border-color: #e0e0e0;
+$border-light: #e2e8f0;
+
+// Ombres
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+$shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.2);
+
+// Rayons de bordure
+$radius-sm: 0.25rem;
+$radius-md: 0.5rem;
+$radius-lg: 0.75rem;
+$radius-xl: 1rem;
+$radius-full: 9999px;
+
+// Transitions
+$transition-fast: 0.15s ease;
+$transition-normal: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// Breakpoints
+$breakpoint-sm: 480px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+// Z-index
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal-backdrop: 900;
+$z-modal: 1000;
+$z-tooltip: 1100;

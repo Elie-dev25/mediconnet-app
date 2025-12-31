@@ -1,0 +1,229 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="consultations-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>
+          <lucide-icon name="stethoscope" [size]="28"></lucide-icon>
+          Consultations
+        </h1>
+        <p class="subtitle">Gérez vos consultations médicales</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid" *ngIf="stats">
+      <div class="stat-card">
+        <div class="stat-icon today">
+          <lucide-icon name="stethoscope" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.consultationsAujourdHui }}</span>
+          <span class="stat-label">Aujourd'hui</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon week">
+          <lucide-icon name="calendar" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.consultationsSemaine }}</span>
+          <span class="stat-label">Cette semaine</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon progress">
+          <lucide-icon name="activity" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.enAttente }}</span>
+          <span class="stat-label">En cours</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon total">
+          <lucide-icon name="check" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.totalConsultations }}</span>
+          <span class="stat-label">Total terminées</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtres -->
+    <div class="filters-bar">
+      <div class="filter-tabs">
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'jour'"
+          (click)="setActiveFilter('jour')">
+          Aujourd'hui
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'semaine'"
+          (click)="setActiveFilter('semaine')">
+          Cette semaine
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="activeFilter === 'toutes'"
+          (click)="setActiveFilter('toutes')">
+          Historique
+        </button>
+      </div>
+
+      <div class="filter-right">
+        <div class="search-box">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher un patient..." 
+            [(ngModel)]="searchTerm"
+            (input)="applyFilters()">
+        </div>
+        <select [(ngModel)]="statutFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="a_faire">À faire</option>
+          <option value="en_cours">En cours</option>
+          <option value="terminee">Terminée</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Navigation date -->
+    <div class="date-nav" *ngIf="activeFilter === 'jour'">
+      <button class="nav-btn" (click)="prevDay()">
+        <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+      </button>
+      <span class="date-label" (click)="goToToday()">{{ dateLabel }}</span>
+      <button class="nav-btn" (click)="nextDay()">
+        <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Liste des consultations -->
+    <section class="consultations-list">
+      <div *ngIf="isLoading" class="loading">
+        <lucide-icon name="refresh-cw" [size]="24" class="spinning"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div *ngIf="!isLoading && filteredConsultations.length === 0" class="empty-state">
+        <lucide-icon name="stethoscope" [size]="48"></lucide-icon>
+        <p>Aucune consultation {{ activeFilter === 'jour' ? 'pour ce jour' : '' }}</p>
+      </div>
+
+      <div class="consultation-card" *ngFor="let consultation of filteredConsultations">
+        <div class="consultation-time">
+          <lucide-icon name="clock" [size]="16"></lucide-icon>
+          <span class="time">{{ formatTime(consultation.dateConsultation) }}</span>
+          <span class="duration">{{ consultation.duree }} min</span>
+        </div>
+
+        <div class="consultation-patient">
+          <div class="patient-avatar">
+            <lucide-icon name="user" [size]="20"></lucide-icon>
+          </div>
+          <div class="patient-info">
+            <span class="patient-name">{{ consultation.patientPrenom }} {{ consultation.patientNom }}</span>
+            <span class="patient-dossier" *ngIf="consultation.numeroDossier">
+              <lucide-icon name="file-text" [size]="12"></lucide-icon>
+              {{ consultation.numeroDossier }}
+            </span>
+          </div>
+        </div>
+
+        <div class="consultation-details">
+          <span class="consultation-motif">{{ consultation.motif || 'Consultation générale' }}</span>
+          <span class="consultation-diagnostic" *ngIf="consultation.diagnostic">
+            <lucide-icon name="clipboard-list" [size]="12"></lucide-icon>
+            {{ consultation.diagnostic }}
+          </span>
+        </div>
+
+        <div class="consultation-status">
+          <span class="status-badge" [ngClass]="getStatutClass(consultation.statut)">
+            {{ getStatutLabel(consultation.statut) }}
+          </span>
+        </div>
+
+        <div class="consultation-actions">
+          <button
+            class="action-btn secondary"
+            (click)="openQuestionnaire(consultation)"
+            title="Questionnaire"
+            [disabled]="!consultation.idConsultation || consultation.idConsultation <= 0">
+            <lucide-icon name="clipboard-list" [size]="16"></lucide-icon>
+          </button>
+          <!-- Démarrer la consultation -->
+          <button 
+            class="action-btn primary" 
+            *ngIf="consultation.statut === 'a_faire'"
+            (click)="demarrerConsultation(consultation)"
+            title="Démarrer la consultation">
+            <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+          </button>
+          <!-- Terminer la consultation -->
+          <button 
+            class="action-btn success" 
+            *ngIf="consultation.statut === 'en_cours'"
+            (click)="terminerConsultation(consultation)"
+            title="Terminer la consultation">
+            <lucide-icon name="check" [size]="16"></lucide-icon>
+          </button>
+          <!-- Actions pour consultation terminée -->
+          <ng-container *ngIf="consultation.statut === 'terminee'">
+            <button 
+              class="action-btn secondary" 
+              title="Ordonnance"
+              [class.active]="consultation.hasOrdonnance">
+              <lucide-icon name="pill" [size]="16"></lucide-icon>
+            </button>
+            <button 
+              class="action-btn secondary" 
+              title="Examens"
+              [class.active]="consultation.hasExamens">
+              <lucide-icon name="activity" [size]="16"></lucide-icon>
+            </button>
+          </ng-container>
+        </div>
+
+        <div class="consultation-date" *ngIf="activeFilter !== 'jour'">
+          <lucide-icon name="calendar" [size]="14"></lucide-icon>
+          {{ formatDate(consultation.dateConsultation) }}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Questionnaire avec composant unifié -->
+  <app-modal
+    [isOpen]="showQuestionnaire && !!selectedForQuestionnaire"
+    title="Questionnaire médical"
+    icon="clipboard-list"
+    size="lg"
+    (closed)="closeQuestionnaire()">
+    <app-consultation-questionnaire-form
+      *ngIf="selectedForQuestionnaire"
+      [consultationId]="selectedForQuestionnaire.idConsultation"
+      [patientNom]="selectedForQuestionnaire.patientPrenom + ' ' + selectedForQuestionnaire.patientNom"
+      [mode]="'medecin'"
+      [compact]="false"
+      [specialiteId]="selectedForQuestionnaire.specialiteId || 0"
+      [typeVisite]="selectedForQuestionnaire.isPremiereConsultation ? 'premiere' : 'suivante'"
+      (saved)="onQuestionnaireSaved()"
+      (cancelled)="closeQuestionnaire()">
+    </app-consultation-questionnaire-form>
+  </app-modal>
+
+</app-dashboard-layout>

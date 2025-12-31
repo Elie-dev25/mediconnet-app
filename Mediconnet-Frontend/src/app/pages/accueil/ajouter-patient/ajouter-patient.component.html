@@ -1,0 +1,497 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="ajouter-patient-page">
+    <!-- Header -->
+    <div class="page-header">
+      <h1>
+        <lucide-icon name="user-plus" [size]="28"></lucide-icon>
+        Ajouter un nouveau patient
+      </h1>
+      <p class="subtitle">Créer un dossier patient complet avec accès au portail</p>
+    </div>
+
+    <!-- Succès -->
+    <div class="success-card" *ngIf="successResponse">
+      <div class="success-icon">
+        <lucide-icon name="check-circle" [size]="64"></lucide-icon>
+      </div>
+      <h2>Patient créé avec succès</h2>
+      
+      <div class="success-summary">
+        <p class="dossier-info">
+          <strong>Dossier N°</strong> {{ successResponse.numeroDossier }}
+        </p>
+        <p class="patient-name">
+          {{ patientFullName }}
+        </p>
+      </div>
+
+      <div class="credentials-box">
+        <div class="credential-item">
+          <lucide-icon name="phone" [size]="18"></lucide-icon>
+          <span class="label">Identifiant</span>
+          <span class="value">{{ successResponse.loginIdentifier }}</span>
+        </div>
+        <div class="credential-item">
+          <lucide-icon name="key" [size]="18"></lucide-icon>
+          <span class="label">Mot de passe</span>
+          <span class="value password">{{ successResponse.temporaryPassword }}</span>
+        </div>
+      </div>
+
+      <p class="instruction-note">
+        Remettez ces informations au patient pour sa première connexion.
+      </p>
+
+      <div class="success-actions">
+        <button class="btn-new" (click)="resetForm()">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Nouveau patient
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="form-container" *ngIf="!successResponse">
+      <!-- Stepper -->
+      <div class="stepper">
+        <div class="stepper-track">
+          <div class="stepper-step" 
+               *ngFor="let step of [1, 2, 3, 4, 5]"
+               [class.active]="currentStep === step"
+               [class.completed]="currentStep > step"
+               (click)="step < currentStep ? currentStep = step : null">
+            <div class="step-circle">
+              <lucide-icon *ngIf="currentStep > step" name="check" [size]="16"></lucide-icon>
+              <span *ngIf="currentStep <= step">{{ step }}</span>
+            </div>
+            <span class="step-label">
+              {{ step === 1 ? 'Personnel' : step === 2 ? 'Médical' : step === 3 ? 'Habitudes' : step === 4 ? 'Urgence' : 'Assurance' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="header-icon">
+          <lucide-icon [name]="stepIcon" [size]="24"></lucide-icon>
+        </div>
+        <h2>{{ stepTitle }}</h2>
+        <p>Étape {{ currentStep }} sur {{ totalSteps }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-alert" *ngIf="errorMessage">
+        <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Step 1: Informations personnelles -->
+      <form [formGroup]="personalInfoForm" *ngIf="currentStep === 1" class="step-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nom">
+              <lucide-icon name="user" [size]="16"></lucide-icon>
+              Nom <span class="required">*</span>
+            </label>
+            <input type="text" id="nom" formControlName="nom" placeholder="Nom de famille">
+          </div>
+          <div class="form-group">
+            <label for="prenom">
+              <lucide-icon name="user" [size]="16"></lucide-icon>
+              Prénom <span class="required">*</span>
+            </label>
+            <input type="text" id="prenom" formControlName="prenom" placeholder="Prénom">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dateNaissance">
+              <lucide-icon name="calendar" [size]="16"></lucide-icon>
+              Date de naissance <span class="required">*</span>
+            </label>
+            <input type="date" id="dateNaissance" formControlName="dateNaissance" [max]="maxDate">
+          </div>
+          <div class="form-group">
+            <label for="sexe">
+              <lucide-icon name="user" [size]="16"></lucide-icon>
+              Sexe <span class="required">*</span>
+            </label>
+            <select id="sexe" formControlName="sexe">
+              <option value="">Sélectionner</option>
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group phone-group">
+            <app-phone-input
+              formControlName="telephone"
+              label="Téléphone"
+              [required]="true"
+              defaultCountry="CM">
+            </app-phone-input>
+          </div>
+          <div class="form-group">
+            <label for="email">
+              <lucide-icon name="mail" [size]="16"></lucide-icon>
+              Email
+            </label>
+            <input type="email" id="email" formControlName="email" placeholder="email@exemple.com">
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="adresse">
+            <lucide-icon name="map-pin" [size]="16"></lucide-icon>
+            Adresse <span class="required">*</span>
+          </label>
+          <textarea id="adresse" formControlName="adresse" rows="2" placeholder="Adresse complète"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nationalite">
+              <lucide-icon name="globe" [size]="16"></lucide-icon>
+              Nationalité
+            </label>
+            <input type="text" id="nationalite" formControlName="nationalite">
+          </div>
+          <div class="form-group">
+            <label for="regionOrigine">
+              <lucide-icon name="map" [size]="16"></lucide-icon>
+              Région d'origine
+            </label>
+            <input type="text" id="regionOrigine" formControlName="regionOrigine" placeholder="Ex: Centre, Littoral...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="profession">
+              <lucide-icon name="briefcase" [size]="16"></lucide-icon>
+              Profession
+            </label>
+            <input type="text" id="profession" formControlName="profession" placeholder="Profession actuelle">
+          </div>
+          <div class="form-group">
+            <label for="situationMatrimoniale">
+              <lucide-icon name="heart" [size]="16"></lucide-icon>
+              Situation matrimoniale
+            </label>
+            <select id="situationMatrimoniale" formControlName="situationMatrimoniale">
+              <option value="">Sélectionner</option>
+              <option *ngFor="let situation of situationsMatrimoniales" [value]="situation">
+                {{ situation }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <!-- Step 2: Informations médicales -->
+      <form [formGroup]="medicalInfoForm" *ngIf="currentStep === 2" class="step-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="groupeSanguin">
+              <lucide-icon name="droplet" [size]="16"></lucide-icon>
+              Groupe sanguin
+            </label>
+            <select id="groupeSanguin" formControlName="groupeSanguin">
+              <option value="">Sélectionner</option>
+              <option *ngFor="let groupe of groupesSanguins" [value]="groupe">{{ groupe }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="heart-pulse" [size]="16"></lucide-icon>
+            Maladies chroniques
+          </label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" 
+                   *ngFor="let maladie of maladiesChroniquesOptions"
+                   [class.selected]="isMaladieSelected(maladie)"
+                   (click)="toggleMaladie(maladie)">
+              <input type="checkbox" [checked]="isMaladieSelected(maladie)">
+              {{ maladie }}
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="scissors" [size]="16"></lucide-icon>
+            Opérations chirurgicales
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="operationsChirurgicales" [value]="false">
+              Non
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="operationsChirurgicales" [value]="true">
+              Oui
+            </label>
+          </div>
+          <textarea 
+            *ngIf="medicalInfoForm.get('operationsChirurgicales')?.value === true"
+            formControlName="operationsDetails" 
+            rows="2" 
+            placeholder="Précisez les opérations...">
+          </textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+            Allergies connues
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="allergiesConnues" [value]="false">
+              Non
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="allergiesConnues" [value]="true">
+              Oui
+            </label>
+          </div>
+          <textarea 
+            *ngIf="medicalInfoForm.get('allergiesConnues')?.value === true"
+            formControlName="allergiesDetails" 
+            rows="2" 
+            placeholder="Précisez les allergies...">
+          </textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="users" [size]="16"></lucide-icon>
+            Antécédents familiaux
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="antecedentsFamiliaux" [value]="false">
+              Non
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="antecedentsFamiliaux" [value]="true">
+              Oui
+            </label>
+          </div>
+          <textarea 
+            *ngIf="medicalInfoForm.get('antecedentsFamiliaux')?.value === true"
+            formControlName="antecedentsFamiliauxDetails" 
+            rows="2" 
+            placeholder="Précisez les antécédents...">
+          </textarea>
+        </div>
+      </form>
+
+      <!-- Step 3: Habitudes de vie -->
+      <form [formGroup]="lifestyleForm" *ngIf="currentStep === 3" class="step-form">
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="wine" [size]="16"></lucide-icon>
+            Consommation d'alcool
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="consommationAlcool" [value]="false">
+              Non
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="consommationAlcool" [value]="true">
+              Oui
+            </label>
+          </div>
+          <select 
+            *ngIf="lifestyleForm.get('consommationAlcool')?.value === true"
+            formControlName="frequenceAlcool"
+            class="frequency-select">
+            <option value="">Fréquence...</option>
+            <option *ngFor="let freq of frequencesAlcool" [value]="freq">{{ freq }}</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="cigarette" [size]="16"></lucide-icon>
+            Tabagisme
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="tabagisme" [value]="false">
+              Non fumeur
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="tabagisme" [value]="true">
+              Fumeur
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <lucide-icon name="activity" [size]="16"></lucide-icon>
+            Activité physique régulière
+          </label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" formControlName="activitePhysique" [value]="false">
+              Non
+            </label>
+            <label class="radio-item">
+              <input type="radio" formControlName="activitePhysique" [value]="true">
+              Oui
+            </label>
+          </div>
+        </div>
+      </form>
+
+      <!-- Step 4: Contacts d'urgence -->
+      <form [formGroup]="emergencyForm" *ngIf="currentStep === 4" class="step-form">
+        <div class="info-note">
+          <lucide-icon name="info" [size]="18"></lucide-icon>
+          <span>Ces informations seront utilisées en cas d'urgence médicale</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="personneContact">
+              <lucide-icon name="user" [size]="16"></lucide-icon>
+              Personne à contacter
+            </label>
+            <input type="text" id="personneContact" formControlName="personneContact" 
+                   placeholder="Nom et prénom">
+          </div>
+          <div class="form-group">
+            <label for="numeroContact">
+              <lucide-icon name="phone" [size]="16"></lucide-icon>
+              Numéro de téléphone
+            </label>
+            <input type="tel" id="numeroContact" formControlName="numeroContact" 
+                   placeholder="Numéro du contact">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="nbEnfants">
+            <lucide-icon name="baby" [size]="16"></lucide-icon>
+            Nombre d'enfants
+          </label>
+          <input type="number" id="nbEnfants" formControlName="nbEnfants" min="0" max="20">
+        </div>
+      </form>
+
+      <!-- Step 5: Assurance -->
+      <form [formGroup]="assuranceForm" *ngIf="currentStep === 5" class="step-form">
+        <div class="info-note">
+          <lucide-icon name="shield" [size]="18"></lucide-icon>
+          <span>Si le patient est assuré, renseignez les informations de sa couverture</span>
+        </div>
+
+        <!-- Toggle assuré -->
+        <div class="form-group full-width">
+          <label class="toggle-container">
+            <input type="checkbox" formControlName="estAssure">
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">Le patient est assuré</span>
+          </label>
+        </div>
+
+        <!-- Formulaire assurance si assuré -->
+        <ng-container *ngIf="assuranceForm.get('estAssure')?.value">
+          <div class="form-group full-width">
+            <label for="assuranceId">
+              <lucide-icon name="building" [size]="16"></lucide-icon>
+              Compagnie d'assurance *
+            </label>
+            <select id="assuranceId" formControlName="assuranceId" [disabled]="isLoadingAssurances">
+              <option value="">{{ isLoadingAssurances ? 'Chargement...' : 'Sélectionner une assurance' }}</option>
+              <option *ngFor="let assurance of assurances" [value]="assurance.idAssurance">
+                {{ assurance.nom }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="numeroCarteAssurance">
+                <lucide-icon name="credit-card" [size]="16"></lucide-icon>
+                N° Carte d'assurance
+              </label>
+              <input type="text" id="numeroCarteAssurance" formControlName="numeroCarteAssurance" 
+                     placeholder="Ex: ASS-2024-001234">
+            </div>
+            <div class="form-group">
+              <label for="couvertureAssurance">
+                <lucide-icon name="percent" [size]="16"></lucide-icon>
+                Taux de couverture (%)
+              </label>
+              <input type="number" id="couvertureAssurance" formControlName="couvertureAssurance" 
+                     min="0" max="100" placeholder="Laissez vide pour taux par défaut">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dateDebutValidite">
+                <lucide-icon name="calendar" [size]="16"></lucide-icon>
+                Date début validité
+              </label>
+              <input type="date" id="dateDebutValidite" formControlName="dateDebutValidite">
+            </div>
+            <div class="form-group">
+              <label for="dateFinValidite">
+                <lucide-icon name="calendar-check" [size]="16"></lucide-icon>
+                Date fin validité
+              </label>
+              <input type="date" id="dateFinValidite" formControlName="dateFinValidite">
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Message si non assuré -->
+        <div class="no-assurance-info" *ngIf="!assuranceForm.get('estAssure')?.value">
+          <lucide-icon name="wallet" [size]="32"></lucide-icon>
+          <p>Le patient paiera les consultations à 100%</p>
+        </div>
+      </form>
+
+      <!-- Navigation -->
+      <div class="form-actions">
+        <button type="button" 
+                class="btn-secondary" 
+                (click)="previousStep()" 
+                *ngIf="currentStep > 1">
+          <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+          Précédent
+        </button>
+        
+        <button type="button" 
+                class="btn-primary" 
+                (click)="nextStep()" 
+                *ngIf="currentStep < totalSteps">
+          Suivant
+          <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
+        </button>
+
+        <button type="button" 
+                class="btn-success" 
+                (click)="submitForm()" 
+                *ngIf="currentStep === totalSteps"
+                [disabled]="isSubmitting">
+          <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spin"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+          {{ isSubmitting ? 'Création...' : 'Créer le patient' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

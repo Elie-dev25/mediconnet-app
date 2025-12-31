@@ -1,0 +1,58 @@
+<div class="phone-input-container" [class.has-error]="hasError" [class.disabled]="disabled">
+  <!-- Label -->
+  <label *ngIf="showLabel" class="phone-label">
+    <lucide-icon *ngIf="showIcon" name="phone" [size]="16"></lucide-icon>
+    {{ label }}
+    <span *ngIf="required" class="required">*</span>
+  </label>
+
+  <!-- Input Group -->
+  <div class="phone-input-group">
+    <!-- Country Selector -->
+    <button 
+      type="button" 
+      class="country-selector"
+      (click)="toggleDropdown($event)"
+      [disabled]="disabled"
+      [attr.aria-expanded]="isDropdownOpen"
+      aria-haspopup="listbox">
+      <span class="country-flag">{{ selectedCountry?.flag }}</span>
+      <span class="country-dial-code">{{ selectedCountry?.dialCode }}</span>
+      <lucide-icon name="chevron-down" [size]="14" class="dropdown-icon" [class.open]="isDropdownOpen"></lucide-icon>
+    </button>
+
+    <!-- Country Dropdown -->
+    <div class="country-dropdown" *ngIf="isDropdownOpen" role="listbox">
+      <button
+        *ngFor="let country of countries"
+        type="button"
+        class="country-option"
+        [class.selected]="country.code === selectedCountryCode"
+        (click)="selectCountry(country)"
+        role="option"
+        [attr.aria-selected]="country.code === selectedCountryCode">
+        <span class="country-flag">{{ country.flag }}</span>
+        <span class="country-name">{{ country.name }}</span>
+        <span class="country-dial-code">{{ country.dialCode }}</span>
+      </button>
+    </div>
+
+    <!-- Phone Input -->
+    <input
+      type="tel"
+      class="phone-input"
+      [value]="phoneNumber"
+      (input)="onPhoneInput($event)"
+      (blur)="onBlur()"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      autocomplete="tel"
+      inputmode="tel">
+  </div>
+
+  <!-- Error Message -->
+  <span *ngIf="hasError" class="error-message">
+    <lucide-icon name="alert-circle" [size]="14"></lucide-icon>
+    {{ errorMessage }}
+  </span>
+</div>

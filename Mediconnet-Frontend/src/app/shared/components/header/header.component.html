@@ -1,0 +1,38 @@
+<header class="header">
+  <div class="header-left">
+    <button class="menu-toggle" (click)="toggleSidebar.emit()">
+      <lucide-icon name="menu" [size]="24"></lucide-icon>
+    </button>
+    <div class="logo">
+      <lucide-icon name="heart-pulse" [size]="28" class="logo-icon"></lucide-icon>
+      <span class="logo-text">MediConnect</span>
+    </div>
+  </div>
+  
+  <div class="header-right">
+    <!-- Menu utilisateur avec dropdown -->
+    <div class="user-menu">
+      <button class="user-menu-trigger" (click)="toggleDropdown()">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ userName }}</span>
+          <span class="user-role">{{ userRoleLabel }}</span>
+        </div>
+        <lucide-icon name="chevron-down" [size]="16" class="chevron" [class.open]="isDropdownOpen"></lucide-icon>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div class="dropdown-menu" *ngIf="isDropdownOpen">
+        <button class="dropdown-item" (click)="onProfileClick()">
+          <lucide-icon name="user" [size]="18"></lucide-icon>
+          Mon profil
+        </button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item logout" (click)="onLogout()">
+          <lucide-icon name="log-out" [size]="18"></lucide-icon>
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

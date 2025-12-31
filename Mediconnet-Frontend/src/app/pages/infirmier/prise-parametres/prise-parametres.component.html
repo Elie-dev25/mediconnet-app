@@ -1,0 +1,235 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="prise-parametres-page">
+    <!-- Header -->
+    <app-page-header
+      title="Prise des paramètres vitaux"
+      subtitle="Enregistrez les paramètres vitaux du patient"
+      icon="activity"
+      backLabel="Retour"
+      (onBack)="goBack()">
+    </app-page-header>
+
+    <!-- Loading patient -->
+    <app-loading-state 
+      *ngIf="isLoadingPatient" 
+      message="Chargement des informations du patient...">
+    </app-loading-state>
+
+    <!-- Error patient -->
+    <div class="error-container" *ngIf="patientError && !isLoadingPatient">
+      <app-alert-message [message]="patientError" type="error"></app-alert-message>
+      <button class="btn-secondary" (click)="goBack()">Retour à la liste</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content" *ngIf="patient && !isLoadingPatient">
+      <!-- Patient info card -->
+      <app-patient-card *ngIf="patientCardData" [patient]="patientCardData"></app-patient-card>
+
+      <!-- Form section -->
+      <app-form-section title="Nouveaux paramètres" icon="clipboard-list">
+        <!-- Success message -->
+        <app-alert-message 
+          *ngIf="successMessage" 
+          [message]="successMessage" 
+          type="success"
+          [dismissible]="true"
+          (onDismiss)="successMessage = null">
+        </app-alert-message>
+
+        <!-- Error message -->
+        <app-alert-message 
+          *ngIf="errorMessage" 
+          [message]="errorMessage" 
+          type="error"
+          [dismissible]="true"
+          (onDismiss)="errorMessage = null">
+        </app-alert-message>
+
+        <form [formGroup]="parametreForm" (ngSubmit)="onSubmit()">
+          <div class="form-grid">
+            <!-- Poids -->
+            <div class="form-group">
+              <label for="poids">
+                <lucide-icon name="scale" [size]="16"></lucide-icon>
+                Poids (kg) *
+              </label>
+              <input 
+                type="number" 
+                id="poids" 
+                formControlName="poids"
+                placeholder="Ex: 70"
+                step="0.1"
+                [class.error]="hasError('poids')">
+              <span class="error-text" *ngIf="hasError('poids')">
+                Le poids doit être entre 0.5 et 500 kg
+              </span>
+            </div>
+
+            <!-- Taille -->
+            <div class="form-group">
+              <label for="taille">
+                <lucide-icon name="ruler" [size]="16"></lucide-icon>
+                Taille (cm)
+              </label>
+              <input 
+                type="number" 
+                id="taille" 
+                formControlName="taille"
+                placeholder="Ex: 175"
+                [class.error]="hasError('taille')">
+              <span class="error-text" *ngIf="hasError('taille')">
+                La taille doit être entre 20 et 300 cm
+              </span>
+            </div>
+
+            <!-- IMC calculé -->
+            <div class="form-group calculated" *ngIf="imcValue">
+              <label>
+                <lucide-icon name="calculator" [size]="16"></lucide-icon>
+                IMC calculé
+              </label>
+              <div class="calculated-value" [class]="'status-' + imcInterpretation.color">
+                <span class="value">{{ imcValue }}</span>
+                <span class="interpretation">{{ imcInterpretation.label }}</span>
+              </div>
+            </div>
+
+            <!-- Température -->
+            <div class="form-group">
+              <label for="temperature">
+                <lucide-icon name="thermometer" [size]="16"></lucide-icon>
+                Température (°C) *
+              </label>
+              <input 
+                type="number" 
+                id="temperature" 
+                formControlName="temperature"
+                placeholder="Ex: 37.0"
+                step="0.1"
+                [class.error]="hasError('temperature')">
+              <span class="error-text" *ngIf="hasError('temperature')">
+                La température doit être entre 30 et 45 °C
+              </span>
+              <span class="interpretation-badge" *ngIf="parametreForm.get('temperature')?.value" [class]="'status-' + temperatureInterpretation.color">
+                {{ temperatureInterpretation.label }}
+              </span>
+            </div>
+
+            <!-- Tension systolique -->
+            <div class="form-group">
+              <label for="tensionSystolique">
+                <lucide-icon name="heart" [size]="16"></lucide-icon>
+                Tension systolique (mmHg) *
+              </label>
+              <input 
+                type="number" 
+                id="tensionSystolique" 
+                formControlName="tensionSystolique"
+                placeholder="Ex: 120"
+                [class.error]="hasError('tensionSystolique')">
+              <span class="error-text" *ngIf="hasError('tensionSystolique')">
+                La tension systolique doit être entre 60 et 250 mmHg
+              </span>
+            </div>
+
+            <!-- Tension diastolique -->
+            <div class="form-group">
+              <label for="tensionDiastolique">
+                <lucide-icon name="heart" [size]="16"></lucide-icon>
+                Tension diastolique (mmHg) *
+              </label>
+              <input 
+                type="number" 
+                id="tensionDiastolique" 
+                formControlName="tensionDiastolique"
+                placeholder="Ex: 80"
+                [class.error]="hasError('tensionDiastolique')">
+              <span class="error-text" *ngIf="hasError('tensionDiastolique')">
+                La tension diastolique doit être entre 40 et 150 mmHg
+              </span>
+              <span class="interpretation-badge" *ngIf="parametreForm.get('tensionSystolique')?.value && parametreForm.get('tensionDiastolique')?.value" [class]="'status-' + tensionInterpretation.color">
+                {{ tensionInterpretation.label }}
+              </span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="goBack()">
+              Annuler
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="parametreForm.invalid || isSubmitting">
+              <lucide-icon name="save" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+              <lucide-icon name="loader-2" [size]="18" class="spinner" *ngIf="isSubmitting"></lucide-icon>
+              {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les paramètres' }}
+            </button>
+          </div>
+        </form>
+      </app-form-section>
+
+      <!-- Historique -->
+      <app-form-section title="Historique des paramètres" icon="history">
+        <!-- Loading historique -->
+        <app-loading-state 
+          *ngIf="loadingHistorique" 
+          message="Chargement..."
+          [compact]="true"
+          [inline]="true">
+        </app-loading-state>
+
+        <!-- Empty historique -->
+        <app-empty-state 
+          *ngIf="!loadingHistorique && historique.length === 0"
+          icon="file-x"
+          message="Aucun paramètre enregistré pour ce patient">
+        </app-empty-state>
+
+        <!-- Historique list -->
+        <div class="historique-list" *ngIf="!loadingHistorique && historique.length > 0">
+          <div class="historique-item" *ngFor="let item of historique">
+            <div class="item-header">
+              <span class="item-date">
+                <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                {{ formatDate(item.dateEnregistrement) }}
+              </span>
+              <span class="item-author" *ngIf="item.nomEnregistrant">
+                Par {{ item.nomEnregistrant }}
+              </span>
+            </div>
+            <div class="item-content">
+              <div class="param-group">
+                <div class="param" *ngIf="item.poids">
+                  <span class="param-label">Poids</span>
+                  <span class="param-value">{{ item.poids }} kg</span>
+                </div>
+                <div class="param" *ngIf="item.taille">
+                  <span class="param-label">Taille</span>
+                  <span class="param-value">{{ item.taille }} cm</span>
+                </div>
+                <div class="param" *ngIf="item.imc">
+                  <span class="param-label">IMC</span>
+                  <span class="param-value" [class]="'status-' + getIMCStatus(item.imc).color">
+                    {{ item.imc }} ({{ getIMCStatus(item.imc).label }})
+                  </span>
+                </div>
+              </div>
+              <div class="param-group">
+                <div class="param" *ngIf="item.temperature">
+                  <span class="param-label">Température</span>
+                  <span class="param-value">{{ item.temperature }} °C</span>
+                </div>
+                <div class="param" *ngIf="item.tensionSystolique && item.tensionDiastolique">
+                  <span class="param-label">Tension</span>
+                  <span class="param-value" [class]="'status-' + getTensionStatus(item.tensionSystolique, item.tensionDiastolique).color">
+                    {{ item.tensionSystolique }}/{{ item.tensionDiastolique }} mmHg
+                    ({{ getTensionStatus(item.tensionSystolique, item.tensionDiastolique).label }})
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </app-form-section>
+    </div>
+  </div>
+</app-dashboard-layout>

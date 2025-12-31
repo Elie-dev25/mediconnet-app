@@ -1,0 +1,133 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="parametres-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>
+          <lucide-icon name="activity" [size]="28"></lucide-icon>
+          Paramètres vitaux
+        </h1>
+        <p class="subtitle">Enregistrez et consultez les paramètres vitaux des patients</p>
+      </div>
+    </div>
+
+    <!-- Recherche patient -->
+    <div class="search-section">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="20"></lucide-icon>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm"
+          placeholder="Rechercher un patient (nom, prénom, numéro dossier)..."
+          (keyup.enter)="onSearch()">
+        <button class="btn-search" (click)="onSearch()">
+          Rechercher
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="main-content" *ngIf="selectedPatientId">
+      <!-- Info patient sélectionné -->
+      <div class="patient-card">
+        <div class="patient-info">
+          <lucide-icon name="user" [size]="24"></lucide-icon>
+          <div class="patient-details">
+            <span class="patient-name">{{ selectedPatientNom }}</span>
+            <span class="patient-id">Consultation #{{ selectedConsultationId }}</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" (click)="openForm()" *ngIf="!showForm">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Enregistrer les paramètres
+        </button>
+      </div>
+
+      <!-- Formulaire d'enregistrement -->
+      <div class="form-section" *ngIf="showForm && selectedConsultationId">
+        <app-parametres-form
+          [consultationId]="selectedConsultationId"
+          [patientNom]="selectedPatientNom"
+          (saved)="onParametresSaved($event)"
+          (cancelled)="onFormCancelled()">
+        </app-parametres-form>
+      </div>
+
+      <!-- Historique des paramètres -->
+      <div class="historique-section">
+        <h2>
+          <lucide-icon name="history" [size]="20"></lucide-icon>
+          Historique des paramètres
+        </h2>
+
+        <!-- Loading -->
+        <div class="loading" *ngIf="loadingHistorique">
+          <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
+          <span>Chargement...</span>
+        </div>
+
+        <!-- Liste -->
+        <div class="historique-list" *ngIf="!loadingHistorique">
+          <div class="historique-empty" *ngIf="historique.length === 0">
+            <lucide-icon name="file-x" [size]="48"></lucide-icon>
+            <p>Aucun paramètre enregistré pour ce patient</p>
+          </div>
+
+          <div class="historique-item" *ngFor="let item of historique">
+            <div class="item-header">
+              <span class="item-date">{{ formatDate(item.dateEnregistrement) }}</span>
+              <span class="item-author" *ngIf="item.nomEnregistrant">
+                Par {{ item.nomEnregistrant }}
+              </span>
+            </div>
+            <div class="item-content">
+              <!-- Poids et taille -->
+              <div class="param-group" *ngIf="item.poids || item.taille">
+                <div class="param" *ngIf="item.poids">
+                  <span class="param-label">Poids</span>
+                  <span class="param-value">{{ item.poids }} kg</span>
+                </div>
+                <div class="param" *ngIf="item.taille">
+                  <span class="param-label">Taille</span>
+                  <span class="param-value">{{ item.taille }} cm</span>
+                </div>
+                <div class="param" *ngIf="item.imc">
+                  <span class="param-label">IMC</span>
+                  <span class="param-value" [class]="'status-' + getIMCStatus(item.imc).color">
+                    {{ item.imc }} ({{ getIMCStatus(item.imc).label }})
+                  </span>
+                </div>
+              </div>
+
+              <!-- Température -->
+              <div class="param-group" *ngIf="item.temperature">
+                <div class="param">
+                  <span class="param-label">Température</span>
+                  <span class="param-value">{{ item.temperature }} °C</span>
+                </div>
+              </div>
+
+              <!-- Tension -->
+              <div class="param-group" *ngIf="item.tensionSystolique && item.tensionDiastolique">
+                <div class="param">
+                  <span class="param-label">Tension</span>
+                  <span class="param-value" [class]="'status-' + getTensionStatus(item.tensionSystolique, item.tensionDiastolique).color">
+                    {{ item.tensionSystolique }}/{{ item.tensionDiastolique }} mmHg
+                    ({{ getTensionStatus(item.tensionSystolique, item.tensionDiastolique).label }})
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="!selectedPatientId">
+      <lucide-icon name="user-search" [size]="64"></lucide-icon>
+      <h3>Sélectionnez un patient</h3>
+      <p>Recherchez un patient pour enregistrer ou consulter ses paramètres vitaux</p>
+    </div>
+  </div>
+</app-dashboard-layout>

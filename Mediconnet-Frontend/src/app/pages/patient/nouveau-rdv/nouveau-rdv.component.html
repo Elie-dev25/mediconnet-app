@@ -1,0 +1,269 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="nouveau-rdv-page">
+    <!-- Header -->
+    <header class="page-header">
+      <button class="btn-back" (click)="cancel()">
+        <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+        Retour
+      </button>
+      <div class="header-content">
+        <h1>Nouveau rendez-vous</h1>
+        <p class="subtitle">Prenez rendez-vous avec un médecin</p>
+      </div>
+    </header>
+
+    <!-- Stepper -->
+    <div class="stepper">
+      <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+        <span class="step-number">1</span>
+        <span class="step-label">Médecin</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 1"></div>
+      <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+        <span class="step-number">2</span>
+        <span class="step-label">Date & Heure</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 2"></div>
+      <div class="step" [class.active]="currentStep >= 3">
+        <span class="step-number">3</span>
+        <span class="step-label">Confirmation</span>
+      </div>
+    </div>
+
+    <!-- Contenu des étapes -->
+    <div class="step-container">
+      
+      <!-- Step 1: Choix médecin -->
+      <div class="step-content" *ngIf="currentStep === 1">
+        <div class="step-header">
+          <h2>Choisissez un médecin</h2>
+          <p>Sélectionnez le médecin avec lequel vous souhaitez prendre rendez-vous</p>
+        </div>
+        
+        <!-- Filtre par service -->
+        <div class="service-filter">
+          <label for="serviceFilter">
+            <lucide-icon name="building-2" [size]="16"></lucide-icon>
+            Filtrer par service :
+          </label>
+          <select 
+            id="serviceFilter" 
+            [ngModel]="selectedServiceId"
+            (ngModelChange)="onServiceChange($event)">
+            <option [ngValue]="null">Tous les services</option>
+            <option *ngFor="let service of services" [ngValue]="service.idService">
+              {{ service.nomService }}
+            </option>
+          </select>
+        </div>
+
+        <div class="medecins-grid">
+          <div 
+            class="medecin-card" 
+            *ngFor="let medecin of filteredMedecins"
+            (click)="selectMedecin(medecin)">
+            <div class="medecin-avatar">
+              <lucide-icon name="user" [size]="24"></lucide-icon>
+            </div>
+            <div class="medecin-info">
+              <span class="medecin-name">Dr. {{ medecin.prenom }} {{ medecin.nom }}</span>
+              <span class="medecin-service" *ngIf="medecin.serviceNom">{{ medecin.serviceNom }}</span>
+            </div>
+            <lucide-icon name="chevron-right" [size]="20" class="arrow-icon"></lucide-icon>
+          </div>
+          
+          <div class="empty-state" *ngIf="filteredMedecins.length === 0 && services.length > 0">
+            <lucide-icon name="user-x" [size]="32"></lucide-icon>
+            <p>Aucun médecin disponible pour ce service</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Choix date/heure -->
+      <div class="step-content" *ngIf="currentStep === 2">
+        <div class="selected-medecin-banner">
+          <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+          <span>Dr. {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</span>
+          <button class="btn-link" (click)="goBack()">Modifier</button>
+        </div>
+
+        <!-- Message médecin indisponible -->
+        <div class="medecin-indisponible" *ngIf="!medecinDisponible">
+          <div class="indispo-icon">
+            <lucide-icon name="calendar-x" [size]="48"></lucide-icon>
+          </div>
+          <h4>Médecin indisponible</h4>
+          <p>{{ messageIndisponibilite || 'Ce médecin n\'a pas encore défini ses créneaux de disponibilité' }}</p>
+          <button class="btn-secondary" (click)="goBack()">Choisir un autre médecin</button>
+        </div>
+
+        <div class="datetime-grid" *ngIf="medecinDisponible">
+          <!-- Calendrier -->
+          <div class="calendar-section">
+            <div class="calendar-header">
+              <button class="nav-btn" (click)="prevMonth()">
+                <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+              </button>
+              <span class="month-name">{{ monthName }}</span>
+              <button class="nav-btn" (click)="nextMonth()">
+                <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+              </button>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span>
+              <span>Ven</span><span>Sam</span><span>Dim</span>
+            </div>
+            <div class="calendar-days">
+              <button 
+                *ngFor="let day of calendarDays"
+                class="calendar-day"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="isToday(day.date)"
+                [class.selected]="isDateSelected(day.date)"
+                [class.disabled]="!day.hasSlots"
+                [disabled]="!day.hasSlots"
+                (click)="selectDate(day)">
+                {{ day.date.getDate() }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Créneaux -->
+          <div class="slots-section">
+            <h5>Créneaux disponibles</h5>
+            <div class="slots-info" *ngIf="!selectedDate">
+              <lucide-icon name="info" [size]="16"></lucide-icon>
+              Sélectionnez une date pour voir les créneaux disponibles
+            </div>
+            <div class="slots-grid" *ngIf="selectedDate">
+              <button 
+                *ngFor="let creneau of creneaux"
+                class="slot-btn"
+                [class.available]="creneau.disponible"
+                [class.unavailable]="!creneau.disponible"
+                [class.selected]="selectedCreneau === creneau"
+                [disabled]="!creneau.disponible"
+                (click)="selectCreneau(creneau)">
+                {{ formatTime(creneau.dateHeure) }}
+              </button>
+              <div class="no-slots" *ngIf="creneaux.length === 0">
+                <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+                Aucun créneau disponible ce jour
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Confirmation -->
+      <div class="step-content" *ngIf="currentStep === 3">
+        <div class="confirmation-summary">
+          <h2>Récapitulatif</h2>
+          <div class="summary-card">
+            <div class="summary-row">
+              <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+              <span>Dr. {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</span>
+            </div>
+            <div class="summary-row" *ngIf="selectedMedecin?.serviceNom">
+              <lucide-icon name="building-2" [size]="18"></lucide-icon>
+              <span>{{ selectedMedecin?.serviceNom }}</span>
+            </div>
+            <div class="summary-row">
+              <lucide-icon name="calendar" [size]="18"></lucide-icon>
+              <span>{{ selectedCreneau ? formatDateTime(selectedCreneau.dateHeure) : '' }}</span>
+            </div>
+            <div class="summary-row">
+              <lucide-icon name="clock" [size]="18"></lucide-icon>
+              <span>Durée: {{ selectedCreneau?.duree }} minutes</span>
+            </div>
+          </div>
+        </div>
+
+        <form [formGroup]="rdvForm" class="rdv-form">
+          <div class="form-group">
+            <label>Type de consultation</label>
+            <select formControlName="typeRdv">
+              <option value="consultation">Consultation</option>
+              <option value="suivi">Suivi</option>
+              <option value="examen">Examen</option>
+              <option value="vaccination">Vaccination</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Motif (optionnel)</label>
+            <input type="text" formControlName="motif" placeholder="Ex: Contrôle annuel">
+          </div>
+          <div class="form-group">
+            <label>Notes (optionnel)</label>
+            <textarea formControlName="notes" rows="3" placeholder="Informations complémentaires pour le médecin"></textarea>
+          </div>
+        </form>
+
+        <div class="alert alert-error" *ngIf="error">
+          <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+          {{ error }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="page-actions">
+      <button class="btn-secondary" (click)="goBack()">
+        <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+        {{ currentStep === 1 ? 'Annuler' : 'Retour' }}
+      </button>
+      <button 
+        class="btn-primary" 
+        *ngIf="currentStep === 3"
+        [disabled]="isSubmitting"
+        (click)="submitRdv()">
+        <lucide-icon name="check" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+        <lucide-icon name="loader-2" [size]="18" class="spinning" *ngIf="isSubmitting"></lucide-icon>
+        Confirmer le rendez-vous
+      </button>
+    </div>
+  </div>
+
+  <!-- Popup Confirmation Succès -->
+  <div class="modal-overlay confirmation-overlay" *ngIf="showConfirmationPopup" (click)="closeConfirmationPopup()">
+    <div class="confirmation-popup" (click)="$event.stopPropagation()">
+      <div class="confirmation-icon success">
+        <lucide-icon name="check" [size]="48"></lucide-icon>
+      </div>
+      <h2>Rendez-vous confirmé !</h2>
+      <p class="confirmation-message">Votre rendez-vous a été enregistré avec succès.</p>
+      
+      <div class="confirmation-details" *ngIf="confirmedRdv">
+        <div class="detail-row">
+          <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+          <span>Dr. {{ confirmedRdv.medecinPrenom }} {{ confirmedRdv.medecinNom }}</span>
+        </div>
+        <div class="detail-row">
+          <lucide-icon name="calendar" [size]="18"></lucide-icon>
+          <span>{{ formatDate(confirmedRdv.dateHeure) }}</span>
+        </div>
+        <div class="detail-row">
+          <lucide-icon name="clock" [size]="18"></lucide-icon>
+          <span>{{ formatTime(confirmedRdv.dateHeure) }} ({{ confirmedRdv.duree }} min)</span>
+        </div>
+        <div class="detail-row" *ngIf="confirmedRdv.serviceNom">
+          <lucide-icon name="building-2" [size]="18"></lucide-icon>
+          <span>{{ confirmedRdv.serviceNom }}</span>
+        </div>
+      </div>
+      
+      <p class="confirmation-note">
+        Un rappel vous sera envoyé avant votre rendez-vous.
+      </p>
+      
+      <button class="btn-primary btn-full" (click)="closeConfirmationPopup()">
+        <lucide-icon name="check" [size]="18"></lucide-icon>
+        Compris
+      </button>
+    </div>
+  </div>
+
+</app-dashboard-layout>

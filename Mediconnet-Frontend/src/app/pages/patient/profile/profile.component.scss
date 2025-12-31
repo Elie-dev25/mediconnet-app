@@ -1,0 +1,1615 @@
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/common';
+
+// ============================================
+// Patient Profile Page - Refonte complète
+// NOTE: Utilise les classes partagées de _common.scss
+// ============================================
+
+.profile-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 4rem);
+
+  @media (max-width: $breakpoint-md) {
+    padding: 1rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.75rem;
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: $text-secondary;
+  gap: 1rem;
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// Page Header
+// ============================================
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1rem;
+
+  @media (max-width: $breakpoint-sm) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+  }
+
+  .header-left {
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.25rem;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 1.5rem;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 1.35rem;
+      }
+    }
+
+    .subtitle {
+      color: $text-muted;
+      font-size: 0.9rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .btn-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: $primary-color;
+    border: none;
+    color: white;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all $transition-fast;
+    box-shadow: 0 2px 8px rgba($primary-color, 0.3);
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 100%;
+      padding: 0.65rem 1rem;
+    }
+
+    &:hover {
+      background: $primary-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba($primary-color, 0.4);
+    }
+  }
+}
+
+// ============================================
+// Patient Header Card
+// ============================================
+.patient-header-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: white;
+  border-radius: $radius-xl;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+
+  @media (max-width: $breakpoint-lg) {
+    padding: 1.25rem 1.5rem;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 1rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+
+    .avatar-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid $primary-light;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 80px;
+        height: 80px;
+      }
+    }
+
+    .avatar-badge {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      background: $success-color;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      border: 2px solid white;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 20px;
+        height: 20px;
+        bottom: 2px;
+        right: 2px;
+      }
+    }
+  }
+
+  .patient-info {
+    flex: 1;
+
+    .patient-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.5rem;
+
+      @media (max-width: $breakpoint-md) {
+        justify-content: center;
+      }
+
+      .declaration-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: $text-muted;
+        color: white;
+        flex-shrink: 0;
+        transition: all $transition-fast;
+
+        &.validated {
+          background: $success-color;
+        }
+      }
+    }
+
+    .patient-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      @media (max-width: $breakpoint-md) {
+        justify-content: center;
+      }
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: $text-secondary;
+        font-size: 0.85rem;
+
+        lucide-icon {
+          color: $text-muted;
+        }
+
+        &.complete {
+          color: $success-color;
+          lucide-icon {
+            color: $success-color;
+          }
+        }
+
+        &.incomplete {
+          color: $warning-color;
+          lucide-icon {
+            color: $warning-color;
+          }
+        }
+      }
+    }
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 2rem;
+
+    @media (max-width: $breakpoint-lg) {
+      gap: 1.5rem;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      width: 100%;
+      justify-content: center;
+      padding-top: 1rem;
+      border-top: 1px solid $border-light;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.75rem;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem 1rem;
+
+      @media (max-width: $breakpoint-sm) {
+        padding: 0.35rem 0.5rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $primary-color;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 1.25rem;
+        }
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: $text-muted;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.65rem;
+          letter-spacing: 0.3px;
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// Information Grid
+// ============================================
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+}
+
+.info-section {
+  background: white;
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 1rem;
+    border-radius: $radius-md;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border-light;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+
+    &.full-width {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .info-label {
+      color: $text-muted;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .info-value {
+      color: $text-primary;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: right;
+
+      &.highlight {
+        color: $error-color;
+        font-weight: 600;
+      }
+
+      &.success {
+        color: $success-color;
+      }
+
+      &.warning {
+        color: $warning-color;
+      }
+    }
+
+    &.full-width .info-value {
+      text-align: left;
+    }
+  }
+
+  .info-divider {
+    height: 1px;
+    background: $border-light;
+    margin: 0.5rem 0;
+  }
+
+  .info-subtitle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .inline-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border-radius: $radius-full;
+      font-size: 0.75rem;
+      font-weight: 500;
+
+      &.allergy {
+        background: $error-light;
+        color: $error-color;
+      }
+
+      &.antecedent {
+        background: $warning-light;
+        color: $warning-color;
+
+        &.actif {
+          background: rgba($error-color, 0.1);
+          color: $error-color;
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// Visits Section
+// ============================================
+.visits-section {
+  background: white;
+  border-radius: $radius-lg;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 1.25rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: $radius-md;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid $border-light;
+    padding-bottom: 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .tab {
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.8rem;
+    }
+
+    &:hover {
+      color: $text-primary;
+    }
+
+    &.active {
+      color: $primary-color;
+      font-weight: 600;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -0.8rem;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: $primary-color;
+      }
+    }
+  }
+
+  .visits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .visit-row {
+    display: grid;
+    grid-template-columns: 140px 1.5fr 1fr 100px;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: $bg-gray;
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      box-shadow: $shadow-sm;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .visit-time-col {
+    .time {
+      display: block;
+      font-size: 0.8rem;
+      color: $text-secondary;
+    }
+    .date {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-top: 0.15rem;
+    }
+  }
+
+  .visit-service-col,
+  .visit-doctor-col {
+    .label {
+      display: block;
+      font-size: 0.7rem;
+      color: $text-muted;
+      margin-bottom: 0.15rem;
+    }
+    .service,
+    .doctor {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: $text-primary;
+    }
+    .doctor {
+      color: $primary-color;
+    }
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: $radius-full;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &.scheduled {
+      background: rgba($primary-color, 0.1);
+      color: $primary-color;
+    }
+
+    &.completed {
+      background: $success-light;
+      color: $success-color;
+    }
+  }
+
+  .treatment-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: $bg-gray;
+    border-radius: $radius-md;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .treatment-info {
+      .treatment-name {
+        display: block;
+        font-weight: 600;
+        color: $text-primary;
+        font-size: 0.9rem;
+      }
+      .treatment-posologie {
+        display: block;
+        font-size: 0.8rem;
+        color: $text-secondary;
+        margin-top: 0.15rem;
+      }
+    }
+
+    .treatment-dates {
+      font-size: 0.85rem;
+      color: $text-secondary;
+
+      .treatment-end {
+        color: $primary-color;
+      }
+    }
+
+    .treatment-doctor {
+      .label {
+        font-size: 0.7rem;
+        color: $text-muted;
+      }
+      .doctor {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .empty-visits {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: $text-muted;
+    text-align: center;
+
+    lucide-icon {
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// ============================================
+// Files Section
+// ============================================
+.files-section {
+  background: white;
+  border-radius: $radius-lg;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+  margin-bottom: 1.5rem;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border-light;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+      flex: 1;
+    }
+
+    .download-all-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: none;
+      border: none;
+      color: $primary-color;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $bg-gray;
+    }
+
+    .file-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba($primary-color, 0.1);
+      border-radius: $radius-md;
+      color: $primary-color;
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+
+      .file-name {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .file-meta {
+        display: block;
+        font-size: 0.75rem;
+        color: $text-muted;
+        margin-top: 0.15rem;
+      }
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .file-action-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: $radius-sm;
+      color: $text-secondary;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: white;
+        border-color: $border-light;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .empty-files {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: $text-muted;
+    text-align: center;
+
+    lucide-icon {
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// ============================================
+// Print Sections (Historiques)
+// ============================================
+.print-section {
+  background: white;
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-light;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border-light;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+  }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  thead {
+    background: $bg-gray;
+
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: $text-primary;
+      border-bottom: 2px solid $border-light;
+    }
+  }
+
+  tbody {
+    tr {
+      &:hover {
+        background: $bg-gray;
+      }
+
+      &:not(:last-child) td {
+        border-bottom: 1px solid $border-light;
+      }
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      color: $text-secondary;
+    }
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+    border-radius: $radius-sm;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
+
+.ordonnance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ordonnance-item {
+  padding: 1rem;
+  background: $bg-gray;
+  border-radius: $radius-md;
+
+  .ordonnance-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+
+    .ordonnance-date {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .ordonnance-medecin {
+      color: $text-secondary;
+      font-size: 0.85rem;
+    }
+  }
+
+  .medicaments-list {
+    margin: 0;
+    padding-left: 1.25rem;
+
+    li {
+      margin-bottom: 0.5rem;
+      color: $text-secondary;
+      font-size: 0.85rem;
+
+      strong {
+        color: $text-primary;
+      }
+
+      .instructions {
+        display: block;
+        font-style: italic;
+        color: $text-muted;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+      }
+    }
+  }
+}
+
+.allergies-list,
+.antecedents-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.allergy-item,
+.antecedent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: $bg-gray;
+  border-radius: $radius-md;
+  font-size: 0.85rem;
+
+  .allergy-type,
+  .antecedent-type {
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .allergy-name,
+  .antecedent-desc {
+    color: $text-secondary;
+  }
+
+  .allergy-severity {
+    padding: 0.15rem 0.5rem;
+    border-radius: $radius-sm;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.légère, &.legere {
+      background: $success-light;
+      color: $success-color;
+    }
+
+    &.modérée, &.moderee {
+      background: $warning-light;
+      color: $warning-color;
+    }
+
+    &.sévère, &.severe {
+      background: $error-light;
+      color: $error-color;
+    }
+  }
+
+  .antecedent-status {
+    padding: 0.15rem 0.5rem;
+    border-radius: $radius-sm;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: $success-light;
+    color: $success-color;
+
+    &.actif {
+      background: $warning-light;
+      color: $warning-color;
+    }
+  }
+}
+
+// ============================================
+// Panel Overlay
+// ============================================
+.panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: $z-modal-backdrop;
+}
+
+// ============================================
+// Side Panel
+// ============================================
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 100%;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: $z-modal;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: $breakpoint-sm) {
+    width: 100%;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid $border-light;
+    background: $bg-gray;
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 1px solid $border-light;
+      border-radius: $radius-md;
+      color: $text-secondary;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $error-light;
+        border-color: $error-color;
+        color: $error-color;
+      }
+    }
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+}
+
+// ============================================
+// Actions Panel
+// ============================================
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  background: white;
+  border: 1px solid $border-light;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-align: left;
+
+  &:hover {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.02);
+
+    .action-arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  &.danger {
+    &:hover {
+      border-color: $error-color;
+      background: $error-light;
+
+      lucide-icon:first-child,
+      .action-title {
+        color: $error-color;
+      }
+    }
+  }
+
+  lucide-icon:first-child {
+    color: $primary-color;
+    flex-shrink: 0;
+  }
+
+  .action-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    .action-title {
+      font-weight: 600;
+      color: $text-primary;
+      font-size: 0.95rem;
+    }
+
+    .action-desc {
+      color: $text-muted;
+      font-size: 0.8rem;
+    }
+  }
+
+  .action-arrow {
+    color: $text-muted;
+    transition: transform $transition-fast;
+  }
+}
+
+.action-separator {
+  height: 1px;
+  background: $border-light;
+  margin: 0.75rem 0;
+}
+
+// ============================================
+// Edit Profile Panel - Form Styles
+// ============================================
+.edit-panel,
+.password-panel {
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: $radius-md;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+
+    &.alert-success {
+      background: $success-light;
+      color: $success-color;
+    }
+
+    &.alert-error {
+      background: $error-light;
+      color: $error-color;
+    }
+  }
+
+  .form-section {
+    margin-bottom: 1.5rem;
+
+    h4 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid $border-light;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: $text-secondary;
+      margin-bottom: 0.35rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid $border-light;
+      border-radius: $radius-md;
+      font-size: 0.9rem;
+      color: $text-primary;
+      transition: all $transition-fast;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+
+      &::placeholder {
+        color: $text-muted;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+      appearance: none;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid $border-light;
+
+    .btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: $radius-md;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &.btn-secondary {
+        background: white;
+        border: 1px solid $border-light;
+        color: $text-secondary;
+
+        &:hover {
+          background: $bg-gray;
+          border-color: $text-muted;
+        }
+      }
+
+      &.btn-primary {
+        background: $primary-color;
+        border: none;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: $primary-dark;
+        }
+
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// Print Styles - Optimisé pour A4 professionnel
+// ============================================
+@media print {
+  // Masquer TOUS les éléments non pertinents à l'impression
+  .page-header .btn-actions,
+  .panel-overlay,
+  .side-panel,
+  .patient-header-card .avatar-wrapper,
+  .patient-header-card .avatar-badge,
+  .visits-section,
+  .files-section,
+  .loading-state,
+  app-dashboard-layout ::ng-deep .sidebar,
+  app-dashboard-layout ::ng-deep .topbar,
+  app-dashboard-layout ::ng-deep .mobile-menu-btn,
+  app-dashboard-layout ::ng-deep header,
+  app-dashboard-layout ::ng-deep nav,
+  app-dashboard-layout ::ng-deep .header,
+  app-dashboard-layout ::ng-deep .navbar {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  // Reset complet du layout
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  app-dashboard-layout,
+  app-dashboard-layout ::ng-deep .main-content,
+  app-dashboard-layout ::ng-deep .dashboard-layout,
+  app-dashboard-layout ::ng-deep .content-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .profile-page {
+    padding: 0 !important;
+    max-width: 100%;
+    min-height: auto;
+    margin: 0;
+  }
+
+  // En-tête de page - Titre seulement
+  .page-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid $primary-color;
+    
+    .header-left {
+      h1 {
+        font-size: 1rem;
+        margin-bottom: 0;
+      }
+      .subtitle {
+        display: none;
+      }
+    }
+  }
+
+  // Carte patient compacte SANS avatar
+  .patient-header-card {
+    display: block !important;
+    box-shadow: none;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    margin-bottom: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    background: #fafafa !important;
+
+    .patient-info {
+      display: block;
+      margin-bottom: 0.4rem;
+
+      .patient-name {
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+        gap: 0.3rem;
+        justify-content: flex-start;
+
+        .declaration-badge {
+          width: 16px;
+          height: 16px;
+          
+          lucide-icon {
+            width: 10px;
+            height: 10px;
+          }
+        }
+      }
+
+      .patient-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        font-size: 0.65rem;
+
+        .meta-item {
+          font-size: 0.65rem;
+          gap: 0.15rem;
+
+          lucide-icon {
+            width: 9px;
+            height: 9px;
+          }
+        }
+      }
+    }
+
+    // Stats en format liste horizontale compacte
+    .stats-row {
+      display: flex;
+      flex-direction: row;
+      gap: 1.5rem;
+      padding-top: 0.4rem;
+      margin-top: 0.4rem;
+      border-top: 1px solid #e0e0e0;
+      border-left: none;
+      padding-left: 0;
+
+      .stat-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0;
+
+        .stat-value {
+          font-size: 0.8rem;
+          font-weight: 700;
+        }
+
+        .stat-label {
+          font-size: 0.65rem;
+          text-transform: lowercase;
+          letter-spacing: 0;
+          
+          &::before {
+            content: "";
+          }
+        }
+      }
+    }
+  }
+
+  // Grille d'informations compacte
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-section {
+    box-shadow: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    page-break-inside: avoid;
+    padding: 0.5rem 0.75rem;
+
+    .section-header {
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.35rem;
+
+      lucide-icon {
+        width: 12px;
+        height: 12px;
+      }
+
+      h3 {
+        font-size: 0.75rem;
+      }
+    }
+
+    .info-item {
+      padding: 0.2rem 0;
+
+      .info-label {
+        font-size: 0.6rem;
+      }
+
+      .info-value {
+        font-size: 0.7rem;
+      }
+    }
+
+    .info-divider {
+      margin: 0.35rem 0;
+    }
+
+    .info-subtitle {
+      font-size: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .inline-tags .tag {
+      font-size: 0.6rem;
+      padding: 0.1rem 0.35rem;
+    }
+  }
+
+  // Sections d'impression
+  .print-section {
+    display: block !important;
+    box-shadow: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    page-break-inside: avoid;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+
+    .section-header {
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.35rem;
+
+      lucide-icon {
+        width: 12px;
+        height: 12px;
+      }
+
+      h3 {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  .data-table {
+    font-size: 0.65rem;
+
+    th {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.6rem;
+    }
+
+    td {
+      padding: 0.3rem 0.5rem;
+    }
+  }
+
+  .ordonnance-list {
+    .ordonnance-item {
+      padding: 0.35rem 0;
+      
+      .ordonnance-header {
+        font-size: 0.7rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .medicaments-list {
+        font-size: 0.65rem;
+        
+        li {
+          padding: 0.15rem 0;
+        }
+      }
+    }
+  }
+
+  // Configuration de la page A4
+  @page {
+    margin: 1cm 1.5cm;
+    size: A4 portrait;
+  }
+
+  // En-tête d'impression avec logo
+  .profile-page::before {
+    content: "MEDICONNET - Dossier Patient";
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: $primary-color;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+}

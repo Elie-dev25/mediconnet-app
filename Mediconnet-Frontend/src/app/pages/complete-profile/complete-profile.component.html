@@ -1,0 +1,455 @@
+<div class="complete-profile-container">
+  <!-- Header -->
+  <header class="profile-header">
+    <div class="logo">
+      <lucide-icon name="stethoscope" [size]="28" class="logo-icon"></lucide-icon>
+      <span class="logo-text">MediConnect</span>
+    </div>
+    <div class="welcome-text" *ngIf="userName">
+      <lucide-icon name="user-circle" [size]="20"></lucide-icon>
+      <span>Bienvenue, <strong>{{ userName }}</strong></span>
+    </div>
+  </header>
+
+  <main class="profile-main">
+    <div class="profile-card">
+      <!-- Titre -->
+      <div class="card-header">
+        <div class="header-icon">
+          <lucide-icon name="clipboard-list" [size]="32"></lucide-icon>
+        </div>
+        <h1>Complétez votre profil médical</h1>
+        <p>Ces informations sont essentielles pour votre prise en charge médicale</p>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper">
+        <div class="stepper-track">
+          <div class="stepper-progress" [style.width.%]="progressPercentage"></div>
+        </div>
+        <div class="stepper-steps">
+          <div 
+            *ngFor="let step of steps" 
+            class="step"
+            [class.active]="currentStep === step.id"
+            [class.completed]="step.completed"
+            [class.clickable]="step.id < currentStep || (step.id === currentStep + 1 && isCurrentStepValid)"
+            (click)="goToStep(step.id)">
+            <div class="step-circle">
+              <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check" [size]="16"></lucide-icon>
+              <lucide-icon *ngIf="!step.completed || currentStep === step.id" [name]="step.icon" [size]="18"></lucide-icon>
+            </div>
+            <span class="step-title">{{ step.title }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-alert" @fadeIn>
+        <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Form Content -->
+      <div class="form-content" @slideIn>
+        
+        <!-- Étape 1: Informations personnelles -->
+        <ng-container *ngIf="currentStep === 1">
+          <form [formGroup]="personalInfoForm" class="step-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="dateNaissance">Date de naissance <span class="required">*</span></label>
+                <input 
+                  type="date" 
+                  id="dateNaissance" 
+                  formControlName="dateNaissance"
+                  class="form-input"
+                  [max]="'2010-01-01'">
+              </div>
+              <div class="form-group">
+                <label for="sexe">Sexe <span class="required">*</span></label>
+                <select id="sexe" formControlName="sexe" class="form-input">
+                  <option value="">Sélectionnez</option>
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nationalite">Nationalité <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  id="nationalite" 
+                  formControlName="nationalite"
+                  class="form-input"
+                  placeholder="Cameroun">
+              </div>
+              <div class="form-group">
+                <label for="regionOrigine">Région d'origine <span class="required">*</span></label>
+                <select id="regionOrigine" formControlName="regionOrigine" class="form-input">
+                  <option value="">Sélectionnez</option>
+                  <option *ngFor="let region of formOptions.regions" [value]="region">{{ region }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" *ngIf="showRegionAutreInput">
+              <div class="form-group full-width">
+                <label for="regionOrigineAutre">Précisez votre région</label>
+                <input 
+                  type="text" 
+                  id="regionOrigineAutre" 
+                  formControlName="regionOrigineAutre"
+                  class="form-input"
+                  placeholder="Entrez votre région">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ethnie">Ethnie</label>
+                <input 
+                  type="text" 
+                  id="ethnie" 
+                  formControlName="ethnie"
+                  class="form-input"
+                  placeholder="Ex: Bamiléké, Bassa, Douala...">
+              </div>
+              <div class="form-group">
+                <label for="situationMatrimoniale">Situation matrimoniale</label>
+                <select id="situationMatrimoniale" formControlName="situationMatrimoniale" class="form-input">
+                  <option value="">Sélectionnez</option>
+                  <option *ngFor="let situation of formOptions.situationsMatrimoniales" [value]="situation">
+                    {{ situation }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nbEnfants">Nombre d'enfants</label>
+                <input 
+                  type="number" 
+                  id="nbEnfants" 
+                  formControlName="nbEnfants"
+                  class="form-input"
+                  min="0"
+                  max="20">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="adresse">
+                  <lucide-icon name="map-pin" [size]="16"></lucide-icon>
+                  Adresse complète
+                </label>
+                <textarea 
+                  id="adresse" 
+                  formControlName="adresse"
+                  class="form-input textarea"
+                  rows="2"
+                  placeholder="Quartier, ville, rue..."></textarea>
+              </div>
+            </div>
+          </form>
+        </ng-container>
+
+        <!-- Étape 2: Informations médicales -->
+        <ng-container *ngIf="currentStep === 2">
+          <form [formGroup]="medicalInfoForm" class="step-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="groupeSanguin">Groupe sanguin</label>
+                <select id="groupeSanguin" formControlName="groupeSanguin" class="form-input">
+                  <option value="">Je ne sais pas</option>
+                  <option *ngFor="let groupe of formOptions.groupesSanguins" [value]="groupe">{{ groupe }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="profession">Profession</label>
+                <input 
+                  type="text" 
+                  id="profession" 
+                  formControlName="profession"
+                  class="form-input"
+                  placeholder="Votre profession">
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Maladies chroniques</label>
+              <div class="checkbox-group">
+                <label 
+                  *ngFor="let maladie of formOptions.maladiesChroniquesOptions" 
+                  class="checkbox-item"
+                  [class.selected]="isMaladieSelected(maladie)">
+                  <input 
+                    type="checkbox" 
+                    [checked]="isMaladieSelected(maladie)"
+                    (change)="toggleMaladieChronique(maladie)">
+                  <span>{{ maladie }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width" *ngIf="showMaladieAutreInput">
+              <label for="autreMaladieChronique">Précisez la maladie</label>
+              <input 
+                type="text" 
+                id="autreMaladieChronique" 
+                formControlName="autreMaladieChronique"
+                class="form-input"
+                placeholder="Entrez le nom de la maladie">
+            </div>
+
+            <div class="form-group full-width">
+              <label>Opérations chirurgicales antérieures</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="operationsChirurgicales" [value]="false">
+                  <span>Non</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="operationsChirurgicales" [value]="true">
+                  <span>Oui</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width" *ngIf="medicalInfoForm.get('operationsChirurgicales')?.value">
+              <label for="operationsDetails">Précisez les opérations</label>
+              <textarea 
+                id="operationsDetails" 
+                formControlName="operationsDetails"
+                class="form-input textarea"
+                rows="2"
+                placeholder="Décrivez les opérations subies..."></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Allergies connues</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="allergiesConnues" [value]="false">
+                  <span>Non</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="allergiesConnues" [value]="true">
+                  <span>Oui</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width" *ngIf="medicalInfoForm.get('allergiesConnues')?.value">
+              <label for="allergiesDetails">Précisez les allergies</label>
+              <textarea 
+                id="allergiesDetails" 
+                formControlName="allergiesDetails"
+                class="form-input textarea"
+                rows="2"
+                placeholder="Listez vos allergies..."></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Antécédents familiaux (maladies héréditaires)</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="antecedentsFamiliaux" [value]="false">
+                  <span>Non</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="antecedentsFamiliaux" [value]="true">
+                  <span>Oui</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width" *ngIf="medicalInfoForm.get('antecedentsFamiliaux')?.value">
+              <label for="antecedentsFamiliauxDetails">Précisez les antécédents</label>
+              <textarea 
+                id="antecedentsFamiliauxDetails" 
+                formControlName="antecedentsFamiliauxDetails"
+                class="form-input textarea"
+                rows="2"
+                placeholder="Décrivez les antécédents familiaux..."></textarea>
+            </div>
+          </form>
+        </ng-container>
+
+        <!-- Étape 3: Habitudes de vie -->
+        <ng-container *ngIf="currentStep === 3">
+          <form [formGroup]="lifestyleInfoForm" class="step-form">
+            <div class="form-group full-width">
+              <label>Consommation d'alcool</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="consommationAlcool" [value]="false">
+                  <span>Non</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="consommationAlcool" [value]="true">
+                  <span>Oui</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width" *ngIf="lifestyleInfoForm.get('consommationAlcool')?.value">
+              <label for="frequenceAlcool">Fréquence de consommation</label>
+              <select id="frequenceAlcool" formControlName="frequenceAlcool" class="form-input">
+                <option value="">Sélectionnez</option>
+                <option *ngFor="let freq of formOptions.frequencesAlcool" [value]="freq">{{ freq }}</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Tabagisme</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="tabagisme" [value]="false">
+                  <span>Non-fumeur</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="tabagisme" [value]="true">
+                  <span>Fumeur</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Activité physique régulière</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" formControlName="activitePhysique" [value]="false">
+                  <span>Non</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" formControlName="activitePhysique" [value]="true">
+                  <span>Oui</span>
+                </label>
+              </div>
+            </div>
+          </form>
+        </ng-container>
+
+        <!-- Étape 4: Contacts d'urgence -->
+        <ng-container *ngIf="currentStep === 4">
+          <form [formGroup]="emergencyContactForm" class="step-form">
+            <div class="emergency-info">
+              <p>Ces informations seront utilisées en cas d'urgence médicale.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="personneContact">Personne à contacter <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  id="personneContact" 
+                  formControlName="personneContact"
+                  class="form-input"
+                  placeholder="Nom complet de la personne">
+              </div>
+              <div class="form-group">
+                <label for="numeroContact">Numéro de téléphone <span class="required">*</span></label>
+                <input 
+                  type="tel" 
+                  id="numeroContact" 
+                  formControlName="numeroContact"
+                  class="form-input"
+                  placeholder="Ex: 6XX XXX XXX">
+              </div>
+            </div>
+          </form>
+        </ng-container>
+
+        <!-- Étape 5: Déclaration sur l'honneur -->
+        <ng-container *ngIf="currentStep === 5">
+          <form [formGroup]="declarationHonneurForm" class="step-form declaration-form">
+            <div class="declaration-header">
+              <div class="declaration-icon">
+                <lucide-icon name="shield-check" [size]="48"></lucide-icon>
+              </div>
+              <h2>Déclaration sur l'honneur</h2>
+            </div>
+
+            <div class="declaration-content">
+              <p class="declaration-intro">
+                En soumettant ce formulaire, je déclare sur l'honneur que :
+              </p>
+
+              <ul class="declaration-list">
+                <li>
+                  <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+                  <span>Toutes les informations que j'ai fournies dans ce formulaire sont <strong>exactes et véridiques</strong>.</span>
+                </li>
+                <li>
+                  <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+                  <span>L'établissement de santé <strong>MediConnect</strong> peut se fier à ces informations pour ma <strong>prise en charge médicale</strong>.</span>
+                </li>
+                <li>
+                  <lucide-icon name="alert-triangle" [size]="20" class="warning-icon"></lucide-icon>
+                  <span>En cas de <strong>fausse déclaration</strong> de ma part ayant entraîné une action médicale inappropriée, un décès ou toute autre complication, la <strong>responsabilité ne saurait être imputée à l'établissement</strong> de santé.</span>
+                </li>
+                <li>
+                  <lucide-icon name="alert-triangle" [size]="20" class="warning-icon"></lucide-icon>
+                  <span>La <strong>responsabilité m'incombe exclusivement</strong> en cas d'informations erronées, incomplètes ou mensongères.</span>
+                </li>
+              </ul>
+
+              <div class="declaration-checkbox">
+                <label class="checkbox-container">
+                  <input type="checkbox" formControlName="acceptee">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label">
+                    <strong>Je confirme avoir lu, compris et accepté</strong> les termes de cette déclaration sur l'honneur.
+                  </span>
+                </label>
+              </div>
+
+              <div class="declaration-warning" *ngIf="declarationHonneurForm.get('acceptee')?.touched && !declarationHonneurForm.get('acceptee')?.value">
+                <lucide-icon name="info" [size]="18"></lucide-icon>
+                <span>Vous devez accepter cette déclaration pour finaliser votre inscription.</span>
+              </div>
+            </div>
+          </form>
+        </ng-container>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn-secondary" 
+          (click)="previousStep()"
+          [disabled]="currentStep === 1">
+          <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+          <span>Précédent</span>
+        </button>
+
+        <button 
+          *ngIf="currentStep < totalSteps"
+          type="button" 
+          class="btn-primary" 
+          (click)="nextStep()"
+          [disabled]="!isCurrentStepValid">
+          <span>Suivant</span>
+          <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+        </button>
+
+        <button 
+          *ngIf="currentStep === totalSteps"
+          type="button" 
+          class="btn-submit" 
+          (click)="submitProfile()"
+          [disabled]="!isCurrentStepValid || isSubmitting">
+          <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spinner"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+          <span>{{ isSubmitting ? 'Enregistrement...' : 'Terminer' }}</span>
+        </button>
+      </div>
+    </div>
+  </main>
+</div>

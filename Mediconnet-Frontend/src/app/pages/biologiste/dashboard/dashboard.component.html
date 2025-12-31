@@ -1,0 +1,108 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="welcome-section">
+        <h1>Bonjour, {{ userName }}</h1>
+        <p class="subtitle">Bienvenue dans votre espace laboratoire</p>
+      </div>
+      <div class="header-actions">
+        <span class="date-display">
+          <lucide-icon name="calendar" [size]="16"></lucide-icon>
+          {{ today | date:'EEEE d MMMM yyyy':'':'fr' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon analyses">
+          <lucide-icon name="flask-conical" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.analysesEnCours }}</span>
+          <span class="stat-label">Analyses en cours</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon resultats">
+          <lucide-icon name="file-check" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.resultatsAValider }}</span>
+          <span class="stat-label">Résultats à valider</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon examens">
+          <lucide-icon name="microscope" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.examensJour }}</span>
+          <span class="stat-label">Examens aujourd'hui</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon urgences">
+          <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.urgences }}</span>
+          <span class="stat-label">Urgences</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="content-grid">
+      <!-- Analyses en cours -->
+      <div class="content-card">
+        <div class="card-header">
+          <h3><lucide-icon name="flask-conical" [size]="20"></lucide-icon> Analyses en cours</h3>
+        </div>
+        <div class="card-body">
+          <div class="empty-state" *ngIf="!isLoading && analysesRecentes.length === 0">
+            <lucide-icon name="inbox" [size]="48"></lucide-icon>
+            <p>Aucune analyse en cours</p>
+          </div>
+          <div class="loading-state" *ngIf="isLoading">
+            <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+            <p>Chargement...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fonctionnalités à venir -->
+      <div class="content-card">
+        <div class="card-header">
+          <h3><lucide-icon name="sparkles" [size]="20"></lucide-icon> Fonctionnalités à venir</h3>
+        </div>
+        <div class="card-body">
+          <div class="feature-list">
+            <div class="feature-item">
+              <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+              <span>Gestion des analyses de laboratoire</span>
+            </div>
+            <div class="feature-item">
+              <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+              <span>Validation des résultats</span>
+            </div>
+            <div class="feature-item">
+              <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+              <span>Suivi des prélèvements</span>
+            </div>
+            <div class="feature-item">
+              <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+              <span>Gestion des urgences</span>
+            </div>
+            <div class="feature-item">
+              <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+              <span>Historique des examens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

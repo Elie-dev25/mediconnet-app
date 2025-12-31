@@ -1,0 +1,67 @@
+<div class="patient-search-container">
+  <form [formGroup]="searchForm">
+    <div class="search-input-wrapper">
+      <lucide-icon name="search" [size]="18" class="search-icon"></lucide-icon>
+      <input 
+        type="text" 
+        formControlName="searchTerm"
+        [placeholder]="placeholder"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        class="search-input">
+      <button 
+        type="button" 
+        *ngIf="searchForm.get('searchTerm')?.value"
+        (click)="clearSearch()"
+        class="clear-btn">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+  </form>
+
+  <!-- Results Dropdown -->
+  <div class="search-results" *ngIf="showResults">
+    <!-- Loading -->
+    <div class="results-loading" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="20" class="spinner"></lucide-icon>
+      <span>Recherche en cours...</span>
+    </div>
+
+    <!-- Error -->
+    <div class="results-error" *ngIf="errorMessage && !isLoading">
+      <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Empty -->
+    <div class="results-empty" *ngIf="!isLoading && !errorMessage && patients.length === 0">
+      <lucide-icon name="user-x" [size]="24"></lucide-icon>
+      <span>Aucun patient trouvé</span>
+    </div>
+
+    <!-- Results List -->
+    <div class="results-list" *ngIf="!isLoading && !errorMessage && patients.length > 0">
+      <div 
+        class="result-item" 
+        *ngFor="let patient of patients"
+        (click)="selectPatient(patient)">
+        <div class="patient-avatar">
+          <lucide-icon name="user" [size]="20"></lucide-icon>
+        </div>
+        <div class="patient-details">
+          <div class="patient-name">{{ patient.prenom }} {{ patient.nom }}</div>
+          <div class="patient-meta">
+            <span class="dossier">
+              <lucide-icon name="folder" [size]="12"></lucide-icon>
+              {{ patient.numeroDossier }}
+            </span>
+            <span class="separator">•</span>
+            <span class="email">{{ patient.email }}</span>
+            <span class="separator" *ngIf="patient.dateNaissance">•</span>
+            <span class="age" *ngIf="patient.dateNaissance">{{ calculateAge(patient.dateNaissance) }} ans</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

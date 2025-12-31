@@ -1,0 +1,30 @@
+<app-dashboard-layout [sidebarTitle]="sidebarTitle" [menuItems]="menuItems">
+  <div class="dossier-page">
+    <!-- Header avec navigation retour -->
+    <div class="page-header">
+      <button class="btn-back" (click)="goBack()">
+        <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+        Retour
+      </button>
+      <div class="header-title">
+        <h1>
+          <lucide-icon name="folder-open" [size]="28"></lucide-icon>
+          Dossier Patient
+        </h1>
+      </div>
+    </div>
+
+    <!-- Composant partagé pour l'affichage du dossier -->
+    <app-dossier-medical-view
+      mode="medecin"
+      [dossier]="dossierData"
+      [isLoading]="isLoading"
+      [error]="error"
+      [showStartConsultation]="true"
+      [consultationId]="consultationId"
+      (retry)="loadDossier()"
+      (startConsultation)="startConsultation()">
+    </app-dossier-medical-view>
+  </div>
+
+</app-dashboard-layout>

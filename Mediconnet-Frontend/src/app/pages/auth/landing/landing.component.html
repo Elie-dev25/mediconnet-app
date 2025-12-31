@@ -1,0 +1,31 @@
+<app-auth-layout-wrapper 
+  [showDecorative]="true"
+  [backgroundImage]="'assets/images/accueil.jpeg'">
+  <div class="action-section" @slideInRight>
+    <!-- Welcome Message -->
+    <div class="welcome-section">
+      <h1 class="welcome-title">Bienvenue Sur</h1>
+      <p class="welcome-subtitle">MediConnect</p>
+      <p class="welcome-description">Votre plateforme hospitalière de gestion intégrée</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button 
+        class="btn btn-primary"
+        (click)="navigateToLogin()"
+        type="button"
+        aria-label="Se connecter">
+        Se connecter
+      </button>
+      
+      <button 
+        class="btn btn-secondary"
+        (click)="navigateToRegister()"
+        type="button"
+        aria-label="Créer un compte"> 
+        Créer un compte
+      </button>
+    </div>
+  </div>
+</app-auth-layout-wrapper>

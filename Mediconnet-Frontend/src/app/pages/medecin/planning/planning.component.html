@@ -1,0 +1,354 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="planning-page">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Mon Planning</h1>
+        <p class="subtitle">Gérez vos horaires et disponibilités</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="refresh()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="20"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats rapides -->
+    <section class="stats-grid" *ngIf="dashboard">
+      <div class="stat-card today">
+        <div class="stat-icon">
+          <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ dashboard.rdvAujourdHui }}</span>
+          <span class="stat-label">Aujourd'hui</span>
+        </div>
+      </div>
+      <div class="stat-card week">
+        <div class="stat-icon">
+          <lucide-icon name="calendar" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ dashboard.rdvCetteSemaine }}</span>
+          <span class="stat-label">Cette semaine</span>
+        </div>
+      </div>
+      <div class="stat-card month">
+        <div class="stat-icon">
+          <lucide-icon name="users" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ dashboard.rdvCeMois }}</span>
+          <span class="stat-label">Ce mois</span>
+        </div>
+      </div>
+      <div class="stat-card leave">
+        <div class="stat-icon">
+          <lucide-icon name="briefcase" [size]="24"></lucide-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ dashboard.joursCongeRestants }}</span>
+          <span class="stat-label">Jours congés restants</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'horaires'"
+          (click)="setActiveTab('horaires')">
+          <lucide-icon name="clock" [size]="18"></lucide-icon>
+          Horaires de travail
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'conges'"
+          (click)="setActiveTab('conges')">
+          <lucide-icon name="calendar-off" [size]="18"></lucide-icon>
+          Congés & Absences
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'calendrier'"
+          (click)="setActiveTab('calendrier')">
+          <lucide-icon name="calendar" [size]="18"></lucide-icon>
+          Calendrier
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Horaires -->
+    <section class="tab-content" *ngIf="activeTab === 'horaires'">
+      <div class="section-header horaires-header">
+        <div class="header-left">
+          <h2>Planning de la semaine</h2>
+          <p class="section-desc">Gérez vos plages horaires de consultation</p>
+        </div>
+        <div class="week-navigation">
+          <button class="nav-btn" (click)="previousHorairesWeek()" title="Semaine précédente">
+            <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+          </button>
+          <div class="week-label-container" (click)="goToCurrentWeek()">
+            <span class="week-label" [class.current]="semainePlanning?.estSemaineCourante">
+              {{ getHorairesWeekLabel() }}
+            </span>
+            <span class="current-badge" *ngIf="semainePlanning?.estSemaineCourante">
+              Semaine en cours
+            </span>
+          </div>
+          <button class="nav-btn" (click)="nextHorairesWeek()" title="Semaine suivante">
+            <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="isLoadingHoraires || isLoading" class="loading">
+        <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div class="week-grid" *ngIf="!isLoadingHoraires && !isLoading && semainePlanning">
+        <div class="day-card" *ngFor="let jour of semainePlanning.jours" 
+             [class.indisponible]="jour.estIndisponible">
+          <div class="day-header">
+            <div class="day-info">
+              <span class="day-name">{{ jour.nom }}</span>
+              <span class="day-date" *ngIf="jour.date">{{ jour.date | date:'dd/MM' }}</span>
+            </div>
+            <span class="day-hours" [class.no-work]="!jour.travaille || jour.estIndisponible">
+              <ng-container *ngIf="jour.estIndisponible">Indisponible</ng-container>
+              <ng-container *ngIf="!jour.estIndisponible">
+                {{ jour.travaille ? jour.heuresTotal : 'Repos' }}
+              </ng-container>
+            </span>
+          </div>
+          
+          <div class="day-slots" *ngIf="!jour.estIndisponible">
+            <div class="slot" *ngFor="let creneau of jour.creneaux" [class.disabled]="!creneau.actif">
+              <div class="slot-time">
+                <lucide-icon name="clock" [size]="14"></lucide-icon>
+                {{ creneau.heureDebut }} - {{ creneau.heureFin }}
+              </div>
+              <div class="slot-duration">{{ creneau.dureeParDefaut }} min/RDV</div>
+              <div class="slot-actions">
+                <button class="action-btn" (click)="toggleCreneau(creneau.idCreneau)" [title]="creneau.actif ? 'Désactiver' : 'Activer'">
+                  <lucide-icon [name]="creneau.actif ? 'toggle-right' : 'toggle-left'" [size]="16"></lucide-icon>
+                </button>
+                <button class="action-btn" (click)="openCreneauModal(jour.numero, creneau)" title="Modifier">
+                  <lucide-icon name="edit" [size]="14"></lucide-icon>
+                </button>
+                <button class="action-btn danger" (click)="deleteCreneau(creneau.idCreneau)" title="Supprimer">
+                  <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                </button>
+              </div>
+            </div>
+            
+            <button class="add-slot-btn" (click)="openCreneauModal(jour.numero)">
+              <lucide-icon name="plus" [size]="16"></lucide-icon>
+              Ajouter un créneau
+            </button>
+          </div>
+          
+          <div class="day-indispo-message" *ngIf="jour.estIndisponible">
+            <lucide-icon name="calendar-off" [size]="20"></lucide-icon>
+            <span>Jour indisponible</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="week-summary" *ngIf="semainePlanning">
+        <span class="summary-item">
+          <strong>{{ semainePlanning.totalHeures }}h</strong> de travail cette semaine
+        </span>
+        <span class="summary-item">
+          <strong>{{ semainePlanning.totalCreneaux }}</strong> plages horaires
+        </span>
+      </div>
+    </section>
+
+    <!-- Tab Congés -->
+    <section class="tab-content" *ngIf="activeTab === 'conges'">
+      <div class="section-header">
+        <h2>Congés & Absences</h2>
+        <button class="btn-primary" (click)="openIndispoModal()">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Déclarer une absence
+        </button>
+      </div>
+
+      <div class="indispo-list">
+        <div class="indispo-empty" *ngIf="indisponibilites.length === 0">
+          <lucide-icon name="calendar-off" [size]="48"></lucide-icon>
+          <p>Aucune indisponibilité déclarée</p>
+        </div>
+
+        <div class="indispo-card" *ngFor="let indispo of indisponibilites">
+          <div class="indispo-icon" [ngClass]="indispo.type">
+            <lucide-icon name="calendar-off" [size]="20"></lucide-icon>
+          </div>
+          <div class="indispo-info">
+            <div class="indispo-type">{{ indispo.typeLibelle }}</div>
+            <div class="indispo-dates">
+              Du {{ formatDate(indispo.dateDebut) }} au {{ formatDate(indispo.dateFin) }}
+              <span class="indispo-days">({{ indispo.nombreJours }} jour{{ indispo.nombreJours > 1 ? 's' : '' }})</span>
+            </div>
+            <div class="indispo-motif" *ngIf="indispo.motif">{{ indispo.motif }}</div>
+          </div>
+          <button class="action-btn danger" (click)="deleteIndisponibilite(indispo.idIndisponibilite)" title="Supprimer">
+            <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab Calendrier -->
+    <section class="tab-content" *ngIf="activeTab === 'calendrier'">
+      <div class="section-header">
+        <div>
+          <h2>Calendrier</h2>
+          <p class="section-desc">{{ getWeekLabel() }}</p>
+        </div>
+        <div class="week-nav">
+          <button class="btn-secondary" (click)="previousWeek()">
+            <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+            Semaine précédente
+          </button>
+          <button class="btn-secondary" (click)="nextWeek()">
+            Semaine suivante
+            <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="isLoadingCalendrier" class="loading">Chargement...</div>
+
+      <div class="calendar-week" *ngIf="!isLoadingCalendrier">
+        <div class="calendar-day" *ngFor="let j of calendrierSemaine" [class.indispo]="j.estIndisponible">
+          <div class="calendar-day-header">
+            <div class="calendar-day-title">
+              <div class="calendar-day-name">{{ j.jourNom }}</div>
+              <div class="calendar-day-date">{{ formatDate(j.date) }}</div>
+            </div>
+            <div class="calendar-day-badge" *ngIf="j.estIndisponible">
+              <lucide-icon name="calendar-off" [size]="16"></lucide-icon>
+              {{ j.motifIndisponibilite || 'Indisponible' }}
+            </div>
+          </div>
+
+          <div class="calendar-day-body">
+            <div class="calendar-empty" *ngIf="j.rendezVous.length === 0">
+              <span>Aucun rendez-vous</span>
+            </div>
+            <div class="calendar-rdv" *ngFor="let rdv of j.rendezVous">
+              <div class="calendar-rdv-time">{{ formatTime(rdv.dateHeure) }}</div>
+              <div class="calendar-rdv-info">
+                <div class="calendar-rdv-patient">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</div>
+                <div class="calendar-rdv-motif" *ngIf="rdv.motif">{{ rdv.motif }}</div>
+              </div>
+              <div class="calendar-rdv-status">{{ rdv.statut }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Créneau -->
+  <app-modal
+    [isOpen]="showCreneauModal"
+    [title]="editingCreneau ? 'Modifier le créneau' : 'Nouveau créneau'"
+    icon="clock"
+    size="sm"
+    (closed)="closeCreneauModal()">
+    <form [formGroup]="creneauForm">
+      <div class="form-group">
+        <label>Jour de la semaine</label>
+        <select formControlName="jourSemaine">
+          <option [value]="1">Lundi</option>
+          <option [value]="2">Mardi</option>
+          <option [value]="3">Mercredi</option>
+          <option [value]="4">Jeudi</option>
+          <option [value]="5">Vendredi</option>
+          <option [value]="6">Samedi</option>
+          <option [value]="7">Dimanche</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Heure début</label>
+          <input type="time" formControlName="heureDebut">
+        </div>
+        <div class="form-group">
+          <label>Heure fin</label>
+          <input type="time" formControlName="heureFin">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Durée par RDV (minutes)</label>
+        <input type="number" formControlName="dureeParDefaut" min="10" max="120">
+      </div>
+    </form>
+    <div class="alert alert-error" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+      {{ error }}
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeCreneauModal()">Annuler</button>
+      <button class="btn-primary" (click)="saveCreneau()" [disabled]="creneauForm.invalid">
+        <lucide-icon name="check" [size]="18"></lucide-icon>
+        {{ editingCreneau ? 'Modifier' : 'Créer' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <!-- Modal Indisponibilité -->
+  <app-modal
+    [isOpen]="showIndispoModal"
+    title="Déclarer une absence"
+    icon="calendar-off"
+    size="sm"
+    (closed)="closeIndispoModal()">
+    <form [formGroup]="indispoForm">
+      <div class="form-group">
+        <label>Type d'absence</label>
+        <select formControlName="type">
+          <option *ngFor="let opt of getTypeIndispoOptions()" [value]="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date début</label>
+          <input type="date" formControlName="dateDebut">
+        </div>
+        <div class="form-group">
+          <label>Date fin</label>
+          <input type="date" formControlName="dateFin">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Motif (optionnel)</label>
+        <textarea formControlName="motif" rows="2" placeholder="Précisez si nécessaire..."></textarea>
+      </div>
+    </form>
+    <div class="alert alert-error" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+      {{ error }}
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeIndispoModal()">Annuler</button>
+      <button class="btn-primary" (click)="saveIndisponibilite()" [disabled]="indispoForm.invalid">
+        <lucide-icon name="check" [size]="18"></lucide-icon>
+        Enregistrer
+      </button>
+    </div>
+  </app-modal>
+
+</app-dashboard-layout>

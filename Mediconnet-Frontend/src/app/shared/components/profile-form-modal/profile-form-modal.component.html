@@ -1,0 +1,172 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)" @fadeIn>
+  <div class="modal-container" @slideIn>
+    <div class="modal-header">
+      <h2>
+        <lucide-icon name="user" [size]="24"></lucide-icon>
+        Compléter mon profil
+      </h2>
+      <button class="close-btn" (click)="onClose()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+      <div class="modal-body">
+        <!-- Message de succes -->
+        <div class="success-message" *ngIf="successMessage" @fadeIn>
+          <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+          {{ successMessage }}
+        </div>
+        
+        <!-- Message d'erreur -->
+        <div class="error-message" *ngIf="errorMessage" @fadeIn>
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          {{ errorMessage }}
+        </div>
+        
+        <div class="form-grid">
+          <!-- Informations personnelles -->
+          <div class="form-section">
+            <h3>Informations personnelles</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="calendar" [size]="16"></lucide-icon>
+                  Date de naissance *
+                </label>
+                <input type="date" formControlName="naissance" [max]="maxDate">
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="user" [size]="16"></lucide-icon>
+                  Sexe *
+                </label>
+                <select formControlName="sexe">
+                  <option value="">Sélectionner</option>
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group phone-form-group">
+                <app-phone-input
+                  formControlName="telephone"
+                  label="Téléphone"
+                  [required]="true"
+                  defaultCountry="CM">
+                </app-phone-input>
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="heart" [size]="16"></lucide-icon>
+                  Situation matrimoniale
+                </label>
+                <select formControlName="situationMatrimoniale">
+                  <option value="">Sélectionner</option>
+                  <option value="Célibataire">Célibataire</option>
+                  <option value="Marié(e)">Marié(e)</option>
+                  <option value="Divorcé(e)">Divorcé(e)</option>
+                  <option value="Veuf/Veuve">Veuf/Veuve</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label>
+                <lucide-icon name="map-pin" [size]="16"></lucide-icon>
+                Adresse *
+              </label>
+              <textarea formControlName="adresse" rows="2" placeholder="Votre adresse complète"></textarea>
+            </div>
+          </div>
+
+          <!-- Informations médicales -->
+          <div class="form-section">
+            <h3>Informations médicales</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="droplet" [size]="16"></lucide-icon>
+                  Groupe sanguin
+                </label>
+                <select formControlName="groupeSanguin">
+                  <option value="">Sélectionner</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="users" [size]="16"></lucide-icon>
+                  Nombre d'enfants
+                </label>
+                <input type="number" formControlName="nbEnfants" min="0" max="20">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="briefcase" [size]="16"></lucide-icon>
+                  Profession
+                </label>
+                <input type="text" formControlName="profession" placeholder="Votre profession">
+              </div>
+              
+              <div class="form-group">
+                <label>Ethnie</label>
+                <input type="text" formControlName="ethnie" placeholder="Optionnel">
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact d'urgence -->
+          <div class="form-section">
+            <h3>Contact d'urgence</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="user" [size]="16"></lucide-icon>
+                  Personne à contacter *
+                </label>
+                <input type="text" formControlName="personneContact" placeholder="Nom complet">
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <lucide-icon name="phone" [size]="16"></lucide-icon>
+                  Numéro d'urgence *
+                </label>
+                <input type="tel" formControlName="numeroContact" placeholder="+225 XX XX XX XX XX">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="onClose()">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+          <lucide-icon name="save" [size]="18"></lucide-icon>
+          {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

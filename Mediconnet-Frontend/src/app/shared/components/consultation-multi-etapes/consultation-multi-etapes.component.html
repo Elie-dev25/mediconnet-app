@@ -1,0 +1,659 @@
+<div class="consultation-wizard">
+  <!-- Header -->
+  <div class="wizard-header">
+    <div class="patient-info">
+      <lucide-icon name="user" [size]="20"></lucide-icon>
+      <span>{{ patientNom }}</span>
+    </div>
+    <button class="btn-close" (click)="onCancel()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper">
+    <div class="step" *ngFor="let etape of etapes; let i = index"
+         [class.active]="etapeActuelle === etape"
+         [class.completed]="isEtapeComplete(etape)"
+         (click)="goToEtape(etape)">
+      <div class="step-number">
+        <span *ngIf="!isEtapeComplete(etape)">{{ i + 1 }}</span>
+        <lucide-icon *ngIf="isEtapeComplete(etape)" name="check" [size]="16"></lucide-icon>
+      </div>
+      <div class="step-label">
+        <span *ngIf="etape === 'anamnese'">Anamnèse</span>
+        <span *ngIf="etape === 'diagnostic'">Diagnostic</span>
+        <span *ngIf="etape === 'prescriptions'">Prescriptions</span>
+        <span *ngIf="etape === 'validation'">Validation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error">
+    <lucide-icon name="alert-circle" [size]="32"></lucide-icon>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Content -->
+  <div class="wizard-content" *ngIf="!isLoading && !error">
+    
+    <!-- ÉTAPE 1: ANAMNÈSE -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'anamnese'" [formGroup]="anamneseForm">
+      <div class="etape-header">
+        <h3><lucide-icon name="clipboard-list" [size]="18"></lucide-icon> Anamnèse</h3>
+        
+        <!-- Indicateur global de dictée vocale -->
+        <div class="voice-controls" *ngIf="isVoiceSupported">
+          <div class="voice-status-indicator" *ngIf="isRecording">
+            <span class="recording-dot"></span>
+            <span class="recording-label">Dictée...</span>
+          </div>
+          <div class="language-selector">
+            <button type="button" class="lang-btn" [class.active]="selectedLanguage === 'fr-FR'"
+                    (click)="setVoiceLanguage('fr-FR')" title="Français">
+              🇫🇷
+            </button>
+            <button type="button" class="lang-btn" [class.active]="selectedLanguage === 'en-US'"
+                    (click)="setVoiceLanguage('en-US')" title="English">
+              🇬🇧
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Message navigateur non supporté -->
+      <div class="voice-unsupported-banner" *ngIf="!isVoiceSupported && !hideVoiceBanner">
+        <div class="unsupported-icon">
+          <lucide-icon name="mic-off" [size]="18"></lucide-icon>
+        </div>
+        <div class="unsupported-text">
+          <strong>Dictée vocale non disponible</strong>
+          <span>Utilisez Chrome ou Edge pour la saisie vocale</span>
+        </div>
+        <button type="button" class="close-banner" (click)="hideVoiceBanner = true">
+          <lucide-icon name="x" [size]="14"></lucide-icon>
+        </button>
+      </div>
+      
+      <!-- Message d'erreur vocale -->
+      <div class="voice-error" *ngIf="voiceError">
+        <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+        {{ voiceError }}
+        <button type="button" class="close-error" (click)="voiceError = null">
+          <lucide-icon name="x" [size]="14"></lucide-icon>
+        </button>
+      </div>
+      
+      <!-- Paramètres vitaux en premier -->
+      <div class="form-section vitaux-section">
+        <h4><lucide-icon name="activity" [size]="16"></lucide-icon> Paramètres vitaux</h4>
+        <div class="vitaux-grid">
+          <div class="form-group">
+            <label>Poids (kg)</label>
+            <input type="number" formControlName="poids" step="0.1" placeholder="Ex: 70">
+          </div>
+          <div class="form-group">
+            <label>Taille (cm)</label>
+            <input type="number" formControlName="taille" placeholder="Ex: 175">
+          </div>
+          <div class="form-group">
+            <label>Température (°C)</label>
+            <input type="number" formControlName="temperature" step="0.1" placeholder="Ex: 37.5">
+          </div>
+          <div class="form-group">
+            <label>Tension artérielle</label>
+            <input type="text" formControlName="tensionArterielle" placeholder="120/80">
+          </div>
+          <div class="form-group">
+            <label>Fréq. cardiaque (bpm)</label>
+            <input type="number" formControlName="frequenceCardiaque" placeholder="Ex: 72">
+          </div>
+          <div class="form-group">
+            <label>SpO2 (%)</label>
+            <input type="number" formControlName="saturationOxygene" placeholder="Ex: 98">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Motif de consultation</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.motifConsultation')"
+                  (click)="toggleVoiceInput('anamnese.motifConsultation')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.motifConsultation') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.motifConsultation')"></span>
+          </button>
+        </div>
+        <textarea formControlName="motifConsultation" rows="3" placeholder="Décrivez le motif..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <h4>Questions prédéfinies</h4>
+        </div>
+        <div formArrayName="questionsReponses" *ngIf="questionsPredefinies.length > 0">
+          <div class="question-item" *ngFor="let q of questionsArray.controls; let i = index" [formGroupName]="i">
+            <div class="question-header">
+              <label>
+                <lucide-icon name="help-circle" [size]="14"></lucide-icon>
+                {{ q.get('question')?.value }}
+              </label>
+              <button type="button" class="voice-btn voice-btn-sm" *ngIf="isVoiceSupported && q.get('type')?.value === 'texte'"
+                      [class.recording]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"
+                      (click)="toggleVoiceInput('anamnese.questionsReponses.' + i + '.reponse')"
+                      title="Dictée vocale">
+                <lucide-icon [name]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"></span>
+              </button>
+            </div>
+            <div *ngIf="q.get('type')?.value === 'texte'">
+              <textarea formControlName="reponse" rows="2" placeholder="Réponse du patient..."></textarea>
+            </div>
+            <div *ngIf="q.get('type')?.value === 'choix'" class="radio-group">
+              <label *ngFor="let opt of q.get('options')?.value" class="radio-option">
+                <input type="radio" formControlName="reponse" [value]="opt">
+                {{ opt }}
+              </label>
+            </div>
+          </div>
+        </div>
+        <p class="no-questions" *ngIf="questionsPredefinies.length === 0">
+          Aucune question prédéfinie pour cette spécialité.
+        </p>
+      </div>
+
+      <!-- Questions libres du médecin -->
+      <div class="form-section">
+        <div class="section-header">
+          <h4>Questions personnalisées</h4>
+          <button type="button" class="btn-add-question" (click)="toggleAddQuestion()">
+            <lucide-icon [name]="showAddQuestion ? 'x' : 'plus'" [size]="16"></lucide-icon>
+            {{ showAddQuestion ? 'Annuler' : 'Ajouter une question' }}
+          </button>
+        </div>
+
+        <!-- Formulaire d'ajout de question -->
+        <div class="add-question-form" *ngIf="showAddQuestion">
+          <div class="form-group">
+            <label>Nouvelle question</label>
+            <input type="text" [(ngModel)]="newQuestionText" [ngModelOptions]="{standalone: true}"
+                   placeholder="Saisissez votre question..." (keyup.enter)="addQuestionLibre()">
+          </div>
+          <button type="button" class="btn-confirm-add" (click)="addQuestionLibre()" [disabled]="!newQuestionText.trim()">
+            <lucide-icon name="check" [size]="16"></lucide-icon>
+            Ajouter
+          </button>
+        </div>
+
+        <!-- Liste des questions libres -->
+        <div formArrayName="questionsLibres" *ngIf="questionsLibresArray.length > 0">
+          <div class="question-item question-libre" *ngFor="let q of questionsLibresArray.controls; let i = index" [formGroupName]="i">
+            <div class="question-header">
+              <label>
+                <lucide-icon name="message-circle" [size]="14"></lucide-icon>
+                {{ q.get('question')?.value }}
+              </label>
+              <div class="question-actions">
+                <button type="button" class="voice-btn voice-btn-sm" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('anamnese.questionsLibres.' + i + '.reponse')"
+                        (click)="toggleVoiceInput('anamnese.questionsLibres.' + i + '.reponse')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('anamnese.questionsLibres.' + i + '.reponse') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                  <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.questionsLibres.' + i + '.reponse')"></span>
+                </button>
+                <button type="button" class="btn-remove" (click)="removeQuestionLibre(i)" title="Supprimer">
+                  <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                </button>
+              </div>
+            </div>
+            <textarea formControlName="reponse" rows="2" placeholder="Réponse du patient..."></textarea>
+          </div>
+        </div>
+        <p class="no-questions" *ngIf="questionsLibresArray.length === 0 && !showAddQuestion">
+          Aucune question personnalisée. Cliquez sur "Ajouter une question" pour en créer.
+        </p>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Histoire de la maladie</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.histoireMaladie')"
+                  (click)="toggleVoiceInput('anamnese.histoireMaladie')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.histoireMaladie') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.histoireMaladie')"></span>
+          </button>
+        </div>
+        <textarea formControlName="histoireMaladie" rows="4" placeholder="Décrivez l'évolution..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Antécédents personnels</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.antecedentsPersonnels')"
+                  (click)="toggleVoiceInput('anamnese.antecedentsPersonnels')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.antecedentsPersonnels') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.antecedentsPersonnels')"></span>
+          </button>
+        </div>
+        <textarea formControlName="antecedentsPersonnels" rows="3" placeholder="Maladies antérieures, chirurgies..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Antécédents familiaux</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.antecedentsFamiliaux')"
+                  (click)="toggleVoiceInput('anamnese.antecedentsFamiliaux')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.antecedentsFamiliaux') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.antecedentsFamiliaux')"></span>
+          </button>
+        </div>
+        <textarea formControlName="antecedentsFamiliaux" rows="2" placeholder="Maladies héréditaires, antécédents familiaux..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Allergies connues</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.allergiesConnues')"
+                  (click)="toggleVoiceInput('anamnese.allergiesConnues')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.allergiesConnues') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.allergiesConnues')"></span>
+          </button>
+        </div>
+        <textarea formControlName="allergiesConnues" rows="2" placeholder="Médicaments, aliments, autres..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Traitements en cours</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('anamnese.traitementsEnCours')"
+                  (click)="toggleVoiceInput('anamnese.traitementsEnCours')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('anamnese.traitementsEnCours') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.traitementsEnCours')"></span>
+          </button>
+        </div>
+        <textarea formControlName="traitementsEnCours" rows="2" placeholder="Médicaments actuellement pris..."></textarea>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 2: DIAGNOSTIC -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'diagnostic'" [formGroup]="diagnosticForm">
+      <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Diagnostic</h3>
+      
+      <!-- Indicateur de dictée vocale global -->
+      <div class="voice-status" *ngIf="isRecording && etapeActuelle === 'diagnostic'">
+        <span class="recording-dot"></span>
+        <span>Dictée en cours...</span>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Examen clinique</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('diagnostic.examenClinique')"
+                  (click)="toggleVoiceInput('diagnostic.examenClinique')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('diagnostic.examenClinique') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.examenClinique')"></span>
+          </button>
+        </div>
+        <textarea formControlName="examenClinique" rows="4" placeholder="Observations cliniques..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Diagnostic principal *</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('diagnostic.diagnosticPrincipal')"
+                  (click)="toggleVoiceInput('diagnostic.diagnosticPrincipal')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticPrincipal') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.diagnosticPrincipal')"></span>
+          </button>
+        </div>
+        <textarea formControlName="diagnosticPrincipal" rows="3" placeholder="Diagnostic établi..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Diagnostics secondaires</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('diagnostic.diagnosticsSecondaires')"
+                  (click)="toggleVoiceInput('diagnostic.diagnosticsSecondaires')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticsSecondaires') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.diagnosticsSecondaires')"></span>
+          </button>
+        </div>
+        <textarea formControlName="diagnosticsSecondaires" rows="2" placeholder="Diagnostics associés..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Notes cliniques</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('diagnostic.notesCliniques')"
+                  (click)="toggleVoiceInput('diagnostic.notesCliniques')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('diagnostic.notesCliniques') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.notesCliniques')"></span>
+          </button>
+        </div>
+        <textarea formControlName="notesCliniques" rows="3" placeholder="Remarques complémentaires..."></textarea>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 3: PRESCRIPTIONS -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'prescriptions'" [formGroup]="prescriptionsForm">
+      <h3><lucide-icon name="file-text" [size]="18"></lucide-icon> Prescriptions</h3>
+      
+      <!-- Médicaments -->
+      <div class="form-section">
+        <div class="section-header">
+          <h4><lucide-icon name="pill" [size]="16"></lucide-icon> Ordonnance</h4>
+          <button type="button" class="btn-add" (click)="addMedicament()">
+            <lucide-icon name="plus" [size]="14"></lucide-icon>
+            Ajouter médicament
+          </button>
+        </div>
+        
+        <div formArrayName="medicaments">
+          <div class="prescription-item" *ngFor="let med of medicamentsArray.controls; let i = index" [formGroupName]="i">
+            <div class="prescription-grid">
+              <div class="autocomplete-container">
+                <input type="text" formControlName="nomMedicament" placeholder="Nom du médicament *"
+                       (input)="onMedicamentSearch(i, $event)"
+                       (blur)="hideMedicamentSuggestions()"
+                       autocomplete="off">
+                <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
+                  <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
+                       (mousedown)="selectMedicament(i, suggestion)">
+                    <span class="med-name">{{ suggestion.nom }}</span>
+                    <span class="med-dosage" *ngIf="suggestion.dosage">{{ suggestion.dosage }}</span>
+                    <span class="med-stock" *ngIf="suggestion.stock !== undefined">Stock: {{ suggestion.stock }}</span>
+                  </div>
+                </div>
+              </div>
+              <input type="text" formControlName="dosage" placeholder="Dosage">
+              <input type="text" formControlName="frequence" placeholder="Fréquence">
+              <input type="text" formControlName="duree" placeholder="Durée">
+            </div>
+            <input type="text" formControlName="instructions" placeholder="Instructions particulières">
+            <button type="button" class="btn-remove" (click)="removeMedicament(i)">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+        <p class="empty-message" *ngIf="medicamentsArray.length === 0">Aucun médicament prescrit</p>
+      </div>
+
+      <!-- Examens -->
+      <div class="form-section">
+        <div class="section-header">
+          <h4><lucide-icon name="test-tube" [size]="16"></lucide-icon> Examens</h4>
+          <button type="button" class="btn-add" (click)="addExamen()">
+            <lucide-icon name="plus" [size]="14"></lucide-icon>
+            Ajouter examen
+          </button>
+        </div>
+        
+        <div formArrayName="examens">
+          <div class="prescription-item" *ngFor="let ex of examensArray.controls; let i = index" [formGroupName]="i">
+            <div class="prescription-grid">
+              <select formControlName="typeExamen">
+                <option value="">Type *</option>
+                <option value="biologie">Biologie</option>
+                <option value="imagerie">Imagerie</option>
+                <option value="cardiologie">Cardiologie</option>
+                <option value="autre">Autre</option>
+              </select>
+              <input type="text" formControlName="nomExamen" placeholder="Nom de l'examen *">
+              <label class="checkbox-label">
+                <input type="checkbox" formControlName="urgence"> Urgent
+              </label>
+            </div>
+            <input type="text" formControlName="description" placeholder="Description">
+            <button type="button" class="btn-remove" (click)="removeExamen(i)">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+        <p class="empty-message" *ngIf="examensArray.length === 0">Aucun examen prescrit</p>
+      </div>
+
+      <!-- Recommandations -->
+      <div class="form-section">
+        <div class="section-header">
+          <h4><lucide-icon name="user-plus" [size]="16"></lucide-icon> Recommandations / Orientations</h4>
+          <button type="button" class="btn-add" (click)="addRecommandation()">
+            <lucide-icon name="plus" [size]="14"></lucide-icon>
+            Ajouter
+          </button>
+        </div>
+        
+        <div formArrayName="recommandations">
+          <div class="prescription-item" *ngFor="let rec of recommandationsArray.controls; let i = index" [formGroupName]="i">
+            <div class="prescription-grid">
+              <select formControlName="type">
+                <option value="conseil">Conseil</option>
+                <option value="orientation">Orientation spécialiste</option>
+                <option value="suivi">Suivi</option>
+              </select>
+              <input type="text" formControlName="specialiteOrientee" placeholder="Spécialité (si orientation)">
+              <label class="checkbox-label">
+                <input type="checkbox" formControlName="urgence"> Urgent
+              </label>
+            </div>
+            <textarea formControlName="description" rows="2" placeholder="Description / Motif"></textarea>
+            <button type="button" class="btn-remove" (click)="removeRecommandation(i)">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+        <p class="empty-message" *ngIf="recommandationsArray.length === 0">Aucune recommandation</p>
+      </div>
+
+      <!-- Hospitalisation -->
+      <div class="form-section hospitalisation-section">
+        <div class="section-header">
+          <h4><lucide-icon name="bed" [size]="16"></lucide-icon> Hospitalisation</h4>
+          <button type="button" class="btn-add" (click)="toggleHospitalisationForm()" 
+                  *ngIf="!hospitalisationDemandee && !showHospitalisationForm">
+            <lucide-icon name="plus" [size]="14"></lucide-icon>
+            Demander une hospitalisation
+          </button>
+        </div>
+
+        <!-- Message si hospitalisation déjà demandée -->
+        <div class="hospitalisation-success" *ngIf="hospitalisationDemandee">
+          <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+          <span>Demande d'hospitalisation enregistrée</span>
+        </div>
+
+        <!-- Formulaire d'hospitalisation -->
+        <div class="hospitalisation-form" *ngIf="showHospitalisationForm">
+          <div class="form-group">
+            <label>Motif d'hospitalisation *</label>
+            <textarea [(ngModel)]="hospitalisationMotif" [ngModelOptions]="{standalone: true}" 
+                      rows="3" placeholder="Décrivez le motif de l'hospitalisation..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Niveau d'urgence</label>
+              <select [(ngModel)]="hospitalisationUrgence" [ngModelOptions]="{standalone: true}">
+                <option value="normale">Normale</option>
+                <option value="moderee">Modérée</option>
+                <option value="urgente">Urgente</option>
+                <option value="critique">Critique</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Sélection Chambre et Lit -->
+          <div class="chambres-lits-section" *ngIf="!isLoadingLits">
+            <div class="form-row" *ngIf="chambresDisponibles.length > 0">
+              <div class="form-group">
+                <label>Chambre (optionnel)</label>
+                <select [(ngModel)]="selectedChambreId" [ngModelOptions]="{standalone: true}" 
+                        (change)="onChambreChange()">
+                  <option [ngValue]="null">-- Toutes les chambres --</option>
+                  <option *ngFor="let chambre of chambresDisponibles" [ngValue]="chambre.idChambre">
+                    Chambre {{ chambre.numero }} ({{ chambre.litsDisponibles }} lit(s) libre(s))
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group" *ngIf="litsDisponibles.length > 0">
+                <label>Lit (optionnel)</label>
+                <select [(ngModel)]="selectedLitId" [ngModelOptions]="{standalone: true}">
+                  <option [ngValue]="null">-- Attribution automatique --</option>
+                  <option *ngFor="let lit of litsDisponibles" [ngValue]="lit.idLit">
+                    {{ selectedChambreId ? 'Lit ' + lit.numero : 'Ch. ' + lit.numeroChambre + ' - Lit ' + lit.numero }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Résumé des chambres disponibles -->
+            <div class="chambres-resume" *ngIf="chambresDisponibles.length > 0">
+              <lucide-icon name="info" [size]="16"></lucide-icon>
+              <span>{{ chambresDisponibles.length }} chambre(s) disponible(s) avec {{ litsDisponibles.length }} lit(s) libre(s)</span>
+            </div>
+
+            <!-- Message si aucun lit -->
+            <div class="lits-info warning" *ngIf="chambresDisponibles.length === 0 && litsDisponibles.length === 0">
+              <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+              Aucun lit disponible actuellement. La demande sera mise en attente.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notes complémentaires</label>
+            <textarea [(ngModel)]="hospitalisationNotes" [ngModelOptions]="{standalone: true}" 
+                      rows="2" placeholder="Instructions particulières..."></textarea>
+          </div>
+
+          <div class="lits-info" *ngIf="isLoadingLits">
+            <lucide-icon name="loader-2" [size]="16" class="spinner"></lucide-icon>
+            Chargement des chambres disponibles...
+          </div>
+
+          <div class="form-actions hospitalisation-actions">
+            <button type="button" class="btn-cancel" (click)="annulerHospitalisation()">
+              <lucide-icon name="x" [size]="16"></lucide-icon>
+              Annuler
+            </button>
+            <button type="button" class="btn-confirm" (click)="demanderHospitalisation()" 
+                    [disabled]="!hospitalisationMotif.trim() || isSaving">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              {{ isSaving ? 'En cours...' : 'Confirmer la demande' }}
+            </button>
+          </div>
+        </div>
+
+        <p class="empty-message" *ngIf="!showHospitalisationForm && !hospitalisationDemandee">
+          Aucune hospitalisation demandée
+        </p>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 4: VALIDATION -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'validation'">
+      <h3><lucide-icon name="check-circle" [size]="18"></lucide-icon> Validation</h3>
+      
+      <div class="recap-section">
+        <div class="recap-card">
+          <h4>Anamnèse</h4>
+          <p><strong>Motif:</strong> {{ anamneseForm.get('motifConsultation')?.value || '-' }}</p>
+          <p><strong>Histoire:</strong> {{ anamneseForm.get('histoireMaladie')?.value || '-' }}</p>
+        </div>
+
+        <div class="recap-card">
+          <h4>Diagnostic</h4>
+          <p><strong>Principal:</strong> {{ diagnosticForm.get('diagnosticPrincipal')?.value || '-' }}</p>
+          <p *ngIf="diagnosticForm.get('diagnosticsSecondaires')?.value">
+            <strong>Secondaires:</strong> {{ diagnosticForm.get('diagnosticsSecondaires')?.value }}
+          </p>
+        </div>
+
+        <div class="recap-card" *ngIf="medicamentsArray.length > 0">
+          <h4>Ordonnance ({{ medicamentsArray.length }} médicament(s))</h4>
+          <ul>
+            <li *ngFor="let med of medicamentsArray.controls">
+              {{ med.get('nomMedicament')?.value }} - {{ med.get('dosage')?.value }} {{ med.get('frequence')?.value }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="recap-card" *ngIf="examensArray.length > 0">
+          <h4>Examens ({{ examensArray.length }})</h4>
+          <ul>
+            <li *ngFor="let ex of examensArray.controls">
+              {{ ex.get('nomExamen')?.value }} ({{ ex.get('typeExamen')?.value }})
+              <span class="urgent-badge" *ngIf="ex.get('urgence')?.value">Urgent</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="recap-card" *ngIf="recommandationsArray.length > 0">
+          <h4>Recommandations</h4>
+          <ul>
+            <li *ngFor="let rec of recommandationsArray.controls">
+              {{ rec.get('type')?.value }}: {{ rec.get('description')?.value }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="wizard-footer" *ngIf="!isLoading && !error">
+    <button type="button" class="btn btn-secondary" (click)="previousEtape()" 
+            *ngIf="etapeActuelle !== 'anamnese'" [disabled]="isSaving">
+      <lucide-icon name="arrow-left" [size]="16"></lucide-icon> Retour
+    </button>
+    <button type="button" class="btn btn-secondary" (click)="onCancel()" 
+            *ngIf="etapeActuelle === 'anamnese'" [disabled]="isSaving">
+      Annuler
+    </button>
+    
+    <div class="footer-right">
+      <button type="button" class="btn btn-primary" (click)="nextEtape()" 
+              *ngIf="etapeActuelle !== 'validation'" [disabled]="!canGoNext() || isSaving">
+        Suivant <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
+      </button>
+      
+      <ng-container *ngIf="etapeActuelle === 'validation'">
+        <button type="button" class="btn btn-secondary" (click)="sauvegarderBrouillon()" [disabled]="isSaving">
+          <lucide-icon name="save" [size]="16"></lucide-icon> Sauvegarder
+        </button>
+        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(false)" [disabled]="isSaving">
+          <lucide-icon name="check-circle" [size]="16"></lucide-icon> Clôturer
+        </button>
+        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(true)" [disabled]="isSaving">
+          <lucide-icon name="printer" [size]="16"></lucide-icon> Clôturer & Imprimer
+        </button>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+// ============================================
+// Index des styles partagés
+// ============================================
+// Importer ce fichier pour accéder à tous les styles
+
+@forward 'variables';
+@forward 'mixins';
+@forward 'common';
+@forward 'status';
+@forward 'dashboard';
+@forward 'auth-forms';

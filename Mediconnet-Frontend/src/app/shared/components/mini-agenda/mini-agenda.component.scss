@@ -1,0 +1,510 @@
+.mini-agenda {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+// Header
+.agenda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    lucide-icon {
+      color: #2563eb;
+    }
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+    border-color: #2563eb;
+  }
+}
+
+.today-btn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: white;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #2563eb;
+    color: white;
+  }
+
+  &.active {
+    background: #2563eb;
+    color: white;
+  }
+}
+
+.current-week-badge {
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+.rdv-periode {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+
+  .rdv-date {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-right: 0.5rem;
+    min-width: 50px;
+  }
+}
+
+.week-range {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+// Loading & Error States
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #64748b;
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.error-state {
+  color: #ef4444;
+
+  .retry-btn {
+    margin-top: 0.5rem;
+    padding: 0.375rem 1rem;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    background: white;
+    color: #ef4444;
+    cursor: pointer;
+
+    &:hover {
+      background: #fef2f2;
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Days Grid
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.day-column {
+  min-width: 0;
+
+  &.today {
+    .day-header {
+      background: #2563eb;
+      color: white;
+    }
+  }
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+
+  .day-name {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: inherit;
+    opacity: 0.8;
+  }
+
+  .day-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: inherit;
+
+    &.today-number {
+      color: white;
+    }
+  }
+}
+
+.day-stats {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    &.disponible {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    &.occupe {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  }
+}
+
+.slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 150px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+  }
+}
+
+.slot-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  transition: all 0.2s;
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+  }
+
+  .slot-time {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .slot-patient {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// Slot status colors
+.slot-disponible {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.slot-occupe {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.slot-indisponible {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.slot-passe {
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  opacity: 0.6;
+}
+
+// Empty state
+.empty-agenda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #94a3b8;
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// Legend
+.agenda-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+
+  &.disponible { background: #22c55e; }
+  &.occupe { background: #ef4444; }
+  &.indisponible { background: #94a3b8; }
+}
+
+// Prochain RDV
+.prochain-rdv {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+
+  .rdv-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+
+    lucide-icon {
+      color: #f59e0b;
+    }
+  }
+
+  .rdv-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 8px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    .rdv-time {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #92400e;
+    }
+
+    .rdv-patient {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #78350f;
+    }
+
+    .rdv-motif {
+      font-size: 0.75rem;
+      color: #92400e;
+      margin-top: 0.25rem;
+    }
+  }
+}
+
+// RDV Aujourd'hui
+.rdv-aujourdhui {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+
+    lucide-icon {
+      color: #2563eb;
+    }
+  }
+}
+
+.rdv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.rdv-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+    transform: translateX(4px);
+  }
+
+  &.completed {
+    opacity: 0.6;
+    background: #f0fdf4;
+  }
+
+  &.cancelled {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+
+  .rdv-time {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2563eb;
+    min-width: 50px;
+  }
+
+  .rdv-patient {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #1e293b;
+  }
+
+  .rdv-status {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: capitalize;
+
+    &.status-planifie { background: #dbeafe; color: #2563eb; }
+    &.status-confirme { background: #dcfce7; color: #16a34a; }
+    &.status-en_cours { background: #fef3c7; color: #d97706; }
+    &.status-termine { background: #f1f5f9; color: #64748b; }
+    &.status-annule { background: #fee2e2; color: #dc2626; }
+  }
+}
+
+// Empty Today
+.empty-today {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 1rem;
+  color: #64748b;
+  font-size: 0.85rem;
+
+  lucide-icon {
+    color: #94a3b8;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .days-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .day-column:nth-child(n+6) {
+    display: none;
+  }
+
+  .agenda-legend {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,325 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="settings-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1><lucide-icon name="settings" [size]="28"></lucide-icon> Paramètres</h1>
+        <p>Configuration du système et gestion des ressources</p>
+      </div>
+    </div>
+
+    <!-- Error Alert -->
+    <div class="alert alert-error" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+      <span>{{ error }}</span>
+      <button class="btn-close-alert" (click)="dismissError()">
+        <lucide-icon name="x" [size]="16"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab" [class.active]="activeTab === 'chambres'" (click)="setActiveTab('chambres')">
+          <lucide-icon name="bed" [size]="18"></lucide-icon>
+          Gestion des chambres
+        </button>
+        <button class="tab" [class.active]="activeTab === 'laboratoires'" (click)="setActiveTab('laboratoires')">
+          <lucide-icon name="flask-conical" [size]="18"></lucide-icon>
+          Gestion des laboratoires
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      
+      <!-- ONGLET CHAMBRES -->
+      <div class="tab-panel" *ngIf="activeTab === 'chambres'">
+        <!-- Stats Cards -->
+        <div class="stats-grid" *ngIf="stats">
+          <div class="stat-card">
+            <div class="stat-icon chambres">
+              <lucide-icon name="building-2" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.totalChambres }}</span>
+              <span class="stat-label">Chambres</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon lits">
+              <lucide-icon name="bed" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.totalLits }}</span>
+              <span class="stat-label">Lits au total</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon libres">
+              <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.litsLibres }}</span>
+              <span class="stat-label">Lits libres</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon occupes">
+              <lucide-icon name="user" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.litsOccupes }}</span>
+              <span class="stat-label">Lits occupés</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Bar -->
+        <div class="actions-bar">
+          <button class="btn btn-primary" (click)="openChambreModal()">
+            <lucide-icon name="plus" [size]="18"></lucide-icon>
+            Nouvelle chambre
+          </button>
+          <button class="btn btn-secondary" (click)="loadChambres()" [disabled]="isLoading">
+            <lucide-icon name="refresh-cw" [size]="18" [class.spinning]="isLoading"></lucide-icon>
+            Actualiser
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-state" *ngIf="isLoading && chambres.length === 0">
+          <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+          <p>Chargement des chambres...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!isLoading && chambres.length === 0">
+          <lucide-icon name="bed" [size]="48"></lucide-icon>
+          <h3>Aucune chambre</h3>
+          <p>Commencez par créer une chambre pour gérer les lits.</p>
+          <button class="btn btn-primary" (click)="openChambreModal()">
+            <lucide-icon name="plus" [size]="18"></lucide-icon>
+            Créer une chambre
+          </button>
+        </div>
+
+        <!-- Chambres List -->
+        <div class="chambres-list" *ngIf="chambres.length > 0">
+          <div class="chambre-card" *ngFor="let chambre of chambres" 
+               [class.expanded]="isChambreExpanded(chambre.idChambre)">
+            
+            <!-- Chambre Header -->
+            <div class="chambre-header" (click)="toggleChambreExpand(chambre.idChambre)">
+              <div class="chambre-info">
+                <div class="chambre-numero">
+                  <lucide-icon name="door-open" [size]="20"></lucide-icon>
+                  Chambre {{ chambre.numero }}
+                </div>
+                <div class="chambre-meta">
+                  <span class="badge" [ngClass]="getStatutClass(chambre.statut)">
+                    {{ getStatutLabel(chambre.statut) }}
+                  </span>
+                  <span class="meta-item">
+                    <lucide-icon name="bed" [size]="14"></lucide-icon>
+                    {{ chambre.nombreLits }} lit(s)
+                  </span>
+                  <span class="meta-item libres" *ngIf="chambre.litsLibres > 0">
+                    {{ chambre.litsLibres }} libre(s)
+                  </span>
+                  <span class="meta-item occupes" *ngIf="chambre.litsOccupes > 0">
+                    {{ chambre.litsOccupes }} occupé(s)
+                  </span>
+                </div>
+              </div>
+              <div class="chambre-actions">
+                <button class="btn-icon" (click)="openLitModal(chambre); $event.stopPropagation()" title="Ajouter un lit">
+                  <lucide-icon name="plus-circle" [size]="18"></lucide-icon>
+                </button>
+                <button class="btn-icon" (click)="openChambreModal(chambre); $event.stopPropagation()" title="Modifier">
+                  <lucide-icon name="edit" [size]="18"></lucide-icon>
+                </button>
+                <button class="btn-icon danger" (click)="confirmDeleteChambre(chambre); $event.stopPropagation()" 
+                        title="Supprimer" [disabled]="chambre.litsOccupes > 0">
+                  <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+                </button>
+                <button class="btn-icon expand-btn">
+                  <lucide-icon [name]="isChambreExpanded(chambre.idChambre) ? 'chevron-up' : 'chevron-down'" [size]="18"></lucide-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lits List (Expanded) -->
+            <div class="lits-container" *ngIf="isChambreExpanded(chambre.idChambre)">
+              <div class="lits-header">
+                <h4><lucide-icon name="bed" [size]="16"></lucide-icon> Lits de la chambre</h4>
+                <button class="btn btn-sm btn-primary" (click)="openLitModal(chambre)">
+                  <lucide-icon name="plus" [size]="14"></lucide-icon>
+                  Ajouter un lit
+                </button>
+              </div>
+              
+              <div class="lits-empty" *ngIf="chambre.lits.length === 0">
+                <p>Aucun lit dans cette chambre</p>
+                <button class="btn btn-sm btn-primary" (click)="openLitModal(chambre)">
+                  <lucide-icon name="plus" [size]="14"></lucide-icon>
+                  Ajouter un lit
+                </button>
+              </div>
+
+              <div class="lits-grid" *ngIf="chambre.lits.length > 0">
+                <div class="lit-card" *ngFor="let lit of chambre.lits" [ngClass]="getStatutClass(lit.statut)">
+                  <div class="lit-info">
+                    <span class="lit-numero">Lit {{ lit.numero }}</span>
+                    <span class="lit-statut badge" [ngClass]="getStatutClass(lit.statut)">
+                      {{ getStatutLabel(lit.statut) }}
+                    </span>
+                  </div>
+                  <div class="lit-actions">
+                    <button class="btn-icon-sm" (click)="openLitModal(chambre, lit)" title="Modifier">
+                      <lucide-icon name="edit" [size]="14"></lucide-icon>
+                    </button>
+                    <button class="btn-icon-sm danger" (click)="confirmDeleteLit(lit)" 
+                            title="Supprimer" [disabled]="lit.statut === 'occupe'">
+                      <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONGLET LABORATOIRES -->
+      <div class="tab-panel" *ngIf="activeTab === 'laboratoires'">
+        <div class="placeholder-state">
+          <lucide-icon name="flask-conical" [size]="64"></lucide-icon>
+          <h3>Gestion des laboratoires</h3>
+          <p>Cette fonctionnalité sera disponible prochainement.</p>
+          <div class="placeholder-features">
+            <div class="feature">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              Ajouter des laboratoires partenaires
+            </div>
+            <div class="feature">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              Gérer les informations de contact
+            </div>
+            <div class="feature">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              Configurer les types d'examens disponibles
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Chambre -->
+    <div class="modal-overlay" *ngIf="showChambreModal" (click)="closeChambreModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingChambre ? 'Modifier la chambre' : 'Nouvelle chambre' }}</h3>
+          <button class="btn-close" (click)="closeChambreModal()">
+            <lucide-icon name="x" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Numéro de chambre *</label>
+            <input type="text" [(ngModel)]="chambreForm.numero" placeholder="Ex: 101, A12...">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Capacité</label>
+              <input type="number" [(ngModel)]="chambreForm.capacite" min="1" max="10">
+            </div>
+            <div class="form-group">
+              <label>État</label>
+              <select [(ngModel)]="chambreForm.etat">
+                <option value="bon">Bon état</option>
+                <option value="moyen">État moyen</option>
+                <option value="mauvais">Mauvais état</option>
+                <option value="renovation">En rénovation</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select [(ngModel)]="chambreForm.statut">
+              <option value="actif">Actif</option>
+              <option value="inactif">Inactif</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeChambreModal()">Annuler</button>
+          <button class="btn btn-primary" (click)="saveChambre()" [disabled]="!chambreForm.numero.trim() || isLoading">
+            <lucide-icon name="save" [size]="16"></lucide-icon>
+            {{ editingChambre ? 'Enregistrer' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Lit -->
+    <div class="modal-overlay" *ngIf="showLitModal" (click)="closeLitModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingLit ? 'Modifier le lit' : 'Nouveau lit' }}</h3>
+          <button class="btn-close" (click)="closeLitModal()">
+            <lucide-icon name="x" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="info-box" *ngIf="selectedChambre">
+            <lucide-icon name="info" [size]="16"></lucide-icon>
+            Chambre {{ selectedChambre.numero }}
+          </div>
+          <div class="form-group">
+            <label>Numéro de lit *</label>
+            <input type="text" [(ngModel)]="litForm.numero" placeholder="Ex: A, B, 1, 2...">
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select [(ngModel)]="litForm.statut">
+              <option value="libre">Libre</option>
+              <option value="hors_service">Hors service</option>
+              <option value="occupe" *ngIf="editingLit">Occupé</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeLitModal()">Annuler</button>
+          <button class="btn btn-primary" (click)="saveLit()" [disabled]="!litForm.numero.trim() || isLoading">
+            <lucide-icon name="save" [size]="16"></lucide-icon>
+            {{ editingLit ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Confirmation Suppression -->
+    <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header danger">
+          <h3><lucide-icon name="alert-triangle" [size]="20"></lucide-icon> Confirmer la suppression</h3>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer <strong>{{ deleteTarget?.label }}</strong> ?</p>
+          <p class="warning-text" *ngIf="deleteTarget?.type === 'chambre'">
+            Tous les lits de cette chambre seront également supprimés.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cancelDelete()">Annuler</button>
+          <button class="btn btn-danger" (click)="executeDelete()" [disabled]="isLoading">
+            <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

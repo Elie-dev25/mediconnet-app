@@ -1,0 +1,154 @@
+<div class="parametres-form" [class.compact]="compact">
+  <!-- Header -->
+  <div class="form-header" *ngIf="!compact">
+    <h3>
+      <lucide-icon name="activity" [size]="22"></lucide-icon>
+      Paramètres vitaux
+    </h3>
+    <p class="patient-info" *ngIf="patientNom">Patient: <strong>{{ patientNom }}</strong></p>
+  </div>
+
+  <!-- Messages -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+    {{ errorMessage }}
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+    {{ successMessage }}
+  </div>
+
+  <!-- Formulaire -->
+  <form [formGroup]="parametreForm" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <!-- Poids -->
+      <div class="form-group">
+        <label for="poids">
+          <lucide-icon name="scale" [size]="16"></lucide-icon>
+          Poids (kg)
+        </label>
+        <input 
+          type="number" 
+          id="poids" 
+          formControlName="poids"
+          placeholder="Ex: 70.5"
+          step="0.1"
+          min="0.5"
+          max="500"
+          [class.is-error]="hasError('poids')">
+        <span class="error-text" *ngIf="hasError('poids')">
+          Valeur entre 0.5 et 500 kg
+        </span>
+      </div>
+
+      <!-- Taille -->
+      <div class="form-group">
+        <label for="taille">
+          <lucide-icon name="ruler" [size]="16"></lucide-icon>
+          Taille (cm)
+        </label>
+        <input 
+          type="number" 
+          id="taille" 
+          formControlName="taille"
+          placeholder="Ex: 175"
+          step="0.1"
+          min="20"
+          max="300"
+          [class.is-error]="hasError('taille')">
+        <span class="error-text" *ngIf="hasError('taille')">
+          Valeur entre 20 et 300 cm
+        </span>
+      </div>
+
+      <!-- IMC calculé -->
+      <div class="form-group calculated" *ngIf="imcValue">
+        <label>
+          <lucide-icon name="calculator" [size]="16"></lucide-icon>
+          IMC calculé
+        </label>
+        <div class="calculated-value" [class]="'status-' + imcInterpretation.color">
+          <span class="value">{{ imcValue }}</span>
+          <span class="interpretation">{{ imcInterpretation.label }}</span>
+        </div>
+      </div>
+
+      <!-- Température -->
+      <div class="form-group">
+        <label for="temperature">
+          <lucide-icon name="thermometer" [size]="16"></lucide-icon>
+          Température (°C)
+        </label>
+        <div class="input-with-status">
+          <input 
+            type="number" 
+            id="temperature" 
+            formControlName="temperature"
+            placeholder="Ex: 37.2"
+            step="0.1"
+            min="30"
+            max="45"
+            [class.is-error]="hasError('temperature')">
+          <span class="status-badge" [class]="'status-' + temperatureInterpretation.color" 
+                *ngIf="parametreForm.value.temperature">
+            {{ temperatureInterpretation.label }}
+          </span>
+        </div>
+        <span class="error-text" *ngIf="hasError('temperature')">
+          Valeur entre 30 et 45 °C
+        </span>
+      </div>
+
+      <!-- Tension artérielle -->
+      <div class="form-group tension-group">
+        <label>
+          <lucide-icon name="heart-pulse" [size]="16"></lucide-icon>
+          Tension artérielle (mmHg)
+        </label>
+        <div class="tension-inputs">
+          <div class="tension-field">
+            <input 
+              type="number" 
+              id="tensionSystolique" 
+              formControlName="tensionSystolique"
+              placeholder="Sys"
+              min="60"
+              max="250"
+              [class.is-error]="hasError('tensionSystolique')">
+            <span class="tension-label">Systolique</span>
+          </div>
+          <span class="tension-separator">/</span>
+          <div class="tension-field">
+            <input 
+              type="number" 
+              id="tensionDiastolique" 
+              formControlName="tensionDiastolique"
+              placeholder="Dia"
+              min="40"
+              max="150"
+              [class.is-error]="hasError('tensionDiastolique')">
+            <span class="tension-label">Diastolique</span>
+          </div>
+        </div>
+        <span class="status-badge" [class]="'status-' + tensionInterpretation.color"
+              *ngIf="parametreForm.value.tensionSystolique && parametreForm.value.tensionDiastolique">
+          {{ tensionInterpretation.label }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()" *ngIf="!compact">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+        Annuler
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="parametreForm.invalid || isLoading">
+        <lucide-icon name="loader-2" [size]="18" class="spin" *ngIf="isLoading"></lucide-icon>
+        <lucide-icon name="save" [size]="18" *ngIf="!isLoading"></lucide-icon>
+        {{ isLoading ? 'Enregistrement...' : 'Enregistrer les paramètres' }}
+      </button>
+    </div>
+  </form>
+</div>

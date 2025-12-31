@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Mediconnet_Backend</RootNamespace>
+    <UserSecretsId>a7a4b4a8-354c-4b3e-a96c-992909b123c0</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ASP.NET Core & Web -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+
+    <!-- Authentication & JWT -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.4.0" />
+
+    <!-- Entity Framework Core - MySQL -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Logging & Monitoring -->
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+
+    <!-- Validation -->
+    <PackageReference Include="FluentValidation" Version="11.8.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.8.1" />
+
+    <!-- Mapping -->
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+
+    <!-- Hashing & Cryptography -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+
+    <!-- Configuration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+
+    <!-- Utilities -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="MediatR" Version="12.1.1" />
+
+    <!-- Email -->
+    <PackageReference Include="MailKit" Version="4.3.0" />
+    <PackageReference Include="MimeKit" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>

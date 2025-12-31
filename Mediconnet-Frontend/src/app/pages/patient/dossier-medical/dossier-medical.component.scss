@@ -1,0 +1,632 @@
+@use '../../../shared/styles/variables' as *;
+
+.dossier-content {
+  max-width: 1400px;
+}
+
+// Header
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $text-dark;
+    margin: 0;
+  }
+
+  .subtitle {
+    margin: 0.25rem 0 0;
+    color: $text-secondary;
+    font-size: 0.95rem;
+  }
+}
+
+.blood-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+// Loading & Error states
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: $text-secondary;
+
+  lucide-icon { margin-bottom: 1rem; }
+  p { margin: 0; font-size: 1rem; }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-retry {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: $primary-color;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover { background: $primary-dark; }
+}
+
+// Stats Row
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.consultations {
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    color: $primary-color;
+  }
+  &.ordonnances {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: $success-color;
+  }
+  &.examens {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: $info-color;
+  }
+  &.derniere {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: $warning-color;
+  }
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $text-dark;
+
+  &.date {
+    font-size: 1rem;
+  }
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: $text-secondary;
+}
+
+// Tabs
+.tabs-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid $border-light;
+  overflow-x: auto;
+  padding: 0 0.5rem;
+
+  &::-webkit-scrollbar { height: 0; }
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+
+  &:hover {
+    color: $primary-color;
+    background: rgba($primary-color, 0.05);
+  }
+
+  &.active {
+    color: $primary-color;
+    border-bottom-color: $primary-color;
+    background: rgba($primary-color, 0.05);
+  }
+}
+
+.tab-content {
+  padding: 1.5rem;
+}
+
+// Badges
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.success {
+    background: $success-light;
+    color: $success-color;
+  }
+  &.info {
+    background: $info-light;
+    color: $info-color;
+  }
+  &.warning {
+    background: $warning-light;
+    color: $warning-color;
+  }
+  &.danger {
+    background: $error-light;
+    color: $error-color;
+  }
+  &.muted {
+    background: #f1f5f9;
+    color: $text-muted;
+  }
+}
+
+// Resume Tab
+.resume-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resume-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid $border-light;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
+  &.allergies-card {
+    border-left: 4px solid $error-color;
+  }
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+}
+
+.empty-text {
+  color: $text-muted;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+}
+
+// Allergies
+.allergies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.allergie-item {
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid $border-light;
+}
+
+.allergie-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.allergie-name {
+  font-weight: 600;
+  color: $text-dark;
+}
+
+.allergie-reaction {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: $text-secondary;
+}
+
+// Antecedents
+.antecedents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.antecedent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid $border-light;
+
+  > lucide-icon {
+    color: $primary-color;
+    flex-shrink: 0;
+  }
+}
+
+.antecedent-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.antecedent-desc {
+  display: block;
+  font-weight: 500;
+  color: $text-dark;
+}
+
+.antecedent-date {
+  display: block;
+  font-size: 0.8rem;
+  color: $text-muted;
+}
+
+// Consultations mini (resume)
+.consultations-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.consult-mini {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid $border-light;
+}
+
+.consult-date {
+  min-width: 80px;
+  font-weight: 600;
+  color: $primary-color;
+  font-size: 0.85rem;
+}
+
+.consult-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.consult-motif {
+  display: block;
+  font-weight: 500;
+  color: $text-dark;
+}
+
+.consult-medecin {
+  display: block;
+  font-size: 0.85rem;
+  color: $text-secondary;
+}
+
+.btn-see-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid $primary-color;
+  color: $primary-color;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: $primary-color;
+    color: white;
+  }
+}
+
+// Cards (Consultations, Ordonnances, Examens)
+.consultations-list, .ordonnances-list, .examens-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.consultation-card, .ordonnance-card, .examen-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid $border-light;
+  overflow: hidden;
+
+  &.urgent {
+    border-left: 4px solid $error-color;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-bottom: 1px solid $border-light;
+}
+
+.card-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: $text-dark;
+}
+
+.examen-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: $primary-color;
+}
+
+.card-body {
+  padding: 1.25rem;
+
+  h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: $text-secondary;
+  }
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: white;
+  border-top: 1px solid $border-light;
+}
+
+.medecin {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: $text-secondary;
+}
+
+.specialite {
+  font-size: 0.8rem;
+  color: $text-muted;
+}
+
+.urgent-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: $error-color;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+// Medicaments
+.medicaments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.medicament-item {
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid $border-light;
+}
+
+.med-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  lucide-icon { color: $success-color; }
+}
+
+.med-name {
+  font-weight: 600;
+  color: $text-dark;
+}
+
+.med-dosage {
+  color: $primary-color;
+  font-weight: 500;
+}
+
+.med-details {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: $text-secondary;
+
+  span + span::before {
+    content: ' • ';
+  }
+}
+
+.med-instructions {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: $text-muted;
+  font-style: italic;
+}
+
+.medecin-name {
+  margin: 0 0 1rem;
+  color: $text-secondary;
+  font-size: 0.9rem;
+}
+
+// Section blocks (Antecedents tab)
+.section-block {
+  margin-bottom: 2rem;
+
+  &:last-child { margin-bottom: 0; }
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.item-card {
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid $border-light;
+
+  &.allergie {
+    border-left: 3px solid $error-color;
+  }
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  lucide-icon { color: $primary-color; }
+}
+
+.item-name {
+  font-weight: 600;
+  color: $text-dark;
+  flex: 1;
+}
+
+.item-type, .item-reaction {
+  font-size: 0.85rem;
+  color: $text-secondary;
+  margin: 0.25rem 0 0;
+}
+
+.item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.item-date {
+  font-size: 0.8rem;
+  color: $text-muted;
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: $text-muted;
+
+  lucide-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+}

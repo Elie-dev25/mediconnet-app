@@ -1,0 +1,102 @@
+@use '../../../shared/styles/variables' as *;
+
+.dossier-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid $border-light;
+  border-radius: $radius-md;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: #f8fafc;
+    color: $text-primary;
+    border-color: $border-color;
+  }
+}
+
+.header-title h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: $text-dark;
+
+  lucide-icon {
+    color: $primary-color;
+  }
+}
+
+// Consultation Modal (fullscreen-like)
+.consultation-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.consultation-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.consultation-modal-container {
+  position: relative;
+  width: 95vw;
+  max-width: 1200px;
+  max-height: 95vh;
+  background: white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+  overflow: auto;
+}
+
+// Responsive
+@media (max-width: $breakpoint-md) {
+  .dossier-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .consultation-modal-container {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+}

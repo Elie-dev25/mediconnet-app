@@ -1,0 +1,145 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="rdv-jour-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>
+          <lucide-icon name="calendar-check" [size]="28"></lucide-icon>
+          Rendez-vous du jour
+        </h1>
+        <p class="subtitle">{{ rdvs.length }} rendez-vous prevus aujourd'hui</p>
+      </div>
+      <button class="btn-refresh" (click)="rafraichir()" [disabled]="loading">
+        <lucide-icon name="refresh-cw" [size]="18" [class.spin]="loading"></lucide-icon>
+        Rafraichir
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value">{{ statsRdvs.total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat-item warning">
+        <span class="stat-value">{{ statsRdvs.enAttente }}</span>
+        <span class="stat-label">En attente</span>
+      </div>
+      <div class="stat-item success">
+        <span class="stat-value">{{ statsRdvs.arrives }}</span>
+        <span class="stat-label">Arrives</span>
+      </div>
+      <div class="stat-item info">
+        <span class="stat-value">{{ statsRdvs.termines }}</span>
+        <span class="stat-label">Termines</span>
+      </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input 
+          type="text" 
+          [(ngModel)]="filtreRecherche"
+          (ngModelChange)="appliquerFiltres()"
+          placeholder="Rechercher patient ou medecin...">
+      </div>
+      <div class="filter-tabs">
+        <button 
+          class="filter-tab" 
+          [class.active]="filtreStatut === 'tous'"
+          (click)="filtreStatut = 'tous'; appliquerFiltres()">
+          Tous
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="filtreStatut === 'en_attente'"
+          (click)="filtreStatut = 'en_attente'; appliquerFiltres()">
+          En attente
+        </button>
+        <button 
+          class="filter-tab" 
+          [class.active]="filtreStatut === 'arrive'"
+          (click)="filtreStatut = 'arrive'; appliquerFiltres()">
+          Arrives
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="loading">
+      <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+      <p>Chargement...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-container" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+      <p>{{ error }}</p>
+      <button class="btn-retry" (click)="rafraichir()">Reessayer</button>
+    </div>
+
+    <!-- Liste vide -->
+    <div class="empty-state" *ngIf="!loading && !error && rdvsFiltres.length === 0">
+      <lucide-icon name="calendar-x" [size]="48"></lucide-icon>
+      <h3>Aucun rendez-vous</h3>
+      <p *ngIf="filtreStatut === 'tous' && !filtreRecherche">Aucun rendez-vous prevu pour aujourd'hui</p>
+      <p *ngIf="filtreStatut !== 'tous' || filtreRecherche">Aucun resultat pour ces criteres</p>
+    </div>
+
+    <!-- Liste des RDV -->
+    <div class="rdv-table" *ngIf="!loading && !error && rdvsFiltres.length > 0">
+      <div class="table-header">
+        <div class="col-heure">Heure</div>
+        <div class="col-patient">Patient</div>
+        <div class="col-medecin">Medecin</div>
+        <div class="col-motif">Motif</div>
+        <div class="col-statut">Statut</div>
+        <div class="col-actions">Actions</div>
+      </div>
+      <div class="table-body">
+        <div class="table-row" *ngFor="let rdv of rdvsFiltres">
+          <div class="col-heure">
+            <span class="heure">{{ formatHeure(rdv.dateHeure) }}</span>
+          </div>
+          <div class="col-patient">
+            <div class="patient-info">
+              <span class="name">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+              <span class="phone" *ngIf="rdv.patientTelephone">
+                <lucide-icon name="phone" [size]="12"></lucide-icon>
+                {{ rdv.patientTelephone }}
+              </span>
+            </div>
+          </div>
+          <div class="col-medecin">
+            <span class="medecin-name">Dr. {{ rdv.medecinPrenom }} {{ rdv.medecinNom }}</span>
+            <span class="specialite" *ngIf="rdv.specialite">{{ rdv.specialite }}</span>
+          </div>
+          <div class="col-motif">
+            <span class="motif">{{ rdv.motif || '-' }}</span>
+          </div>
+          <div class="col-statut">
+            <span class="statut-badge" [class]="getStatutClass(rdv.statut)">
+              {{ getStatutLabel(rdv.statut) }}
+            </span>
+          </div>
+          <div class="col-actions">
+            <button 
+              class="btn-arrivee" 
+              *ngIf="!rdv.patientArrive && rdv.statut === 'planifie'"
+              (click)="marquerArrivee(rdv)"
+              title="Marquer l'arrivee">
+              <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+              Arrivee
+            </button>
+            <span class="deja-arrive" *ngIf="rdv.patientArrive">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+              Arrive
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

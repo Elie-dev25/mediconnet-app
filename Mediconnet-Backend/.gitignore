@@ -1,0 +1,15 @@
+# Build
+bin/
+obj/
+
+# IDE
+.vs/
+*.user
+
+# Logs
+*.log
+
+# Environment
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json

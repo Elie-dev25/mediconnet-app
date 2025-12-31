@@ -1,0 +1,163 @@
+// ============================================
+// Styles partages pour les dashboards
+// ============================================
+
+@use 'variables' as *;
+
+// Page header
+.page-header {
+  margin-bottom: 2rem;
+  
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 0.5rem;
+  }
+  
+  p {
+    color: $text-secondary;
+    margin: 0;
+  }
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &.users { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4f46e5; }
+  &.services { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }
+  &.doctors { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+  &.security { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
+  &.patients { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; }
+  &.appointments { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #7c3aed; }
+  &.invoices { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0d9488; }
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $text-dark;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: $text-secondary;
+}
+
+// Quick Actions
+.quick-actions {
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: $text-dark;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+
+  lucide-icon {
+    color: $primary-color;
+  }
+
+  span {
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  &:hover:not(.disabled) {
+    border-color: $primary-color;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(92, 107, 192, 0.15);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    lucide-icon {
+      color: $text-secondary;
+    }
+  }
+}
+
+// Dashboard content wrapper
+.dashboard-content {
+  padding: 0;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid,
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+}

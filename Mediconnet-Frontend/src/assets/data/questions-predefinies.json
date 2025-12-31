@@ -1,0 +1,181 @@
+{
+  "specialites": {
+    "medecine-generale": {
+      "id": 1,
+      "nom": "Médecine Générale",
+      "questions": {
+        "premiere": [
+          {
+            "id": "mg-p1",
+            "texte": "Quelle est la raison de votre venue aujourd'hui ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "mg-p2",
+            "texte": "Depuis quand avez-vous ces symptômes ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "mg-p3",
+            "texte": "Pouvez-vous décrire précisément ce que vous ressentez ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "mg-p4",
+            "texte": "Est-ce que quelque chose aggrave ou soulage ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "mg-p5",
+            "texte": "Avez-vous d'autres symptômes associés ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "mg-p6",
+            "texte": "Est-ce que vous avez déjà vu un médecin pour ce cas ?",
+            "type": "choix",
+            "options": ["Oui", "Non"],
+            "obligatoire": true
+          },
+          {
+            "id": "mg-p7",
+            "texte": "Avez-vous pris des médicaments ou essayé un traitement ?",
+            "type": "texte",
+            "obligatoire": false
+          }
+        ],
+        "suivante": [
+          {
+            "id": "mg-s1",
+            "texte": "Depuis notre dernière consultation, comment vous sentez-vous globalement ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "mg-s2",
+            "texte": "Les symptômes dont nous avions parlé se sont-ils améliorés, aggravés ou sont-ils restés stables ?",
+            "type": "choix",
+            "options": ["Améliorés", "Aggravés", "Stables"],
+            "obligatoire": true
+          },
+          {
+            "id": "mg-s3",
+            "texte": "Avez-vous ressenti de nouveaux symptômes depuis la dernière fois ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "mg-s4",
+            "texte": "Suivez-vous correctement le traitement prescrit ?",
+            "type": "choix",
+            "options": ["Oui, complètement", "Partiellement", "Non"],
+            "obligatoire": true
+          },
+          {
+            "id": "mg-s5",
+            "texte": "Avez-vous eu des effets secondaires avec les médicaments ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "mg-s6",
+            "texte": "Avez-vous changé quelque chose dans votre mode de vie ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "mg-s7",
+            "texte": "Avez-vous des questions, des inquiétudes ou des difficultés particulières ?",
+            "type": "texte",
+            "obligatoire": false
+          }
+        ]
+      }
+    },
+    "cardiologie": {
+      "id": 4,
+      "nom": "Cardiologie",
+      "questions": {
+        "premiere": [
+          {
+            "id": "card-p1",
+            "texte": "Quel est le motif de votre consultation cardiologique ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "card-p2",
+            "texte": "Avez-vous des douleurs thoraciques ? Si oui, décrivez-les.",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "card-p3",
+            "texte": "Ressentez-vous des palpitations ou des battements irréguliers ?",
+            "type": "choix",
+            "options": ["Oui, souvent", "Parfois", "Rarement", "Jamais"],
+            "obligatoire": true
+          },
+          {
+            "id": "card-p4",
+            "texte": "Avez-vous des difficultés respiratoires (essoufflement) ?",
+            "type": "choix",
+            "options": ["Au repos", "À l'effort léger", "À l'effort intense", "Non"],
+            "obligatoire": true
+          },
+          {
+            "id": "card-p5",
+            "texte": "Avez-vous des antécédents cardiaques personnels ou familiaux ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "card-p6",
+            "texte": "Prenez-vous des médicaments pour le cœur ou la tension ?",
+            "type": "texte",
+            "obligatoire": false
+          }
+        ],
+        "suivante": [
+          {
+            "id": "card-s1",
+            "texte": "Comment vous sentez-vous depuis la dernière consultation ?",
+            "type": "texte",
+            "obligatoire": true
+          },
+          {
+            "id": "card-s2",
+            "texte": "Avez-vous eu des épisodes de douleurs thoraciques ?",
+            "type": "choix",
+            "options": ["Oui", "Non"],
+            "obligatoire": true
+          },
+          {
+            "id": "card-s3",
+            "texte": "Prenez-vous régulièrement vos médicaments ?",
+            "type": "choix",
+            "options": ["Oui", "Parfois j'oublie", "Non"],
+            "obligatoire": true
+          },
+          {
+            "id": "card-s4",
+            "texte": "Avez-vous noté des effets secondaires ?",
+            "type": "texte",
+            "obligatoire": false
+          },
+          {
+            "id": "card-s5",
+            "texte": "Votre activité physique a-t-elle changé ?",
+            "type": "texte",
+            "obligatoire": false
+          }
+        ]
+      }
+    }
+  }
+}

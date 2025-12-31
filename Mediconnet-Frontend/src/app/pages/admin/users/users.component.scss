@@ -1,0 +1,485 @@
+// Import des variables globales
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/common';
+
+.users-page {
+  padding: 0;
+}
+
+// NOTE: .page-header, .btn-primary, .btn-secondary sont dans _common.scss
+// Extensions spécifiques ci-dessous
+.users-header {
+  .header-content {
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: $text-dark;
+      margin: 0 0 0.25rem;
+    }
+    p {
+      color: $text-secondary;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Filtres
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0 1rem;
+  height: 48px;
+  flex: 1;
+  min-width: 280px;
+  max-width: 400px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  &:focus-within {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+
+  input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.95rem;
+    height: 100%;
+    background: transparent;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+
+  lucide-icon {
+    color: #9ca3af;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+
+  &:focus-within lucide-icon {
+    color: $primary-color;
+  }
+}
+
+.filter-group select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  height: 48px;
+  min-width: 160px;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #d1d5db;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+}
+
+// Table
+.users-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid $border-color;
+  }
+
+  th {
+    background: $bg-light;
+    font-weight: 600;
+    color: $text-dark;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    font-size: 0.9rem;
+    color: $text-primary;
+  }
+
+  tbody tr:hover {
+    background: rgba(92, 107, 192, 0.03);
+  }
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, $primary-light, $primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  &.medecin { background: #dbeafe; color: #1e40af; }
+  &.infirmier { background: #d1fae5; color: #065f46; }
+  &.administrateur { background: #fef3c7; color: #92400e; }
+  &.caissier { background: #ede9fe; color: #5b21b6; }
+  &.patient { background: #f3f4f6; color: #374151; }
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $text-secondary;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: $bg-light;
+    color: $primary-color;
+  }
+
+  &.danger:hover:not(:disabled) {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem !important;
+  color: $text-secondary;
+
+  lucide-icon {
+    opacity: 0.3;
+  }
+
+  p {
+    margin-top: 1rem;
+  }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: $text-secondary;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// NOTE: .modal-overlay, .modal-header, .modal-body, .modal-footer sont dans _common.scss
+// Extensions spécifiques pour ce composant
+.modal-container {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+}
+
+.users-modal-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 20px 20px 0 0;
+  padding: 1.75rem 2rem;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.35rem;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+}
+
+.users-modal-footer {
+  background: #fafbfc;
+  border-radius: 0 0 20px 20px;
+  padding: 1.5rem 2rem;
+}
+
+// Form styles
+.form-group {
+  margin-bottom: 1.25rem;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin-bottom: 0.6rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    background: #fafbfc;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+
+    &:hover {
+      border-color: #d1d5db;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      background: white;
+      box-shadow: 0 0 0 4px rgba($primary-color, 0.12);
+    }
+  }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.password-input {
+  position: relative;
+
+  input {
+    padding-right: 3rem;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #f1f5f9;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: #e2e8f0;
+      color: $primary-color;
+    }
+  }
+}
+
+.error-text {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+  font-weight: 500;
+}
+
+// Role selector
+.role-selector {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 400px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.role-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  background: #fafbfc;
+
+  input {
+    display: none;
+  }
+
+  lucide-icon {
+    color: #9ca3af;
+    transition: all 0.2s;
+  }
+
+  span {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all 0.2s;
+  }
+
+  &:hover {
+    border-color: #c7d2fe;
+    background: #f5f3ff;
+    transform: translateY(-2px);
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+
+  &.selected {
+    border-color: $primary-color;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    box-shadow: 0 4px 12px rgba($primary-color, 0.2);
+
+    lucide-icon {
+      color: $primary-color;
+    }
+
+    span {
+      color: $primary-color;
+    }
+  }
+}
+
+.role-specific-fields {
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  border: 2px solid #e0f2fe;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0369a1;
+    margin: 0 0 1.25rem;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%);
+      border-radius: 2px;
+    }
+  }
+
+  .form-group input,
+  .form-group select {
+    background: white;
+    border-color: #bae6fd;
+
+    &:focus {
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+    }
+  }
+}
+
+// NOTE: .alert, .alert-error, .alert-success sont dans _common.scss

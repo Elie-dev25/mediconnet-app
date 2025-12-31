@@ -1,0 +1,271 @@
+// Styles spécifiques au dashboard infirmier
+@use '../../../shared/styles/variables' as *;
+
+.dashboard-content {
+  max-width: 1400px;
+}
+
+.queue-section {
+  margin-top: 1.5rem;
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0;
+  }
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: $text-dark;
+
+  &:hover {
+    background: white;
+    border-color: $primary-color;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.queue-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.queue-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.queue-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.queue-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.patient-name {
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badges-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  margin-top: 0;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge-dossier {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+
+.badge-medecin {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.10);
+  border-color: rgba(124, 58, 237, 0.18);
+}
+
+.badge-info {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.10);
+}
+
+.queue-sub {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.queue-meta {
+  color: #64748b;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+}
+
+.btn-strong {
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(92, 107, 192, 0.18);
+  border-radius: 12px;
+  padding: 0.55rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  @media (max-width: 640px) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.queue-empty,
+.queue-loading {
+  padding: 0.75rem;
+  color: #64748b;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 50;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.quick-actions {
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.action-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+
+  .action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-color;
+  }
+
+  span {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: $text-dark;
+  }
+
+  &:hover:not(.disabled) {
+    border-color: $primary-color;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(92, 107, 192, 0.15);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    .action-icon {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+  }
+}
