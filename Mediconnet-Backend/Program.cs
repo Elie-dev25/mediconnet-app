@@ -1,10 +1,15 @@
 using System.Text;
+using AspNetCoreRateLimit;
+using FluentValidation;
 using Mediconnet_Backend.Core.Configuration;
 using Mediconnet_Backend.Core.Interfaces.Services;
+using Mediconnet_Backend.Configuration;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Services;
 using Mediconnet_Backend.Hubs;
+using Mediconnet_Backend.Validators;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -85,6 +90,36 @@ builder.Services.AddScoped<IPharmacieStockService, PharmacieStockService>();
 
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
+
+// ==================== SECURITY SERVICES ====================
+// Data Protection Service for encrypting sensitive medical data
+builder.Services.AddDataProtection()
+    .SetApplicationName("Mediconnet")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+builder.Services.AddScoped<IDataProtectionService, DataProtectionService>();
+
+// Rate Limiting - Protection against brute force attacks
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.EnableEndpointRateLimiting = true;
+    options.StackBlockedRequests = false;
+    options.HttpStatusCode = 429;
+    options.RealIpHeader = "X-Real-IP";
+    options.GeneralRules = new List<RateLimitRule>
+    {
+        new RateLimitRule { Endpoint = "*", Period = "1m", Limit = 100 },
+        new RateLimitRule { Endpoint = "*:/api/auth/login", Period = "1m", Limit = 10 },
+        new RateLimitRule { Endpoint = "*:/api/auth/register", Period = "1m", Limit = 5 },
+        new RateLimitRule { Endpoint = "*:/api/patient/*", Period = "1m", Limit = 30 },
+        new RateLimitRule { Endpoint = "*:/api/consultations/*", Period = "1m", Limit = 30 }
+    };
+});
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
+// FluentValidation - Input validation
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
 // Add SignalR for real-time updates
 builder.Services.AddSignalR();
@@ -179,6 +214,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Rate Limiting Middleware - Must be early in the pipeline
+app.UseIpRateLimiting();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");

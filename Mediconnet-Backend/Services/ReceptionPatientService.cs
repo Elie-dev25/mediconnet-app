@@ -197,9 +197,10 @@ public class ReceptionPatientService : IReceptionPatientService
             
             // Logger l'action
             await _auditService.LogActionAsync(
-                createdByUserId.ToString(),
+                createdByUserId,
                 "PATIENT_CREATED_BY_RECEPTION",
                 "Patient",
+                patient.IdUser,
                 $"Patient {utilisateur.Nom} {utilisateur.Prenom} créé avec dossier {numeroDossier}"
             );
             
@@ -395,9 +396,10 @@ Numéro de dossier : {numeroDossier}
             
             // Logger l'action
             await _auditService.LogActionAsync(
-                userId.ToString(),
+                userId,
                 "FIRST_LOGIN_COMPLETED",
                 "Utilisateur",
+                userId,
                 "Première connexion validée, mot de passe changé, déclaration acceptée"
             );
             
@@ -466,9 +468,10 @@ Numéro de dossier : {numeroDossier}
 
             // Logger l'action
             await _auditService.LogActionAsync(
-                userId.ToString(),
+                userId,
                 "DECLARATION_ACCEPTED",
                 "Patient",
+                userId,
                 "Déclaration sur l'honneur acceptée"
             );
 

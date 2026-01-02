@@ -76,6 +76,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Inventaire> Inventaires { get; set; }
     public DbSet<InventaireLigne> InventairesLignes { get; set; }
 
+    // Audit et Sécurité
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

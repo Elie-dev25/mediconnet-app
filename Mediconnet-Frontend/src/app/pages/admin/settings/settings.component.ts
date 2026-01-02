@@ -11,8 +11,14 @@ import {
   CreateChambreRequest,
   CreateLitRequest
 } from '../../../services/admin-settings.service';
+import { 
+  AuditService, 
+  AuditLogDto, 
+  AuditStatsDto, 
+  AuditLogsFilter 
+} from '../../../services/audit.service';
 
-type TabType = 'laboratoires' | 'chambres';
+type TabType = 'laboratoires' | 'chambres' | 'logs';
 
 @Component({
   selector: 'app-admin-settings',
@@ -60,7 +66,27 @@ export class AdminSettingsComponent implements OnInit {
   showDeleteConfirm = false;
   deleteTarget: { type: 'chambre' | 'lit'; id: number; label: string } | null = null;
 
-  constructor(private settingsService: AdminSettingsService) {}
+  // Audit Logs
+  auditLogs: AuditLogDto[] = [];
+  auditStats: AuditStatsDto | null = null;
+  isLoadingLogs = false;
+  availableActions: string[] = [];
+  availableResources: string[] = [];
+  logsFilter: AuditLogsFilter = {
+    page: 1,
+    pageSize: 50
+  };
+  logsPagination = {
+    page: 1,
+    pageSize: 50,
+    totalCount: 0,
+    totalPages: 0
+  };
+
+  constructor(
+    private settingsService: AdminSettingsService,
+    public auditService: AuditService
+  ) {}
 
   ngOnInit(): void {
     this.loadChambres();
@@ -70,6 +96,74 @@ export class AdminSettingsComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'chambres') {
       this.loadChambres();
+    } else if (tab === 'logs') {
+      this.loadLogsData();
+    }
+  }
+
+  // ==================== AUDIT LOGS ====================
+
+  loadLogsData(): void {
+    this.loadLogs();
+    this.loadAuditStats();
+    this.loadAvailableFilters();
+  }
+
+  loadLogs(): void {
+    this.isLoadingLogs = true;
+    this.auditService.getLogs(this.logsFilter).subscribe({
+      next: (result) => {
+        this.auditLogs = result.logs;
+        this.logsPagination = {
+          page: result.page,
+          pageSize: result.pageSize,
+          totalCount: result.totalCount,
+          totalPages: result.totalPages
+        };
+        this.isLoadingLogs = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement logs:', err);
+        this.isLoadingLogs = false;
+      }
+    });
+  }
+
+  loadAuditStats(): void {
+    this.auditService.getStats(7).subscribe({
+      next: (stats) => {
+        this.auditStats = stats;
+      },
+      error: (err) => {
+        console.error('Erreur chargement stats audit:', err);
+      }
+    });
+  }
+
+  loadAvailableFilters(): void {
+    this.auditService.getAvailableActions().subscribe({
+      next: (actions) => this.availableActions = actions,
+      error: (err) => console.error('Erreur chargement actions:', err)
+    });
+    
+    this.auditService.getAvailableResourceTypes().subscribe({
+      next: (resources) => this.availableResources = resources,
+      error: (err) => console.error('Erreur chargement resources:', err)
+    });
+  }
+
+  resetLogsFilter(): void {
+    this.logsFilter = {
+      page: 1,
+      pageSize: 50
+    };
+    this.loadLogs();
+  }
+
+  goToLogsPage(page: number): void {
+    if (page >= 1 && page <= this.logsPagination.totalPages) {
+      this.logsFilter.page = page;
+      this.loadLogs();
     }
   }
 

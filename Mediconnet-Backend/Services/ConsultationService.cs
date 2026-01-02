@@ -171,9 +171,10 @@ public class ConsultationService : IConsultationService
 
             // Logger l'action
             await _auditService.LogActionAsync(
-                createdByUserId.ToString(),
+                createdByUserId,
                 "CONSULTATION_ENREGISTREE",
                 "Consultation",
+                consultation.IdConsultation,
                 $"Consultation enregistrée pour {patient.Utilisateur?.Prenom} {patient.Utilisateur?.Nom} avec Dr. {medecin.Utilisateur?.Nom}"
             );
 

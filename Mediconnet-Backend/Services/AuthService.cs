@@ -48,16 +48,16 @@ public class AuthService : IAuthService
 
             if (utilisateur == null)
             {
-                _logger.LogWarning($"Login failed: User {identifier} not found");
-                await _auditService.LogActionAsync("SYSTEM", "LOGIN_FAILED", "Utilisateur", $"Identifier: {identifier}");
+                _logger.LogWarning("Login failed: User {Identifier} not found", identifier);
+                await _auditService.LogAuthFailureAsync(identifier ?? "unknown", null, "User not found");
                 return null;
             }
 
             // Verifier le password
             if (string.IsNullOrEmpty(utilisateur.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.Password, utilisateur.PasswordHash))
             {
-                _logger.LogWarning($"Login failed: Invalid password for user {identifier}");
-                await _auditService.LogActionAsync(utilisateur.IdUser.ToString(), "LOGIN_FAILED", "Utilisateur", "Invalid password");
+                _logger.LogWarning("Login failed: Invalid password for user {Identifier}", identifier);
+                await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_FAILED", "Utilisateur", utilisateur.IdUser, "Invalid password", false);
                 return null;
             }
 
@@ -79,7 +79,7 @@ public class AuthService : IAuthService
             var token = await _jwtTokenService.GenerateTokenAsync(utilisateur.IdUser, utilisateur.Role);
 
             // Logger le login reussi
-            await _auditService.LogActionAsync(utilisateur.IdUser.ToString(), "LOGIN_SUCCESS", "Utilisateur");
+            await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_SUCCESS", "Utilisateur", utilisateur.IdUser);
 
             // Récupérer les infos du patient si c'est un patient
             bool declarationHonneurAcceptee = false;

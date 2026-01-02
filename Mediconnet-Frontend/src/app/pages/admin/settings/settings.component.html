@@ -28,6 +28,10 @@
           <lucide-icon name="flask-conical" [size]="18"></lucide-icon>
           Gestion des laboratoires
         </button>
+        <button class="tab" [class.active]="activeTab === 'logs'" (click)="setActiveTab('logs')">
+          <lucide-icon name="scroll-text" [size]="18"></lucide-icon>
+          Journal d'audit
+        </button>
       </div>
     </div>
 
@@ -212,6 +216,150 @@
               Configurer les types d'examens disponibles
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ONGLET LOGS -->
+      <div class="tab-panel" *ngIf="activeTab === 'logs'">
+        <!-- Stats Cards Logs -->
+        <div class="stats-grid" *ngIf="auditStats">
+          <div class="stat-card">
+            <div class="stat-icon logs">
+              <lucide-icon name="scroll-text" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ auditStats.totalLogs }}</span>
+              <span class="stat-label">Actions (7 jours)</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ auditStats.totalSuccess }}</span>
+              <span class="stat-label">Réussies</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon error">
+              <lucide-icon name="x-circle" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ auditStats.totalFailures }}</span>
+              <span class="stat-label">Échecs</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <lucide-icon name="shield-alert" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value">{{ auditStats.authFailures }}</span>
+              <span class="stat-label">Tentatives auth. échouées</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Action</label>
+            <select [(ngModel)]="logsFilter.action" (change)="loadLogs()">
+              <option value="">Toutes les actions</option>
+              <option *ngFor="let action of availableActions" [value]="action">
+                {{ auditService.formatAction(action) }}
+              </option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Ressource</label>
+            <select [(ngModel)]="logsFilter.resourceType" (change)="loadLogs()">
+              <option value="">Tous les types</option>
+              <option *ngFor="let resource of availableResources" [value]="resource">{{ resource }}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Statut</label>
+            <select [(ngModel)]="logsFilter.successOnly" (change)="loadLogs()">
+              <option [ngValue]="undefined">Tous</option>
+              <option [ngValue]="true">Réussies</option>
+              <option [ngValue]="false">Échecs</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" (click)="resetLogsFilter()">
+            <lucide-icon name="rotate-ccw" [size]="16"></lucide-icon>
+            Réinitialiser
+          </button>
+          <button class="btn btn-secondary" (click)="loadLogs()" [disabled]="isLoadingLogs">
+            <lucide-icon name="refresh-cw" [size]="16" [class.spinning]="isLoadingLogs"></lucide-icon>
+            Actualiser
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-state" *ngIf="isLoadingLogs && auditLogs.length === 0">
+          <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+          <p>Chargement des logs...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!isLoadingLogs && auditLogs.length === 0">
+          <lucide-icon name="scroll-text" [size]="48"></lucide-icon>
+          <h3>Aucun log</h3>
+          <p>Aucune activité enregistrée avec les filtres actuels.</p>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="logs-table-container" *ngIf="auditLogs.length > 0">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Date/Heure</th>
+                <th>Utilisateur</th>
+                <th>Action</th>
+                <th>Ressource</th>
+                <th>Détails</th>
+                <th>IP</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let log of auditLogs" [class.error-row]="!log.success">
+                <td class="date-cell">{{ log.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                <td>{{ log.userId === 0 ? 'Système' : 'User #' + log.userId }}</td>
+                <td>
+                  <span class="badge" [ngClass]="auditService.getActionBadgeClass(log.action, log.success)">
+                    {{ auditService.formatAction(log.action) }}
+                  </span>
+                </td>
+                <td>{{ log.resourceType }}<span *ngIf="log.resourceId"> #{{ log.resourceId }}</span></td>
+                <td class="details-cell" [title]="log.details || ''">{{ log.details | slice:0:50 }}{{ log.details && log.details.length > 50 ? '...' : '' }}</td>
+                <td class="ip-cell">{{ log.ipAddress || '-' }}</td>
+                <td>
+                  <lucide-icon *ngIf="log.success" name="check-circle" [size]="18" class="status-success"></lucide-icon>
+                  <lucide-icon *ngIf="!log.success" name="x-circle" [size]="18" class="status-error"></lucide-icon>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" *ngIf="logsPagination.totalPages > 1">
+          <button class="btn btn-sm" (click)="goToLogsPage(1)" [disabled]="logsPagination.page === 1">
+            <lucide-icon name="chevrons-left" [size]="16"></lucide-icon>
+          </button>
+          <button class="btn btn-sm" (click)="goToLogsPage(logsPagination.page - 1)" [disabled]="logsPagination.page === 1">
+            <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+          </button>
+          <span class="page-info">Page {{ logsPagination.page }} / {{ logsPagination.totalPages }}</span>
+          <button class="btn btn-sm" (click)="goToLogsPage(logsPagination.page + 1)" [disabled]="logsPagination.page === logsPagination.totalPages">
+            <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+          </button>
+          <button class="btn btn-sm" (click)="goToLogsPage(logsPagination.totalPages)" [disabled]="logsPagination.page === logsPagination.totalPages">
+            <lucide-icon name="chevrons-right" [size]="16"></lucide-icon>
+          </button>
         </div>
       </div>
     </div>
