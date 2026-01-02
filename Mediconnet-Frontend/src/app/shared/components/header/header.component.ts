@@ -6,11 +6,12 @@ import {
   LucideIconProvider,
   Menu, HeartPulse, LogOut, User, ChevronDown, Settings, Bell
 } from 'lucide-angular';
+import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideAngularModule, NotificationBellComponent],
   providers: [
     { 
       provide: LUCIDE_ICONS, 

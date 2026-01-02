@@ -145,6 +145,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IAppointmentNotificationService, AppointmentNotificationService>();
 
+// Notification Service (centralized)
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<NotificationIntegrationService>();
+
 // ==================== JWT CONFIGURATION ====================
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? "default-super-secret-key-minimum-32-characters-long-!!!";

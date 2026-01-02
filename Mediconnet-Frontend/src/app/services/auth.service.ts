@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { NotificationService } from './notification.service';
 
 /**
  * Interface pour les données de connexion
@@ -96,7 +97,11 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<any>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private notificationService: NotificationService
+  ) {
     this.loadUserFromStorage();
   }
 
@@ -143,6 +148,9 @@ export class AuthService {
    * Déconnexion utilisateur
    */
   logout(): void {
+    // Déconnecter SignalR des notifications
+    this.notificationService.stopConnection();
+    
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.isAuthenticatedSubject.next(false);
@@ -199,6 +207,9 @@ export class AuthService {
       // Stocker l'utilisateur dans localStorage pour persistance
       localStorage.setItem(this.USER_KEY, JSON.stringify(user));
       this.currentUserSubject.next(user);
+      
+      // Initialiser la connexion SignalR pour les notifications
+      this.notificationService.startConnection(response.token);
     }
     // Si pas de token (ex: email non confirmé), ne rien stocker
   }
@@ -285,6 +296,9 @@ export class AuthService {
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
         console.log('✅ Session restaurée:', user.email);
+        
+        // Reconnecter SignalR pour les notifications
+        this.notificationService.startConnection(token);
       } catch (e) {
         console.error('Erreur parsing user:', e);
         this.clearStorage();

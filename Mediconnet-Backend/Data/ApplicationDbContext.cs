@@ -84,6 +84,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Audit et Sécurité
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    // Notifications
+    public DbSet<Notification> Notifications { get; set; }
+
     // Entités Facturation Avancée
     public DbSet<Echeancier> Echeanciers { get; set; }
     public DbSet<Echeance> Echeances { get; set; }
