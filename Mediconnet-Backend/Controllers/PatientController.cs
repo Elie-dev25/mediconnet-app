@@ -39,41 +39,15 @@ public class PatientController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var utilisateur = await _context.Utilisateurs
-                .Include(u => u.Patient)
-                .FirstOrDefaultAsync(u => u.IdUser == userId.Value);
-
-            if (utilisateur == null || utilisateur.Patient == null)
+            var profile = await _patientService.GetProfileAsync(userId.Value);
+            if (profile == null)
                 return NotFound(new { message = "Patient non trouve" });
-
-            var profile = new PatientProfileDto
-            {
-                IdUser = utilisateur.IdUser,
-                Nom = utilisateur.Nom,
-                Prenom = utilisateur.Prenom,
-                Email = utilisateur.Email,
-                Naissance = utilisateur.Naissance,
-                Sexe = utilisateur.Sexe,
-                Telephone = utilisateur.Telephone,
-                SituationMatrimoniale = utilisateur.SituationMatrimoniale,
-                Adresse = utilisateur.Adresse,
-                Photo = utilisateur.Photo,
-                NumeroDossier = utilisateur.Patient.NumeroDossier,
-                Ethnie = utilisateur.Patient.Ethnie,
-                GroupeSanguin = utilisateur.Patient.GroupeSanguin,
-                NbEnfants = utilisateur.Patient.NbEnfants,
-                PersonneContact = utilisateur.Patient.PersonneContact,
-                NumeroContact = utilisateur.Patient.NumeroContact,
-                Profession = utilisateur.Patient.Profession,
-                CreatedAt = utilisateur.CreatedAt,
-                IsProfileComplete = IsProfileComplete(utilisateur)
-            };
 
             return Ok(profile);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting patient profile: {ex.Message}");
+            _logger.LogError("Error getting patient profile: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la recuperation du profil" });
         }
     }
@@ -89,40 +63,12 @@ public class PatientController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var utilisateur = await _context.Utilisateurs
-                .Include(u => u.Patient)
-                .FirstOrDefaultAsync(u => u.IdUser == userId.Value);
-
-            if (utilisateur == null)
-                return NotFound();
-
-            var missingFields = new List<string>();
-
-            if (!utilisateur.Naissance.HasValue) missingFields.Add("Date de naissance");
-            if (string.IsNullOrEmpty(utilisateur.Sexe)) missingFields.Add("Sexe");
-            if (string.IsNullOrEmpty(utilisateur.Telephone)) missingFields.Add("Telephone");
-            if (string.IsNullOrEmpty(utilisateur.Adresse)) missingFields.Add("Adresse");
-
-            if (utilisateur.Patient != null)
-            {
-                if (string.IsNullOrEmpty(utilisateur.Patient.PersonneContact)) missingFields.Add("Personne a contacter");
-                if (string.IsNullOrEmpty(utilisateur.Patient.NumeroContact)) missingFields.Add("Numero de contact d'urgence");
-            }
-
-            var status = new ProfileStatusDto
-            {
-                IsComplete = missingFields.Count == 0,
-                MissingFields = missingFields,
-                Message = missingFields.Count == 0 
-                    ? "Votre profil est complet" 
-                    : $"Il manque {missingFields.Count} information(s) dans votre profil"
-            };
-
+            var status = await _patientService.GetProfileStatusAsync(userId.Value);
             return Ok(status);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error checking profile status: {ex.Message}");
+            _logger.LogError("Error checking profile status: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la verification du profil" });
         }
     }
@@ -138,41 +84,18 @@ public class PatientController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var utilisateur = await _context.Utilisateurs
-                .Include(u => u.Patient)
-                .FirstOrDefaultAsync(u => u.IdUser == userId.Value);
-
-            if (utilisateur == null)
+            var success = await _patientService.UpdateProfileAsync(userId.Value, request);
+            if (!success)
                 return NotFound(new { message = "Utilisateur non trouve" });
 
-            // Mise a jour des informations utilisateur
-            if (request.Naissance.HasValue) utilisateur.Naissance = request.Naissance;
-            if (!string.IsNullOrEmpty(request.Sexe)) utilisateur.Sexe = request.Sexe;
-            if (!string.IsNullOrEmpty(request.Telephone)) utilisateur.Telephone = request.Telephone;
-            if (!string.IsNullOrEmpty(request.SituationMatrimoniale)) utilisateur.SituationMatrimoniale = request.SituationMatrimoniale;
-            if (!string.IsNullOrEmpty(request.Adresse)) utilisateur.Adresse = request.Adresse;
+            // Récupérer le statut de complétion mis à jour
+            var status = await _patientService.GetProfileStatusAsync(userId.Value);
 
-            // Mise a jour des informations patient
-            if (utilisateur.Patient != null)
-            {
-                if (!string.IsNullOrEmpty(request.Ethnie)) utilisateur.Patient.Ethnie = request.Ethnie;
-                if (!string.IsNullOrEmpty(request.GroupeSanguin)) utilisateur.Patient.GroupeSanguin = request.GroupeSanguin;
-                if (request.NbEnfants.HasValue) utilisateur.Patient.NbEnfants = request.NbEnfants;
-                if (!string.IsNullOrEmpty(request.PersonneContact)) utilisateur.Patient.PersonneContact = request.PersonneContact;
-                if (!string.IsNullOrEmpty(request.NumeroContact)) utilisateur.Patient.NumeroContact = request.NumeroContact;
-                if (!string.IsNullOrEmpty(request.Profession)) utilisateur.Patient.Profession = request.Profession;
-            }
-
-            utilisateur.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Profile updated for user {userId}");
-
-            return Ok(new { message = "Profil mis a jour avec succes", isComplete = IsProfileComplete(utilisateur) });
+            return Ok(new { message = "Profil mis a jour avec succes", isComplete = status.IsComplete });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating patient profile: {ex.Message}");
+            _logger.LogError("Error updating patient profile: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la mise a jour du profil" });
         }
     }

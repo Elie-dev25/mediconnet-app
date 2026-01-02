@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Mediconnet_Backend.Core.Enums;
 
 namespace Mediconnet_Backend.DTOs.Auth;
@@ -9,7 +10,10 @@ namespace Mediconnet_Backend.DTOs.Auth;
 public class LoginRequest
 {
     /// <summary>Identifiant : email ou numero de telephone</summary>
+    [Required(ErrorMessage = "L'identifiant est requis")]
     public string Identifier { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Le mot de passe est requis")]
     public string Password { get; set; } = string.Empty;
 }
 
@@ -66,11 +70,28 @@ public class LoginResponse
 public class RegisterRequest
 {
     // === Étape 1: Informations de base ===
+    [Required(ErrorMessage = "Le prénom est requis")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Le prénom doit contenir entre 2 et 100 caractères")]
     public string FirstName { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Le nom est requis")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Le nom doit contenir entre 2 et 100 caractères")]
     public string LastName { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "L'email est requis")]
+    [EmailAddress(ErrorMessage = "Format d'email invalide")]
     public string Email { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Le téléphone est requis")]
+    [Phone(ErrorMessage = "Format de téléphone invalide")]
     public string Telephone { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Le mot de passe est requis")]
+    [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractères")]
     public string Password { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
+    [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas")]
     public string ConfirmPassword { get; set; } = string.Empty;
     
     // === Étape 2: Informations personnelles ===
@@ -148,12 +169,17 @@ public class AuthErrorResponse
 public class ChangePasswordRequest
 {
     /// <summary>Mot de passe actuel</summary>
+    [Required(ErrorMessage = "Le mot de passe actuel est requis")]
     public string CurrentPassword { get; set; } = string.Empty;
 
     /// <summary>Nouveau mot de passe</summary>
+    [Required(ErrorMessage = "Le nouveau mot de passe est requis")]
+    [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractères")]
     public string NewPassword { get; set; } = string.Empty;
 
     /// <summary>Confirmation du nouveau mot de passe</summary>
+    [Required(ErrorMessage = "La confirmation est requise")]
+    [Compare("NewPassword", ErrorMessage = "Les mots de passe ne correspondent pas")]
     public string ConfirmNewPassword { get; set; } = string.Empty;
 }
 

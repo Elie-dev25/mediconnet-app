@@ -52,6 +52,9 @@ builder.Services.AddScoped<IRendezVousService, RendezVousService>();
 // Add Medecin Planning Services
 builder.Services.AddScoped<IMedecinPlanningService, MedecinPlanningService>();
 
+// Add Medecin Service
+builder.Services.AddScoped<IMedecinService, MedecinService>();
+
 // Add Email Services
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();

@@ -1,4 +1,5 @@
 using Mediconnet_Backend.Controllers.Base;
+using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Medecin;
 using Microsoft.AspNetCore.Mvc;
@@ -8,15 +9,21 @@ namespace Mediconnet_Backend.Controllers;
 
 /// <summary>
 /// Contrôleur pour la gestion du profil médecin
+/// Délègue la logique métier au service IMedecinService
 /// </summary>
 [Route("api/[controller]")]
 public class MedecinController : BaseApiController
 {
+    private readonly IMedecinService _medecinService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<MedecinController> _logger;
 
-    public MedecinController(ApplicationDbContext context, ILogger<MedecinController> logger)
+    public MedecinController(
+        IMedecinService medecinService,
+        ApplicationDbContext context, 
+        ILogger<MedecinController> logger)
     {
+        _medecinService = medecinService;
         _context = context;
         _logger = logger;
     }
@@ -32,47 +39,15 @@ public class MedecinController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var medecin = await _context.Medecins
-                .Include(m => m.Utilisateur)
-                .Include(m => m.Service)
-                .FirstOrDefaultAsync(m => m.IdUser == userId.Value);
-
-            if (medecin == null || medecin.Utilisateur == null)
+            var profile = await _medecinService.GetProfileAsync(userId.Value);
+            if (profile == null)
                 return NotFound(new { message = "Médecin non trouvé" });
-
-            // Récupérer la spécialité
-            string? specialiteNom = null;
-            if (medecin.IdSpecialite.HasValue)
-            {
-                var specialite = await _context.Specialites
-                    .FirstOrDefaultAsync(s => s.IdSpecialite == medecin.IdSpecialite.Value);
-                specialiteNom = specialite?.NomSpecialite;
-            }
-
-            var profile = new MedecinProfileDto
-            {
-                IdUser = medecin.IdUser,
-                Nom = medecin.Utilisateur.Nom,
-                Prenom = medecin.Utilisateur.Prenom,
-                Email = medecin.Utilisateur.Email,
-                Telephone = medecin.Utilisateur.Telephone,
-                Adresse = medecin.Utilisateur.Adresse,
-                Photo = medecin.Utilisateur.Photo,
-                Sexe = medecin.Utilisateur.Sexe,
-                Naissance = medecin.Utilisateur.Naissance,
-                NumeroOrdre = medecin.NumeroOrdre,
-                Specialite = specialiteNom,
-                IdSpecialite = medecin.IdSpecialite,
-                Service = medecin.Service?.NomService,
-                IdService = medecin.IdService,
-                CreatedAt = medecin.Utilisateur.CreatedAt
-            };
 
             return Ok(profile);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting medecin profile: {ex.Message}");
+            _logger.LogError("Error getting medecin profile: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la récupération du profil" });
         }
     }
@@ -88,51 +63,12 @@ public class MedecinController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var now = DateTime.Now;
-            var debutMois = new DateTime(now.Year, now.Month, 1);
-            var finMois = debutMois.AddMonths(1);
-
-            // Nombre de patients distincts
-            var totalPatients = await _context.RendezVous
-                .Where(r => r.IdMedecin == userId.Value && r.Statut != "annule")
-                .Select(r => r.IdPatient)
-                .Distinct()
-                .CountAsync();
-
-            // Consultations ce mois
-            var consultationsMois = await _context.RendezVous
-                .CountAsync(r => r.IdMedecin == userId.Value && 
-                           r.DateHeure >= debutMois && 
-                           r.DateHeure < finMois &&
-                           r.Statut == "termine");
-
-            // RDV aujourd'hui
-            var rdvAujourdHui = await _context.RendezVous
-                .CountAsync(r => r.IdMedecin == userId.Value && 
-                           r.DateHeure.Date == now.Date &&
-                           r.Statut != "annule");
-
-            // RDV à venir
-            var rdvAVenir = await _context.RendezVous
-                .CountAsync(r => r.IdMedecin == userId.Value && 
-                           r.DateHeure > now &&
-                           (r.Statut == "planifie" || r.Statut == "confirme"));
-
-            var dashboard = new MedecinDashboardDto
-            {
-                TotalPatients = totalPatients,
-                ConsultationsMois = consultationsMois,
-                RdvAujourdHui = rdvAujourdHui,
-                RdvAVenir = rdvAVenir,
-                OrdonnancesMois = 0, // À implémenter
-                ExamensMois = 0      // À implémenter
-            };
-
+            var dashboard = await _medecinService.GetDashboardAsync(userId.Value);
             return Ok(dashboard);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting medecin dashboard: {ex.Message}");
+            _logger.LogError("Error getting medecin dashboard: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la récupération du dashboard" });
         }
     }
@@ -148,29 +84,15 @@ public class MedecinController : BaseApiController
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
-            var medecin = await _context.Medecins
-                .Include(m => m.Utilisateur)
-                .FirstOrDefaultAsync(m => m.IdUser == userId.Value);
-
-            if (medecin == null || medecin.Utilisateur == null)
+            var success = await _medecinService.UpdateProfileAsync(userId.Value, request);
+            if (!success)
                 return NotFound(new { message = "Médecin non trouvé" });
-
-            // Mise à jour des informations utilisateur
-            if (!string.IsNullOrEmpty(request.Telephone)) 
-                medecin.Utilisateur.Telephone = request.Telephone;
-            if (!string.IsNullOrEmpty(request.Adresse)) 
-                medecin.Utilisateur.Adresse = request.Adresse;
-
-            medecin.Utilisateur.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Profile updated for medecin {userId}");
 
             return Ok(new { message = "Profil mis à jour avec succès" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating medecin profile: {ex.Message}");
+            _logger.LogError("Error updating medecin profile: {Message}", ex.Message);
             return StatusCode(500, new { message = "Erreur lors de la mise à jour du profil" });
         }
     }
