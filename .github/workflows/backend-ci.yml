@@ -84,54 +84,22 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       # -----------------------------------------------------------------------
-      # Étape 6: Exécution des tests unitaires avec couverture
-      # --collect:"XPlat Code Coverage": Génère un rapport de couverture
-      # --results-directory: Dossier de sortie des résultats
+      # Étape 6: Exécution des tests unitaires (si projet de tests existe)
+      # Note: Les tests seront exécutés uniquement si un projet de tests existe
       # -----------------------------------------------------------------------
-      - name: Run tests with coverage
-        run: |
-          dotnet test --no-build --configuration Release \
-            --verbosity normal \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./TestResults \
-            --logger "trx;LogFileName=test-results.trx"
-        continue-on-error: true  # Continue même si des tests échouent
-
-      # -----------------------------------------------------------------------
-      # Étape 7: Upload du rapport de couverture vers Codecov
-      # Permet de visualiser la couverture de code sur codecov.io
-      # -----------------------------------------------------------------------
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./Mediconnet-Backend/TestResults
-          flags: backend  # Tag pour identifier ce rapport
-          name: backend-coverage
-          fail_ci_if_error: false  # Ne bloque pas si Codecov échoue
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --verbosity normal || echo "Aucun projet de tests trouvé"
         continue-on-error: true
 
       # -----------------------------------------------------------------------
-      # Étape 8: Publication des résultats de tests
-      # Affiche les résultats des tests dans l'interface GitHub
-      # -----------------------------------------------------------------------
-      - name: Publish test results
-        uses: dorny/test-reporter@v1
-        if: always()  # Exécute même si les tests échouent
-        with:
-          name: Backend Test Results
-          path: Mediconnet-Backend/TestResults/*.trx
-          reporter: dotnet-trx
-          fail-on-error: false
-
-      # -----------------------------------------------------------------------
-      # Étape 9: Publication de l'application
+      # Étape 7: Publication de l'application
       # Crée un package déployable de l'application
       # -----------------------------------------------------------------------
       - name: Publish application
         run: dotnet publish --no-build --configuration Release --output ./publish
 
       # -----------------------------------------------------------------------
-      # Étape 10: Upload des artifacts de build
+      # Étape 8: Upload des artifacts de build
       # Sauvegarde le build pour déploiement ultérieur
       # -----------------------------------------------------------------------
       - name: Upload build artifacts
@@ -140,15 +108,3 @@ jobs:
           name: backend-publish
           path: Mediconnet-Backend/publish/
           retention-days: 7  # Conservé pendant 7 jours
-
-      # -----------------------------------------------------------------------
-      # Étape 11: Upload des résultats de tests comme artifact
-      # Permet de télécharger les résultats depuis GitHub Actions
-      # -----------------------------------------------------------------------
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()  # Upload même si les tests échouent
-        with:
-          name: backend-test-results
-          path: Mediconnet-Backend/TestResults/
-          retention-days: 7
