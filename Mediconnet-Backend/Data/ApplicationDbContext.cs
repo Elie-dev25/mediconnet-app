@@ -1,6 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Entities.Pharmacie;
+using Mediconnet_Backend.Core.Entities.Facturation;
+using Mediconnet_Backend.Core.Entities.Medical;
+using Mediconnet_Backend.Core.Entities.GestionLits;
+using Mediconnet_Backend.Core.Entities.Prescription;
+using Mediconnet_Backend.Core.Entities.DMP;
 
 namespace Mediconnet_Backend.Data;
 
@@ -78,6 +83,33 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     // Audit et Sécurité
     public DbSet<AuditLog> AuditLogs { get; set; }
+
+    // Entités Facturation Avancée
+    public DbSet<Echeancier> Echeanciers { get; set; }
+    public DbSet<Echeance> Echeances { get; set; }
+    public DbSet<DemandeRemboursement> DemandesRemboursement { get; set; }
+
+    // Entités Alertes Médicales
+    public DbSet<AllergiePatient> AllergiesPatients { get; set; }
+    public DbSet<InteractionMedicamenteuse> InteractionsMedicamenteuses { get; set; }
+    public DbSet<ContreIndication> ContreIndications { get; set; }
+    public DbSet<AlerteMedicale> AlertesMedicales { get; set; }
+
+    // Entités Gestion des Lits
+    public DbSet<ReservationLit> ReservationsLits { get; set; }
+    public DbSet<TransfertLit> TransfertsLits { get; set; }
+    public DbSet<MaintenanceLit> MaintenancesLits { get; set; }
+
+    // Entités Prescriptions Électroniques
+    public DbSet<OrdonnanceElectronique> OrdonnancesElectroniques { get; set; }
+    public DbSet<LignePrescription> LignesPrescription { get; set; }
+    public DbSet<PharmacieExterne> PharmaciesExternes { get; set; }
+
+    // Entités DMP
+    public DbSet<DossierMedicalPartage> DossiersMP { get; set; }
+    public DbSet<DocumentDMP> DocumentsDMP { get; set; }
+    public DbSet<AutorisationDMP> AutorisationsDMP { get; set; }
+    public DbSet<AccesDMP> AccesDMP { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

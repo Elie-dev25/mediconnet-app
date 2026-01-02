@@ -107,6 +107,10 @@ builder.Services.AddBackgroundJobs();
 // Health Checks
 builder.Services.AddCustomHealthChecks();
 
+// ==================== BUSINESS SERVICES ====================
+// Advanced Billing, Medical Alerts, Bed Management, E-Prescriptions, DMP
+builder.Services.AddBusinessServices();
+
 // ==================== SECURITY SERVICES ====================
 // Data Protection Service for encrypting sensitive medical data
 builder.Services.AddDataProtection()
