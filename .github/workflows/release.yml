@@ -1,0 +1,356 @@
+# =============================================================================
+# WORKFLOW RELEASE - MEDICONNET
+# =============================================================================
+# Ce workflow gère la création automatique des releases GitHub avec:
+# - Génération automatique du changelog
+# - Création de tags de version
+# - Publication des artifacts de release
+# - Notification des releases
+#
+# Déclenchement:
+# - Automatique: Merge d'une PR avec le label 'release'
+# - Manuel: Via workflow_dispatch avec numéro de version
+# =============================================================================
+
+name: Release
+
+# Déclencheurs du workflow
+on:
+  # Déclenchement manuel avec paramètres
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Numéro de version (ex: 1.2.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type de release'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch   # Corrections de bugs (1.0.x)
+          - minor   # Nouvelles fonctionnalités (1.x.0)
+          - major   # Changements majeurs (x.0.0)
+      prerelease:
+        description: 'Est-ce une pre-release?'
+        required: false
+        default: false
+        type: boolean
+
+  # Déclenchement automatique sur push de tag
+  push:
+    tags:
+      - 'v*.*.*'  # Déclenché sur les tags de version (v1.0.0, v2.1.3, etc.)
+
+# Permissions nécessaires
+permissions:
+  contents: write      # Pour créer des releases et tags
+  packages: write      # Pour publier des packages
+  pull-requests: read  # Pour lire les PR pour le changelog
+
+jobs:
+  # ===========================================================================
+  # JOB: PREPARE - Préparation de la release
+  # ===========================================================================
+  # Valide la version et prépare les métadonnées de release
+  # ===========================================================================
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Récupère tout l'historique pour le changelog
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Détermination de la version
+      # Utilise l'input manuel ou extrait du tag
+      # -----------------------------------------------------------------------
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Version fournie manuellement
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Extrait la version du tag (enlève le 'v' prefix)
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION"
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Validation du format de version
+      # S'assure que la version suit le format semver
+      # -----------------------------------------------------------------------
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "❌ Format de version invalide: $VERSION"
+            echo "Format attendu: X.Y.Z ou X.Y.Z-suffix"
+            exit 1
+          fi
+          echo "✅ Format de version valide: $VERSION"
+
+  # ===========================================================================
+  # JOB: BUILD - Construction des artifacts de release
+  # ===========================================================================
+  # Construit les images Docker et les artifacts pour la release
+  # ===========================================================================
+  build:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de Docker Buildx
+      # -----------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Connexion au GitHub Container Registry
+      # -----------------------------------------------------------------------
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Build et push de l'image Frontend avec tag de version
+      # -----------------------------------------------------------------------
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Mediconnet-Frontend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-frontend:${{ needs.prepare.outputs.version }}
+            ghcr.io/${{ github.repository }}-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # Étape 5: Build et push de l'image Backend avec tag de version
+      # -----------------------------------------------------------------------
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Mediconnet-Backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-backend:${{ needs.prepare.outputs.version }}
+            ghcr.io/${{ github.repository }}-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # Étape 6: Build du Frontend pour distribution
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend distribution
+        working-directory: Mediconnet-Frontend
+        run: |
+          npm ci
+          npm run build -- --configuration=production
+
+      # -----------------------------------------------------------------------
+      # Étape 7: Création de l'archive de distribution
+      # -----------------------------------------------------------------------
+      - name: Create distribution archive
+        run: |
+          # Archive du frontend
+          cd Mediconnet-Frontend/dist
+          zip -r ../../mediconnet-frontend-${{ needs.prepare.outputs.version }}.zip .
+          cd ../..
+          
+          # Création du fichier de checksums
+          sha256sum mediconnet-frontend-${{ needs.prepare.outputs.version }}.zip > checksums.txt
+
+      # -----------------------------------------------------------------------
+      # Étape 8: Upload des artifacts de build
+      # -----------------------------------------------------------------------
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            mediconnet-frontend-*.zip
+            checksums.txt
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB: CHANGELOG - Génération du changelog
+  # ===========================================================================
+  # Génère automatiquement le changelog basé sur les commits
+  # ===========================================================================
+  changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source avec historique complet
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Génération du changelog
+      # Utilise les commits conventionnels pour catégoriser les changements
+      # -----------------------------------------------------------------------
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Récupère le tag précédent
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          echo "📋 Génération du changelog..."
+          echo "Tag précédent: $PREVIOUS_TAG"
+          
+          # Génère le changelog
+          if [ -n "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          fi
+          
+          # Catégorise les commits
+          FEATURES=$(echo "$COMMITS" | grep -i "feat:" || true)
+          FIXES=$(echo "$COMMITS" | grep -i "fix:" || true)
+          DOCS=$(echo "$COMMITS" | grep -i "docs:" || true)
+          OTHERS=$(echo "$COMMITS" | grep -v -i -E "feat:|fix:|docs:" || true)
+          
+          # Construit le changelog formaté
+          CHANGELOG="## 🚀 Nouveautés\n"
+          [ -n "$FEATURES" ] && CHANGELOG+="$FEATURES\n\n" || CHANGELOG+="Aucune nouvelle fonctionnalité\n\n"
+          
+          CHANGELOG+="## 🐛 Corrections\n"
+          [ -n "$FIXES" ] && CHANGELOG+="$FIXES\n\n" || CHANGELOG+="Aucune correction\n\n"
+          
+          CHANGELOG+="## 📚 Documentation\n"
+          [ -n "$DOCS" ] && CHANGELOG+="$DOCS\n\n" || CHANGELOG+="Aucun changement de documentation\n\n"
+          
+          CHANGELOG+="## 🔧 Autres changements\n"
+          [ -n "$OTHERS" ] && CHANGELOG+="$OTHERS\n" || CHANGELOG+="Aucun autre changement\n"
+          
+          # Sauvegarde le changelog
+          echo -e "$CHANGELOG" > CHANGELOG_RELEASE.md
+          
+          # Export pour le job suivant (échappé pour multiline)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Upload du changelog
+      # -----------------------------------------------------------------------
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG_RELEASE.md
+
+  # ===========================================================================
+  # JOB: RELEASE - Création de la release GitHub
+  # ===========================================================================
+  # Crée la release GitHub avec tous les artifacts
+  # ===========================================================================
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build, changelog]
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Téléchargement des artifacts
+      # -----------------------------------------------------------------------
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: ./release-files
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+          path: ./changelog
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Création du tag (si déclenchement manuel)
+      # -----------------------------------------------------------------------
+      - name: Create tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ needs.prepare.outputs.tag }} -m "Release ${{ needs.prepare.outputs.version }}"
+          git push origin ${{ needs.prepare.outputs.tag }}
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Création de la release GitHub
+      # -----------------------------------------------------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: "Mediconnet v${{ needs.prepare.outputs.version }}"
+          body_path: ./changelog/CHANGELOG_RELEASE.md
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: |
+            ./release-files/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Étape 5: Notification de la release
+      # -----------------------------------------------------------------------
+      - name: Release notification
+        run: |
+          echo "🎉 Release ${{ needs.prepare.outputs.version }} créée avec succès!"
+          echo ""
+          echo "📦 Images Docker:"
+          echo "  - ghcr.io/${{ github.repository }}-frontend:${{ needs.prepare.outputs.version }}"
+          echo "  - ghcr.io/${{ github.repository }}-backend:${{ needs.prepare.outputs.version }}"
+          echo ""
+          echo "🔗 Release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.tag }}"

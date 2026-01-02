@@ -1,51 +1,135 @@
+# =============================================================================
+# WORKFLOW CI FRONTEND - MEDICONNET
+# =============================================================================
+# Ce workflow s'exécute automatiquement lors de chaque push ou pull request
+# pour vérifier que le code frontend Angular compile correctement.
+#
+# Étapes:
+# 1. Installation des dépendances
+# 2. Analyse statique du code (linting)
+# 3. Exécution des tests unitaires avec couverture
+# 4. Build de développement et production
+# 5. Upload des artifacts et rapports de couverture
+# =============================================================================
+
 name: Frontend CI
 
+# Déclencheurs du workflow
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop]  # Déclenché sur push vers main ou develop
     paths:
-      - 'Mediconnet-Frontend/**'
+      - 'Mediconnet-Frontend/**'  # Uniquement si le frontend est modifié
       - '.github/workflows/frontend-ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main]  # Déclenché sur PR vers main
     paths:
       - 'Mediconnet-Frontend/**'
 
 jobs:
+  # ===========================================================================
+  # JOB: BUILD & TEST
+  # ===========================================================================
+  # Ce job installe les dépendances, exécute les tests et build l'application
+  # ===========================================================================
   build:
-    name: Build & Lint Frontend
-    runs-on: ubuntu-latest
+    name: Build, Lint & Test Frontend
+    runs-on: ubuntu-latest  # Machine virtuelle Ubuntu
+    
+    # Répertoire de travail par défaut pour toutes les commandes
     defaults:
       run:
         working-directory: Mediconnet-Frontend
 
     steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de Node.js avec cache npm
+      # Le cache accélère les builds en réutilisant node_modules
+      # -----------------------------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '20'  # Version LTS de Node.js
+          cache: 'npm'  # Active le cache npm
           cache-dependency-path: Mediconnet-Frontend/package-lock.json
 
+      # -----------------------------------------------------------------------
+      # Étape 3: Installation des dépendances
+      # npm ci est plus rapide et fiable que npm install pour CI
+      # -----------------------------------------------------------------------
       - name: Install dependencies
         run: npm ci
 
+      # -----------------------------------------------------------------------
+      # Étape 4: Analyse statique du code (ESLint)
+      # Détecte les erreurs de syntaxe et les mauvaises pratiques
+      # -----------------------------------------------------------------------
       - name: Lint
         run: npm run lint --if-present
+        continue-on-error: true  # Ne bloque pas le build si lint échoue
+
+      # -----------------------------------------------------------------------
+      # Étape 5: Exécution des tests unitaires avec couverture
+      # --watch=false: Mode non-interactif pour CI
+      # --browsers=ChromeHeadless: Navigateur sans interface graphique
+      # --code-coverage: Génère un rapport de couverture
+      # -----------------------------------------------------------------------
+      - name: Run unit tests with coverage
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+        continue-on-error: true  # Continue même si des tests échouent
+
+      # -----------------------------------------------------------------------
+      # Étape 6: Upload du rapport de couverture vers Codecov
+      # Permet de visualiser la couverture de code sur codecov.io
+      # -----------------------------------------------------------------------
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./Mediconnet-Frontend/coverage
+          flags: frontend  # Tag pour identifier ce rapport
+          name: frontend-coverage
+          fail_ci_if_error: false  # Ne bloque pas si Codecov échoue
         continue-on-error: true
 
+      # -----------------------------------------------------------------------
+      # Étape 7: Build de développement
+      # Vérifie que le build fonctionne en mode développement
+      # -----------------------------------------------------------------------
       - name: Build (Development)
         run: npm run build -- --configuration=development
 
+      # -----------------------------------------------------------------------
+      # Étape 8: Build de production
+      # Build optimisé pour la production (minification, tree-shaking)
+      # -----------------------------------------------------------------------
       - name: Build (Production)
         run: npm run build -- --configuration=production
 
+      # -----------------------------------------------------------------------
+      # Étape 9: Upload des artifacts de build
+      # Sauvegarde le build pour déploiement ultérieur
+      # -----------------------------------------------------------------------
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: Mediconnet-Frontend/dist/
+          retention-days: 7  # Conservé pendant 7 jours
+
+      # -----------------------------------------------------------------------
+      # Étape 10: Upload du rapport de couverture comme artifact
+      # Permet de télécharger le rapport depuis GitHub Actions
+      # -----------------------------------------------------------------------
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload même si les tests échouent
+        with:
+          name: frontend-coverage-report
+          path: Mediconnet-Frontend/coverage/
           retention-days: 7

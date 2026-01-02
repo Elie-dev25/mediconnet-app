@@ -1,0 +1,294 @@
+# =============================================================================
+# WORKFLOW SECURITY SCANNING - MEDICONNET
+# =============================================================================
+# Ce workflow analyse automatiquement le code pour détecter les vulnérabilités
+# de sécurité, les dépendances obsolètes et les failles potentielles.
+#
+# Analyses effectuées:
+# 1. CodeQL: Analyse statique du code (SAST)
+# 2. Dependency Review: Vérification des dépendances
+# 3. Trivy: Scan des vulnérabilités dans les conteneurs
+# 4. Secret Scanning: Détection de secrets exposés
+# =============================================================================
+
+name: Security Scanning
+
+# Déclencheurs du workflow
+on:
+  push:
+    branches: [main, develop]  # Déclenché sur push vers main ou develop
+  pull_request:
+    branches: [main]  # Déclenché sur PR vers main
+  schedule:
+    # Exécution planifiée tous les lundis à 9h00 UTC
+    # Permet de détecter les nouvelles vulnérabilités dans les dépendances
+    - cron: '0 9 * * 1'
+
+# Permissions nécessaires pour les analyses de sécurité
+permissions:
+  contents: read
+  security-events: write  # Permet d'écrire les alertes de sécurité
+  actions: read
+
+jobs:
+  # ===========================================================================
+  # JOB: CODEQL - Analyse statique du code
+  # ===========================================================================
+  # CodeQL analyse le code source pour détecter les vulnérabilités
+  # comme les injections SQL, XSS, etc.
+  # ===========================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false  # Continue même si une analyse échoue
+      matrix:
+        # Langages à analyser
+        language: ['javascript', 'csharp']
+        include:
+          # Configuration spécifique pour JavaScript/TypeScript (Frontend)
+          - language: javascript
+            build-mode: none  # Pas de build nécessaire pour JS
+          # Configuration spécifique pour C# (Backend)
+          - language: csharp
+            build-mode: autobuild  # Build automatique pour C#
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Initialisation de CodeQL
+      # Configure l'analyseur pour le langage spécifié
+      # -----------------------------------------------------------------------
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # Requêtes de sécurité étendues pour une analyse plus complète
+          queries: security-extended
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Build automatique (pour C# uniquement)
+      # CodeQL a besoin de compiler le code pour l'analyser
+      # -----------------------------------------------------------------------
+      - if: matrix.build-mode == 'autobuild'
+        name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Exécution de l'analyse CodeQL
+      # Génère un rapport SARIF avec les vulnérabilités détectées
+      # -----------------------------------------------------------------------
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ===========================================================================
+  # JOB: DEPENDENCY REVIEW - Vérification des dépendances
+  # ===========================================================================
+  # Vérifie les dépendances ajoutées dans les PR pour détecter
+  # les vulnérabilités connues avant le merge
+  # ===========================================================================
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    # Exécuté uniquement sur les Pull Requests
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Analyse des dépendances
+      # Compare les dépendances avant/après la PR
+      # Bloque si des vulnérabilités critiques sont détectées
+      # -----------------------------------------------------------------------
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Bloque sur les vulnérabilités de sévérité haute ou critique
+          fail-on-severity: high
+          # Ignore les vulnérabilités sans correctif disponible
+          allow-dependencies-licenses: 'MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC'
+
+  # ===========================================================================
+  # JOB: TRIVY - Scan des vulnérabilités
+  # ===========================================================================
+  # Trivy scanne le système de fichiers et les images Docker
+  # pour détecter les vulnérabilités dans les dépendances
+  # ===========================================================================
+  trivy-scan:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Scan du système de fichiers (Frontend)
+      # Analyse les dépendances npm pour détecter les vulnérabilités
+      # -----------------------------------------------------------------------
+      - name: Trivy FS Scan - Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './Mediconnet-Frontend'
+          format: 'sarif'
+          output: 'trivy-frontend-results.sarif'
+          severity: 'CRITICAL,HIGH'  # Uniquement les vulnérabilités critiques/hautes
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Scan du système de fichiers (Backend)
+      # Analyse les dépendances NuGet pour détecter les vulnérabilités
+      # -----------------------------------------------------------------------
+      - name: Trivy FS Scan - Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './Mediconnet-Backend'
+          format: 'sarif'
+          output: 'trivy-backend-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Upload des résultats vers GitHub Security
+      # Les vulnérabilités apparaissent dans l'onglet Security du dépôt
+      # -----------------------------------------------------------------------
+      - name: Upload Frontend Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()  # Upload même si le scan trouve des vulnérabilités
+        with:
+          sarif_file: 'trivy-frontend-results.sarif'
+          category: 'trivy-frontend'
+
+      - name: Upload Backend Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-backend-results.sarif'
+          category: 'trivy-backend'
+
+  # ===========================================================================
+  # JOB: NPM AUDIT - Audit des dépendances npm
+  # ===========================================================================
+  # Vérifie les vulnérabilités connues dans les packages npm
+  # ===========================================================================
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Mediconnet-Frontend
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de Node.js
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Audit des dépendances npm
+      # Génère un rapport des vulnérabilités dans les packages
+      # -----------------------------------------------------------------------
+      - name: Run npm audit
+        run: npm audit --audit-level=high --json > npm-audit-report.json || true
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Affichage du résumé de l'audit
+      # -----------------------------------------------------------------------
+      - name: Display audit summary
+        run: npm audit --audit-level=high || true
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Étape 5: Upload du rapport d'audit
+      # -----------------------------------------------------------------------
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: Mediconnet-Frontend/npm-audit-report.json
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB: DOTNET SECURITY - Audit des dépendances .NET
+  # ===========================================================================
+  # Vérifie les vulnérabilités connues dans les packages NuGet
+  # ===========================================================================
+  dotnet-security:
+    name: .NET Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Mediconnet-Backend
+    
+    steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de .NET
+      # -----------------------------------------------------------------------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # -----------------------------------------------------------------------
+      # Étape 3: Restauration des dépendances
+      # -----------------------------------------------------------------------
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Liste des packages vulnérables
+      # Utilise la commande dotnet list pour détecter les vulnérabilités
+      # -----------------------------------------------------------------------
+      - name: Check for vulnerable packages
+        run: dotnet list package --vulnerable --include-transitive > dotnet-vulnerability-report.txt 2>&1 || true
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Étape 5: Affichage du rapport
+      # -----------------------------------------------------------------------
+      - name: Display vulnerability report
+        run: cat dotnet-vulnerability-report.txt
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Étape 6: Upload du rapport de vulnérabilités
+      # -----------------------------------------------------------------------
+      - name: Upload vulnerability report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-vulnerability-report
+          path: Mediconnet-Backend/dotnet-vulnerability-report.txt
+          retention-days: 30

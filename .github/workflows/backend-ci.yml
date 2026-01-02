@@ -1,49 +1,154 @@
+# =============================================================================
+# WORKFLOW CI BACKEND - MEDICONNET
+# =============================================================================
+# Ce workflow s'exécute automatiquement lors de chaque push ou pull request
+# pour vérifier que le code backend .NET compile et passe les tests.
+#
+# Étapes:
+# 1. Restauration des packages NuGet
+# 2. Build de l'application
+# 3. Exécution des tests unitaires avec couverture
+# 4. Publication de l'application
+# 5. Upload des artifacts et rapports
+# =============================================================================
+
 name: Backend CI
 
+# Déclencheurs du workflow
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop]  # Déclenché sur push vers main ou develop
     paths:
-      - 'Mediconnet-Backend/**'
+      - 'Mediconnet-Backend/**'  # Uniquement si le backend est modifié
       - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main]  # Déclenché sur PR vers main
     paths:
       - 'Mediconnet-Backend/**'
 
 jobs:
+  # ===========================================================================
+  # JOB: BUILD & TEST
+  # ===========================================================================
+  # Ce job compile le code, exécute les tests et publie l'application
+  # ===========================================================================
   build:
-    name: Build & Test Backend
-    runs-on: ubuntu-latest
+    name: Build, Test & Publish Backend
+    runs-on: ubuntu-latest  # Machine virtuelle Ubuntu
+    
+    # Répertoire de travail par défaut pour toutes les commandes
     defaults:
       run:
         working-directory: Mediconnet-Backend
 
     steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de .NET SDK
+      # Installe la version 8.0 LTS de .NET
+      # -----------------------------------------------------------------------
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.x'  # Version LTS de .NET
 
+      # -----------------------------------------------------------------------
+      # Étape 3: Cache des packages NuGet
+      # Accélère les builds en réutilisant les packages téléchargés
+      # -----------------------------------------------------------------------
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # -----------------------------------------------------------------------
+      # Étape 4: Restauration des dépendances NuGet
+      # Télécharge tous les packages référencés dans le projet
+      # -----------------------------------------------------------------------
       - name: Restore dependencies
         run: dotnet restore
 
+      # -----------------------------------------------------------------------
+      # Étape 5: Build de l'application
+      # Compile le code en mode Release (optimisé)
+      # -----------------------------------------------------------------------
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test --no-build --verbosity normal --configuration Release
+      # -----------------------------------------------------------------------
+      # Étape 6: Exécution des tests unitaires avec couverture
+      # --collect:"XPlat Code Coverage": Génère un rapport de couverture
+      # --results-directory: Dossier de sortie des résultats
+      # -----------------------------------------------------------------------
+      - name: Run tests with coverage
+        run: |
+          dotnet test --no-build --configuration Release \
+            --verbosity normal \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults \
+            --logger "trx;LogFileName=test-results.trx"
+        continue-on-error: true  # Continue même si des tests échouent
+
+      # -----------------------------------------------------------------------
+      # Étape 7: Upload du rapport de couverture vers Codecov
+      # Permet de visualiser la couverture de code sur codecov.io
+      # -----------------------------------------------------------------------
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./Mediconnet-Backend/TestResults
+          flags: backend  # Tag pour identifier ce rapport
+          name: backend-coverage
+          fail_ci_if_error: false  # Ne bloque pas si Codecov échoue
         continue-on-error: true
 
-      - name: Publish
+      # -----------------------------------------------------------------------
+      # Étape 8: Publication des résultats de tests
+      # Affiche les résultats des tests dans l'interface GitHub
+      # -----------------------------------------------------------------------
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()  # Exécute même si les tests échouent
+        with:
+          name: Backend Test Results
+          path: Mediconnet-Backend/TestResults/*.trx
+          reporter: dotnet-trx
+          fail-on-error: false
+
+      # -----------------------------------------------------------------------
+      # Étape 9: Publication de l'application
+      # Crée un package déployable de l'application
+      # -----------------------------------------------------------------------
+      - name: Publish application
         run: dotnet publish --no-build --configuration Release --output ./publish
 
+      # -----------------------------------------------------------------------
+      # Étape 10: Upload des artifacts de build
+      # Sauvegarde le build pour déploiement ultérieur
+      # -----------------------------------------------------------------------
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: backend-publish
           path: Mediconnet-Backend/publish/
+          retention-days: 7  # Conservé pendant 7 jours
+
+      # -----------------------------------------------------------------------
+      # Étape 11: Upload des résultats de tests comme artifact
+      # Permet de télécharger les résultats depuis GitHub Actions
+      # -----------------------------------------------------------------------
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload même si les tests échouent
+        with:
+          name: backend-test-results
+          path: Mediconnet-Backend/TestResults/
           retention-days: 7

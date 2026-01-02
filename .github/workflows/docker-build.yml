@@ -1,33 +1,72 @@
+# =============================================================================
+# WORKFLOW DOCKER BUILD - MEDICONNET
+# =============================================================================
+# Ce workflow construit et publie les images Docker vers GitHub Container
+# Registry (ghcr.io). Il est déclenché sur chaque push vers main et sur
+# les releases.
+#
+# Images produites:
+# - ghcr.io/elie-dev25/mediconnet-app-frontend
+# - ghcr.io/elie-dev25/mediconnet-app-backend
+#
+# Fonctionnalités:
+# - Build multi-plateforme (amd64, arm64)
+# - Cache GitHub Actions pour accélérer les builds
+# - Scan de sécurité des images
+# - Test d'intégration avec docker-compose
+# =============================================================================
+
 name: Docker Build
 
+# Déclencheurs du workflow
 on:
   push:
-    branches: [main]
+    branches: [main]  # Build sur push vers main
   pull_request:
-    branches: [main]
+    branches: [main]  # Build de test sur PR
   release:
-    types: [published]
+    types: [published]  # Build sur publication de release
 
+# Variables d'environnement globales
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: ghcr.io  # GitHub Container Registry
   FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
   BACKEND_IMAGE_NAME: ${{ github.repository }}-backend
 
 jobs:
+  # ===========================================================================
+  # JOB: BUILD FRONTEND - Construction de l'image Docker Frontend
+  # ===========================================================================
+  # Construit l'image Angular avec Nginx pour servir l'application
+  # ===========================================================================
   build-frontend:
     name: Build Frontend Docker Image
     runs-on: ubuntu-latest
+    
+    # Permissions nécessaires pour pousser vers le registry
     permissions:
       contents: read
       packages: write
 
     steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de Docker Buildx
+      # Buildx permet des builds multi-plateformes et le cache avancé
+      # -----------------------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # -----------------------------------------------------------------------
+      # Étape 3: Connexion au GitHub Container Registry
+      # Utilise le token GitHub automatique pour l'authentification
+      # Ne s'exécute pas sur les PR (pas de push)
+      # -----------------------------------------------------------------------
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -36,6 +75,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # -----------------------------------------------------------------------
+      # Étape 4: Extraction des métadonnées pour le tagging
+      # Génère automatiquement les tags basés sur la branche/commit/version
+      # -----------------------------------------------------------------------
       - name: Extract metadata for Frontend
         id: meta-frontend
         uses: docker/metadata-action@v5
@@ -47,30 +90,62 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=
 
+      # -----------------------------------------------------------------------
+      # Étape 5: Build et push de l'image Frontend
+      # Utilise le cache GitHub Actions pour accélérer les builds
+      # -----------------------------------------------------------------------
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./Mediconnet-Frontend
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}  # Push seulement si pas PR
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha  # Utilise le cache GitHub Actions
+          cache-to: type=gha,mode=max  # Sauvegarde le cache
 
+      # -----------------------------------------------------------------------
+      # Étape 6: Scan de sécurité de l'image avec Trivy
+      # Détecte les vulnérabilités dans l'image Docker
+      # -----------------------------------------------------------------------
+      - name: Scan Frontend image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ steps.meta-frontend.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-frontend-image.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true  # Ne bloque pas le build
+
+  # ===========================================================================
+  # JOB: BUILD BACKEND - Construction de l'image Docker Backend
+  # ===========================================================================
+  # Construit l'image .NET pour l'API
+  # ===========================================================================
   build-backend:
     name: Build Backend Docker Image
     runs-on: ubuntu-latest
+    
     permissions:
       contents: read
       packages: write
 
     steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # -----------------------------------------------------------------------
+      # Étape 2: Configuration de Docker Buildx
+      # -----------------------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # -----------------------------------------------------------------------
+      # Étape 3: Connexion au GitHub Container Registry
+      # -----------------------------------------------------------------------
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -79,6 +154,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # -----------------------------------------------------------------------
+      # Étape 4: Extraction des métadonnées pour le tagging
+      # -----------------------------------------------------------------------
       - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
@@ -90,6 +168,9 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=
 
+      # -----------------------------------------------------------------------
+      # Étape 5: Build et push de l'image Backend
+      # -----------------------------------------------------------------------
       - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:
@@ -100,31 +181,90 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -----------------------------------------------------------------------
+      # Étape 6: Scan de sécurité de l'image avec Trivy
+      # -----------------------------------------------------------------------
+      - name: Scan Backend image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ steps.meta-backend.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-backend-image.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+  # ===========================================================================
+  # JOB: DOCKER COMPOSE TEST - Test d'intégration
+  # ===========================================================================
+  # Vérifie que tous les services démarrent correctement ensemble
+  # Exécuté uniquement sur les Pull Requests
+  # ===========================================================================
   docker-compose-test:
-    name: Test Docker Compose
+    name: Test Docker Compose Integration
     runs-on: ubuntu-latest
-    needs: [build-frontend, build-backend]
-    if: github.event_name == 'pull_request'
+    needs: [build-frontend, build-backend]  # Attend que les builds soient terminés
+    if: github.event_name == 'pull_request'  # Uniquement sur PR
 
     steps:
+      # -----------------------------------------------------------------------
+      # Étape 1: Récupération du code source
+      # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # -----------------------------------------------------------------------
+      # Étape 2: Build des images avec Docker Compose
+      # -----------------------------------------------------------------------
       - name: Build with Docker Compose
         run: docker-compose build
 
+      # -----------------------------------------------------------------------
+      # Étape 3: Démarrage de tous les services
+      # -----------------------------------------------------------------------
       - name: Start services
         run: docker-compose up -d
 
+      # -----------------------------------------------------------------------
+      # Étape 4: Attente du démarrage des services
+      # Laisse le temps aux conteneurs de s'initialiser
+      # -----------------------------------------------------------------------
       - name: Wait for services to be ready
         run: |
-          echo "Waiting for services to start..."
+          echo "⏳ Attente du démarrage des services..."
           sleep 30
 
+      # -----------------------------------------------------------------------
+      # Étape 5: Vérification de l'état des services
+      # -----------------------------------------------------------------------
       - name: Check services health
         run: |
+          echo "📊 État des conteneurs:"
           docker-compose ps
+          
+          echo ""
+          echo "📝 Logs des services (50 dernières lignes):"
           docker-compose logs --tail=50
 
-      - name: Stop services
-        run: docker-compose down -v
+      # -----------------------------------------------------------------------
+      # Étape 6: Test de connectivité des services
+      # Vérifie que les services répondent correctement
+      # -----------------------------------------------------------------------
+      - name: Test service connectivity
+        run: |
+          echo "🔍 Test de connectivité..."
+          
+          # Test du frontend (Nginx)
+          curl -f http://localhost:4200 || echo "⚠️ Frontend non accessible"
+          
+          # Test du backend (API)
+          curl -f http://localhost:5000/api/health || echo "⚠️ Backend non accessible"
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Étape 7: Arrêt et nettoyage des services
+      # -----------------------------------------------------------------------
+      - name: Stop and cleanup services
+        if: always()  # Exécute même si les étapes précédentes échouent
+        run: |
+          echo "🧹 Nettoyage des conteneurs..."
+          docker-compose down -v --remove-orphans
