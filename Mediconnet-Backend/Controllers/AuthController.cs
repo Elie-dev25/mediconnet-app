@@ -202,7 +202,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            string token = request?.token;
+            string? token = request?.token;
             if (string.IsNullOrEmpty(token))
                 return BadRequest(new { message = "Le token est requis" });
 

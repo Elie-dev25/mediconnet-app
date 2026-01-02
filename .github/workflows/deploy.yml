@@ -155,7 +155,6 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
-        if: ${{ secrets.STAGING_SSH_KEY != '' }}
         continue-on-error: true
 
       # -----------------------------------------------------------------------
@@ -163,7 +162,9 @@ jobs:
       # Se connecte au serveur et met à jour les conteneurs Docker
       # -----------------------------------------------------------------------
       - name: Deploy to staging server
-        if: ${{ secrets.STAGING_HOST != '' }}
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+        if: env.STAGING_HOST != ''
         run: |
           echo "🚀 Déploiement vers staging..."
           echo "Image tag: ${{ github.sha }}"
@@ -231,14 +232,15 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
-        if: ${{ secrets.PRODUCTION_SSH_KEY != '' }}
         continue-on-error: true
 
       # -----------------------------------------------------------------------
       # Étape 4: Déploiement vers production
       # -----------------------------------------------------------------------
       - name: Deploy to production server
-        if: ${{ secrets.PRODUCTION_HOST != '' }}
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+        if: env.PRODUCTION_HOST != ''
         run: |
           echo "🚀 Déploiement vers production..."
           echo "Image tag: ${{ github.sha }}"

@@ -101,9 +101,10 @@ public class ConsultationQuestionnaireController : BaseApiController
 
             await EnsurePredefinedQuestionsLoadedAsync(consultationId);
 
-            var questionIds = request.Reponses?.Select(r => r.QuestionId).Distinct().ToList() ?? new List<int>();
-            if (questionIds.Count == 0)
+            if (request.Reponses == null || request.Reponses.Count == 0)
                 return Ok(new { success = true, message = "Aucune réponse" });
+
+            var questionIds = request.Reponses.Select(r => r.QuestionId).Distinct().ToList();
 
             var allowedQuestionIds = await _context.ConsultationQuestions
                 .AsNoTracking()
