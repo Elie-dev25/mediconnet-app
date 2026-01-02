@@ -91,6 +91,22 @@ builder.Services.AddScoped<IPharmacieStockService, PharmacieStockService>();
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
 
+// ==================== INFRASTRUCTURE SERVICES ====================
+// Repository Pattern & Unit of Work
+builder.Services.AddRepositories();
+
+// CQRS Query Handlers
+builder.Services.AddCQRS();
+
+// Caching (Memory Cache)
+builder.Services.AddCaching();
+
+// Background Jobs
+builder.Services.AddBackgroundJobs();
+
+// Health Checks
+builder.Services.AddCustomHealthChecks();
+
 // ==================== SECURITY SERVICES ====================
 // Data Protection Service for encrypting sensitive medical data
 builder.Services.AddDataProtection()
@@ -226,6 +242,28 @@ app.MapControllers();
 
 // Map SignalR Hub for real-time updates
 app.MapHub<AppointmentHub>("/hubs/appointments");
+
+// Map Health Checks endpoints
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
 
 // ==================== RUN ====================
 app.Run();
