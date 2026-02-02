@@ -1067,6 +1067,320 @@ CREATE TABLE `pharmacie` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
+-- Table: pharmacie_externe
+-- --------------------------------------------------------
+
+CREATE TABLE `pharmacie_externe` (
+  `id_pharmacie` INT NOT NULL AUTO_INCREMENT,
+  `nom` VARCHAR(200) NOT NULL,
+  `adresse` TEXT DEFAULT NULL,
+  `telephone` VARCHAR(20) DEFAULT NULL,
+  `email` VARCHAR(120) DEFAULT NULL,
+  `horaires` VARCHAR(200) DEFAULT NULL,
+  `actif` TINYINT(1) DEFAULT 1,
+  PRIMARY KEY (`id_pharmacie`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: ordonnance
+-- --------------------------------------------------------
+
+CREATE TABLE `ordonnance` (
+  `id_ordonnance` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `notes` TEXT DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'active',
+  PRIMARY KEY (`id_ordonnance`),
+  KEY `fk_ordonnance_consultation` (`id_consultation`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: ordonnance_electronique
+-- --------------------------------------------------------
+
+CREATE TABLE `ordonnance_electronique` (
+  `id_ordonnance` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT DEFAULT NULL,
+  `id_medecin` INT NOT NULL,
+  `id_patient` INT NOT NULL,
+  `numero_ordonnance` VARCHAR(50) DEFAULT NULL,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_validite` DATE DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'active',
+  `signature_electronique` TEXT DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_ordonnance`),
+  KEY `fk_oe_medecin` (`id_medecin`),
+  KEY `fk_oe_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: dispensation
+-- --------------------------------------------------------
+
+CREATE TABLE `dispensation` (
+  `id_dispensation` INT NOT NULL AUTO_INCREMENT,
+  `id_ordonnance` INT DEFAULT NULL,
+  `id_patient` INT NOT NULL,
+  `id_pharmacien` INT DEFAULT NULL,
+  `date_dispensation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `statut` VARCHAR(50) DEFAULT 'en_cours',
+  `notes` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_dispensation`),
+  KEY `fk_disp_ordonnance` (`id_ordonnance`),
+  KEY `fk_disp_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: dispensation_ligne
+-- --------------------------------------------------------
+
+CREATE TABLE `dispensation_ligne` (
+  `id_ligne` INT NOT NULL AUTO_INCREMENT,
+  `id_dispensation` INT NOT NULL,
+  `id_medicament` INT NOT NULL,
+  `quantite_prescrite` INT DEFAULT NULL,
+  `quantite_dispensee` INT NOT NULL,
+  `prix_unitaire` DECIMAL(12,2) DEFAULT NULL,
+  PRIMARY KEY (`id_ligne`),
+  KEY `fk_dl_dispensation` (`id_dispensation`),
+  KEY `fk_dl_medicament` (`id_medicament`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: contre_indication
+-- --------------------------------------------------------
+
+CREATE TABLE `contre_indication` (
+  `id_contre_indication` INT NOT NULL AUTO_INCREMENT,
+  `id_medicament` INT NOT NULL,
+  `condition_medicale` VARCHAR(200) NOT NULL,
+  `severite` VARCHAR(50) DEFAULT 'moderee',
+  `description` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_contre_indication`),
+  KEY `fk_ci_medicament` (`id_medicament`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: interaction_medicamenteuse
+-- --------------------------------------------------------
+
+CREATE TABLE `interaction_medicamenteuse` (
+  `id_interaction` INT NOT NULL AUTO_INCREMENT,
+  `id_medicament_1` INT NOT NULL,
+  `id_medicament_2` INT NOT NULL,
+  `severite` VARCHAR(50) DEFAULT 'moderee',
+  `description` TEXT DEFAULT NULL,
+  `recommandation` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_interaction`),
+  KEY `fk_inter_med1` (`id_medicament_1`),
+  KEY `fk_inter_med2` (`id_medicament_2`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: allergie_patient
+-- --------------------------------------------------------
+
+CREATE TABLE `allergie_patient` (
+  `id_allergie` INT NOT NULL AUTO_INCREMENT,
+  `id_patient` INT NOT NULL,
+  `allergene` VARCHAR(200) NOT NULL,
+  `severite` VARCHAR(50) DEFAULT 'moderee',
+  `reactions` TEXT DEFAULT NULL,
+  `date_diagnostic` DATE DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  `actif` TINYINT(1) DEFAULT 1,
+  PRIMARY KEY (`id_allergie`),
+  KEY `fk_allergie_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: alerte_medicale
+-- --------------------------------------------------------
+
+CREATE TABLE `alerte_medicale` (
+  `id_alerte` INT NOT NULL AUTO_INCREMENT,
+  `id_patient` INT NOT NULL,
+  `type` VARCHAR(50) NOT NULL,
+  `message` TEXT NOT NULL,
+  `severite` VARCHAR(50) DEFAULT 'info',
+  `id_source` INT DEFAULT NULL,
+  `type_source` VARCHAR(50) DEFAULT NULL,
+  `lu` TINYINT(1) DEFAULT 0,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_alerte`),
+  KEY `fk_alerte_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: dossier_medical_partage (DMP)
+-- --------------------------------------------------------
+
+CREATE TABLE `dossier_medical_partage` (
+  `id_dmp` INT NOT NULL AUTO_INCREMENT,
+  `id_patient` INT NOT NULL,
+  `numero_dmp` VARCHAR(50) DEFAULT NULL,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `statut` VARCHAR(50) DEFAULT 'actif',
+  PRIMARY KEY (`id_dmp`),
+  UNIQUE KEY `UK_dmp_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: document_dmp
+-- --------------------------------------------------------
+
+CREATE TABLE `document_dmp` (
+  `id_document` INT NOT NULL AUTO_INCREMENT,
+  `id_dmp` INT NOT NULL,
+  `type_document` VARCHAR(100) DEFAULT NULL,
+  `titre` VARCHAR(200) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `chemin_fichier` VARCHAR(500) DEFAULT NULL,
+  `taille_fichier` INT DEFAULT NULL,
+  `mime_type` VARCHAR(100) DEFAULT NULL,
+  `date_document` DATE DEFAULT NULL,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `id_createur` INT DEFAULT NULL,
+  `hash_fichier` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id_document`),
+  KEY `fk_doc_dmp` (`id_dmp`),
+  KEY `fk_doc_createur` (`id_createur`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: acces_dmp
+-- --------------------------------------------------------
+
+CREATE TABLE `acces_dmp` (
+  `id_acces` INT NOT NULL AUTO_INCREMENT,
+  `id_dmp` INT NOT NULL,
+  `id_professionnel` INT NOT NULL,
+  `type_acces` VARCHAR(50) DEFAULT NULL,
+  `date_acces` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `motif` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_acces`),
+  KEY `fk_acces_dmp` (`id_dmp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: autorisation_dmp
+-- --------------------------------------------------------
+
+CREATE TABLE `autorisation_dmp` (
+  `id_autorisation` INT NOT NULL AUTO_INCREMENT,
+  `id_dmp` INT NOT NULL,
+  `id_professionnel` INT NOT NULL,
+  `type_acces` VARCHAR(50) DEFAULT 'lecture',
+  `date_debut` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_fin` TIMESTAMP NULL DEFAULT NULL,
+  `actif` TINYINT(1) DEFAULT 1,
+  PRIMARY KEY (`id_autorisation`),
+  KEY `fk_auth_dmp` (`id_dmp`),
+  KEY `fk_auth_pro` (`id_professionnel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: reservation_lit
+-- --------------------------------------------------------
+
+CREATE TABLE `reservation_lit` (
+  `id_reservation` INT NOT NULL AUTO_INCREMENT,
+  `id_lit` INT NOT NULL,
+  `id_patient` INT NOT NULL,
+  `date_debut` DATETIME NOT NULL,
+  `date_fin` DATETIME DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'confirmee',
+  `notes` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_reservation`),
+  KEY `fk_res_lit` (`id_lit`),
+  KEY `fk_res_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: transfert_lit
+-- --------------------------------------------------------
+
+CREATE TABLE `transfert_lit` (
+  `id_transfert` INT NOT NULL AUTO_INCREMENT,
+  `id_patient` INT NOT NULL,
+  `id_lit_source` INT NOT NULL,
+  `id_lit_destination` INT NOT NULL,
+  `date_transfert` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `motif` TEXT DEFAULT NULL,
+  `id_demandeur` INT DEFAULT NULL,
+  PRIMARY KEY (`id_transfert`),
+  KEY `fk_tr_patient` (`id_patient`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: maintenance_lit
+-- --------------------------------------------------------
+
+CREATE TABLE `maintenance_lit` (
+  `id_maintenance` INT NOT NULL AUTO_INCREMENT,
+  `id_lit` INT NOT NULL,
+  `type_maintenance` VARCHAR(100) DEFAULT NULL,
+  `description` TEXT DEFAULT NULL,
+  `date_debut` DATETIME NOT NULL,
+  `date_fin` DATETIME DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'en_cours',
+  PRIMARY KEY (`id_maintenance`),
+  KEY `fk_maint_lit` (`id_lit`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: echeancier
+-- --------------------------------------------------------
+
+CREATE TABLE `echeancier` (
+  `id_echeancier` INT NOT NULL AUTO_INCREMENT,
+  `id_facture` INT NOT NULL,
+  `montant_total` DECIMAL(12,2) NOT NULL,
+  `nombre_echeances` INT NOT NULL,
+  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `statut` VARCHAR(50) DEFAULT 'actif',
+  PRIMARY KEY (`id_echeancier`),
+  KEY `fk_ech_facture` (`id_facture`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: echeance
+-- --------------------------------------------------------
+
+CREATE TABLE `echeance` (
+  `id_echeance` INT NOT NULL AUTO_INCREMENT,
+  `id_echeancier` INT NOT NULL,
+  `numero` INT NOT NULL,
+  `montant` DECIMAL(12,2) NOT NULL,
+  `date_echeance` DATE NOT NULL,
+  `date_paiement` TIMESTAMP NULL DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'en_attente',
+  PRIMARY KEY (`id_echeance`),
+  KEY `fk_echeance_echeancier` (`id_echeancier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: demande_remboursement
+-- --------------------------------------------------------
+
+CREATE TABLE `demande_remboursement` (
+  `id_demande` INT NOT NULL AUTO_INCREMENT,
+  `id_facture` INT NOT NULL,
+  `id_assurance` INT NOT NULL,
+  `montant_demande` DECIMAL(12,2) NOT NULL,
+  `montant_rembourse` DECIMAL(12,2) DEFAULT NULL,
+  `date_demande` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_reponse` TIMESTAMP NULL DEFAULT NULL,
+  `statut` VARCHAR(50) DEFAULT 'en_attente',
+  `reference` VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`id_demande`),
+  KEY `fk_dr_facture` (`id_facture`),
+  KEY `fk_dr_assurance` (`id_assurance`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
 -- Table: acces_verification
 -- --------------------------------------------------------
 
