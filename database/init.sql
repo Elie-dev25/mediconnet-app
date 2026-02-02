@@ -1,5 +1,17 @@
 -- MediConnect Database Schema
 -- Toutes les clés primaires sont INT AUTO_INCREMENT
+--
+-- =====================================================
+-- VALEURS DE STATUTS NORMALISÉES
+-- =====================================================
+-- Consultation: planifie, pret_consultation, en_cours, terminee, annulee
+-- Hospitalisation: en_attente_lit, en_cours, terminee, annulee
+-- RendezVous: en_attente, confirme, planifie, en_cours, termine, annule, absent
+-- Soin: prescrit, en_cours, termine, annule
+-- Facture: en_attente, payee, annulee, partielle
+-- Lit: libre, occupe, maintenance, reserve
+-- Examen: en_attente, en_cours, termine, annule
+-- =====================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET FOREIGN_KEY_CHECKS = 0;
@@ -25,7 +37,7 @@ CREATE TABLE `utilisateurs` (
   `email` VARCHAR(120) NOT NULL,
   `situation_matrimoniale` VARCHAR(50) DEFAULT NULL,
   `adresse` TEXT DEFAULT NULL,
-  `role` ENUM('patient','medecin','infirmier','administrateur','caissier') NOT NULL,
+  `role` ENUM('patient','medecin','infirmier','administrateur','caissier','accueil','pharmacien','biologiste') NOT NULL,
   `password_hash` VARCHAR(500) DEFAULT NULL,
   `photo` VARCHAR(500) DEFAULT NULL,
   `email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
@@ -34,6 +46,7 @@ CREATE TABLE `utilisateurs` (
   `profile_completed_at` TIMESTAMP NULL DEFAULT NULL,
   `nationalite` VARCHAR(100) DEFAULT 'Cameroun',
   `region_origine` VARCHAR(100) DEFAULT NULL,
+  `must_change_password` BOOLEAN NOT NULL DEFAULT FALSE,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_user`),
@@ -69,6 +82,7 @@ CREATE TABLE `email_confirmation_tokens` (
 CREATE TABLE `specialites` (
   `id_specialite` INT NOT NULL AUTO_INCREMENT,
   `nom_specialite` VARCHAR(100) NOT NULL,
+  `cout_consultation` DECIMAL(12,2) DEFAULT 5000,
   PRIMARY KEY (`id_specialite`),
   UNIQUE KEY `nom_specialite` (`nom_specialite`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -123,18 +137,42 @@ INSERT INTO `specialites` (`id_specialite`, `nom_specialite`) VALUES
 (47, 'Médecine du Travail et de l\'Environnement');
 
 -- --------------------------------------------------------
--- Table: assurance
+-- Table: assurances (catalogue des assurances)
 -- --------------------------------------------------------
 
-CREATE TABLE `assurance` (
+CREATE TABLE `assurances` (
   `id_assurance` INT NOT NULL AUTO_INCREMENT,
-  `nom_assurance` VARCHAR(150) NOT NULL,
-  `couverture` FLOAT DEFAULT NULL,
-  `numero_assurance` VARCHAR(30) DEFAULT NULL,
-  `date_delivrance` DATE DEFAULT NULL,
-  `date_expiration` DATE DEFAULT NULL,
-  PRIMARY KEY (`id_assurance`)
+  `nom` VARCHAR(150) NOT NULL,
+  `type_assurance` VARCHAR(50) DEFAULT 'privee',
+  `site_web` VARCHAR(255) DEFAULT NULL,
+  `telephone_service_client` VARCHAR(30) DEFAULT NULL,
+  `groupe` VARCHAR(100) DEFAULT NULL,
+  `pays_origine` VARCHAR(100) DEFAULT NULL,
+  `statut_juridique` VARCHAR(50) DEFAULT NULL,
+  `description` VARCHAR(1000) DEFAULT NULL,
+  `type_couverture` VARCHAR(500) DEFAULT NULL,
+  `is_complementaire` TINYINT(1) DEFAULT 0,
+  `categorie_beneficiaires` VARCHAR(255) DEFAULT NULL,
+  `conditions_adhesion` VARCHAR(1000) DEFAULT NULL,
+  `zone_couverture` VARCHAR(100) DEFAULT NULL,
+  `mode_paiement` VARCHAR(255) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_assurance`),
+  KEY `IX_assurance_nom` (`nom`),
+  KEY `IX_assurance_type` (`type_assurance`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Assurances
+INSERT INTO `assurances` (`nom`, `type_assurance`, `type_couverture`, `zone_couverture`, `is_active`) VALUES
+('CNAM', 'publique', 'maladies,hospitalisation', 'national', 1),
+('NSIA Assurances', 'privee', 'accidents,maladies,hospitalisation,maternite', 'national', 1),
+('Allianz', 'privee', 'accidents,maladies,hospitalisation', 'national', 1),
+('SUNU Assurances', 'privee', 'maladies,hospitalisation,maternite', 'national', 1),
+('AXA Assurances', 'privee', 'accidents,maladies,hospitalisation,maternite', 'international', 1),
+('Saham Assurance', 'privee', 'maladies,hospitalisation', 'national', 1),
+('CMU', 'publique', 'forfait_soins_base', 'national', 1);
 
 -- --------------------------------------------------------
 -- Table: service
@@ -144,10 +182,23 @@ CREATE TABLE `service` (
   `id_service` INT NOT NULL AUTO_INCREMENT,
   `nom_service` VARCHAR(150) NOT NULL,
   `responsable_service` INT DEFAULT NULL,
+  `id_major` INT DEFAULT NULL COMMENT 'ID de l infirmier Major du service',
   `description` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_service`),
-  KEY `responsable_service` (`responsable_service`)
+  KEY `responsable_service` (`responsable_service`),
+  KEY `fk_service_major` (`id_major`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Services
+INSERT INTO `service` (`id_service`, `nom_service`, `responsable_service`, `description`) VALUES
+(1, 'Administration', NULL, 'Service administratif'),
+(2, 'Urgences', NULL, 'Service des urgences'),
+(3, 'Médecine Générale', NULL, 'Service de médecine générale'),
+(4, 'Chirurgie', NULL, 'Service de chirurgie'),
+(5, 'Pédiatrie', NULL, 'Service de pédiatrie'),
+(6, 'Maternité', NULL, 'Service de maternité'),
+(7, 'Cardiologie', NULL, 'Service de cardiologie'),
+(8, 'Radiologie', NULL, 'Service de radiologie');
 
 -- --------------------------------------------------------
 -- Table: patient
@@ -179,6 +230,10 @@ CREATE TABLE `patient` (
   `numero_contact` VARCHAR(50) DEFAULT NULL,
   `date_creation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `id_assurance` INT DEFAULT NULL,
+  -- Clôture de dossier médical
+  `dossier_cloture` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Dossier clôturé - prochaine consultation = première consultation',
+  `date_cloture_dossier` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date de clôture du dossier',
+  `id_medecin_cloture` INT DEFAULT NULL COMMENT 'Médecin ayant clôturé le dossier',
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `numero_dossier` (`numero_dossier`),
   KEY `fk_patient_assurance` (`id_assurance`)
@@ -206,8 +261,17 @@ CREATE TABLE `medecin` (
 CREATE TABLE `infirmier` (
   `id_user` INT NOT NULL,
   `matricule` VARCHAR(50) DEFAULT NULL,
+  `statut` VARCHAR(20) NOT NULL DEFAULT 'actif',
+  `is_major` BOOLEAN NOT NULL DEFAULT FALSE,
+  `id_service_major` INT NULL,
+  `date_nomination_major` TIMESTAMP NULL,
+  `accreditations` VARCHAR(500) NULL,
   PRIMARY KEY (`id_user`),
-  UNIQUE KEY `matricule` (`matricule`)
+  UNIQUE KEY `matricule` (`matricule`),
+  INDEX `IX_infirmier_statut` (`statut`),
+  INDEX `IX_infirmier_is_major` (`is_major`),
+  CONSTRAINT `FK_infirmier_service_major` FOREIGN KEY (`id_service_major`) 
+    REFERENCES `service`(`id_service`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -229,6 +293,64 @@ CREATE TABLE `caissier` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
+-- Table: accueil
+-- --------------------------------------------------------
+
+CREATE TABLE `accueil` (
+  `id_user` INT NOT NULL,
+  `poste` VARCHAR(100) DEFAULT NULL,
+  `date_embauche` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id_user`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: pharmacien
+-- --------------------------------------------------------
+
+CREATE TABLE `pharmacien` (
+  `id_user` INT NOT NULL,
+  `numero_ordre` VARCHAR(50) DEFAULT NULL,
+  PRIMARY KEY (`id_user`),
+  UNIQUE KEY `numero_ordre` (`numero_ordre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: biologiste
+-- --------------------------------------------------------
+
+CREATE TABLE `biologiste` (
+  `id_user` INT NOT NULL,
+  `numero_ordre` VARCHAR(50) DEFAULT NULL,
+  PRIMARY KEY (`id_user`),
+  UNIQUE KEY `numero_ordre` (`numero_ordre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: standard_chambre
+-- --------------------------------------------------------
+
+CREATE TABLE `standard_chambre` (
+  `id_standard` INT NOT NULL AUTO_INCREMENT,
+  `nom` VARCHAR(100) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `prix_journalier` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `privileges` JSON DEFAULT NULL,
+  `localisation` VARCHAR(255) DEFAULT NULL,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_standard`),
+  UNIQUE KEY `nom` (`nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Données par défaut: Standards de chambre
+INSERT INTO `standard_chambre` (`nom`, `description`, `prix_journalier`, `privileges`, `localisation`) VALUES
+('Standard', 'Chambre standard avec équipements de base', 15000.00, '["Lit simple", "Salle de bain partagée", "Télévision"]', 'Bâtiment A - Étage 1'),
+('Confort', 'Chambre confort avec salle de bain privée', 25000.00, '["Lit double", "Salle de bain privée", "Télévision", "Climatisation", "Réfrigérateur"]', 'Bâtiment A - Étage 2'),
+('VIP', 'Suite VIP avec services premium', 50000.00, '["Lit king size", "Salle de bain privée luxe", "Télévision écran plat", "Climatisation", "Réfrigérateur", "Canapé visiteur", "Service repas en chambre", "WiFi haut débit"]', 'Bâtiment B - Étage 3'),
+('Soins Intensifs', 'Chambre équipée pour soins intensifs', 75000.00, '["Équipement médical avancé", "Monitoring 24h/24", "Personnel dédié"]', 'Bâtiment C - Unité SI');
+
+-- --------------------------------------------------------
 -- Table: chambre
 -- --------------------------------------------------------
 
@@ -238,8 +360,10 @@ CREATE TABLE `chambre` (
   `capacite` INT DEFAULT NULL,
   `etat` VARCHAR(50) DEFAULT NULL,
   `statut` VARCHAR(50) DEFAULT NULL,
+  `id_standard` INT DEFAULT NULL,
   PRIMARY KEY (`id_chambre`),
-  UNIQUE KEY `numero` (`numero`)
+  UNIQUE KEY `numero` (`numero`),
+  KEY `fk_chambre_standard` (`id_standard`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -268,12 +392,35 @@ CREATE TABLE `consultation` (
   `statut` VARCHAR(20) DEFAULT NULL,
   `id_medecin` INT NOT NULL,
   `id_patient` INT NOT NULL,
+  `id_rdv` INT DEFAULT NULL,
   `poids` DECIMAL(5,2) DEFAULT NULL,
   `temperature` DECIMAL(4,2) DEFAULT NULL,
   `type_consultation` VARCHAR(100) DEFAULT NULL,
   `antecedents` TEXT DEFAULT NULL,
   `chemin_questionnaire` VARCHAR(255) DEFAULT NULL,
   `tension` VARCHAR(10) DEFAULT NULL,
+  `anamnese` TEXT DEFAULT NULL,
+  `notes_cliniques` TEXT DEFAULT NULL,
+  `conclusion` TEXT DEFAULT NULL,
+  -- Examen clinique (Étape 2)
+  `examen_inspection` TEXT DEFAULT NULL COMMENT 'Observations visuelles: aspect général, peau, muqueuses',
+  `examen_palpation` TEXT DEFAULT NULL COMMENT 'Résultats de la palpation: abdomen, ganglions, etc.',
+  `examen_auscultation` TEXT DEFAULT NULL COMMENT 'Auscultation: coeur, poumons, abdomen',
+  `examen_percussion` TEXT DEFAULT NULL COMMENT 'Percussion: thorax, abdomen',
+  `examen_autres` TEXT DEFAULT NULL COMMENT 'Autres observations cliniques',
+  -- Diagnostic et orientation (Étape 3)
+  `diagnostics_secondaires` TEXT DEFAULT NULL COMMENT 'Diagnostics différentiels ou associés',
+  `hypotheses_diagnostiques` TEXT DEFAULT NULL COMMENT 'Hypothèses à confirmer par examens',
+  -- Plan de traitement (Étape 4)
+  `explication_diagnostic` TEXT DEFAULT NULL COMMENT 'Explication du diagnostic au patient',
+  `options_traitement` TEXT DEFAULT NULL COMMENT 'Options de traitement proposées',
+  `orientation_specialiste` TEXT DEFAULT NULL COMMENT 'Spécialiste vers lequel orienter le patient',
+  `motif_orientation` TEXT DEFAULT NULL COMMENT 'Motif de l orientation vers un spécialiste',
+  -- Conclusion (Étape 5)
+  `resume_consultation` TEXT DEFAULT NULL COMMENT 'Résumé des points importants',
+  `questions_patient` TEXT DEFAULT NULL COMMENT 'Questions du patient et réponses',
+  `consignes_patient` TEXT DEFAULT NULL COMMENT 'Consignes données au patient',
+  `recommandations` TEXT DEFAULT NULL COMMENT 'Recommandations générales',
   PRIMARY KEY (`id_consultation`),
   KEY `id_medecin` (`id_medecin`),
   KEY `id_patient` (`id_patient`)
@@ -288,13 +435,76 @@ CREATE TABLE `hospitalisation` (
   `date_entree` DATE NOT NULL,
   `date_sortie` DATE DEFAULT NULL,
   `motif` TEXT DEFAULT NULL,
-  `statut` VARCHAR(20) DEFAULT NULL,
+  `statut` VARCHAR(20) DEFAULT 'en_attente_lit',
   `id_patient` INT NOT NULL,
-  `id_lit` INT NOT NULL,
+  `id_lit` INT DEFAULT NULL COMMENT 'Nullable: hospitalisation en attente de lit',
+  `id_medecin` INT DEFAULT NULL,
+  `urgence` VARCHAR(20) DEFAULT 'normale' COMMENT 'Niveau urgence: normale, urgente, critique',
+  `diagnostic_principal` TEXT DEFAULT NULL COMMENT 'Diagnostic principal justifiant hospitalisation',
+  `id_consultation` INT DEFAULT NULL COMMENT 'Consultation ayant généré hospitalisation',
+  `id_service` INT DEFAULT NULL COMMENT 'Service concerné',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_admission`),
   KEY `id_patient` (`id_patient`),
-  KEY `id_lit` (`id_lit`)
+  KEY `id_lit` (`id_lit`),
+  KEY `fk_hospitalisation_medecin` (`id_medecin`),
+  KEY `idx_hospitalisation_statut` (`statut`),
+  KEY `idx_hospitalisation_service` (`id_service`),
+  KEY `idx_hospitalisation_urgence` (`urgence`),
+  KEY `fk_hospitalisation_consultation` (`id_consultation`),
+  KEY `fk_hospitalisation_service` (`id_service`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: soin_hospitalisation (soins liés à une hospitalisation)
+-- --------------------------------------------------------
+
+CREATE TABLE `soin_hospitalisation` (
+  `id_soin` INT NOT NULL AUTO_INCREMENT,
+  `id_hospitalisation` INT NOT NULL,
+  `type_soin` VARCHAR(100) NOT NULL COMMENT 'Type de soin: soins_infirmiers, surveillance, reeducation, nutrition, autre',
+  `description` VARCHAR(255) NOT NULL COMMENT 'Description du soin',
+  `frequence` VARCHAR(100) DEFAULT NULL COMMENT 'Fréquence: 1x/jour, 2x/jour, etc.',
+  `duree` VARCHAR(100) DEFAULT NULL COMMENT 'Durée prévue du soin',
+  `priorite` VARCHAR(20) DEFAULT 'normale' COMMENT 'Priorité: basse, normale, haute, urgente',
+  `instructions` TEXT DEFAULT NULL COMMENT 'Instructions spécifiques',
+  `statut` VARCHAR(20) DEFAULT 'prescrit' COMMENT 'Statut: prescrit, en_cours, termine, annule',
+  `date_prescription` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `id_prescripteur` INT DEFAULT NULL COMMENT 'Médecin ayant prescrit le soin',
+  `nb_executions_prevues` INT DEFAULT 1 COMMENT 'Nombre total d executions prevues',
+  `nb_executions_effectuees` INT DEFAULT 0 COMMENT 'Nombre d executions effectuees',
+  `prochaine_execution` DATETIME DEFAULT NULL COMMENT 'Prochaine execution prevue',
+  `date_fin_prevue` DATE DEFAULT NULL COMMENT 'Date de fin prevue du traitement',
+  PRIMARY KEY (`id_soin`),
+  KEY `fk_soin_hospitalisation` (`id_hospitalisation`),
+  KEY `fk_soin_prescripteur` (`id_prescripteur`),
+  KEY `idx_soin_type` (`type_soin`),
+  KEY `idx_soin_statut` (`statut`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: execution_soin (historique des soins effectués)
+-- --------------------------------------------------------
+
+CREATE TABLE `execution_soin` (
+  `id_execution` INT NOT NULL AUTO_INCREMENT,
+  `id_soin` INT NOT NULL COMMENT 'Reference au soin prescrit',
+  `date_execution` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Date et heure de l execution',
+  `id_executant` INT NOT NULL COMMENT 'ID de l infirmier/personnel ayant effectue le soin',
+  `observations` TEXT DEFAULT NULL COMMENT 'Notes et observations lors de l execution',
+  `statut_execution` VARCHAR(20) DEFAULT 'effectue' COMMENT 'effectue, partiel, refuse_patient, reporte, annule',
+  `numero_execution` INT DEFAULT 1 COMMENT 'Numero sequentiel de l execution',
+  `duree_minutes` INT DEFAULT NULL COMMENT 'Duree reelle du soin en minutes',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_execution`),
+  KEY `idx_execution_soin` (`id_soin`),
+  KEY `idx_execution_date` (`date_execution`),
+  KEY `idx_execution_executant` (`id_executant`),
+  CONSTRAINT `fk_execution_soin` FOREIGN KEY (`id_soin`) 
+    REFERENCES `soin_hospitalisation` (`id_soin`) ON DELETE CASCADE,
+  CONSTRAINT `fk_execution_executant` FOREIGN KEY (`id_executant`) 
+    REFERENCES `utilisateurs` (`id_user`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 -- Table: prescription (ordonnance)
@@ -322,7 +532,7 @@ CREATE TABLE `medicament` (
   `prix` FLOAT DEFAULT NULL,
   `seuil_stock` INT DEFAULT NULL,
   `code_ATC` VARCHAR(20) DEFAULT NULL,
-  `forme_galenique` ENUM('comprimé','sirop','injectable') DEFAULT NULL,
+  `forme_galenique` ENUM('comprime','sirop','injectable') DEFAULT NULL,
   `laboratoire` VARCHAR(150) DEFAULT NULL,
   `conditionnement` VARCHAR(100) DEFAULT NULL,
   `date_peremption` DATE DEFAULT NULL,
@@ -332,17 +542,41 @@ CREATE TABLE `medicament` (
   PRIMARY KEY (`id_medicament`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Donnees par defaut: Medicaments
+INSERT INTO `medicament` (`nom`, `dosage`, `stock`, `prix`, `seuil_stock`, `laboratoire`, `actif`) VALUES
+('Paracetamol', '500mg', 100, 500, 20, 'Sanofi', 1),
+('Ibuprofene', '400mg', 80, 750, 15, 'Pfizer', 1),
+('Amoxicilline', '500mg', 60, 1200, 10, 'GSK', 1),
+('Metronidazole', '250mg', 50, 800, 10, 'Cipla', 1),
+('Omeprazole', '20mg', 70, 1500, 15, 'AstraZeneca', 1),
+('Tramadol', '50mg', 40, 2000, 10, 'Grunenthal', 1),
+('Diclofenac', '50mg', 90, 600, 20, 'Novartis', 1),
+('Ciprofloxacine', '500mg', 45, 1800, 10, 'Bayer', 1),
+('Cotrimoxazole', '480mg', 55, 900, 15, 'Roche', 1),
+('Metformine', '500mg', 65, 1100, 15, 'Merck', 1),
+('Amlodipine', '5mg', 50, 1300, 10, 'Pfizer', 1),
+('Losartan', '50mg', 45, 1400, 10, 'Merck', 1),
+('Salbutamol', '100mcg', 30, 2500, 10, 'GSK', 1),
+('Prednisolone', '5mg', 40, 1600, 10, 'Sanofi', 1),
+('Cefixime', '200mg', 35, 2200, 10, 'Cipla', 1);
+
 -- --------------------------------------------------------
 -- Table: prescription_medicament
 -- --------------------------------------------------------
 
 CREATE TABLE `prescription_medicament` (
+  `id_prescription_med` INT NOT NULL AUTO_INCREMENT,
   `id_ord` INT NOT NULL,
   `id_medicament` INT NOT NULL,
   `quantite` INT DEFAULT 1,
   `duree_traitement` VARCHAR(100) DEFAULT NULL,
-  `posologie` TEXT DEFAULT NULL,
-  PRIMARY KEY (`id_ord`, `id_medicament`),
+  `posologie` VARCHAR(200) DEFAULT NULL,
+  `frequence` VARCHAR(100) DEFAULT NULL,
+  `voie_administration` VARCHAR(100) DEFAULT NULL,
+  `forme_pharmaceutique` VARCHAR(100) DEFAULT NULL,
+  `instructions` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_prescription_med`),
+  KEY `id_ord` (`id_ord`),
   KEY `id_medicament` (`id_medicament`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -354,26 +588,232 @@ CREATE TABLE `laboratoire` (
   `id_labo` INT NOT NULL AUTO_INCREMENT,
   `nom_labo` VARCHAR(150) NOT NULL,
   `contact` VARCHAR(150) DEFAULT NULL,
+  `adresse` VARCHAR(255) DEFAULT NULL,
+  `telephone` VARCHAR(20) DEFAULT NULL,
+  `email` VARCHAR(150) DEFAULT NULL,
+  `type` ENUM('interne', 'externe') DEFAULT 'interne',
+  `actif` TINYINT(1) DEFAULT 1,
   PRIMARY KEY (`id_labo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Donnees par defaut: Laboratoires
+INSERT INTO `laboratoire` (`nom_labo`, `contact`, `adresse`, `telephone`, `type`, `actif`) VALUES
+('Laboratoire Central Hopital', 'Dr. Kouame', 'Batiment A - RDC', '+225 27 22 44 55 66', 'interne', 1),
+('Service Imagerie Hopital', 'Dr. Traore', 'Batiment B - 1er etage', '+225 27 22 44 55 67', 'interne', 1),
+('Laboratoire BioMedical Plus', 'M. Diallo', 'Cocody, Rue des Jardins', '+225 07 08 09 10 11', 'externe', 1),
+('Centre Imagerie Medicale Abidjan', 'Mme Kone', 'Plateau, Avenue Franchet', '+225 05 06 07 08 09', 'externe', 1),
+('Laboratoire Pasteur Cote Ivoire', 'Dr. Bamba', 'Treichville, Bd VGE', '+225 27 21 35 46 57', 'externe', 1);
+
 -- --------------------------------------------------------
--- Table: examens
+-- --------------------------------------------------------
+-- Table: categories_examens (Niveau 1)
+-- --------------------------------------------------------
+
+CREATE TABLE `categories_examens` (
+  `id_categorie` INT NOT NULL AUTO_INCREMENT,
+  `nom` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `ordre_affichage` INT DEFAULT 0,
+  `actif` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_categorie`),
+  UNIQUE KEY `uk_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Categories
+INSERT INTO `categories_examens` (`nom`, `code`, `description`, `icone`, `ordre_affichage`) VALUES
+('Biologie Medicale', 'biologie_medicale', 'Analyses de laboratoire et examens biologiques', 'flask', 1),
+('Imagerie Medicale', 'imagerie_medicale', 'Examens d imagerie diagnostique', 'scan', 2);
+
+-- --------------------------------------------------------
+-- Table: specialites_examens (Niveau 2)
+-- --------------------------------------------------------
+
+CREATE TABLE `specialites_examens` (
+  `id_specialite` INT NOT NULL AUTO_INCREMENT,
+  `id_categorie` INT NOT NULL,
+  `nom` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `ordre_affichage` INT DEFAULT 0,
+  `actif` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_specialite`),
+  UNIQUE KEY `uk_code` (`code`),
+  KEY `fk_specialite_categorie` (`id_categorie`),
+  CONSTRAINT `fk_specialite_categorie` FOREIGN KEY (`id_categorie`) REFERENCES `categories_examens` (`id_categorie`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Specialites - Biologie Medicale (id_categorie = 1)
+INSERT INTO `specialites_examens` (`id_categorie`, `nom`, `code`, `description`, `ordre_affichage`) VALUES
+(1, 'Hematologie', 'hematologie', 'Etude du sang et de ses composants', 1),
+(1, 'Biochimie', 'biochimie', 'Analyses biochimiques et metaboliques', 2),
+(1, 'Fonction Renale', 'fonction_renale', 'Evaluation de la fonction renale', 3),
+(1, 'Fonction Hepatique', 'fonction_hepatique', 'Evaluation de la fonction hepatique', 4),
+(1, 'Marqueurs Inflammatoires', 'marqueurs_inflammatoires', 'Marqueurs d inflammation', 5),
+(1, 'Microbiologie', 'microbiologie', 'Analyses microbiologiques et serologiques', 6),
+(1, 'Endocrinologie', 'endocrinologie', 'Dosages hormonaux', 7),
+(1, 'Marqueurs Tumoraux', 'marqueurs_tumoraux', 'Marqueurs de cancers', 8),
+(1, 'Immunologie', 'immunologie', 'Analyses immunologiques', 9);
+
+-- Donnees par defaut: Specialites - Imagerie Medicale (id_categorie = 2)
+INSERT INTO `specialites_examens` (`id_categorie`, `nom`, `code`, `description`, `ordre_affichage`) VALUES
+(2, 'Radiologie Standard', 'radiologie_standard', 'Radiographies conventionnelles', 1),
+(2, 'Echographie', 'echographie', 'Examens echographiques et doppler', 2),
+(2, 'IRM', 'irm', 'Imagerie par resonance magnetique', 3),
+(2, 'Imagerie Specialisee', 'imagerie_specialisee', 'Mammographie, osteodensitometrie', 4),
+(2, 'Cardiologie', 'cardiologie', 'ECG et examens cardiaques', 5);
+
+-- --------------------------------------------------------
+-- Table: examens (Niveau 3)
 -- --------------------------------------------------------
 
 CREATE TABLE `examens` (
   `id_exam` INT NOT NULL AUTO_INCREMENT,
+  `id_specialite` INT NOT NULL,
   `nom_exam` VARCHAR(150) NOT NULL,
   `description` TEXT DEFAULT NULL,
-  `prix_unitaire` DECIMAL(10,2) NOT NULL,
+  `prix_unitaire` DECIMAL(10,2) NOT NULL DEFAULT 0,
   `duree_estimee_minutes` INT DEFAULT 30,
   `preparation_requise` TEXT DEFAULT NULL,
-  `type_examen` ENUM('biologie','radiologie','scanner','irm','echographie','autre') NOT NULL,
-  `categorie` ENUM('standard','specialise','urgence') DEFAULT 'standard',
+  `disponible` TINYINT(1) DEFAULT 1,
   `actif` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_exam`)
+  PRIMARY KEY (`id_exam`),
+  KEY `fk_examen_specialite` (`id_specialite`),
+  INDEX `idx_disponible` (`disponible`),
+  CONSTRAINT `fk_examen_specialite` FOREIGN KEY (`id_specialite`) REFERENCES `specialites_examens` (`id_specialite`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Examens
+-- --------------------------------------------------------
+
+-- Hematologie (id_specialite = 1)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(1, 'NFS (Numeration Formule Sanguine)', 'Hemogramme complet avec numeration des globules', 5000, 1),
+(1, 'Groupe sanguin ABO-Rh', 'Determination du groupe sanguin et facteur Rhesus', 4000, 1),
+(1, 'Bilan de coagulation', 'TP, TCA, INR - evaluation de la coagulation', 8000, 1),
+(1, 'Vitesse de sedimentation (VS)', 'Marqueur non specifique d inflammation', 2500, 1);
+
+-- Biochimie (id_specialite = 2)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(2, 'Glycemie a jeun', 'Dosage du glucose sanguin a jeun', 3000, 1),
+(2, 'HbA1c (Hemoglobine glyquee)', 'Controle glycemique sur 3 mois', 6000, 1),
+(2, 'Bilan lipidique complet', 'Cholesterol total, HDL, LDL, triglycerides', 8000, 1),
+(2, 'Ionogramme sanguin', 'Na, K, Cl, bicarbonates', 8000, 1),
+(2, 'Acide urique', 'Dosage de l uricemie', 3500, 1);
+
+-- Fonction Renale (id_specialite = 3)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(3, 'Creatininemie', 'Dosage de la creatinine sanguine', 4000, 1),
+(3, 'Uree sanguine', 'Evaluation de la fonction renale', 3500, 1),
+(3, 'Clairance de la creatinine', 'Estimation du debit de filtration glomerulaire', 5000, 1);
+
+-- Fonction Hepatique (id_specialite = 4)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(4, 'ASAT (Transaminase)', 'Enzyme hepatique - cytolyse', 3500, 1),
+(4, 'ALAT (Transaminase)', 'Enzyme hepatique - cytolyse', 3500, 1),
+(4, 'Gamma-GT', 'Marqueur de cholestase et alcoolisme', 4000, 1),
+(4, 'Phosphatases alcalines', 'Marqueur de cholestase', 4000, 1),
+(4, 'Bilirubine totale et conjuguee', 'Evaluation de l ictere', 5000, 1);
+
+-- Marqueurs Inflammatoires (id_specialite = 5)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(5, 'CRP (Proteine C reactive)', 'Marqueur d inflammation aigue', 5000, 1),
+(5, 'Procalcitonine', 'Marqueur d infection bacterienne severe', 12000, 1);
+
+-- Microbiologie (id_specialite = 6)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(6, 'ECBU', 'Examen cytobacteriologique des urines', 6000, 1),
+(6, 'Hemocultures', 'Recherche de bacteries dans le sang', 10000, 1),
+(6, 'Coproculture', 'Examen bacteriologique des selles', 8000, 1),
+(6, 'Serologie VIH', 'Depistage du virus VIH', 8000, 1),
+(6, 'Serologie Hepatite B (AgHBs)', 'Depistage de l hepatite B', 7000, 1),
+(6, 'Serologie Hepatite C', 'Depistage de l hepatite C', 7000, 1),
+(6, 'Serologie Lyme', 'Recherche de la maladie de Lyme', 9000, 0),
+(6, 'Prelevement de gorge', 'Recherche de streptocoque', 5000, 1),
+(6, 'PCR virales', 'Detection moleculaire de virus', 15000, 0);
+
+-- Endocrinologie (id_specialite = 7)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(7, 'TSH', 'Hormone thyreostimulante', 6000, 1),
+(7, 'Cortisol', 'Dosage du cortisol sanguin', 8000, 1),
+(7, 'FSH', 'Hormone folliculostimulante', 7000, 1),
+(7, 'LH', 'Hormone luteinisante', 7000, 1),
+(7, 'Testosterone', 'Dosage de la testosterone', 8000, 1),
+(7, 'Estradiol', 'Dosage de l estradiol', 7000, 1),
+(7, 'Beta-HCG', 'Test de grossesse sanguin', 5000, 1);
+
+-- Marqueurs Tumoraux (id_specialite = 8)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(8, 'PSA (Antigene prostatique)', 'Marqueur du cancer de la prostate', 8000, 1),
+(8, 'CA-125', 'Marqueur du cancer de l ovaire', 10000, 1),
+(8, 'ACE (Antigene carcino-embryonnaire)', 'Marqueur tumoral digestif', 9000, 1);
+
+-- Immunologie (id_specialite = 9)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`) VALUES
+(9, 'Facteur rhumatoide', 'Marqueur de polyarthrite rhumatoide', 7000, 1),
+(9, 'Anticorps antinucleaires (AAN)', 'Recherche de maladies auto-immunes', 12000, 0);
+
+-- Radiologie Standard (id_specialite = 10)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
+(10, 'Radiographie thoracique', 'Radio des poumons face et profil', 15000, 1, 15),
+(10, 'Radiographie osseuse', 'Radio des os (membre, articulation)', 12000, 1, 15),
+(10, 'Radiographie du rachis', 'Radio de la colonne vertebrale', 15000, 1, 20),
+(10, 'Radiographie abdominale (ASP)', 'Abdomen sans preparation', 12000, 1, 15);
+
+-- Echographie (id_specialite = 11)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
+(11, 'Echographie abdominale', 'Echo de l abdomen complet', 25000, 1, 30),
+(11, 'Echographie pelvienne', 'Echo du petit bassin', 20000, 1, 25),
+(11, 'Echographie thyroidienne', 'Echo de la thyroide', 18000, 1, 20),
+(11, 'Echo-doppler veineux', 'Doppler des membres inferieurs', 30000, 1, 30),
+(11, 'Echo-doppler arteriel', 'Doppler arteriel des membres', 30000, 1, 30);
+
+-- IRM (id_specialite = 12)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
+(12, 'IRM cerebrale', 'Imagerie par resonance magnetique du cerveau', 80000, 0, 45),
+(12, 'IRM rachidienne lombaire', 'IRM de la colonne lombaire', 75000, 0, 40),
+(12, 'IRM rachidienne cervicale', 'IRM de la colonne cervicale', 75000, 0, 40),
+(12, 'IRM articulaire', 'IRM d une articulation (genou, epaule, etc.)', 70000, 0, 35);
+
+-- Imagerie Specialisee (id_specialite = 13)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
+(13, 'Mammographie', 'Radiographie des seins', 25000, 1, 20),
+(13, 'Osteodensitometrie', 'Mesure de la densite osseuse', 35000, 0, 25);
+
+-- Cardiologie (id_specialite = 14)
+INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
+(14, 'ECG', 'Electrocardiogramme', 10000, 1, 15);
+
+-- --------------------------------------------------------
+-- Table: orientation_specialiste
+-- --------------------------------------------------------
+
+CREATE TABLE `orientation_specialiste` (
+  `id_orientation` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `id_specialite` INT DEFAULT NULL,
+  `specialite_manuelle` VARCHAR(255) DEFAULT NULL,
+  `id_medecin_oriente` INT DEFAULT NULL,
+  `medecin_manuel` VARCHAR(255) DEFAULT NULL,
+  `motif` TEXT NOT NULL,
+  `urgence` TINYINT(1) DEFAULT 0,
+  `statut` ENUM('en_attente', 'acceptee', 'refusee', 'terminee') DEFAULT 'en_attente',
+  `date_orientation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_rdv_propose` DATETIME DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  `id_rdv_cree` INT DEFAULT NULL,
+  PRIMARY KEY (`id_orientation`),
+  KEY `fk_orientation_consultation` (`id_consultation`),
+  KEY `fk_orientation_specialite` (`id_specialite`),
+  KEY `fk_orientation_medecin` (`id_medecin_oriente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -385,12 +825,23 @@ CREATE TABLE `bulletin_examen` (
   `date_demande` DATE NOT NULL,
   `id_labo` INT DEFAULT NULL,
   `id_consultation` INT DEFAULT NULL,
+  `id_hospitalisation` INT DEFAULT NULL COMMENT 'Hospitalisation ayant genere cet examen',
   `instructions` TEXT DEFAULT NULL,
   `id_exam` INT DEFAULT NULL,
+  `urgence` TINYINT(1) DEFAULT 0 COMMENT 'Examen urgent',
+  `statut` VARCHAR(20) DEFAULT 'prescrit' COMMENT 'prescrit, en_cours, termine, annule',
+  `date_realisation` DATETIME DEFAULT NULL COMMENT 'Date de realisation',
+  `resultat_texte` TEXT DEFAULT NULL COMMENT 'Resultat textuel',
+  `resultat_fichier` VARCHAR(500) DEFAULT NULL COMMENT 'Chemin fichier resultat',
+  `id_biologiste` INT DEFAULT NULL COMMENT 'Biologiste validateur',
+  `date_resultat` DATETIME DEFAULT NULL COMMENT 'Date saisie resultat',
+  `commentaire_labo` TEXT DEFAULT NULL COMMENT 'Commentaire laboratoire',
   PRIMARY KEY (`id_bull_exam`),
   KEY `id_labo` (`id_labo`),
   KEY `id_consultation` (`id_consultation`),
-  KEY `fk_bulletin_examen` (`id_exam`)
+  KEY `fk_bulletin_hospitalisation` (`id_hospitalisation`),
+  KEY `fk_bulletin_examen` (`id_exam`),
+  KEY `idx_bulletin_statut` (`statut`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -435,6 +886,23 @@ CREATE TABLE `facture` (
   `id_caissier` INT DEFAULT NULL,
   `id_hospit` INT DEFAULT NULL,
   `contenue` VARCHAR(250) DEFAULT NULL,
+  `numero_facture` VARCHAR(30) DEFAULT NULL,
+  `id_medecin` INT DEFAULT NULL,
+  `id_service` INT DEFAULT NULL,
+  `id_specialite` INT DEFAULT NULL,
+  `id_consultation` INT DEFAULT NULL,
+  `montant_total` DECIMAL(12,2) DEFAULT 0,
+  `montant_paye` DECIMAL(12,2) DEFAULT 0,
+  `montant_restant` DECIMAL(12,2) DEFAULT 0,
+  `type_facture` VARCHAR(50) DEFAULT NULL,
+  `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `date_echeance` DATETIME DEFAULT NULL,
+  `date_paiement` DATETIME DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `couverture_assurance` TINYINT(1) DEFAULT 0,
+  `id_assurance` INT DEFAULT NULL,
+  `taux_couverture` DECIMAL(5,2) DEFAULT NULL,
+  `montant_assurance` DECIMAL(12,2) DEFAULT NULL,
   PRIMARY KEY (`id_facture`),
   KEY `id_patient` (`id_patient`),
   KEY `id_caissier` (`id_caissier`),
@@ -641,10 +1109,11 @@ CREATE TABLE `historique_acces_dossier` (
 -- --------------------------------------------------------
 
 ALTER TABLE `service`
-  ADD CONSTRAINT `service_ibfk_1` FOREIGN KEY (`responsable_service`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL;
+  ADD CONSTRAINT `service_ibfk_1` FOREIGN KEY (`responsable_service`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_service_major` FOREIGN KEY (`id_major`) REFERENCES `infirmier` (`id_user`) ON DELETE SET NULL;
 
 ALTER TABLE `patient`
-  ADD CONSTRAINT `fk_patient_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurance` (`id_assurance`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_patient_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`) ON DELETE SET NULL,
   ADD CONSTRAINT `patient_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
 
 ALTER TABLE `medecin`
@@ -661,8 +1130,20 @@ ALTER TABLE `administrateur`
 ALTER TABLE `caissier`
   ADD CONSTRAINT `caissier_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
 
+ALTER TABLE `accueil`
+  ADD CONSTRAINT `accueil_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+
+ALTER TABLE `pharmacien`
+  ADD CONSTRAINT `pharmacien_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+
+ALTER TABLE `biologiste`
+  ADD CONSTRAINT `biologiste_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+
 ALTER TABLE `lit`
   ADD CONSTRAINT `lit_ibfk_1` FOREIGN KEY (`id_chambre`) REFERENCES `chambre` (`id_chambre`);
+
+ALTER TABLE `chambre`
+  ADD CONSTRAINT `fk_chambre_standard` FOREIGN KEY (`id_standard`) REFERENCES `standard_chambre` (`id_standard`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE `consultation`
   ADD CONSTRAINT `consultation_ibfk_1` FOREIGN KEY (`id_medecin`) REFERENCES `medecin` (`id_user`),
@@ -670,7 +1151,14 @@ ALTER TABLE `consultation`
 
 ALTER TABLE `hospitalisation`
   ADD CONSTRAINT `hospitalisation_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`) ON DELETE CASCADE,
-  ADD CONSTRAINT `hospitalisation_ibfk_2` FOREIGN KEY (`id_lit`) REFERENCES `lit` (`id_lit`);
+  ADD CONSTRAINT `hospitalisation_ibfk_2` FOREIGN KEY (`id_lit`) REFERENCES `lit` (`id_lit`),
+  ADD CONSTRAINT `fk_hospitalisation_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_hospitalisation_service` FOREIGN KEY (`id_service`) REFERENCES `service` (`id_service`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_hospitalisation_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE SET NULL;
+
+ALTER TABLE `soin_hospitalisation`
+  ADD CONSTRAINT `fk_soin_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_soin_prescripteur` FOREIGN KEY (`id_prescripteur`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL;
 
 ALTER TABLE `prescription`
   ADD CONSTRAINT `prescription_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE;
@@ -682,7 +1170,14 @@ ALTER TABLE `prescription_medicament`
 ALTER TABLE `bulletin_examen`
   ADD CONSTRAINT `bulletin_examen_ibfk_1` FOREIGN KEY (`id_labo`) REFERENCES `laboratoire` (`id_labo`) ON DELETE SET NULL,
   ADD CONSTRAINT `bulletin_examen_ibfk_2` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_bulletin_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_bulletin_examen` FOREIGN KEY (`id_exam`) REFERENCES `examens` (`id_exam`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `orientation_specialiste`
+  ADD CONSTRAINT `fk_orientation_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_orientation_specialite` FOREIGN KEY (`id_specialite`) REFERENCES `specialites` (`id_specialite`),
+  ADD CONSTRAINT `fk_orientation_medecin` FOREIGN KEY (`id_medecin_oriente`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_orientation_rdv` FOREIGN KEY (`id_rdv_cree`) REFERENCES `rendez_vous` (`id_rdv`) ON DELETE SET NULL;
 
 ALTER TABLE `result_exam`
   ADD CONSTRAINT `result_exam_ibfk_1` FOREIGN KEY (`id_exam`) REFERENCES `bulletin_examen` (`id_bull_exam`) ON DELETE CASCADE,
@@ -729,6 +1224,420 @@ ALTER TABLE `acces_verification`
 ALTER TABLE `historique_acces_dossier`
   ADD CONSTRAINT `historique_acces_dossier_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`),
   ADD CONSTRAINT `historique_acces_dossier_ibfk_2` FOREIGN KEY (`id_utilisateur`) REFERENCES `utilisateurs` (`id_user`);
+
+-- --------------------------------------------------------
+-- Tables manquantes pour le système de rendez-vous
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `creneau_disponible` (
+  `id_creneau` INT NOT NULL AUTO_INCREMENT,
+  `id_medecin` INT NOT NULL,
+  `jour_semaine` INT NOT NULL COMMENT '1=Lundi, 7=Dimanche',
+  `heure_debut` TIME NOT NULL,
+  `heure_fin` TIME NOT NULL,
+  `duree_par_defaut` INT DEFAULT 30,
+  `actif` BOOLEAN DEFAULT TRUE,
+  `date_debut_validite` DATE DEFAULT NULL,
+  `date_fin_validite` DATE DEFAULT NULL,
+  `est_semaine_type` BOOLEAN DEFAULT TRUE,
+  PRIMARY KEY (`id_creneau`),
+  KEY `fk_creneau_medecin` (`id_medecin`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `indisponibilite_medecin` (
+  `id_indisponibilite` INT NOT NULL AUTO_INCREMENT,
+  `id_medecin` INT NOT NULL,
+  `date_debut` DATETIME NOT NULL,
+  `date_fin` DATETIME NOT NULL,
+  `type` VARCHAR(50) DEFAULT NULL,
+  `motif` VARCHAR(200) DEFAULT NULL,
+  `journee_complete` BOOLEAN DEFAULT FALSE,
+  PRIMARY KEY (`id_indisponibilite`),
+  KEY `IX_indispo_medecin` (`id_medecin`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `slot_lock` (
+  `id_lock` INT NOT NULL AUTO_INCREMENT,
+  `id_medecin` INT NOT NULL,
+  `date_heure` DATETIME NOT NULL,
+  `duree` INT DEFAULT 30,
+  `id_user` INT NOT NULL,
+  `lock_token` VARCHAR(64) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_lock`),
+  UNIQUE KEY `IX_slot_lock_medecin_date` (`id_medecin`, `date_heure`),
+  KEY `IX_slot_lock_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- Table: audit_logs (journal d'audit)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL DEFAULT 0,
+  `action` VARCHAR(100) NOT NULL,
+  `resource_type` VARCHAR(100) NOT NULL,
+  `resource_id` INT NULL,
+  `details` TEXT NULL,
+  `ip_address` VARCHAR(45) NULL,
+  `user_agent` VARCHAR(500) NULL,
+  `success` BOOLEAN NOT NULL DEFAULT TRUE,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_audit_user_id` (`user_id`),
+  INDEX `idx_audit_action` (`action`),
+  INDEX `idx_audit_resource` (`resource_type`, `resource_id`),
+  INDEX `idx_audit_created_at` (`created_at`),
+  INDEX `idx_audit_success` (`success`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: session_caisse (sessions de caisse)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `session_caisse` (
+  `id_session` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_caissier` INT NOT NULL,
+  `montant_ouverture` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `montant_fermeture` DECIMAL(12,2) NULL,
+  `montant_systeme` DECIMAL(12,2) NULL,
+  `ecart` DECIMAL(12,2) NULL,
+  `date_ouverture` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_fermeture` DATETIME NULL,
+  `statut` VARCHAR(20) NOT NULL DEFAULT 'ouverte',
+  `notes_ouverture` VARCHAR(500) NULL,
+  `notes_fermeture` VARCHAR(500) NULL,
+  `notes_rapprochement` VARCHAR(500) NULL,
+  `valide_par` INT NULL,
+  INDEX `IX_session_caisse_caissier` (`id_caissier`),
+  INDEX `IX_session_caisse_statut` (`statut`),
+  INDEX `IX_session_caisse_date` (`date_ouverture`),
+  CONSTRAINT `FK_session_caisse_caissier` FOREIGN KEY (`id_caissier`) 
+    REFERENCES `caissier` (`id_user`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: transaction_paiement (transactions de paiement)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `transaction_paiement` (
+  `id_transaction` INT AUTO_INCREMENT PRIMARY KEY,
+  `numero_transaction` VARCHAR(50) NOT NULL,
+  `transaction_uuid` VARCHAR(36) NOT NULL,
+  `id_facture` INT NOT NULL,
+  `id_patient` INT NULL,
+  `id_caissier` INT NOT NULL,
+  `id_session_caisse` INT NULL,
+  `montant` DECIMAL(12,2) NOT NULL,
+  `mode_paiement` VARCHAR(30) NOT NULL DEFAULT 'especes',
+  `statut` VARCHAR(30) NOT NULL DEFAULT 'complete',
+  `reference` VARCHAR(100) NULL,
+  `notes` VARCHAR(500) NULL,
+  `date_transaction` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_annulation` DATETIME NULL,
+  `motif_annulation` VARCHAR(500) NULL,
+  `annule_par` INT NULL,
+  `est_paiement_partiel` TINYINT(1) NOT NULL DEFAULT 0,
+  `montant_recu` DECIMAL(12,2) NULL,
+  `rendu_monnaie` DECIMAL(12,2) NULL,
+  UNIQUE INDEX `IX_transaction_uuid` (`transaction_uuid`),
+  INDEX `IX_transaction_numero` (`numero_transaction`),
+  INDEX `IX_transaction_facture` (`id_facture`),
+  INDEX `IX_transaction_patient` (`id_patient`),
+  INDEX `IX_transaction_caissier` (`id_caissier`),
+  INDEX `IX_transaction_session` (`id_session_caisse`),
+  INDEX `IX_transaction_date` (`date_transaction`),
+  INDEX `IX_transaction_statut` (`statut`),
+  INDEX `IX_transaction_mode` (`mode_paiement`),
+  CONSTRAINT `FK_transaction_facture` FOREIGN KEY (`id_facture`) 
+    REFERENCES `facture` (`id_facture`) ON DELETE CASCADE,
+  CONSTRAINT `FK_transaction_patient` FOREIGN KEY (`id_patient`) 
+    REFERENCES `patient` (`id_user`) ON DELETE SET NULL,
+  CONSTRAINT `FK_transaction_caissier` FOREIGN KEY (`id_caissier`) 
+    REFERENCES `caissier` (`id_user`) ON DELETE CASCADE,
+  CONSTRAINT `FK_transaction_session` FOREIGN KEY (`id_session_caisse`) 
+    REFERENCES `session_caisse` (`id_session`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rendez_vous` (
+  `id_rdv` INT NOT NULL AUTO_INCREMENT,
+  `id_patient` INT NOT NULL,
+  `id_medecin` INT NOT NULL,
+  `id_service` INT DEFAULT NULL,
+  `date_heure` DATETIME NOT NULL,
+  `duree` INT DEFAULT 30,
+  `motif` VARCHAR(100) DEFAULT NULL,
+  `statut` VARCHAR(30) DEFAULT 'planifie',
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `motif_annulation` VARCHAR(500) DEFAULT NULL,
+  `date_annulation` TIMESTAMP NULL DEFAULT NULL,
+  `annule_par` INT DEFAULT NULL,
+  `date_creation` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `date_modification` TIMESTAMP NULL DEFAULT NULL,
+  `type_rdv` VARCHAR(50) DEFAULT NULL,
+  `notifie` BOOLEAN DEFAULT FALSE,
+  `rappel_envoye` BOOLEAN DEFAULT FALSE,
+  `row_version` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_rdv`),
+  KEY `IX_rdv_patient` (`id_patient`),
+  KEY `IX_rdv_medecin` (`id_medecin`),
+  KEY `IX_rdv_date` (`date_heure`),
+  KEY `IX_rdv_statut` (`statut`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `parametre` (
+  `id_parametre` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `poids` DECIMAL(5,2) DEFAULT NULL,
+  `temperature` DECIMAL(4,1) DEFAULT NULL,
+  `tension_systolique` INT DEFAULT NULL,
+  `tension_diastolique` INT DEFAULT NULL,
+  `taille` DECIMAL(5,2) DEFAULT NULL,
+  `date_enregistrement` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `enregistre_par` INT DEFAULT NULL,
+  PRIMARY KEY (`id_parametre`),
+  UNIQUE KEY `IX_parametre_consultation` (`id_consultation`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Correction: Ajouter must_change_password à utilisateurs si manquant
+-- ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Correction: Ajouter cout_consultation à specialites si manquant  
+-- ALTER TABLE specialites ADD COLUMN IF NOT EXISTS cout_consultation DECIMAL(12,2) DEFAULT 5000;
+
+-- Correction: Ajouter id_rdv à consultation si manquant
+-- ALTER TABLE consultation ADD COLUMN IF NOT EXISTS id_rdv INT DEFAULT NULL;
+
+-- --------------------------------------------------------
+-- Table: question (questionnaire consultation)
+-- --------------------------------------------------------
+
+CREATE TABLE `question` (
+  `id_question` INT AUTO_INCREMENT PRIMARY KEY,
+  `texte` TEXT NOT NULL,
+  `type` VARCHAR(50) DEFAULT 'text',
+  `categorie` VARCHAR(100) DEFAULT NULL,
+  `ordre` INT DEFAULT 0,
+  `obligatoire` TINYINT(1) DEFAULT 0,
+  `actif` TINYINT(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: consultation_question (liaison consultation-question)
+-- --------------------------------------------------------
+
+CREATE TABLE `consultation_question` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_consultation` INT NOT NULL,
+  `id_question` INT NOT NULL,
+  UNIQUE INDEX `UX_consultation_question` (`id_consultation`, `id_question`),
+  INDEX `IX_consultation_question_question` (`id_question`),
+  CONSTRAINT `FK_consultation_question_consultation` FOREIGN KEY (`id_consultation`)
+    REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
+  CONSTRAINT `FK_consultation_question_question` FOREIGN KEY (`id_question`)
+    REFERENCES `question` (`id_question`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: reponse (réponses aux questions)
+-- --------------------------------------------------------
+
+CREATE TABLE `reponse` (
+  `id_reponse` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_consultation_question` INT NOT NULL,
+  `valeur` TEXT NULL,
+  `date_reponse` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `IX_reponse_consultation_question` (`id_consultation_question`),
+  CONSTRAINT `FK_reponse_consultation_question` FOREIGN KEY (`id_consultation_question`)
+    REFERENCES `consultation_question` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Seed: Questions prédéfinies
+-- --------------------------------------------------------
+
+INSERT INTO `question` (`texte`, `type`, `categorie`, `ordre`, `obligatoire`, `actif`) VALUES
+('Motif principal de consultation', 'text', 'general', 1, 1, 1),
+('Symptomes actuels (debut, duree, intensite)', 'text', 'general', 2, 1, 1),
+('Antecedents medicaux pertinents', 'text', 'general', 3, 0, 1),
+('Traitements en cours', 'text', 'general', 4, 0, 1),
+('Allergies connues', 'text', 'general', 5, 0, 1);
+
+-- --------------------------------------------------------
+-- Table: permissions (RBAC)
+-- --------------------------------------------------------
+
+CREATE TABLE `permissions` (
+  `id_permission` INT AUTO_INCREMENT PRIMARY KEY,
+  `code` VARCHAR(100) NOT NULL UNIQUE,
+  `nom` VARCHAR(150) NOT NULL,
+  `description` VARCHAR(500) DEFAULT NULL,
+  `module` VARCHAR(50) NOT NULL,
+  `actif` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `IX_permission_module` (`module`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: role_permissions (liaison rôles-permissions)
+-- --------------------------------------------------------
+
+CREATE TABLE `role_permissions` (
+  `id_role_permission` INT AUTO_INCREMENT PRIMARY KEY,
+  `role` VARCHAR(50) NOT NULL,
+  `id_permission` INT NOT NULL,
+  `actif` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `UK_role_permission` (`role`, `id_permission`),
+  INDEX `IX_role_permission_role` (`role`),
+  CONSTRAINT `FK_role_permission_permission` FOREIGN KEY (`id_permission`) 
+    REFERENCES `permissions`(`id_permission`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: user_permissions (permissions spécifiques utilisateur)
+-- --------------------------------------------------------
+
+CREATE TABLE `user_permissions` (
+  `id_user_permission` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_user` INT NOT NULL,
+  `id_permission` INT NOT NULL,
+  `granted` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `UK_user_permission` (`id_user`, `id_permission`),
+  CONSTRAINT `FK_user_permission_user` FOREIGN KEY (`id_user`) 
+    REFERENCES `utilisateurs`(`id_user`) ON DELETE CASCADE,
+  CONSTRAINT `FK_user_permission_permission` FOREIGN KEY (`id_permission`) 
+    REFERENCES `permissions`(`id_permission`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Seed: Permissions par module
+-- --------------------------------------------------------
+
+INSERT INTO `permissions` (`code`, `nom`, `description`, `module`) VALUES
+-- Module: Patients
+('patients.view', 'Voir les patients', 'Permet de consulter la liste et les détails des patients', 'patients'),
+('patients.create', 'Créer un patient', 'Permet de créer un nouveau dossier patient', 'patients'),
+('patients.edit', 'Modifier un patient', 'Permet de modifier les informations d''un patient', 'patients'),
+('patients.delete', 'Supprimer un patient', 'Permet de supprimer un dossier patient', 'patients'),
+('patients.view_dossier', 'Voir le dossier médical', 'Permet de consulter le dossier médical complet', 'patients'),
+-- Module: Consultations
+('consultations.view', 'Voir les consultations', 'Permet de consulter les consultations', 'consultations'),
+('consultations.create', 'Créer une consultation', 'Permet de créer une nouvelle consultation', 'consultations'),
+('consultations.edit', 'Modifier une consultation', 'Permet de modifier une consultation', 'consultations'),
+('consultations.close', 'Clôturer une consultation', 'Permet de clôturer une consultation', 'consultations'),
+('consultations.cancel', 'Annuler une consultation', 'Permet d''annuler une consultation', 'consultations'),
+-- Module: Rendez-vous
+('rdv.view', 'Voir les rendez-vous', 'Permet de consulter les rendez-vous', 'rdv'),
+('rdv.create', 'Créer un rendez-vous', 'Permet de créer un rendez-vous', 'rdv'),
+('rdv.edit', 'Modifier un rendez-vous', 'Permet de modifier un rendez-vous', 'rdv'),
+('rdv.cancel', 'Annuler un rendez-vous', 'Permet d''annuler un rendez-vous', 'rdv'),
+('rdv.validate', 'Valider un rendez-vous', 'Permet de valider/confirmer un rendez-vous', 'rdv'),
+-- Module: Paramètres vitaux
+('parametres.view', 'Voir les paramètres', 'Permet de consulter les paramètres vitaux', 'parametres'),
+('parametres.create', 'Saisir les paramètres', 'Permet de saisir les paramètres vitaux', 'parametres'),
+('parametres.edit', 'Modifier les paramètres', 'Permet de modifier les paramètres vitaux', 'parametres'),
+-- Module: Prescriptions
+('prescriptions.view', 'Voir les prescriptions', 'Permet de consulter les prescriptions', 'prescriptions'),
+('prescriptions.create', 'Créer une prescription', 'Permet de créer une prescription', 'prescriptions'),
+('prescriptions.edit', 'Modifier une prescription', 'Permet de modifier une prescription', 'prescriptions'),
+('prescriptions.dispense', 'Dispenser une prescription', 'Permet de dispenser les médicaments', 'prescriptions'),
+-- Module: Examens
+('examens.view', 'Voir les examens', 'Permet de consulter les examens', 'examens'),
+('examens.request', 'Demander un examen', 'Permet de demander un examen', 'examens'),
+('examens.result', 'Saisir les résultats', 'Permet de saisir les résultats d''examen', 'examens'),
+('examens.validate', 'Valider les résultats', 'Permet de valider les résultats d''examen', 'examens'),
+-- Module: Facturation
+('facturation.view', 'Voir les factures', 'Permet de consulter les factures', 'facturation'),
+('facturation.create', 'Créer une facture', 'Permet de créer une facture', 'facturation'),
+('facturation.edit', 'Modifier une facture', 'Permet de modifier une facture', 'facturation'),
+('facturation.payment', 'Encaisser un paiement', 'Permet d''encaisser un paiement', 'facturation'),
+('facturation.refund', 'Effectuer un remboursement', 'Permet d''effectuer un remboursement', 'facturation'),
+-- Module: Pharmacie
+('pharmacie.view_stock', 'Voir le stock', 'Permet de consulter le stock de médicaments', 'pharmacie'),
+('pharmacie.manage_stock', 'Gérer le stock', 'Permet de gérer le stock (entrées/sorties)', 'pharmacie'),
+('pharmacie.order', 'Passer des commandes', 'Permet de passer des commandes fournisseurs', 'pharmacie'),
+-- Module: Hospitalisation
+('hospitalisation.view', 'Voir les hospitalisations', 'Permet de consulter les hospitalisations', 'hospitalisation'),
+('hospitalisation.admit', 'Admettre un patient', 'Permet d''admettre un patient', 'hospitalisation'),
+('hospitalisation.discharge', 'Sortir un patient', 'Permet de faire sortir un patient', 'hospitalisation'),
+('hospitalisation.manage_lits', 'Gérer les lits', 'Permet de gérer les lits et chambres', 'hospitalisation'),
+-- Module: Administration
+('admin.users', 'Gérer les utilisateurs', 'Permet de gérer les utilisateurs du système', 'admin'),
+('admin.roles', 'Gérer les rôles', 'Permet de gérer les rôles et permissions', 'admin'),
+('admin.settings', 'Gérer les paramètres', 'Permet de gérer les paramètres système', 'admin'),
+('admin.services', 'Gérer les services', 'Permet de gérer les services médicaux', 'admin'),
+('admin.audit', 'Voir les logs d''audit', 'Permet de consulter les logs d''audit', 'admin');
+
+-- --------------------------------------------------------
+-- Seed: Attribution des permissions aux rôles
+-- --------------------------------------------------------
+
+-- Rôle: patient
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'patient', `id_permission` FROM `permissions` WHERE `code` IN (
+    'rdv.view', 'rdv.create', 'rdv.cancel',
+    'consultations.view',
+    'prescriptions.view',
+    'examens.view',
+    'facturation.view'
+);
+
+-- Rôle: medecin
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'medecin', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view', 'patients.view_dossier',
+    'consultations.view', 'consultations.create', 'consultations.edit', 'consultations.close',
+    'rdv.view', 'rdv.validate', 'rdv.cancel',
+    'parametres.view',
+    'prescriptions.view', 'prescriptions.create', 'prescriptions.edit',
+    'examens.view', 'examens.request',
+    'hospitalisation.view', 'hospitalisation.admit', 'hospitalisation.discharge'
+);
+
+-- Rôle: infirmier
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'infirmier', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view',
+    'consultations.view',
+    'parametres.view', 'parametres.create', 'parametres.edit',
+    'prescriptions.view',
+    'examens.view'
+);
+
+-- Rôle: accueil
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'accueil', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view', 'patients.create', 'patients.edit',
+    'rdv.view', 'rdv.create', 'rdv.edit', 'rdv.cancel',
+    'consultations.view', 'consultations.create',
+    'parametres.view', 'parametres.create'
+);
+
+-- Rôle: caissier
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'caissier', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view',
+    'facturation.view', 'facturation.create', 'facturation.edit', 'facturation.payment',
+    'consultations.view'
+);
+
+-- Rôle: pharmacien
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'pharmacien', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view',
+    'prescriptions.view', 'prescriptions.dispense',
+    'pharmacie.view_stock', 'pharmacie.manage_stock', 'pharmacie.order'
+);
+
+-- Rôle: biologiste
+INSERT INTO `role_permissions` (`role`, `id_permission`)
+SELECT 'biologiste', `id_permission` FROM `permissions` WHERE `code` IN (
+    'patients.view',
+    'examens.view', 'examens.result', 'examens.validate'
+);
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
