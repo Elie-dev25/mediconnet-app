@@ -33,6 +33,7 @@ public class RendezVousDto
 public class RendezVousListDto
 {
     public int IdRendezVous { get; set; }
+    public int? IdConsultation { get; set; }
     public DateTime DateHeure { get; set; }
     public int Duree { get; set; }
     public string Statut { get; set; } = string.Empty;
@@ -40,6 +41,7 @@ public class RendezVousListDto
     public string? Motif { get; set; }
     public string MedecinNom { get; set; } = string.Empty;
     public string? ServiceNom { get; set; }
+    public bool AnamneseRemplie { get; set; }
 }
 
 /// <summary>
@@ -292,4 +294,56 @@ public class RefuserPropositionRequest
 
     [MaxLength(500)]
     public string? Motif { get; set; }
+}
+
+/// <summary>
+/// DTO pour les factures patient en attente
+/// </summary>
+public class FacturePatientDto
+{
+    public int IdFacture { get; set; }
+    public string? NumeroFacture { get; set; }
+    public int? IdRendezVous { get; set; }
+    public DateTime? DateRendezVous { get; set; }
+    public string? MedecinNom { get; set; }
+    public string? ServiceNom { get; set; }
+    public decimal MontantTotal { get; set; }
+    public decimal MontantRestant { get; set; }
+    public string Statut { get; set; } = string.Empty;
+    public DateTime DateCreation { get; set; }
+    public DateTime? DateEcheance { get; set; }
+    public bool CouvertureAssurance { get; set; }
+    public decimal? TauxCouverture { get; set; }
+    public decimal? MontantAssurance { get; set; }
+}
+
+/// <summary>
+/// Requête pour payer une facture en ligne
+/// </summary>
+public class PayerFactureEnLigneRequest
+{
+    [Required]
+    public int IdFacture { get; set; }
+
+    [Required]
+    [MaxLength(50)]
+    public string ModePaiement { get; set; } = "mobile_money"; // mobile_money, carte_bancaire
+
+    [MaxLength(100)]
+    public string? Reference { get; set; }
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+}
+
+/// <summary>
+/// Réponse de paiement en ligne
+/// </summary>
+public class PayerFactureEnLigneResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string? NumeroTransaction { get; set; }
+    public int? IdRendezVous { get; set; }
+    public string? StatutRdv { get; set; }
 }

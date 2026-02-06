@@ -2,85 +2,80 @@
 // Mixins SCSS partagés
 // ============================================
 
-// ==================== BREAKPOINTS ====================
-$breakpoint-xs: 480px;
-$breakpoint-sm: 640px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 1024px;
-$breakpoint-xl: 1280px;
-$breakpoint-2xl: 1536px;
+// Importer les breakpoints depuis variables
+@use 'variables' as vars;
 
 // Mixin pour mobile first
 @mixin mobile {
-  @media (max-width: #{$breakpoint-sm - 1px}) {
+  @media (max-width: #{vars.$breakpoint-sm - 1px}) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-lg - 1px}) {
+  @media (min-width: vars.$breakpoint-sm) and (max-width: #{vars.$breakpoint-lg - 1px}) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: vars.$breakpoint-lg) {
     @content;
   }
 }
 
 // Mixins basés sur max-width (breakpoint down)
 @mixin xs-down {
-  @media (max-width: #{$breakpoint-xs - 1px}) {
+  @media (max-width: #{vars.$breakpoint-xs - 1px}) {
     @content;
   }
 }
 
 @mixin sm-down {
-  @media (max-width: #{$breakpoint-sm - 1px}) {
+  @media (max-width: #{vars.$breakpoint-sm - 1px}) {
     @content;
   }
 }
 
 @mixin md-down {
-  @media (max-width: #{$breakpoint-md - 1px}) {
+  @media (max-width: #{vars.$breakpoint-md - 1px}) {
     @content;
   }
 }
 
 @mixin lg-down {
-  @media (max-width: #{$breakpoint-lg - 1px}) {
+  @media (max-width: #{vars.$breakpoint-lg - 1px}) {
     @content;
   }
 }
 
 @mixin xl-down {
-  @media (max-width: #{$breakpoint-xl - 1px}) {
+  @media (max-width: #{vars.$breakpoint-xl - 1px}) {
     @content;
   }
 }
 
 // Mixins basés sur min-width (breakpoint up)
 @mixin sm-up {
-  @media (min-width: $breakpoint-sm) {
+  @media (min-width: vars.$breakpoint-sm) {
     @content;
   }
 }
 
 @mixin md-up {
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: vars.$breakpoint-md) {
     @content;
   }
 }
 
 @mixin lg-up {
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: vars.$breakpoint-lg) {
     @content;
   }
 }
 
 @mixin xl-up {
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: vars.$breakpoint-xl) {
     @content;
   }
 }
@@ -191,6 +186,304 @@ $breakpoint-2xl: 1536px;
   }
 }
 
+// Scrollbar invisible qui apparaît au hover
+@mixin invisible-scrollbar($max-height: 400px) {
+  max-height: $max-height;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+}
+
+// ==================== MODERN LIST STYLES ====================
+@mixin modern-list-container($max-height: 450px) {
+  @include invisible-scrollbar($max-height);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 0.25rem;
+}
+
+@mixin modern-list-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+  }
+}
+
+@mixin modern-list-card-clickable {
+  @include modern-list-card;
+  cursor: pointer;
+  
+  &:hover {
+    border-color: #5c6bc0;
+    box-shadow: 0 4px 16px rgba(92, 107, 192, 0.12);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// ==================== MODERN PAGE STYLES ====================
+@mixin page-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  
+  @include md-down {
+    padding: 1rem;
+  }
+}
+
+@mixin page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    @include sm-down {
+      font-size: 1.25rem;
+    }
+  }
+  
+  .subtitle {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+}
+
+@mixin section-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+// ==================== MODERN STATS ====================
+@mixin stats-grid($columns: 4) {
+  display: grid;
+  grid-template-columns: repeat($columns, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  
+  @include lg-down {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include sm-down {
+    grid-template-columns: 1fr;
+  }
+}
+
+@mixin stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+  
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .stat-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1.2;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+  }
+}
+
+// ==================== MODERN SEARCH ====================
+@mixin search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  
+  lucide-icon {
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+  
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.9375rem;
+    background: transparent;
+    min-width: 0;
+    
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+  
+  &:focus-within {
+    border-color: #5c6bc0;
+    box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.1);
+  }
+}
+
+// ==================== MODERN TABS ====================
+@mixin tabs-container {
+  display: flex;
+  gap: 0.25rem;
+  background: #f3f4f6;
+  padding: 0.25rem;
+  border-radius: 10px;
+  
+  @include sm-down {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+@mixin tab-button {
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  
+  &:hover {
+    color: #374151;
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  &.active {
+    background: white;
+    color: #5c6bc0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// ==================== EMPTY & LOADING STATES ====================
+@mixin empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  
+  lucide-icon {
+    opacity: 0.3;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+}
+
+@mixin loading-state {
+  @include empty-state;
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
 // ==================== ANIMATIONS ====================
 @mixin fade-in($duration: 0.2s) {
   animation: fadeIn $duration ease forwards;
@@ -234,4 +527,37 @@ $breakpoint-2xl: 1536px;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+// ==================== SCROLLABLE LIST ====================
+// Scroll invisible qui apparaît au hover, avec hauteur max basée sur le nombre d'éléments
+@mixin scrollable-list($max-height: 350px) {
+  max-height: $max-height;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+
+  // Scrollbar invisible mais fonctionnelle
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
 }

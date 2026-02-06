@@ -36,7 +36,7 @@
             [class.clickable]="step.id < currentStep || (step.id === currentStep + 1 && isCurrentStepValid)"
             (click)="goToStep(step.id)">
             <div class="step-circle">
-              <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check" [size]="16"></lucide-icon>
+              <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check-circle-2" [size]="16"></lucide-icon>
               <lucide-icon *ngIf="!step.completed || currentStep === step.id" [name]="step.icon" [size]="18"></lucide-icon>
             </div>
             <span class="step-title">{{ step.title }}</span>
@@ -382,11 +382,11 @@
 
               <ul class="declaration-list">
                 <li>
-                  <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+                  <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
                   <span>Toutes les informations que j'ai fournies dans ce formulaire sont <strong>exactes et véridiques</strong>.</span>
                 </li>
                 <li>
-                  <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+                  <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
                   <span>L'établissement de santé <strong>MediConnect</strong> peut se fier à ces informations pour ma <strong>prise en charge médicale</strong>.</span>
                 </li>
                 <li>
@@ -446,7 +446,7 @@
           (click)="submitProfile()"
           [disabled]="!isCurrentStepValid || isSubmitting">
           <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spinner"></lucide-icon>
-          <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting" name="check-circle-2" [size]="18"></lucide-icon>
           <span>{{ isSubmitting ? 'Enregistrement...' : 'Terminer' }}</span>
         </button>
       </div>

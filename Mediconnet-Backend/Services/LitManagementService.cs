@@ -239,7 +239,7 @@ public class LitManagementService : ILitManagementService
             {
                 IdAdmission = request.IdAdmission,
                 IdPatient = hospitalisation.IdPatient,
-                IdLitOrigine = hospitalisation.IdLit,
+                IdLitOrigine = hospitalisation.IdLit ?? 0,
                 IdLitDestination = request.IdNouveauLit,
                 Motif = request.Motif,
                 DateTransfert = DateTime.UtcNow

@@ -32,7 +32,7 @@
               [alt]="patient.prenom + ' ' + patient.nom"
               class="avatar-img">
             <div class="avatar-badge" *ngIf="patient.isProfileComplete">
-              <lucide-icon name="check" [size]="12"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="12"></lucide-icon>
             </div>
           </div>
           <div class="patient-info">
@@ -52,7 +52,7 @@
                 Inscrit le {{ formatDateShort(patient.createdAt) }}
               </span>
               <span class="meta-item" [class.complete]="patient.isProfileComplete" [class.incomplete]="!patient.isProfileComplete">
-                <lucide-icon [name]="patient.isProfileComplete ? 'check-circle' : 'alert-circle'" [size]="14"></lucide-icon>
+                <lucide-icon [name]="patient.isProfileComplete ? 'check-circle-2' : 'alert-circle'" [size]="14"></lucide-icon>
                 {{ patient.isProfileComplete ? 'Profil complet' : 'Profil incomplet' }}
               </span>
             </div>
@@ -205,13 +205,20 @@
             </button>
             <button 
               class="tab" 
+              [class.active]="activeTab === 'missed'"
+              (click)="setActiveTab('missed')">
+              <lucide-icon name="user-x" [size]="14" class="tab-icon"></lucide-icon>
+              Visites manquées ({{ missedCount }})
+            </button>
+            <button 
+              class="tab" 
               [class.active]="activeTab === 'treatments'"
               (click)="setActiveTab('treatments')">
               Traitements ({{ traitementsCount }})
             </button>
           </div>
 
-          <div class="visits-list">
+          <div class="visits-list" [class.scrollable-list]="activeTab === 'past' || activeTab === 'treatments'">
             <!-- Visites à venir -->
             <ng-container *ngIf="activeTab === 'future'">
               <div class="visit-row" *ngFor="let visite of futureVisits">
@@ -259,6 +266,38 @@
               <div class="empty-visits" *ngIf="pastVisits.length === 0">
                 <lucide-icon name="calendar-x" [size]="32"></lucide-icon>
                 <p>Aucune visite passée</p>
+              </div>
+            </ng-container>
+
+            <!-- Visites manquées -->
+            <ng-container *ngIf="activeTab === 'missed'">
+              <div class="visit-row missed" *ngFor="let visite of missedVisits">
+                <div class="visit-time-col">
+                  <span class="time">{{ formatVisiteTime(visite.dateHeure, visite.duree) }}</span>
+                  <span class="date">{{ formatVisiteDate(visite.dateHeure) }}</span>
+                </div>
+                <div class="visit-service-col">
+                  <span class="label">Service :</span>
+                  <span class="service">{{ visite.service || visite.typeRdv }}</span>
+                </div>
+                <div class="visit-doctor-col">
+                  <span class="label">Médecin :</span>
+                  <span class="doctor">Dr. {{ visite.nomMedecin }}</span>
+                </div>
+                <div class="visit-status-col">
+                  <span class="status-badge absent">Absent</span>
+                </div>
+                <div class="visit-actions-col">
+                  <button class="btn-reschedule" (click)="navigateToNewRdv()" title="Programmer un autre RDV">
+                    <lucide-icon name="calendar-plus" [size]="16"></lucide-icon>
+                    Reprogrammer
+                  </button>
+                </div>
+              </div>
+              <div class="empty-visits" *ngIf="missedVisits.length === 0">
+                <lucide-icon name="check-circle" [size]="32"></lucide-icon>
+                <p>Aucune visite manquée</p>
+                <span class="empty-subtitle">Vous n'avez manqué aucun rendez-vous</span>
               </div>
             </ng-container>
 
@@ -467,7 +506,7 @@
     <div class="panel-body">
       <!-- Messages -->
       <div class="alert alert-success" *ngIf="profileSuccessMessage" @fadeIn>
-        <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
         {{ profileSuccessMessage }}
       </div>
       <div class="alert alert-error" *ngIf="profileErrorMessage" @fadeIn>

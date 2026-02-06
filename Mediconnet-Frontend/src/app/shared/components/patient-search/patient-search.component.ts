@@ -18,7 +18,7 @@ export class PatientSearchComponent implements OnInit {
   @Input() limit = 50;
   @Output() patientSelected = new EventEmitter<PatientBasicInfo>();
   
-  searchForm!: FormGroup;
+  searchForm: FormGroup;
   patients: PatientBasicInfo[] = [];
   isLoading = false;
   errorMessage: string | null = null;
@@ -28,7 +28,12 @@ export class PatientSearchComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private patientService: PatientService
-  ) {}
+  ) {
+    // Initialiser le formulaire dans le constructeur pour éviter les erreurs si onFocus est appelé avant ngOnInit
+    this.searchForm = this.fb.group({
+      searchTerm: ['']
+    });
+  }
 
   ngOnInit(): void {
     this.initForm();

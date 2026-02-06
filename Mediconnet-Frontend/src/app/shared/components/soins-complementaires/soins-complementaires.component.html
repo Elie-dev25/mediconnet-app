@@ -1,0 +1,146 @@
+<div class="soins-complementaires">
+  <div class="section-header">
+    <h4>
+      <lucide-icon name="heart-pulse" [size]="16"></lucide-icon>
+      Soins complémentaires à administrer
+    </h4>
+    <button type="button" class="btn-add" (click)="addSoin()">
+      <lucide-icon name="plus" [size]="14"></lucide-icon>
+      Ajouter soin
+    </button>
+  </div>
+
+  <div class="soins-list" [formGroup]="soinsForm">
+    <div formArrayName="soins">
+      <div class="soin-card" *ngFor="let soin of soinsArray.controls; let i = index" 
+           [formGroupName]="i"
+           [class]="getPrioriteClass(soin.get('priorite')?.value)">
+        <div class="card-header">
+          <div class="header-left">
+            <lucide-icon [name]="getTypeIcon(soin.get('typeSoin')?.value)" [size]="18"></lucide-icon>
+            <span class="soin-number">Soin {{ i + 1 }}</span>
+          </div>
+          <div class="header-right">
+            <select formControlName="priorite" class="priorite-select">
+              <option value="normale">Normale</option>
+              <option value="haute">Haute</option>
+              <option value="urgente">Urgente</option>
+            </select>
+            <button type="button" class="btn-remove" (click)="removeSoin(i)" title="Supprimer">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Ligne 1: Type + Description -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Type de soin *</label>
+              <select formControlName="typeSoin" (change)="onTypeChange(i)">
+                <option value="">-- Sélectionner --</option>
+                <option *ngFor="let type of typesSoins" [value]="type.value">{{ type.label }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-2">
+              <label>Description du soin *</label>
+              <ng-container *ngIf="getSoinsSuggestions(i).length > 0; else inputLibre">
+                <select formControlName="description" (change)="onDescriptionChange(i)">
+                  <option value="">-- Sélectionner --</option>
+                  <option *ngFor="let desc of getSoinsSuggestions(i)" [value]="desc">{{ desc }}</option>
+                </select>
+              </ng-container>
+              <ng-template #inputLibre>
+                <input type="text" formControlName="description" placeholder="Description du soin...">
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- Champ de saisie libre si type "Autre" est sélectionné -->
+          <div class="form-row" *ngIf="isTypeSoinAutre(i)">
+            <div class="form-group flex-1">
+              <label>Précisez le type de soin *</label>
+              <input type="text" formControlName="typeSoinAutre" 
+                     placeholder="Saisissez le type de soin...">
+            </div>
+          </div>
+
+          <!-- Champ de saisie libre si description "Autre" est sélectionnée -->
+          <div class="form-row" *ngIf="isDescriptionAutre(i)">
+            <div class="form-group flex-1">
+              <label>Précisez la description du soin *</label>
+              <input type="text" formControlName="descriptionAutre" 
+                     placeholder="Saisissez la description du soin...">
+            </div>
+          </div>
+
+          <!-- Ligne 2: Durée + Nombre de séances -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Durée (jours) *</label>
+              <select formControlName="dureeJours">
+                <option *ngFor="let opt of dureeOptions" [value]="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label>Séances par jour *</label>
+              <select formControlName="nbFoisParJour" (change)="onNbFoisChange(i, $any($event.target).value)">
+                <option *ngFor="let opt of nbFoisOptions" [value]="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Ligne 3: Horaires -->
+          <div class="form-row horaires-section">
+            <div class="form-group flex-1">
+              <div class="horaires-header">
+                <label>Horaires des séances</label>
+                <button type="button" class="btn-toggle-mode" (click)="toggleHorairesMode(i)">
+                  <lucide-icon [name]="soin.get('useHorairesPerso')?.value ? 'wand-2' : 'edit-3'" [size]="14"></lucide-icon>
+                  {{ soin.get('useHorairesPerso')?.value ? 'Horaires auto' : 'Personnaliser' }}
+                </button>
+              </div>
+              
+              <!-- Horaires automatiques -->
+              <div class="horaires-auto" *ngIf="!soin.get('useHorairesPerso')?.value">
+                <div class="horaire-badge" *ngFor="let h of getHorairesAuto(i)">
+                  <lucide-icon name="clock" [size]="12"></lucide-icon>
+                  <span class="seance-label">Séance {{ h.seance }}</span>
+                  <span class="heure">{{ h.heure }}</span>
+                </div>
+              </div>
+
+              <!-- Horaires personnalisés -->
+              <div class="horaires-perso" *ngIf="soin.get('useHorairesPerso')?.value">
+                <div class="horaire-input" *ngFor="let heure of getHorairesPerso(i); let j = index">
+                  <label>Séance {{ j + 1 }}</label>
+                  <input type="time" 
+                         [value]="heure" 
+                         (change)="updateHorairePerso(i, j, $any($event.target).value)">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ligne 3: Instructions -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Instructions particulières</label>
+              <textarea formControlName="instructions" rows="2" 
+                        placeholder="Précisions, précautions, observations à signaler..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="soinsArray.length === 0">
+    <lucide-icon name="heart-pulse" [size]="32"></lucide-icon>
+    <p>Aucun soin complémentaire prescrit</p>
+    <button type="button" class="btn-add-empty" (click)="addSoin()">
+      <lucide-icon name="plus" [size]="16"></lucide-icon>
+      Ajouter un soin
+    </button>
+  </div>
+</div>

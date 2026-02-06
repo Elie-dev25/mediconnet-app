@@ -111,7 +111,39 @@ export class MedecinDossierPatientComponent implements OnInit {
         groupeSanguin: dto.groupeSanguin,
         naissance: dto.naissance ? String(dto.naissance) : undefined,
         sexe: dto.sexe,
-        age
+        age,
+        // Informations personnelles
+        telephone: dto.telephone,
+        email: dto.email,
+        adresse: dto.adresse,
+        nationalite: dto.nationalite,
+        regionOrigine: dto.regionOrigine,
+        situationMatrimoniale: dto.situationMatrimoniale,
+        profession: dto.profession,
+        ethnie: dto.ethnie,
+        nbEnfants: dto.nbEnfants,
+        // Informations médicales
+        maladiesChroniques: dto.maladiesChroniques,
+        allergiesConnues: dto.allergiesConnues,
+        allergiesDetails: dto.allergiesDetails,
+        antecedentsFamiliaux: dto.antecedentsFamiliaux,
+        antecedentsFamiliauxDetails: dto.antecedentsFamiliauxDetails,
+        operationsChirurgicales: dto.operationsChirurgicales,
+        operationsDetails: dto.operationsDetails,
+        // Habitudes de vie
+        consommationAlcool: dto.consommationAlcool,
+        frequenceAlcool: dto.frequenceAlcool,
+        tabagisme: dto.tabagisme,
+        activitePhysique: dto.activitePhysique,
+        // Contact d'urgence
+        personneContact: dto.personneContact,
+        numeroContact: dto.numeroContact,
+        // Assurance
+        nomAssurance: dto.nomAssurance,
+        numeroCarteAssurance: dto.numeroCarteAssurance,
+        couvertureAssurance: dto.couvertureAssurance,
+        dateDebutValidite: dto.dateDebutValidite,
+        dateFinValidite: dto.dateFinValidite
       },
       stats: {
         totalConsultations: dto.consultations?.length || 0,
@@ -169,5 +201,9 @@ export class MedecinDossierPatientComponent implements OnInit {
   getPatientFullName(): string {
     if (!this.dossier) return '';
     return `${this.dossier.prenom || ''} ${this.dossier.nom || ''}`.trim();
+  }
+
+  onViewConsultation(consultationId: number): void {
+    this.router.navigate(['/medecin/consultation-details', consultationId]);
   }
 }

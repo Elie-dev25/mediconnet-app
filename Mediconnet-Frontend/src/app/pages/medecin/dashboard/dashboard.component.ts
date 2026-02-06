@@ -16,12 +16,13 @@ import {
   MiniAgendaComponent,
   ConsultationQuestionnaireFormComponent,
   ModalComponent,
+  FichePatientPanelComponent,
   LucideAngularModule,
   ALL_ICONS_PROVIDER,
   formatTime,
   formatDateWithWeekday
 } from '../../../shared';
-import { ConsultationCompleteService } from '../../../services/consultation-complete.service';
+import { ConsultationCompleteService, CreneauAvecStatut } from '../../../services/consultation-complete.service';
 import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
 
 @Component({
@@ -37,7 +38,8 @@ import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
     StatsGridComponent,
     MiniAgendaComponent,
     ConsultationQuestionnaireFormComponent,
-    ModalComponent
+    ModalComponent,
+    FichePatientPanelComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './dashboard.component.html',
@@ -78,11 +80,20 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
   motifAnnulation = '';
   nouveauCreneau = '';
   messageSuggestion = '';
+
+  // Créneaux pour reprogrammation
+  suggestionDate = '';
+  creneauxSuggestion: CreneauAvecStatut[] = [];
+  isLoadingCreneaux = false;
+  selectedCreneauSuggestion: CreneauAvecStatut | null = null;
   isProcessing = false;
 
   showQuestionnaire = false;
   selectedRdvForQuestionnaire: RendezVousMedecinDto | null = null;
 
+  // Panneau fiche patient (sidebar)
+  selectedPatientId: number | null = null;
+  isFichePanelOpen = false;
 
   constructor(
     private authService: AuthService,
@@ -110,17 +121,21 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
   }
 
   private subscribeRealtime(): void {
+    // Écouter les événements de rendez-vous (nouveau RDV, validation, annulation)
     this.signalRService.appointmentEvents$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
+      .subscribe((event) => {
+        console.log('📅 Événement RDV reçu:', event);
         this.loadStats();
         this.loadFileAttente();
+        this.loadRdvEnAttente(); // Recharger aussi les RDV en attente
       });
 
     this.signalRService.slotEvents$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.loadFileAttente();
+        this.loadRdvEnAttente();
       });
 
     this.signalRService.vitalsEvents$
@@ -129,6 +144,15 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
         this.loadStats();
         this.loadFileAttente();
         this.loadRdvEnAttente();
+      });
+
+    // Écouter spécifiquement les nouveaux RDV en attente
+    this.signalRService.onNewPendingAppointment$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((rdv: any) => {
+        console.log('🆕 Nouveau RDV en attente reçu:', rdv);
+        this.loadRdvEnAttente();
+        this.loadStats();
       });
   }
 
@@ -318,7 +342,16 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
     this.selectedRdvForAction = rdv;
     this.nouveauCreneau = '';
     this.messageSuggestion = '';
+    this.suggestionDate = '';
+    this.creneauxSuggestion = [];
+    this.selectedCreneauSuggestion = null;
     this.showSuggererModal = true;
+    
+    // Initialiser avec la date de demain
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    this.suggestionDate = tomorrow.toISOString().split('T')[0];
+    this.loadCreneauxSuggestion();
   }
 
   closeSuggererModal(): void {
@@ -326,6 +359,56 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
     this.selectedRdvForAction = null;
     this.nouveauCreneau = '';
     this.messageSuggestion = '';
+    this.suggestionDate = '';
+    this.creneauxSuggestion = [];
+    this.selectedCreneauSuggestion = null;
+  }
+
+  onSuggestionDateChange(): void {
+    this.selectedCreneauSuggestion = null;
+    this.nouveauCreneau = '';
+    if (this.suggestionDate) {
+      this.loadCreneauxSuggestion();
+    }
+  }
+
+  loadCreneauxSuggestion(): void {
+    if (!this.suggestionDate) return;
+    
+    this.isLoadingCreneaux = true;
+    this.creneauxSuggestion = [];
+    
+    this.consultationCompleteService.getCreneauxAvecStatut(this.suggestionDate).subscribe({
+      next: (response: { creneaux: CreneauAvecStatut[] }) => {
+        this.creneauxSuggestion = response.creneaux;
+        this.isLoadingCreneaux = false;
+      },
+      error: (err: any) => {
+        console.error('Erreur chargement créneaux:', err);
+        this.creneauxSuggestion = [];
+        this.isLoadingCreneaux = false;
+      }
+    });
+  }
+
+  selectCreneauSuggestion(creneau: CreneauAvecStatut): void {
+    if (creneau.statut !== 'disponible') return;
+    
+    this.selectedCreneauSuggestion = creneau;
+    this.nouveauCreneau = creneau.dateHeure;
+  }
+
+  getCreneauClass(creneau: CreneauAvecStatut): string {
+    switch (creneau.statut) {
+      case 'disponible': return 'creneau-disponible';
+      case 'occupe': return 'creneau-occupe';
+      case 'passe': return 'creneau-passe';
+      default: return '';
+    }
+  }
+
+  isCreneauSelected(creneau: CreneauAvecStatut): boolean {
+    return this.selectedCreneauSuggestion?.dateHeure === creneau.dateHeure;
   }
 
   confirmSuggerer(): void {
@@ -362,19 +445,59 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
     return formatDateWithWeekday(dateStr);
   }
 
-  // ==================== NAVIGATION DOSSIER PATIENT ====================
+  formatDateShort(dateStr: string): string {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day}/${month}/${year}`;
+  }
+
+  // ==================== PANNEAU FICHE PATIENT ====================
 
   openFichePatient(patientId: number): void {
+    // Ouvrir le panneau latéral de fiche patient
+    this.selectedPatientId = patientId;
+    this.isFichePanelOpen = true;
+  }
+
+  closeFichePanel(): void {
+    this.isFichePanelOpen = false;
+    this.selectedPatientId = null;
+  }
+
+  openDossierPatient(patientId: number): void {
     // Navigation vers la page dédiée du dossier patient
     this.router.navigate(['/medecin/patient', patientId]);
   }
 
   openFichePatientForConsultation(rdv: RendezVousMedecinDto): void {
-    // Navigation vers la page dossier patient avec l'ID de consultation
+    // Si une consultation existe déjà, naviguer directement
     if (rdv.idConsultation && rdv.idConsultation > 0) {
       this.router.navigate(['/medecin/patient', rdv.patientId], {
         queryParams: { consultationId: rdv.idConsultation }
       });
+    } else if (rdv.idRendezVous) {
+      // Créer une consultation directe à partir du RDV (sans passage par l'infirmière)
+      this.medecinPlanningService.creerConsultationDirecte(rdv.idRendezVous)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.router.navigate(['/medecin/patient', rdv.patientId], {
+                queryParams: { consultationId: response.idConsultation }
+              });
+              // Rafraîchir la file d'attente
+              this.loadFileAttente();
+            } else {
+              alert(response.message || 'Erreur lors de la création de la consultation');
+            }
+          },
+          error: (err) => {
+            console.error('Erreur création consultation directe:', err);
+            alert(err.error?.message || 'Erreur lors de la création de la consultation');
+          }
+        });
     } else {
       this.router.navigate(['/medecin/patient', rdv.patientId]);
     }

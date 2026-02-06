@@ -89,6 +89,19 @@ public class AuthService : IAuthService
                 declarationHonneurAcceptee = patient?.DeclarationHonneurAcceptee ?? false;
             }
 
+            // Récupérer le titre affiché pour les infirmiers (Major si applicable via Service.IdMajor)
+            string? titreAffiche = null;
+            if (utilisateur.Role == "infirmier")
+            {
+                var serviceMajor = await _context.Services
+                    .FirstOrDefaultAsync(s => s.IdMajor == utilisateur.IdUser);
+                
+                if (serviceMajor != null)
+                {
+                    titreAffiche = $"Major {serviceMajor.NomService}";
+                }
+            }
+
             // Déterminer si première connexion requise
             bool requiresFirstLogin = utilisateur.Role == "patient" && 
                 (utilisateur.MustChangePassword || !declarationHonneurAcceptee);
@@ -102,6 +115,7 @@ public class AuthService : IAuthService
                 Email = utilisateur.Email,
                 Telephone = utilisateur.Telephone,
                 Role = utilisateur.Role,
+                TitreAffiche = titreAffiche,
                 Message = "Connexion reussie",
                 ExpiresIn = 3600,
                 EmailConfirmed = utilisateur.EmailConfirmed,
@@ -174,6 +188,8 @@ public class AuthService : IAuthService
                 DateCreation = DateTime.UtcNow,
                 // Informations personnelles
                 Profession = request.Profession,
+                NbEnfants = request.NbEnfants,
+                Ethnie = request.Ethnie,
                 // Informations médicales
                 GroupeSanguin = request.GroupeSanguin,
                 MaladiesChroniques = request.MaladiesChroniques != null ? string.Join(", ", request.MaladiesChroniques) : null,
@@ -183,6 +199,11 @@ public class AuthService : IAuthService
                 AllergiesDetails = request.AllergiesDetails,
                 AntecedentsFamiliaux = request.AntecedentsFamiliaux,
                 AntecedentsFamiliauxDetails = request.AntecedentsFamiliauxDetails,
+                // Habitudes de vie
+                ConsommationAlcool = request.ConsommationAlcool,
+                FrequenceAlcool = request.FrequenceAlcool,
+                Tabagisme = request.Tabagisme,
+                ActivitePhysique = request.ActivitePhysique,
                 // Contact d'urgence
                 PersonneContact = request.PersonneContact,
                 NumeroContact = request.NumeroContact,

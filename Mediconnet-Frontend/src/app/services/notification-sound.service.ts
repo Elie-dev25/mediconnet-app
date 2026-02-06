@@ -29,30 +29,71 @@ export class NotificationSoundService {
   private config: NotificationSoundConfig;
   private audioContext: AudioContext | null = null;
   private configSubject = new BehaviorSubject<NotificationSoundConfig>(DEFAULT_CONFIG);
+  private userInteracted = false;
   
   public config$ = this.configSubject.asObservable();
 
   constructor() {
     this.config = this.loadConfig();
     this.configSubject.next(this.config);
+    
+    // Détecter la première interaction utilisateur pour activer l'audio
+    this.initUserInteractionListener();
+  }
+
+  /**
+   * Initialise le listener pour détecter l'interaction utilisateur
+   * Nécessaire pour contourner la politique autoplay des navigateurs
+   */
+  private initUserInteractionListener(): void {
+    const events = ['click', 'touchstart', 'keydown'];
+    const handler = () => {
+      this.userInteracted = true;
+      // Pré-initialiser le contexte audio après interaction
+      this.initAudioContext();
+      // Retirer les listeners après la première interaction
+      events.forEach(e => document.removeEventListener(e, handler));
+    };
+    events.forEach(e => document.addEventListener(e, handler, { once: true }));
+  }
+
+  /**
+   * Initialise le contexte audio
+   */
+  private async initAudioContext(): Promise<void> {
+    if (!this.audioContext) {
+      try {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.warn('Impossible de créer AudioContext:', e);
+      }
+    }
+    if (this.audioContext?.state === 'suspended') {
+      await this.audioContext.resume();
+    }
   }
 
   /**
    * Joue le son de notification selon la configuration
    */
   async playNotificationSound(priority: string = 'normale'): Promise<void> {
+    console.log('🔊 Tentative de jouer le son de notification, priorité:', priority);
+    
     if (!this.config.enabled || this.config.soundType === 'none') {
+      console.log('🔇 Son désactivé dans la configuration');
       return;
     }
 
     // Vérifier si l'utilisateur a interagi avec la page (requis pour l'autoplay)
     if (!this.canPlaySound()) {
+      console.log('⚠️ Son bloqué - attente interaction utilisateur ou page non visible');
       return;
     }
 
     try {
       // Utiliser Web Audio API pour un son généré (pas de fichier externe nécessaire)
       await this.playGeneratedSound(priority);
+      console.log('✅ Son de notification joué avec succès');
     } catch (error) {
       console.warn('Impossible de jouer le son de notification:', error);
     }
@@ -235,7 +276,18 @@ export class NotificationSoundService {
   private canPlaySound(): boolean {
     // Les navigateurs modernes bloquent l'autoplay sans interaction
     // Le contexte audio ne peut être créé/repris qu'après une interaction
-    return document.visibilityState === 'visible';
+    // On vérifie aussi si la page est visible pour éviter les sons en arrière-plan
+    return this.userInteracted;
+  }
+
+  /**
+   * Force l'initialisation du contexte audio après une interaction utilisateur
+   * Appelé par le service d'authentification après le login
+   */
+  public async initAfterUserInteraction(): Promise<void> {
+    this.userInteracted = true;
+    await this.initAudioContext();
+    console.log('🔊 Audio initialisé après interaction utilisateur');
   }
 
   /**

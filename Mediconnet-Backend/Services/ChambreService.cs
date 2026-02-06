@@ -33,6 +33,7 @@ public class ChambreService : IChambreService
     {
         var chambres = await _context.Chambres
             .Include(c => c.Lits)
+            .Include(c => c.Standard)
             .OrderBy(c => c.Numero)
             .ToListAsync();
 
@@ -52,6 +53,7 @@ public class ChambreService : IChambreService
     {
         var chambre = await _context.Chambres
             .Include(c => c.Lits)
+            .Include(c => c.Standard)
             .FirstOrDefaultAsync(c => c.IdChambre == id);
 
         return chambre != null ? MapToChambreAdminDto(chambre) : null;
@@ -76,6 +78,7 @@ public class ChambreService : IChambreService
             Capacite = request.Capacite,
             Etat = request.Etat ?? "bon",
             Statut = request.Statut ?? "actif",
+            IdStandard = request.IdStandard,
             Lits = new List<Lit>()
         };
 
@@ -97,9 +100,10 @@ public class ChambreService : IChambreService
 
         _logger.LogInformation("Chambre créée: {Numero} (ID: {Id})", chambre.Numero, chambre.IdChambre);
 
-        // Recharger avec les lits
+        // Recharger avec les lits et le standard
         chambre = await _context.Chambres
             .Include(c => c.Lits)
+            .Include(c => c.Standard)
             .FirstOrDefaultAsync(c => c.IdChambre == chambre.IdChambre);
 
         return new ChambreResponse
@@ -114,6 +118,7 @@ public class ChambreService : IChambreService
     {
         var chambre = await _context.Chambres
             .Include(c => c.Lits)
+            .Include(c => c.Standard)
             .FirstOrDefaultAsync(c => c.IdChambre == id);
 
         if (chambre == null)
@@ -146,6 +151,8 @@ public class ChambreService : IChambreService
             chambre.Etat = request.Etat;
         if (!string.IsNullOrEmpty(request.Statut))
             chambre.Statut = request.Statut;
+        if (request.IdStandard.HasValue)
+            chambre.IdStandard = request.IdStandard.Value;
 
         await _context.SaveChangesAsync();
 
@@ -215,6 +222,18 @@ public class ChambreService : IChambreService
             {
                 Success = false,
                 Message = "Chambre non trouvée"
+            };
+        }
+
+        // Vérifier la capacité maximale de la chambre
+        var nombreLitsActuels = chambre.Lits?.Count ?? 0;
+        var capaciteMax = chambre.Capacite ?? 0;
+        if (capaciteMax > 0 && nombreLitsActuels >= capaciteMax)
+        {
+            return new LitResponse
+            {
+                Success = false,
+                Message = $"Capacité maximale atteinte. La chambre '{chambre.Numero}' a une capacité de {capaciteMax} lit(s) et contient déjà {nombreLitsActuels} lit(s)."
             };
         }
 
@@ -361,6 +380,9 @@ public class ChambreService : IChambreService
             Capacite = chambre.Capacite ?? 0,
             Etat = chambre.Etat ?? "bon",
             Statut = chambre.Statut ?? "actif",
+            IdStandard = chambre.IdStandard,
+            StandardNom = chambre.Standard?.Nom,
+            StandardPrix = chambre.Standard?.PrixJournalier,
             NombreLits = lits.Count,
             LitsLibres = lits.Count(l => l.Statut == "libre"),
             LitsOccupes = lits.Count(l => l.Statut == "occupe"),
@@ -390,5 +412,58 @@ public class ChambreService : IChambreService
             LitsOccupes = allLits.Count(l => l.Statut == "occupe"),
             LitsHorsService = allLits.Count(l => l.Statut == "hors_service")
         };
+    }
+
+    // ==================== CHAMBRES DISPONIBLES PAR STANDARD ====================
+
+    public async Task<List<ChambreDisponibleDto>> GetChambresDisponiblesByStandardAsync(int idStandard)
+    {
+        var chambres = await _context.Chambres
+            .Include(c => c.Lits)
+            .Include(c => c.Standard)
+            .Where(c => c.IdStandard == idStandard && c.Statut == "actif")
+            .Where(c => c.Lits != null && c.Lits.Any(l => l.Statut == "libre"))
+            .OrderBy(c => c.Numero)
+            .ToListAsync();
+
+        return chambres.Select(c => new ChambreDisponibleDto
+        {
+            IdChambre = c.IdChambre,
+            Numero = c.Numero ?? "",
+            StandardNom = c.Standard?.Nom ?? "",
+            PrixJournalier = c.Standard?.PrixJournalier ?? 0,
+            Localisation = c.Standard?.Localisation,
+            LitsDisponibles = c.Lits?.Where(l => l.Statut == "libre").Select(l => new LitDisponibleDto
+            {
+                IdLit = l.IdLit,
+                Numero = l.Numero ?? ""
+            }).ToList() ?? new List<LitDisponibleDto>()
+        }).ToList();
+    }
+
+    public async Task<List<ChambreDisponibleDto>> GetAllChambresDisponiblesAsync()
+    {
+        var chambres = await _context.Chambres
+            .Include(c => c.Lits)
+            .Include(c => c.Standard)
+            .Where(c => c.Statut == "actif")
+            .Where(c => c.Lits != null && c.Lits.Any(l => l.Statut == "libre"))
+            .OrderBy(c => c.Standard != null ? c.Standard.Nom : "")
+            .ThenBy(c => c.Numero)
+            .ToListAsync();
+
+        return chambres.Select(c => new ChambreDisponibleDto
+        {
+            IdChambre = c.IdChambre,
+            Numero = c.Numero ?? "",
+            StandardNom = c.Standard?.Nom ?? "Sans standard",
+            PrixJournalier = c.Standard?.PrixJournalier ?? 0,
+            Localisation = c.Standard?.Localisation,
+            LitsDisponibles = c.Lits?.Where(l => l.Statut == "libre").Select(l => new LitDisponibleDto
+            {
+                IdLit = l.IdLit,
+                Numero = l.Numero ?? ""
+            }).ToList() ?? new List<LitDisponibleDto>()
+        }).ToList();
     }
 }

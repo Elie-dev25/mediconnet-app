@@ -17,7 +17,39 @@ public class Infirmier
     [MaxLength(50)]
     public string? Matricule { get; set; }
     
+    /// <summary>
+    /// Statut de l'infirmier: actif, bloque, suspendu
+    /// </summary>
+    [Column("statut")]
+    [MaxLength(20)]
+    public string Statut { get; set; } = "actif";
+    
+    /// <summary>
+    /// Service de rattachement de l'infirmier (obligatoire)
+    /// </summary>
+    [Column("id_service")]
+    public int IdService { get; set; }
+    
+    /// <summary>
+    /// Date de nomination comme Major (si applicable, via Service.IdMajor)
+    /// </summary>
+    [Column("date_nomination_major")]
+    public DateTime? DateNominationMajor { get; set; }
+    
+    /// <summary>
+    /// Accréditations/certifications de l'infirmier
+    /// </summary>
+    [Column("accreditations")]
+    [MaxLength(500)]
+    public string? Accreditations { get; set; }
+    
     // Relations
     [ForeignKey("IdUser")]
     public virtual Utilisateur Utilisateur { get; set; } = null!;
+    
+    /// <summary>
+    /// Service de rattachement de l'infirmier
+    /// </summary>
+    [ForeignKey("IdService")]
+    public virtual Service Service { get; set; } = null!;
 }

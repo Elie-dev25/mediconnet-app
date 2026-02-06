@@ -26,10 +26,13 @@ namespace Mediconnet_Backend.Services
         {
             var utilisateur = await _context.Utilisateurs
                 .Include(u => u.Patient)
+                    .ThenInclude(p => p!.Assurance)
                 .FirstOrDefaultAsync(u => u.IdUser == userId);
 
             if (utilisateur?.Patient == null)
                 return null;
+
+            var patient = utilisateur.Patient;
 
             return new PatientProfileDto
             {
@@ -43,15 +46,38 @@ namespace Mediconnet_Backend.Services
                 SituationMatrimoniale = utilisateur.SituationMatrimoniale,
                 Adresse = utilisateur.Adresse,
                 Photo = utilisateur.Photo,
-                NumeroDossier = utilisateur.Patient.NumeroDossier,
-                Ethnie = utilisateur.Patient.Ethnie,
-                GroupeSanguin = utilisateur.Patient.GroupeSanguin,
-                NbEnfants = utilisateur.Patient.NbEnfants,
-                PersonneContact = utilisateur.Patient.PersonneContact,
-                NumeroContact = utilisateur.Patient.NumeroContact,
-                Profession = utilisateur.Patient.Profession,
+                NumeroDossier = patient.NumeroDossier,
+                Ethnie = patient.Ethnie,
+                GroupeSanguin = patient.GroupeSanguin,
+                NbEnfants = patient.NbEnfants,
+                PersonneContact = patient.PersonneContact,
+                NumeroContact = patient.NumeroContact,
+                Profession = patient.Profession,
                 CreatedAt = utilisateur.CreatedAt,
-                IsProfileComplete = IsProfileComplete(utilisateur)
+                IsProfileComplete = IsProfileComplete(utilisateur),
+                // Informations utilisateur étendues
+                Nationalite = utilisateur.Nationalite,
+                RegionOrigine = utilisateur.RegionOrigine,
+                // Informations médicales
+                MaladiesChroniques = patient.MaladiesChroniques,
+                AllergiesConnues = patient.AllergiesConnues,
+                AllergiesDetails = patient.AllergiesDetails,
+                AntecedentsFamiliaux = patient.AntecedentsFamiliaux,
+                AntecedentsFamiliauxDetails = patient.AntecedentsFamiliauxDetails,
+                OperationsChirurgicales = patient.OperationsChirurgicales,
+                OperationsDetails = patient.OperationsDetails,
+                // Habitudes de vie
+                ConsommationAlcool = patient.ConsommationAlcool,
+                FrequenceAlcool = patient.FrequenceAlcool,
+                Tabagisme = patient.Tabagisme,
+                ActivitePhysique = patient.ActivitePhysique,
+                // Assurance
+                AssuranceId = patient.AssuranceId,
+                NomAssurance = patient.Assurance?.Nom,
+                NumeroCarteAssurance = patient.NumeroCarteAssurance,
+                CouvertureAssurance = patient.CouvertureAssurance,
+                DateDebutValidite = patient.DateDebutValidite,
+                DateFinValidite = patient.DateFinValidite
             };
         }
 
@@ -74,17 +100,40 @@ namespace Mediconnet_Backend.Services
                 };
             }
 
-            if (!utilisateur.Naissance.HasValue) missingFields.Add("Date de naissance");
-            if (string.IsNullOrEmpty(utilisateur.Sexe)) missingFields.Add("Sexe");
-            if (string.IsNullOrEmpty(utilisateur.Telephone)) missingFields.Add("Telephone");
-            if (string.IsNullOrEmpty(utilisateur.Adresse)) missingFields.Add("Adresse");
+            // Champs utilisateur obligatoires
+            if (!utilisateur.Naissance.HasValue) missingFields.Add("naissance");
+            if (string.IsNullOrEmpty(utilisateur.Sexe)) missingFields.Add("sexe");
+            if (string.IsNullOrEmpty(utilisateur.Telephone)) missingFields.Add("telephone");
+            if (string.IsNullOrEmpty(utilisateur.Adresse)) missingFields.Add("adresse");
+            if (string.IsNullOrEmpty(utilisateur.SituationMatrimoniale)) missingFields.Add("situationMatrimoniale");
+            if (string.IsNullOrEmpty(utilisateur.Nationalite)) missingFields.Add("nationalite");
+            if (string.IsNullOrEmpty(utilisateur.RegionOrigine)) missingFields.Add("regionOrigine");
 
             if (utilisateur.Patient != null)
             {
+                // Champs patient obligatoires
+                if (string.IsNullOrEmpty(utilisateur.Patient.GroupeSanguin)) 
+                    missingFields.Add("groupeSanguin");
+                if (string.IsNullOrEmpty(utilisateur.Patient.Profession)) 
+                    missingFields.Add("profession");
                 if (string.IsNullOrEmpty(utilisateur.Patient.PersonneContact)) 
-                    missingFields.Add("Personne a contacter");
+                    missingFields.Add("personneContact");
                 if (string.IsNullOrEmpty(utilisateur.Patient.NumeroContact)) 
-                    missingFields.Add("Numero de contact d'urgence");
+                    missingFields.Add("numeroContact");
+                if (string.IsNullOrEmpty(utilisateur.Patient.Ethnie)) 
+                    missingFields.Add("ethnie");
+                if (!utilisateur.Patient.NbEnfants.HasValue) 
+                    missingFields.Add("nbEnfants");
+                
+                // Champs conditionnels - si consommation alcool = true, fréquence requise
+                if (utilisateur.Patient.ConsommationAlcool == true && 
+                    string.IsNullOrEmpty(utilisateur.Patient.FrequenceAlcool))
+                    missingFields.Add("frequenceAlcool");
+                
+                // Champs conditionnels - si allergies = true, détails requis
+                if (utilisateur.Patient.AllergiesConnues == true && 
+                    string.IsNullOrEmpty(utilisateur.Patient.AllergiesDetails))
+                    missingFields.Add("allergiesDetails");
             }
 
             return new ProfileStatusDto
@@ -114,6 +163,8 @@ namespace Mediconnet_Backend.Services
             if (!string.IsNullOrEmpty(request.SituationMatrimoniale)) 
                 utilisateur.SituationMatrimoniale = request.SituationMatrimoniale;
             if (!string.IsNullOrEmpty(request.Adresse)) utilisateur.Adresse = request.Adresse;
+            if (!string.IsNullOrEmpty(request.Nationalite)) utilisateur.Nationalite = request.Nationalite;
+            if (!string.IsNullOrEmpty(request.RegionOrigine)) utilisateur.RegionOrigine = request.RegionOrigine;
 
             utilisateur.UpdatedAt = DateTime.UtcNow;
 
@@ -132,6 +183,10 @@ namespace Mediconnet_Backend.Services
                     utilisateur.Patient.NumeroContact = request.NumeroContact;
                 if (!string.IsNullOrEmpty(request.Profession)) 
                     utilisateur.Patient.Profession = request.Profession;
+                if (!string.IsNullOrEmpty(request.FrequenceAlcool)) 
+                    utilisateur.Patient.FrequenceAlcool = request.FrequenceAlcool;
+                if (!string.IsNullOrEmpty(request.AllergiesDetails)) 
+                    utilisateur.Patient.AllergiesDetails = request.AllergiesDetails;
             }
 
             await _context.SaveChangesAsync();

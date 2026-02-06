@@ -1,7 +1,10 @@
 using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
+using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Admin;
+using Mediconnet_Backend.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -15,15 +18,24 @@ public class AdminController : BaseAdminController
 {
     private readonly IUserManagementService _userService;
     private readonly IServiceManagementService _serviceManager;
+    private readonly IUserDetailsService _userDetailsService;
+    private readonly IInfirmierManagementService _infirmierService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IUserManagementService userService,
         IServiceManagementService serviceManager,
+        IUserDetailsService userDetailsService,
+        IInfirmierManagementService infirmierService,
+        ApplicationDbContext context,
         ILogger<AdminController> logger)
     {
         _userService = userService;
         _serviceManager = serviceManager;
+        _userDetailsService = userDetailsService;
+        _infirmierService = infirmierService;
+        _context = context;
         _logger = logger;
     }
 
@@ -119,6 +131,32 @@ public class AdminController : BaseAdminController
         }
     }
 
+    // ==================== LABORATOIRES ====================
+
+    [HttpGet("laboratoires")]
+    public async Task<IActionResult> GetLaboratoires()
+    {
+        try
+        {
+            var laboratoires = await _context.Laboratoires
+                .Where(l => l.Actif == true && l.Type == "interne")
+                .Select(l => new {
+                    idLabo = l.IdLabo,
+                    nomLabo = l.NomLabo,
+                    contact = l.Contact,
+                    telephone = l.Telephone
+                })
+                .OrderBy(l => l.nomLabo)
+                .ToListAsync();
+            return Ok(laboratoires);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error getting laboratoires: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la recuperation des laboratoires" });
+        }
+    }
+
     [HttpGet("services/{id}")]
     public async Task<IActionResult> GetService(int id)
     {
@@ -210,6 +248,130 @@ public class AdminController : BaseAdminController
         {
             _logger.LogError($"Error getting responsables: {ex.Message}");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des responsables" });
+        }
+    }
+
+    // ==================== USER DETAILS (Fiche utilisateur) ====================
+
+    /// <summary>
+    /// Récupère les détails complets d'un utilisateur (pour la fiche latérale)
+    /// </summary>
+    [HttpGet("users/{userId}/details")]
+    public async Task<IActionResult> GetUserDetails(int userId)
+    {
+        try
+        {
+            var accessCheck = CheckAdminAccess();
+            if (accessCheck != null) return accessCheck;
+
+            var details = await _userDetailsService.GetUserDetailsAsync(userId);
+            if (details == null)
+                return NotFound(new { success = false, message = "Utilisateur non trouvé" });
+
+            return Ok(new { success = true, data = details });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error getting user details: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Erreur lors de la récupération des détails" });
+        }
+    }
+
+    // ==================== INFIRMIER MANAGEMENT ====================
+
+    /// <summary>
+    /// Met à jour le statut d'un infirmier (actif, bloque, suspendu)
+    /// </summary>
+    [HttpPut("infirmiers/{userId}/statut")]
+    public async Task<IActionResult> UpdateInfirmierStatut(int userId, [FromBody] UpdateInfirmierStatutRequest request)
+    {
+        try
+        {
+            var accessCheck = CheckAdminAccess();
+            if (accessCheck != null) return accessCheck;
+
+            var (success, message) = await _infirmierService.UpdateStatutAsync(userId, request.Statut);
+            if (!success)
+                return BadRequest(new { success = false, message });
+
+            return Ok(new { success = true, message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating infirmier statut: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Erreur lors de la mise à jour du statut" });
+        }
+    }
+
+    /// <summary>
+    /// Nomme un infirmier comme Major d'un service
+    /// </summary>
+    [HttpPost("infirmiers/{userId}/nommer-major")]
+    public async Task<IActionResult> NommerInfirmierMajor(int userId, [FromBody] NommerInfirmierMajorRequest request)
+    {
+        try
+        {
+            var accessCheck = CheckAdminAccess();
+            if (accessCheck != null) return accessCheck;
+
+            var (success, message) = await _infirmierService.NommerMajorAsync(userId, request.IdService);
+            if (!success)
+                return BadRequest(new { success = false, message });
+
+            return Ok(new { success = true, message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error nominating infirmier major: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Erreur lors de la nomination" });
+        }
+    }
+
+    /// <summary>
+    /// Révoque la nomination Major d'un infirmier
+    /// </summary>
+    [HttpPost("infirmiers/{userId}/revoquer-major")]
+    public async Task<IActionResult> RevoquerInfirmierMajor(int userId, [FromBody] RevoquerMajorRequest? request)
+    {
+        try
+        {
+            var accessCheck = CheckAdminAccess();
+            if (accessCheck != null) return accessCheck;
+
+            var (success, message) = await _infirmierService.RevoquerMajorAsync(userId, request?.Motif);
+            if (!success)
+                return BadRequest(new { success = false, message });
+
+            return Ok(new { success = true, message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error revoking infirmier major: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Erreur lors de la révocation" });
+        }
+    }
+
+    /// <summary>
+    /// Met à jour les accréditations d'un infirmier
+    /// </summary>
+    [HttpPut("infirmiers/{userId}/accreditations")]
+    public async Task<IActionResult> UpdateInfirmierAccreditations(int userId, [FromBody] UpdateAccreditationsRequest request)
+    {
+        try
+        {
+            var accessCheck = CheckAdminAccess();
+            if (accessCheck != null) return accessCheck;
+
+            var (success, message) = await _infirmierService.UpdateAccreditationsAsync(userId, request.Accreditations);
+            if (!success)
+                return BadRequest(new { success = false, message });
+
+            return Ok(new { success = true, message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating infirmier accreditations: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Erreur lors de la mise à jour des accréditations" });
         }
     }
 }

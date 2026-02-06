@@ -3,6 +3,58 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+// ==================== STANDARDS DE CHAMBRE ====================
+
+export interface StandardChambreDto {
+  idStandard: number;
+  nom: string;
+  description?: string;
+  prixJournalier: number;
+  privileges: string[];
+  localisation?: string;
+  actif: boolean;
+  nombreChambres: number;
+  chambresDisponibles: number;
+}
+
+export interface StandardChambreSelectDto {
+  idStandard: number;
+  nom: string;
+  prixJournalier: number;
+  privileges: string[];
+  localisation?: string;
+  displayText: string;
+}
+
+export interface CreateStandardChambreRequest {
+  nom: string;
+  description?: string;
+  prixJournalier: number;
+  privileges: string[];
+  localisation?: string;
+}
+
+export interface UpdateStandardChambreRequest {
+  nom?: string;
+  description?: string;
+  prixJournalier?: number;
+  privileges?: string[];
+  localisation?: string;
+  actif?: boolean;
+}
+
+export interface StandardChambreResponse {
+  success: boolean;
+  message?: string;
+  data?: StandardChambreDto;
+}
+
+export interface StandardsListResponse {
+  success: boolean;
+  data: StandardChambreDto[];
+  count: number;
+}
+
 // ==================== CHAMBRES ====================
 
 export interface ChambreAdminDto {
@@ -11,6 +63,9 @@ export interface ChambreAdminDto {
   capacite: number;
   etat: string;
   statut: string;
+  idStandard?: number;
+  standardNom?: string;
+  standardPrix?: number;
   nombreLits: number;
   litsLibres: number;
   litsOccupes: number;
@@ -23,6 +78,7 @@ export interface CreateChambreRequest {
   capacite: number;
   etat?: string;
   statut?: string;
+  idStandard?: number;
   lits?: CreateLitRequest[];
 }
 
@@ -31,6 +87,7 @@ export interface UpdateChambreRequest {
   capacite?: number;
   etat?: string;
   statut?: string;
+  idStandard?: number;
 }
 
 // ==================== LITS ====================
@@ -154,5 +211,33 @@ export class AdminSettingsService {
 
   getLaboratoires(): Observable<LaboratoiresListResponse> {
     return this.http.get<LaboratoiresListResponse>(`${this.apiUrl}/laboratoires`);
+  }
+
+  // ==================== STANDARDS DE CHAMBRE ====================
+
+  private standardsUrl = `${environment.apiUrl}/standard-chambre`;
+
+  getStandards(): Observable<StandardsListResponse> {
+    return this.http.get<StandardsListResponse>(this.standardsUrl);
+  }
+
+  getStandardsForSelect(): Observable<{ success: boolean; data: StandardChambreSelectDto[] }> {
+    return this.http.get<{ success: boolean; data: StandardChambreSelectDto[] }>(`${this.standardsUrl}/select`);
+  }
+
+  getStandard(id: number): Observable<StandardChambreResponse> {
+    return this.http.get<StandardChambreResponse>(`${this.standardsUrl}/${id}`);
+  }
+
+  createStandard(request: CreateStandardChambreRequest): Observable<StandardChambreResponse> {
+    return this.http.post<StandardChambreResponse>(this.standardsUrl, request);
+  }
+
+  updateStandard(id: number, request: UpdateStandardChambreRequest): Observable<StandardChambreResponse> {
+    return this.http.put<StandardChambreResponse>(`${this.standardsUrl}/${id}`, request);
+  }
+
+  deleteStandard(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.standardsUrl}/${id}`);
   }
 }

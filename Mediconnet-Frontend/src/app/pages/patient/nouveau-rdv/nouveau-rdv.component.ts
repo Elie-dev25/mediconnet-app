@@ -12,6 +12,7 @@ import {
   ServiceDto,
   RendezVousDto
 } from '../../../services/rendez-vous.service';
+import { PatientProfileService, ProfileStatus, UpdateProfileRequest } from '../../../services/patient-profile.service';
 
 @Component({
   selector: 'app-patient-nouveau-rdv',
@@ -59,22 +60,174 @@ export class PatientNouveauRdvComponent implements OnInit {
   isSubmitting = false;
   error = '';
   
+  // Paiement (Step 3)
+  prixConsultation = 5000; // Prix en FCFA
+  modePaiement: 'especes' | 'mobile_money' | 'carte' | 'assurance' = 'especes';
+  numeroMobile = '';
+  accepteConditions = false;
+  
   // Confirmation
   showConfirmationPopup = false;
   confirmedRdv: RendezVousDto | null = null;
 
+  // Profil incomplet
+  showProfileSidebar = false;
+  profileStatus: ProfileStatus | null = null;
+  profileForm!: FormGroup;
+  isUpdatingProfile = false;
+  profileUpdateError = '';
+  isCheckingProfile = true;
+
+  // Options pour le formulaire de profil
+  groupesSanguins = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Inconnu'];
+  situationsMatrimoniales = ['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
+  ethnies = ['Bamiléké', 'Bassa', 'Béti', 'Douala', 'Fulani', 'Haoussa', 'Sawa', 'Autre'];
+  regions = ['Adamaoua', 'Centre', 'Est', 'Extrême-Nord', 'Littoral', 'Nord', 'Nord-Ouest', 'Ouest', 'Sud', 'Sud-Ouest'];
+  frequencesAlcool = ['Jamais', 'Occasionnel', 'Hebdomadaire', 'Quotidien'];
+
   constructor(
     private rdvService: RendezVousService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private profileService: PatientProfileService
   ) {
     this.initForm();
+    this.initProfileForm();
   }
 
   ngOnInit(): void {
-    this.loadServices();
-    this.loadMedecins();
-    this.generateCalendarDays();
+    // Vérifier d'abord si le profil est complet
+    this.checkProfileBeforeLoading();
+  }
+
+  private checkProfileBeforeLoading(): void {
+    this.isCheckingProfile = true;
+    this.profileService.checkProfileStatus().subscribe({
+      next: (status) => {
+        this.profileStatus = status;
+        this.isCheckingProfile = false;
+        if (!status.isComplete) {
+          // Profil incomplet: ouvrir la sidebar de complétion
+          this.openProfileSidebar(status.missingFields);
+        } else {
+          // Profil complet: charger les données
+          this.loadServices();
+          this.generateCalendarDays();
+        }
+      },
+      error: (err) => {
+        console.error('Erreur vérification profil:', err);
+        this.isCheckingProfile = false;
+        this.error = 'Impossible de vérifier votre profil. Veuillez réessayer.';
+      }
+    });
+  }
+
+  private initProfileForm(): void {
+    this.profileForm = this.fb.group({
+      naissance: [''],
+      sexe: [''],
+      telephone: [''],
+      situationMatrimoniale: [''],
+      adresse: [''],
+      nationalite: [''],
+      regionOrigine: [''],
+      groupeSanguin: [''],
+      personneContact: [''],
+      numeroContact: [''],
+      profession: [''],
+      ethnie: [''],
+      nbEnfants: [''],
+      frequenceAlcool: [''],
+      allergiesDetails: ['']
+    });
+  }
+
+  openProfileSidebar(missingFields: string[]): void {
+    this.showProfileSidebar = true;
+    this.profileUpdateError = '';
+    
+    // Configurer les validateurs pour les champs manquants
+    missingFields.forEach(field => {
+      const control = this.profileForm.get(field);
+      if (control) {
+        control.setValidators([Validators.required]);
+        control.updateValueAndValidity();
+      }
+    });
+  }
+
+  closeProfileSidebar(): void {
+    // Retourner à la page des rendez-vous
+    this.router.navigate(['/patient/rendez-vous']);
+  }
+
+  submitProfileUpdate(): void {
+    this.profileForm.markAllAsTouched();
+    if (this.profileForm.invalid || this.isUpdatingProfile) return;
+
+    this.isUpdatingProfile = true;
+    this.profileUpdateError = '';
+
+    // Construire l'objet de mise à jour avec seulement les champs remplis
+    const updateData: UpdateProfileRequest = {};
+    Object.keys(this.profileForm.controls).forEach(key => {
+      const value = this.profileForm.get(key)?.value;
+      if (value) {
+        (updateData as any)[key] = value;
+      }
+    });
+
+    this.profileService.updateProfile(updateData).subscribe({
+      next: (response) => {
+        this.isUpdatingProfile = false;
+        if (response.isComplete) {
+          this.showProfileSidebar = false;
+          // Profil maintenant complet, charger les données
+          this.loadServices();
+          this.generateCalendarDays();
+        } else {
+          // Revérifier le statut pour afficher les champs encore manquants
+          this.profileService.checkProfileStatus().subscribe({
+            next: (status) => {
+              this.profileStatus = status;
+              if (status.missingFields.length > 0) {
+                this.profileUpdateError = 'Certains champs obligatoires sont encore manquants.';
+              }
+            }
+          });
+        }
+      },
+      error: (err) => {
+        this.isUpdatingProfile = false;
+        this.profileUpdateError = err.error?.message || 'Erreur lors de la mise à jour du profil';
+      }
+    });
+  }
+
+  isFieldMissing(fieldName: string): boolean {
+    return this.profileStatus?.missingFields?.includes(fieldName) ?? false;
+  }
+
+  getFieldLabel(fieldName: string): string {
+    const labels: { [key: string]: string } = {
+      naissance: 'Date de naissance',
+      sexe: 'Sexe',
+      telephone: 'Téléphone',
+      situationMatrimoniale: 'Situation matrimoniale',
+      adresse: 'Adresse',
+      nationalite: 'Nationalité',
+      regionOrigine: 'Région d\'origine',
+      groupeSanguin: 'Groupe sanguin',
+      personneContact: 'Personne à contacter',
+      numeroContact: 'Numéro du contact',
+      profession: 'Profession',
+      ethnie: 'Ethnie',
+      nbEnfants: 'Nombre d\'enfants',
+      frequenceAlcool: 'Fréquence de consommation d\'alcool',
+      allergiesDetails: 'Détails des allergies'
+    };
+    return labels[fieldName] || fieldName;
   }
 
   private initForm(): void {
@@ -105,15 +258,26 @@ export class PatientNouveauRdvComponent implements OnInit {
   onServiceChange(serviceId: number | null): void {
     this.selectedServiceId = serviceId;
     this.selectedMedecin = null;
-    this.filterMedecinsByService();
+    
+    // Si 0 (tous les services) ou un service spécifique, charger les médecins
+    if (serviceId !== null) {
+      // 0 = tous les services, sinon filtrer par service
+      const apiServiceId = serviceId === 0 ? undefined : serviceId;
+      this.rdvService.getMedecins(apiServiceId).subscribe({
+        next: (medecins) => {
+          this.medecins = medecins;
+          this.filteredMedecins = medecins;
+        },
+        error: (err) => console.error('Erreur médecins:', err)
+      });
+    } else {
+      this.filteredMedecins = [];
+    }
   }
 
   filterMedecinsByService(): void {
-    if (!this.selectedServiceId) {
-      this.filteredMedecins = this.medecins;
-    } else {
-      this.filteredMedecins = this.medecins.filter(m => m.idService === this.selectedServiceId);
-    }
+    // Cette méthode n'est plus nécessaire car le filtrage est fait côté API
+    this.filteredMedecins = this.medecins;
   }
 
   selectMedecin(medecin: MedecinDisponibleDto): void {
@@ -255,7 +419,28 @@ export class PatientNouveauRdvComponent implements OnInit {
   selectCreneau(creneau: CreneauDisponibleDto): void {
     if (!creneau.disponible) return;
     this.selectedCreneau = creneau;
-    this.currentStep = 3;
+    this.currentStep = 3; // Vers l'étape paiement
+  }
+
+  // ==================== PAIEMENT ====================
+
+  onModePaiementChange(mode: 'especes' | 'mobile_money' | 'carte' | 'assurance'): void {
+    this.modePaiement = mode;
+    if (mode !== 'mobile_money') {
+      this.numeroMobile = '';
+    }
+  }
+
+  canProceedToConfirmation(): boolean {
+    if (!this.accepteConditions) return false;
+    if (this.modePaiement === 'mobile_money' && !this.numeroMobile) return false;
+    return true;
+  }
+
+  proceedToConfirmation(): void {
+    if (this.canProceedToConfirmation()) {
+      this.currentStep = 4; // Vers confirmation
+    }
   }
 
   // ==================== NAVIGATION ====================
@@ -265,6 +450,9 @@ export class PatientNouveauRdvComponent implements OnInit {
       this.currentStep--;
       if (this.currentStep === 1) {
         this.selectedMedecin = null;
+      }
+      if (this.currentStep === 2) {
+        // Revenir à la sélection de créneau
       }
     } else {
       this.router.navigate(['/patient/rendez-vous']);

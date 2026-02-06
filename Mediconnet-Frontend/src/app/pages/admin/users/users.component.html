@@ -6,13 +6,33 @@
     <header class="page-header">
       <div class="header-content">
         <h1>Gestion des utilisateurs</h1>
-        <p>Creer et gerer les comptes du personnel medical</p>
+        <p>Gérer les comptes du personnel et des patients</p>
       </div>
-      <button class="btn-primary" (click)="openCreateModal()">
+      <button class="btn-primary" (click)="openCreateModal()" *ngIf="activeTab === 'personnel'">
         <lucide-icon name="user-plus" [size]="20"></lucide-icon>
         Nouvel utilisateur
       </button>
     </header>
+
+    <!-- Onglets Personnel / Patients -->
+    <div class="users-tabs">
+      <button 
+        class="users-tab" 
+        [class.active]="activeTab === 'personnel'"
+        (click)="setActiveTab('personnel')">
+        <lucide-icon name="briefcase" [size]="18"></lucide-icon>
+        <span>Personnel</span>
+        <span class="tab-count">{{ personnelCount }}</span>
+      </button>
+      <button 
+        class="users-tab" 
+        [class.active]="activeTab === 'patients'"
+        (click)="setActiveTab('patients')">
+        <lucide-icon name="users" [size]="18"></lucide-icon>
+        <span>Patients</span>
+        <span class="tab-count">{{ patientsCount }}</span>
+      </button>
+    </div>
 
     <!-- Filtres -->
     <div class="filters-bar">
@@ -20,14 +40,14 @@
         <lucide-icon name="search" [size]="18"></lucide-icon>
         <input 
           type="text" 
-          placeholder="Rechercher un utilisateur..." 
+          [placeholder]="activeTab === 'personnel' ? 'Rechercher un membre du personnel...' : 'Rechercher un patient...'" 
           [(ngModel)]="searchQuery"
           [ngModelOptions]="{standalone: true}">
       </div>
-      <div class="filter-group">
+      <div class="filter-group" *ngIf="activeTab === 'personnel'">
         <select [(ngModel)]="selectedRole" [ngModelOptions]="{standalone: true}">
-          <option value="">Tous les roles</option>
-          <option *ngFor="let role of roles" [value]="role.value">{{ role.label }}</option>
+          <option value="">Tout le personnel</option>
+          <option *ngFor="let role of filterRoles" [value]="role.value">{{ role.label }}</option>
         </select>
       </div>
     </div>
@@ -67,8 +87,8 @@
             </td>
             <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
             <td class="actions">
-              <button class="btn-icon" title="Modifier" disabled>
-                <lucide-icon name="edit" [size]="16"></lucide-icon>
+              <button class="btn-icon" title="Voir la fiche" (click)="openUserSidebar(user)">
+                <lucide-icon name="eye" [size]="16"></lucide-icon>
               </button>
               <button class="btn-icon danger" title="Supprimer" disabled>
                 <lucide-icon name="trash-2" [size]="16"></lucide-icon>
@@ -77,8 +97,8 @@
           </tr>
           <tr *ngIf="filteredUsers.length === 0 && !isLoading">
             <td colspan="6" class="empty-state">
-              <lucide-icon name="users" [size]="48"></lucide-icon>
-              <p>Aucun utilisateur trouve</p>
+              <lucide-icon [name]="activeTab === 'personnel' ? 'briefcase' : 'users'" [size]="48"></lucide-icon>
+              <p>{{ activeTab === 'personnel' ? 'Aucun membre du personnel trouvé' : 'Aucun patient trouvé' }}</p>
             </td>
           </tr>
         </tbody>
@@ -202,9 +222,46 @@
         <!-- Champs specifiques Infirmier -->
         <div class="role-specific-fields" *ngIf="userForm.get('role')?.value === 'infirmier'">
           <h3>Informations infirmier</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service de rattachement *</label>
+              <select formControlName="idService">
+                <option [value]="null" disabled>Selectionnez un service</option>
+                <option *ngFor="let service of services" [value]="service.idService">
+                  {{ service.nomService }}
+                </option>
+              </select>
+              <span class="error-text" *ngIf="hasError('idService')">Service requis</span>
+            </div>
+            <div class="form-group">
+              <label>Matricule</label>
+              <input type="text" formControlName="matricule" placeholder="Ex: INF-12345">
+            </div>
+          </div>
+        </div>
+
+        <!-- Champs specifiques Laborantin -->
+        <div class="role-specific-fields" *ngIf="userForm.get('role')?.value === 'laborantin'">
+          <h3>Informations laborantin</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Laboratoire d'affectation *</label>
+              <select formControlName="idLabo">
+                <option [value]="null" disabled>Selectionnez un laboratoire</option>
+                <option *ngFor="let labo of laboratoires" [value]="labo.idLabo">
+                  {{ labo.nomLabo }}
+                </option>
+              </select>
+              <span class="error-text" *ngIf="hasError('idLabo')">Laboratoire requis</span>
+            </div>
+            <div class="form-group">
+              <label>Matricule</label>
+              <input type="text" formControlName="matricule" placeholder="Ex: LAB-12345">
+            </div>
+          </div>
           <div class="form-group">
-            <label>Matricule</label>
-            <input type="text" formControlName="matricule" placeholder="Ex: INF-12345">
+            <label>Spécialisation</label>
+            <input type="text" formControlName="specialisation" placeholder="Ex: Microbiologie, Biochimie, Hématologie...">
           </div>
         </div>
       </div>
@@ -219,5 +276,310 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Sidebar Fiche Utilisateur -->
+<div class="sidebar-overlay" *ngIf="showUserSidebar" (click)="closeUserSidebar()" @fadeIn>
+  <div class="user-sidebar" (click)="$event.stopPropagation()" @slideIn>
+    <div class="sidebar-header">
+      <h2>
+        <lucide-icon name="user" [size]="24"></lucide-icon>
+        Fiche utilisateur
+      </h2>
+      <button class="close-btn" (click)="closeUserSidebar()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="sidebar-content" *ngIf="isLoadingDetails">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Chargement des informations...</p>
+      </div>
+    </div>
+
+    <div class="sidebar-content" *ngIf="!isLoadingDetails && selectedUserDetails">
+      <!-- Messages -->
+      <div class="alert alert-success" *ngIf="successMessage">{{ successMessage }}</div>
+      <div class="alert alert-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <!-- En-tête profil -->
+      <div class="profile-header">
+        <div class="profile-avatar" [class]="selectedUserDetails.role">
+          <lucide-icon [name]="getRoleIcon(selectedUserDetails.role)" [size]="32"></lucide-icon>
+        </div>
+        <div class="profile-info">
+          <h3>{{ selectedUserDetails.prenom }} {{ selectedUserDetails.nom }}</h3>
+          <span class="role-badge" [class]="selectedUserDetails.role">
+            {{ selectedUserDetails.infirmier?.titreAffiche || getRoleLabel(selectedUserDetails.role) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Informations de base -->
+      <div class="info-section">
+        <h4><lucide-icon name="info" [size]="16"></lucide-icon> Informations générales</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Email</label>
+            <span>{{ selectedUserDetails.email }}</span>
+          </div>
+          <div class="info-item">
+            <label>Téléphone</label>
+            <span>{{ selectedUserDetails.telephone || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Date de naissance</label>
+            <span>{{ selectedUserDetails.naissance ? (selectedUserDetails.naissance | date:'dd/MM/yyyy') : '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Sexe</label>
+            <span>{{ selectedUserDetails.sexe || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Adresse</label>
+            <span>{{ selectedUserDetails.adresse || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Nationalité</label>
+            <span>{{ selectedUserDetails.nationalite || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Situation matrimoniale</label>
+            <span>{{ selectedUserDetails.situationMatrimoniale || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Région d'origine</label>
+            <span>{{ selectedUserDetails.regionOrigine || '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statut compte -->
+      <div class="info-section">
+        <h4><lucide-icon name="shield-check" [size]="16"></lucide-icon> Statut du compte</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Email confirmé</label>
+            <span [class.text-success]="selectedUserDetails.emailConfirmed" [class.text-danger]="!selectedUserDetails.emailConfirmed">
+              {{ selectedUserDetails.emailConfirmed ? 'Oui' : 'Non' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <label>Profil complété</label>
+            <span [class.text-success]="selectedUserDetails.profileCompleted" [class.text-danger]="!selectedUserDetails.profileCompleted">
+              {{ selectedUserDetails.profileCompleted ? 'Oui' : 'Non' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <label>Date de création</label>
+            <span>{{ selectedUserDetails.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedUserDetails.updatedAt">
+            <label>Dernière mise à jour</label>
+            <span>{{ selectedUserDetails.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Infirmier -->
+      <ng-container *ngIf="selectedUserDetails.role === 'infirmier' && selectedUserDetails.infirmier">
+        <div class="info-section">
+          <h4><lucide-icon name="syringe" [size]="16"></lucide-icon> Informations infirmier</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Matricule</label>
+              <span>{{ selectedUserDetails.infirmier.matricule || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Statut</label>
+              <span class="statut-badge" [class]="getStatutClass(selectedUserDetails.infirmier.statut)">
+                {{ getStatutLabel(selectedUserDetails.infirmier.statut) }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="selectedUserDetails.infirmier.isMajor">
+              <label>Major du service</label>
+              <span class="text-primary">{{ selectedUserDetails.infirmier.nomServiceMajor }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedUserDetails.infirmier.dateNominationMajor">
+              <label>Date de nomination</label>
+              <span>{{ selectedUserDetails.infirmier.dateNominationMajor | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="selectedUserDetails.infirmier.accreditations">
+              <label>Accréditations</label>
+              <span>{{ selectedUserDetails.infirmier.accreditations }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Infirmier -->
+        <div class="info-section actions-section">
+          <h4><lucide-icon name="settings" [size]="16"></lucide-icon> Mettre à jour le statut</h4>
+          <div class="action-buttons">
+            <button 
+              class="btn-action" 
+              [class.active]="selectedUserDetails.infirmier.statut === 'actif'"
+              [disabled]="isUpdatingStatut || selectedUserDetails.infirmier.statut === 'actif'"
+              (click)="updateInfirmierStatut('actif')">
+              <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+              Activer
+            </button>
+            <button 
+              class="btn-action danger" 
+              [class.active]="selectedUserDetails.infirmier.statut === 'bloque'"
+              [disabled]="isUpdatingStatut || selectedUserDetails.infirmier.statut === 'bloque'"
+              (click)="updateInfirmierStatut('bloque')">
+              <lucide-icon name="ban" [size]="16"></lucide-icon>
+              Bloquer
+            </button>
+            <button 
+              class="btn-action warning" 
+              [class.active]="selectedUserDetails.infirmier.statut === 'suspendu'"
+              [disabled]="isUpdatingStatut || selectedUserDetails.infirmier.statut === 'suspendu'"
+              (click)="updateInfirmierStatut('suspendu')">
+              <lucide-icon name="pause-circle" [size]="16"></lucide-icon>
+              Suspendre
+            </button>
+          </div>
+        </div>
+
+        <!-- Nomination Major -->
+        <div class="info-section actions-section">
+          <h4><lucide-icon name="award" [size]="16"></lucide-icon> Nomination</h4>
+          <div class="action-buttons">
+            <button 
+              class="btn-primary" 
+              *ngIf="!selectedUserDetails.infirmier.isMajor"
+              [disabled]="selectedUserDetails.infirmier.statut === 'bloque'"
+              (click)="openNominationSidebar()">
+              <lucide-icon name="crown" [size]="16"></lucide-icon>
+              Nommer Major
+            </button>
+            <button 
+              class="btn-danger" 
+              *ngIf="selectedUserDetails.infirmier.isMajor"
+              [disabled]="isNominating"
+              (click)="revoquerMajor()">
+              <lucide-icon name="user-minus" [size]="16"></lucide-icon>
+              Révoquer Major
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Section Médecin -->
+      <ng-container *ngIf="selectedUserDetails.role === 'medecin' && selectedUserDetails.medecin">
+        <div class="info-section">
+          <h4><lucide-icon name="stethoscope" [size]="16"></lucide-icon> Informations médecin</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Numéro d'ordre</label>
+              <span>{{ selectedUserDetails.medecin.numeroOrdre || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Spécialité</label>
+              <span>{{ selectedUserDetails.medecin.nomSpecialite || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Service</label>
+              <span>{{ selectedUserDetails.medecin.nomService || '-' }}</span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Section Patient -->
+      <ng-container *ngIf="selectedUserDetails.role === 'patient' && selectedUserDetails.patient">
+        <div class="info-section">
+          <h4><lucide-icon name="clipboard-list" [size]="16"></lucide-icon> Informations patient</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Numéro patient</label>
+              <span>{{ selectedUserDetails.patient.numeroPatient || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Groupe sanguin</label>
+              <span>{{ selectedUserDetails.patient.groupeSanguin || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Assurance</label>
+              <span>{{ selectedUserDetails.patient.nomAssurance || 'Non assuré' }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedUserDetails.patient.numeroAssurance">
+              <label>N° carte assurance</label>
+              <span>{{ selectedUserDetails.patient.numeroAssurance }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="selectedUserDetails.patient.allergies">
+              <label>Allergies</label>
+              <span>{{ selectedUserDetails.patient.allergies }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="selectedUserDetails.patient.antecedentsMedicaux">
+              <label>Antécédents médicaux</label>
+              <span>{{ selectedUserDetails.patient.antecedentsMedicaux }}</span>
+            </div>
+            <div class="info-item">
+              <label>Contact d'urgence</label>
+              <span>{{ selectedUserDetails.patient.contactUrgenceNom || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Tél. urgence</label>
+              <span>{{ selectedUserDetails.patient.contactUrgenceTelephone || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Déclaration d'honneur</label>
+              <span [class.text-success]="selectedUserDetails.patient.declarationHonneurAcceptee" 
+                    [class.text-danger]="!selectedUserDetails.patient.declarationHonneurAcceptee">
+                {{ selectedUserDetails.patient.declarationHonneurAcceptee ? 'Acceptée' : 'Non acceptée' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar Nomination Major -->
+<div class="nomination-sidebar" *ngIf="showNominationSidebar" @slideIn>
+  <div class="sidebar-header">
+    <h2>
+      <lucide-icon name="crown" [size]="24"></lucide-icon>
+      Nomination Major
+    </h2>
+    <button class="close-btn" (click)="closeNominationSidebar()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <div class="sidebar-content">
+    <p class="nomination-info">
+      Sélectionnez le service dont 
+      <strong>{{ selectedUserDetails?.prenom }} {{ selectedUserDetails?.nom }}</strong> 
+      sera nommé(e) Infirmier Major.
+    </p>
+
+    <div class="form-group">
+      <label>Service *</label>
+      <select [(ngModel)]="selectedServiceForNomination" [ngModelOptions]="{standalone: true}">
+        <option [value]="null" disabled>Sélectionnez un service</option>
+        <option *ngFor="let service of services" [ngValue]="service.idService">
+          {{ service.nomService }}
+        </option>
+      </select>
+    </div>
+
+    <div class="nomination-actions">
+      <button class="btn-secondary" (click)="closeNominationSidebar()">
+        Annuler
+      </button>
+      <button 
+        class="btn-primary" 
+        [disabled]="!selectedServiceForNomination || isNominating"
+        (click)="confirmNomination()">
+        <lucide-icon name="check" [size]="16"></lucide-icon>
+        {{ isNominating ? 'Nomination...' : 'Confirmer la nomination' }}
+      </button>
+    </div>
   </div>
 </div>

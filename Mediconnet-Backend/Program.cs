@@ -46,6 +46,8 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 // Add Admin Management Services
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
+builder.Services.AddScoped<IUserDetailsService, UserDetailsService>();
+builder.Services.AddScoped<IInfirmierManagementService, InfirmierManagementService>();
 
 // Add Caisse Services
 builder.Services.AddScoped<ICaisseService, CaisseService>();
@@ -85,8 +87,14 @@ builder.Services.AddScoped<IHospitalisationService, HospitalisationService>();
 // Add Chambre Service (Admin Settings)
 builder.Services.AddScoped<IChambreService, ChambreService>();
 
+// Add Standard Chambre Service
+builder.Services.AddScoped<IStandardChambreService, StandardChambreService>();
+
 // Add Pharmacie Stock Service
 builder.Services.AddScoped<IPharmacieStockService, PharmacieStockService>();
+
+// Add Medecin Helper Service
+builder.Services.AddScoped<IMedecinHelperService, MedecinHelperService>();
 
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
@@ -119,6 +127,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddScoped<IDataProtectionService, DataProtectionService>();
 
 // Rate Limiting - Protection against brute force attacks
+// Limites augmentées pour environnement de développement/test réseau local
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(options =>
 {
@@ -126,13 +135,14 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
     options.StackBlockedRequests = false;
     options.HttpStatusCode = 429;
     options.RealIpHeader = "X-Real-IP";
+    options.ClientIdHeader = "X-ClientId";
     options.GeneralRules = new List<RateLimitRule>
     {
-        new RateLimitRule { Endpoint = "*", Period = "1m", Limit = 100 },
-        new RateLimitRule { Endpoint = "*:/api/auth/login", Period = "1m", Limit = 10 },
-        new RateLimitRule { Endpoint = "*:/api/auth/register", Period = "1m", Limit = 5 },
-        new RateLimitRule { Endpoint = "*:/api/patient/*", Period = "1m", Limit = 30 },
-        new RateLimitRule { Endpoint = "*:/api/consultations/*", Period = "1m", Limit = 30 }
+        new RateLimitRule { Endpoint = "*", Period = "1m", Limit = 500 },
+        new RateLimitRule { Endpoint = "*:/api/auth/login", Period = "1m", Limit = 50 },
+        new RateLimitRule { Endpoint = "*:/api/auth/register", Period = "1m", Limit = 20 },
+        new RateLimitRule { Endpoint = "*:/api/patient/*", Period = "1m", Limit = 100 },
+        new RateLimitRule { Endpoint = "*:/api/consultations/*", Period = "1m", Limit = 100 }
     };
 });
 builder.Services.AddInMemoryRateLimiting();
@@ -183,7 +193,9 @@ builder.Services
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
 
-                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/appointments"))
+                // Autoriser le token via query string pour tous les hubs SignalR
+                if (!string.IsNullOrEmpty(accessToken) && 
+                    (path.StartsWithSegments("/hubs/appointments") || path.StartsWithSegments("/hubs/notifications")))
                 {
                     context.Token = accessToken;
                 }
@@ -233,11 +245,9 @@ using (var scope = app.Services.CreateScope())
 
 // ==================== MIDDLEWARE ====================
 // Configure HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger activé en dev ET production pour faciliter le débogage
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Rate Limiting Middleware - Must be early in the pipeline
 app.UseIpRateLimiting();
@@ -248,8 +258,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Map SignalR Hub for real-time updates
+// Map SignalR Hubs for real-time updates
 app.MapHub<AppointmentHub>("/hubs/appointments");
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // Map Health Checks endpoints
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

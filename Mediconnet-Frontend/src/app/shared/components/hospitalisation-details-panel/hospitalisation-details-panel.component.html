@@ -1,0 +1,471 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <lucide-icon name="clipboard-list" [size]="22"></lucide-icon>
+        <h2>Détails de l'hospitalisation</h2>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="panel-loading" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+      <span>Chargement des détails...</span>
+    </div>
+
+    <!-- Error State -->
+    <div class="panel-error" *ngIf="error && !isLoading">
+      <lucide-icon name="alert-circle" [size]="32"></lucide-icon>
+      <span>{{ error }}</span>
+      <button class="btn btn-primary btn-sm" (click)="loadHospitalisationDetails()">
+        <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content" *ngIf="hospitalisation && !isLoading && !error">
+      <!-- Patient Info Header -->
+      <div class="patient-header">
+        <div class="patient-avatar">
+          <lucide-icon name="user" [size]="24"></lucide-icon>
+        </div>
+        <div class="patient-info">
+          <h3 class="patient-name">{{ hospitalisation.patient.prenom }} {{ hospitalisation.patient.nom }}</h3>
+          <span class="patient-dossier" *ngIf="hospitalisation.patient.numeroDossier">
+            {{ hospitalisation.patient.numeroDossier }}
+          </span>
+        </div>
+        <div class="status-badges">
+          <span class="badge" [ngClass]="getStatutClass(hospitalisation.statut)">
+            {{ getStatutLabel(hospitalisation.statut) }}
+          </span>
+          <span class="badge" [ngClass]="getUrgenceClass(hospitalisation.urgence)">
+            {{ hospitalisation.urgence | titlecase }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="setActiveTab('general')">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          Général
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'soins'" (click)="setActiveTab('soins')">
+          <lucide-icon name="heart-pulse" [size]="16"></lucide-icon>
+          Soins
+          <span class="tab-count" *ngIf="hospitalisation.soins?.length">{{ hospitalisation.soins!.length }}</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'examens'" (click)="setActiveTab('examens')">
+          <lucide-icon name="microscope" [size]="16"></lucide-icon>
+          Examens
+          <span class="tab-count" *ngIf="hospitalisation.examens?.length">{{ hospitalisation.examens!.length }}</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'prescriptions'" (click)="setActiveTab('prescriptions')">
+          <lucide-icon name="pill" [size]="16"></lucide-icon>
+          Prescriptions
+          <span class="tab-count" *ngIf="hospitalisation.prescriptions?.length">{{ hospitalisation.prescriptions!.length }}</span>
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- General Tab -->
+        <div class="tab-pane" *ngIf="activeTab === 'general'">
+          <div class="info-section">
+            <h4 class="section-title">
+              <lucide-icon name="calendar" [size]="16"></lucide-icon>
+              Dates
+            </h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Date d'entrée</span>
+                <span class="info-value">{{ formatDateTime(hospitalisation.dateEntree) }}</span>
+              </div>
+              <div class="info-item" *ngIf="hospitalisation.dateSortiePrevue">
+                <span class="info-label">Sortie prévue</span>
+                <span class="info-value">{{ formatDate(hospitalisation.dateSortiePrevue) }}</span>
+              </div>
+              <div class="info-item" *ngIf="hospitalisation.dateSortie">
+                <span class="info-label">Date de sortie</span>
+                <span class="info-value">{{ formatDateTime(hospitalisation.dateSortie) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h4 class="section-title">
+              <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+              Médecin & Service
+            </h4>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="hospitalisation.medecin?.nom">
+                <span class="info-label">Médecin traitant</span>
+                <span class="info-value">Dr {{ hospitalisation.medecin?.prenom }} {{ hospitalisation.medecin?.nom }}</span>
+              </div>
+              <div class="info-item" *ngIf="hospitalisation.service">
+                <span class="info-label">Service</span>
+                <span class="info-value">{{ hospitalisation.service }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section" *ngIf="hospitalisation.lit">
+            <h4 class="section-title">
+              <lucide-icon name="bed" [size]="16"></lucide-icon>
+              Chambre & Lit
+            </h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Chambre</span>
+                <span class="info-value">{{ hospitalisation.lit.chambre }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Lit</span>
+                <span class="info-value">{{ hospitalisation.lit.numero }}</span>
+              </div>
+              <div class="info-item" *ngIf="hospitalisation.lit.standard">
+                <span class="info-label">Standard</span>
+                <span class="info-value">{{ hospitalisation.lit.standard }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h4 class="section-title">
+              <lucide-icon name="file-text" [size]="16"></lucide-icon>
+              Motif & Diagnostic
+            </h4>
+            <div class="info-block" *ngIf="hospitalisation.motif">
+              <span class="info-label">Motif d'hospitalisation</span>
+              <p class="info-text">{{ hospitalisation.motif }}</p>
+            </div>
+            <div class="info-block" *ngIf="hospitalisation.diagnosticPrincipal">
+              <span class="info-label">Diagnostic principal</span>
+              <p class="info-text">{{ hospitalisation.diagnosticPrincipal }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Soins Tab -->
+        <div class="tab-pane" *ngIf="activeTab === 'soins'">
+          <!-- Bouton Ajouter (médecin uniquement) -->
+          <div class="tab-actions" *ngIf="isMedecin">
+            <button class="btn btn-add" (click)="onAddSoins()">
+              <lucide-icon name="plus" [size]="16"></lucide-icon>
+              Ajouter un soin
+            </button>
+          </div>
+
+          <div class="empty-tab" *ngIf="!hospitalisation.soins?.length">
+            <lucide-icon name="heart-pulse" [size]="40"></lucide-icon>
+            <p>Aucun soin enregistré</p>
+          </div>
+          <div class="items-list" *ngIf="hospitalisation.soins?.length">
+            <div class="soin-card" *ngFor="let soin of hospitalisation.soins" 
+                 [class.expanded]="expandedSoinId === soin.idSoin">
+              <div class="soin-header" (click)="toggleSoinDetails(soin.idSoin)">
+                <div class="soin-info">
+                  <div class="soin-title-row">
+                    <span class="soin-type">{{ soin.typeSoin }}</span>
+                    <span class="badge" [ngClass]="getPrioriteClass(soin.priorite)">{{ soin.priorite }}</span>
+                  </div>
+                  <p class="soin-description">{{ soin.description }}</p>
+                  <!-- Moments badges -->
+                  <div class="moments-badges" *ngIf="soin.moments">
+                    <span class="moment-badge" *ngFor="let m of getMomentsArray(soin.moments)">
+                      <lucide-icon [name]="getMomentIcon(m)" [size]="12"></lucide-icon>
+                      {{ getMomentLabel(m) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="soin-status">
+                  <span class="badge" [ngClass]="getSoinStatutClass(soin.statut)">{{ soin.statut }}</span>
+                  <lucide-icon [name]="expandedSoinId === soin.idSoin ? 'chevron-up' : 'chevron-down'" [size]="18"></lucide-icon>
+                </div>
+              </div>
+
+              <!-- Barre de progression améliorée -->
+              <div class="soin-progress" *ngIf="soin.nbExecutionsPrevues > 0">
+                <div class="progress-header">
+                  <span class="progress-label">Progression</span>
+                  <span class="progress-percent">{{ soin.progression || getProgressPercent(soin) }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="soin.progression || getProgressPercent(soin)"></div>
+                </div>
+                <div class="progress-stats">
+                  <span class="stat-item stat-done">
+                    <lucide-icon name="check-circle" [size]="12"></lucide-icon>
+                    {{ soin.nbExecutionsEffectuees }} faits
+                  </span>
+                  <span class="stat-item stat-missed" *ngIf="soin.nbExecutionsManquees">
+                    <lucide-icon name="x-circle" [size]="12"></lucide-icon>
+                    {{ soin.nbExecutionsManquees }} manqués
+                  </span>
+                  <span class="stat-item stat-pending">
+                    <lucide-icon name="clock" [size]="12"></lucide-icon>
+                    {{ soin.nbExecutionsPrevues - soin.nbExecutionsEffectuees - (soin.nbExecutionsManquees || 0) }} restants
+                  </span>
+                </div>
+              </div>
+
+              <!-- Détails du soin (expandable) -->
+              <div class="soin-details" *ngIf="expandedSoinId === soin.idSoin">
+                <div class="soin-meta-grid">
+                  <div class="meta-item" *ngIf="soin.dureeJours">
+                    <lucide-icon name="calendar-days" [size]="14"></lucide-icon>
+                    <span>{{ soin.dureeJours }} jours</span>
+                  </div>
+                  <div class="meta-item" *ngIf="soin.dateDebut">
+                    <lucide-icon name="calendar-check" [size]="14"></lucide-icon>
+                    <span>Début: {{ formatDate(soin.dateDebut) }}</span>
+                  </div>
+                  <div class="meta-item" *ngIf="soin.dateFinPrevue">
+                    <lucide-icon name="calendar-x" [size]="14"></lucide-icon>
+                    <span>Fin: {{ formatDate(soin.dateFinPrevue) }}</span>
+                  </div>
+                  <div class="meta-item" *ngIf="soin.prescripteur">
+                    <lucide-icon name="user" [size]="14"></lucide-icon>
+                    <span>{{ soin.prescripteur }}</span>
+                  </div>
+                </div>
+
+                <div class="soin-instructions" *ngIf="soin.instructions">
+                  <strong>Instructions:</strong>
+                  <p>{{ soin.instructions }}</p>
+                </div>
+
+                <!-- Boutons d'actions -->
+                <div class="soin-actions-row">
+                  <button class="btn btn-outline btn-sm" (click)="openSoinDetailsPopup(soin.idSoin)">
+                    <lucide-icon name="clipboard-list" [size]="14"></lucide-icon>
+                    Voir le planning
+                  </button>
+                  <button class="btn btn-primary btn-sm" 
+                          (click)="openEnregistrerSoinModal(soin)"
+                          [disabled]="soin.statut === 'termine' || (soin.nbExecutionsPrevues - soin.nbExecutionsEffectuees - (soin.nbExecutionsManquees || 0)) === 0">
+                    <lucide-icon name="check-circle" [size]="14"></lucide-icon>
+                    Enregistrer un soin
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Examens Tab -->
+        <div class="tab-pane" *ngIf="activeTab === 'examens'">
+          <!-- Bouton Ajouter (médecin uniquement) -->
+          <div class="tab-actions" *ngIf="isMedecin">
+            <button class="btn btn-add" (click)="onAddExamens()">
+              <lucide-icon name="plus" [size]="16"></lucide-icon>
+              Prescrire un examen
+            </button>
+          </div>
+
+          <div class="empty-tab" *ngIf="!hospitalisation.examens?.length">
+            <lucide-icon name="microscope" [size]="40"></lucide-icon>
+            <p>Aucun examen prescrit</p>
+          </div>
+          <div class="items-list" *ngIf="hospitalisation.examens?.length">
+            <div class="examen-card" *ngFor="let examen of hospitalisation.examens">
+              <div class="examen-header">
+                <div class="examen-info">
+                  <span class="examen-type">{{ examen.typeExamen }}</span>
+                  <span class="badge badge-urgent" *ngIf="examen.urgence">Urgent</span>
+                </div>
+                <span class="badge" [ngClass]="getExamenStatutClass(examen.statut)">{{ examen.statut }}</span>
+              </div>
+              
+              <p class="examen-description" *ngIf="examen.description">{{ examen.description }}</p>
+              
+              <div class="examen-meta">
+                <span><lucide-icon name="calendar" [size]="12"></lucide-icon> {{ formatDateTime(examen.datePrescription) }}</span>
+                <span *ngIf="examen.laboratoire"><lucide-icon name="building-2" [size]="12"></lucide-icon> {{ examen.laboratoire }}</span>
+              </div>
+
+              <!-- Section Résultat -->
+              <div class="examen-result" [class.available]="examen.hasResultat" [class.pending]="!examen.hasResultat">
+                <div class="result-header">
+                  <lucide-icon [name]="examen.hasResultat ? 'file-check' : 'file-clock'" [size]="16"></lucide-icon>
+                  <span>{{ examen.hasResultat ? 'Résultat disponible' : 'Résultat non disponible' }}</span>
+                </div>
+                <div class="result-content" *ngIf="examen.hasResultat && examen.resultat">
+                  <p>{{ examen.resultat }}</p>
+                  <span class="result-date" *ngIf="examen.dateResultat">
+                    <lucide-icon name="clock" [size]="12"></lucide-icon> {{ formatDateTime(examen.dateResultat) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prescriptions Tab -->
+        <div class="tab-pane" *ngIf="activeTab === 'prescriptions'">
+          <!-- Bouton Ajouter (médecin uniquement) -->
+          <div class="tab-actions" *ngIf="isMedecin">
+            <button class="btn btn-add" (click)="onAddPrescriptions()">
+              <lucide-icon name="plus" [size]="16"></lucide-icon>
+              Ajouter une ordonnance
+            </button>
+          </div>
+
+          <div class="empty-tab" *ngIf="!hospitalisation.prescriptions?.length">
+            <lucide-icon name="pill" [size]="40"></lucide-icon>
+            <p>Aucune prescription</p>
+          </div>
+          <div class="items-list" *ngIf="hospitalisation.prescriptions?.length">
+            <div class="prescription-card" *ngFor="let prescription of hospitalisation.prescriptions">
+              <div class="prescription-header">
+                <div class="prescription-med">
+                  <lucide-icon name="pill" [size]="18"></lucide-icon>
+                  <div>
+                    <span class="med-name">{{ prescription.medicament }}</span>
+                    <span class="med-dosage" *ngIf="prescription.dosage">{{ prescription.dosage }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="prescription-posologie">
+                <strong>Posologie:</strong> {{ prescription.posologie }}
+              </div>
+
+              <div class="prescription-details">
+                <div class="detail-item" *ngIf="prescription.frequence">
+                  <lucide-icon name="repeat" [size]="14"></lucide-icon>
+                  <span>{{ prescription.frequence }}</span>
+                </div>
+                <div class="detail-item" *ngIf="prescription.voieAdministration">
+                  <lucide-icon name="syringe" [size]="14"></lucide-icon>
+                  <span>{{ prescription.voieAdministration }}</span>
+                </div>
+                <div class="detail-item" *ngIf="prescription.duree">
+                  <lucide-icon name="clock" [size]="14"></lucide-icon>
+                  <span>{{ prescription.duree }}</span>
+                </div>
+                <div class="detail-item">
+                  <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                  <span>Début: {{ formatDate(prescription.dateDebut) }}</span>
+                </div>
+              </div>
+
+              <div class="prescription-instructions" *ngIf="prescription.instructions">
+                <strong>Instructions:</strong>
+                <p>{{ prescription.instructions }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="panel-footer" *ngIf="hospitalisation && !isLoading && !error">
+      <!-- Major Actions -->
+      <ng-container *ngIf="isMajor">
+        <button class="btn btn-primary" *ngIf="canAttribuerLit" (click)="onAttribuerLit()">
+          <lucide-icon name="bed" [size]="18"></lucide-icon>
+          Attribuer un lit
+        </button>
+      </ng-container>
+
+      <!-- Medecin Actions -->
+      <ng-container *ngIf="isMedecin">
+        <button class="btn btn-danger" *ngIf="hospitalisation.statut === 'EN_COURS'" (click)="onFinHospitalisation()">
+          <lucide-icon name="log-out" [size]="16"></lucide-icon>
+          Fin hospitalisation
+        </button>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Popup détails exécutions -->
+<app-soin-executions-popup
+  [isOpen]="showExecutionsPopup"
+  [soinId]="selectedSoinId"
+  (close)="closeExecutionsPopup()">
+</app-soin-executions-popup>
+
+<!-- Modal enregistrement soin -->
+<div class="modal-overlay" *ngIf="showEnregistrerModal" (click)="closeEnregistrerModal()">
+  <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+        <span>Enregistrer un soin</span>
+      </div>
+      <button class="btn-close" (click)="closeEnregistrerModal()">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Info soin -->
+      <div class="soin-info-card" *ngIf="soinAEnregistrer">
+        <div class="soin-type">{{ soinAEnregistrer.typeSoin }}</div>
+        <div class="soin-desc">{{ soinAEnregistrer.description }}</div>
+        <div class="soin-stats">
+          <span class="stat">
+            <lucide-icon name="check-circle" [size]="12"></lucide-icon>
+            {{ soinAEnregistrer.nbExecutionsEffectuees }} / {{ soinAEnregistrer.nbExecutionsPrevues }} exécutions
+          </span>
+        </div>
+      </div>
+
+      <!-- Message succès -->
+      <div class="success-message" *ngIf="enregistrementSuccess && enregistrementResult">
+        <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+        <div class="success-content">
+          <strong>Soin enregistré avec succès !</strong>
+          <p>Exécution {{ getMomentLabelForResult(enregistrementResult.moment) }} marquée comme faite à {{ enregistrementResult.heureExecution }}</p>
+          <p class="executant">Par: {{ enregistrementResult.executant }}</p>
+          <p class="restants" *ngIf="enregistrementResult.nbExecutionsRestantes !== undefined">
+            {{ enregistrementResult.nbExecutionsRestantes }} exécution(s) restante(s)
+          </p>
+        </div>
+      </div>
+
+      <!-- Message erreur -->
+      <div class="error-message" *ngIf="enregistrementError">
+        <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+        <span>{{ enregistrementError }}</span>
+      </div>
+
+      <!-- Formulaire (avant succès) -->
+      <div class="form-group" *ngIf="!enregistrementSuccess">
+        <label for="observations">Observations (optionnel)</label>
+        <textarea 
+          id="observations"
+          class="form-control"
+          rows="3"
+          [(ngModel)]="observationsEnregistrement"
+          placeholder="Ajouter des observations si nécessaire..."
+          [disabled]="isEnregistrementEnCours">
+        </textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="closeEnregistrerModal()">
+        {{ enregistrementSuccess ? 'Fermer' : 'Annuler' }}
+      </button>
+      <button 
+        class="btn btn-primary" 
+        *ngIf="!enregistrementSuccess"
+        (click)="enregistrerSoin()"
+        [disabled]="isEnregistrementEnCours">
+        <lucide-icon name="loader-2" [size]="16" class="spinner" *ngIf="isEnregistrementEnCours"></lucide-icon>
+        <lucide-icon name="check" [size]="16" *ngIf="!isEnregistrementEnCours"></lucide-icon>
+        {{ isEnregistrementEnCours ? 'Enregistrement...' : 'Confirmer' }}
+      </button>
+    </div>
+  </div>
+</div>

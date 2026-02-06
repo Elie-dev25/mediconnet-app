@@ -29,6 +29,7 @@ export interface HospitalisationDto {
   dateSortie?: string;
   motif: string;
   statut: string;
+  urgence?: string;
   idPatient: number;
   patientNom?: string;
   patientPrenom?: string;
@@ -36,6 +37,11 @@ export interface HospitalisationDto {
   idLit: number;
   numeroLit?: string;
   numeroChambre?: string;
+  idService?: number;
+  serviceNom?: string;
+  idMedecin?: number;
+  medecinNom?: string;
+  idConsultation?: number;
   dureeJours?: number;
 }
 
@@ -44,15 +50,106 @@ export interface CreerHospitalisationRequest {
   idLit: number;
   motif?: string;
   dateEntreePrevue?: string;
+  dateSortiePrevue?: string;
   idConsultation?: number;
+  idMedecin?: number;
 }
 
 export interface DemandeHospitalisationRequest {
   idConsultation: number;
   idPatient: number;
+  idLit: number;
   motif: string;
   urgence?: string;
   notes?: string;
+  dateSortiePrevue?: string;
+}
+
+/**
+ * Nouvelle requête pour ordonner une hospitalisation (médecin)
+ * Le médecin ne choisit PAS de lit - le Major l'attribuera
+ */
+export interface OrdonnerHospitalisationRequest {
+  idConsultation?: number;
+  idPatient: number;
+  motif: string;
+  urgence?: string;
+  diagnosticPrincipal?: string;
+  soins?: SoinComplementaireDto[];
+  dateSortiePrevue?: string;
+  idServiceCible?: number;
+}
+
+export interface SoinComplementaireDto {
+  typeSoin: string;
+  description: string;
+  frequence?: string;
+  duree?: string;
+  priorite: string;
+  instructions?: string;
+}
+
+export interface ExamenPrescriptionDto {
+  typeExamen: string;
+  nomExamen: string;
+  description?: string;
+  urgence: boolean;
+  notes?: string;
+}
+
+export interface MedicamentPrescriptionDto {
+  nomMedicament: string;
+  dosage?: string;
+  posologie?: string;
+  formePharmaceutique?: string;
+  voieAdministration?: string;
+  dureeTraitement?: string;
+  instructions?: string;
+  quantite?: number;
+}
+
+/**
+ * Requête complète pour ordonner une hospitalisation avec prescriptions
+ */
+export interface OrdonnerHospitalisationCompleteRequest {
+  idPatient: number;
+  idConsultation?: number;
+  motif: string;
+  urgence: string;
+  diagnosticPrincipal?: string;
+  soinsComplementaires?: SoinComplementaireDto[];
+  notes?: string;
+  dateSortiePrevue?: string;
+  examens?: ExamenPrescriptionDto[];
+  medicaments?: MedicamentPrescriptionDto[];
+  idServiceCible?: number;
+}
+
+/**
+ * Requête pour attribuer un lit (Major)
+ */
+export interface AttribuerLitRequest {
+  idAdmission: number;
+  idLit: number;
+  notes?: string;
+}
+
+export interface HospitalisationCreatedData {
+  idAdmission: number;
+  idPatient: number;
+  idLit: number;
+  numeroChambre?: string;
+  numeroLit?: string;
+  standardNom?: string;
+  prixJournalier: number;
+  dateEntree: string;
+  dateSortiePrevue?: string;
+  motif?: string;
+  statut?: string;
+  idFacture?: number;
+  numeroFacture?: string;
+  montantEstime: number;
+  dureeEstimeeJours: number;
 }
 
 export interface HospitalisationResponse {
@@ -60,6 +157,7 @@ export interface HospitalisationResponse {
   message: string;
   idAdmission?: number;
   hospitalisation?: HospitalisationDto;
+  data?: HospitalisationCreatedData;
 }
 
 export interface LitsDisponiblesResponse {
@@ -139,9 +237,54 @@ export class HospitalisationService {
 
   /**
    * Demander une hospitalisation depuis une consultation (médecin)
+   * @deprecated Utiliser ordonnerHospitalisation à la place
    */
   demanderHospitalisation(request: DemandeHospitalisationRequest): Observable<HospitalisationResponse> {
     return this.http.post<HospitalisationResponse>(`${this.apiUrl}/demande`, request);
+  }
+
+  /**
+   * Ordonner une hospitalisation (nouveau workflow)
+   * Le médecin ne choisit PAS de lit - le Major l'attribuera
+   */
+  ordonnerHospitalisation(request: OrdonnerHospitalisationRequest): Observable<HospitalisationResponse> {
+    return this.http.post<HospitalisationResponse>(`${environment.apiUrl}/medecin/hospitalisation/ordonner`, request);
+  }
+
+  /**
+   * Ordonner une hospitalisation complète avec prescriptions (nouveau workflow multi-étapes)
+   * Inclut: hospitalisation + examens + médicaments + soins complémentaires
+   */
+  ordonnerHospitalisationComplete(request: OrdonnerHospitalisationCompleteRequest): Observable<HospitalisationResponse> {
+    return this.http.post<HospitalisationResponse>(`${environment.apiUrl}/medecin/hospitalisation/ordonner-complete`, request);
+  }
+
+  /**
+   * Attribuer un lit à une hospitalisation en attente (Major ou Médecin)
+   * @param request Les données d'attribution
+   * @param context Le contexte d'appel ('medecin' ou 'infirmier')
+   */
+  attribuerLit(request: AttribuerLitRequest, context: 'medecin' | 'infirmier' = 'infirmier'): Observable<HospitalisationResponse> {
+    const endpoint = context === 'medecin' 
+      ? `${environment.apiUrl}/medecin/hospitalisation/attribuer-lit`
+      : `${environment.apiUrl}/infirmier/hospitalisations/attribuer-lit`;
+    return this.http.post<HospitalisationResponse>(endpoint, request);
+  }
+
+  /**
+   * Récupérer les hospitalisations en attente de lit (Major)
+   */
+  getHospitalisationsEnAttente(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/infirmier/hospitalisations/en-attente`);
+  }
+
+  /**
+   * Récupérer les patients hospitalisés (infirmier/Major)
+   * @param search Filtre optionnel par nom/prénom/numéro de dossier
+   */
+  getPatientsHospitalises(search?: string): Observable<any> {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    return this.http.get<any>(`${environment.apiUrl}/infirmier/patients/hospitalises${params}`);
   }
 
   /**

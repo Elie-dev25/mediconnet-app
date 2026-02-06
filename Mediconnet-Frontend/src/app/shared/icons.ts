@@ -1,6 +1,6 @@
-/**
- * Configuration centralisée des icônes Lucide
- * Importer ALL_ICONS_PROVIDER dans les composants qui ont besoin d'icônes
+﻿/**
+ * Configuration centralisÃ©e des icÃ´nes Lucide
+ * Importer ALL_ICONS_PROVIDER dans les composants qui ont besoin d'icÃ´nes
  * Usage: providers: [ALL_ICONS_PROVIDER]
  */
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
@@ -32,6 +32,7 @@ import {
   Users,
   UserCheck,
   UserX,
+  UserSearch,
   LogOut,
   LogIn,
   ShieldCheck,
@@ -42,9 +43,12 @@ import {
   Eye,
   EyeOff,
   Mail,
+  MailCheck,
   Phone,
+  PhoneCall,
   MapPin,
   AtSign,
+  Flag,
   
   // Medical
   HeartPulse,
@@ -190,13 +194,27 @@ import {
   Mic,
   MicOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  
+  // Doors
+  DoorOpen,
+  DoorClosed,
+  
+  // Weather & Theme
+  Sun,
+  Moon,
+  
+  // Construction
+  Construction,
+  
+  // Lab & Science
+  Microscope
 } from 'lucide-angular';
 
 // Export du module et des utilitaires Lucide
 export { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider };
 
-// Toutes les icônes de l'application - objet centralisé
+// Toutes les icÃ´nes de l'application - objet centralisÃ©
 export const ALL_ICONS = {
   // Navigation & Layout
   Home,
@@ -225,6 +243,8 @@ export const ALL_ICONS = {
   Users,
   UserCheck,
   UserX,
+  UserSearch,
+  'user-search': UserSearch,
   LogOut,
   LogIn,
   ShieldCheck,
@@ -235,9 +255,14 @@ export const ALL_ICONS = {
   Eye,
   EyeOff,
   Mail,
+  MailCheck,
+  'mail-check': MailCheck,
   Phone,
+  PhoneCall,
+  'phone-call': PhoneCall,
   MapPin,
   AtSign,
+  Flag,
   
   // Medical
   HeartPulse,
@@ -323,6 +348,7 @@ export const ALL_ICONS = {
   Check,
   CheckCircle,
   CheckCircle2,
+  'check-circle-2': CheckCircle2,
   XCircle,
   AlertCircle,
   AlertTriangle,
@@ -383,11 +409,25 @@ export const ALL_ICONS = {
   Mic,
   MicOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  
+  // Doors
+  DoorOpen,
+  DoorClosed,
+  
+  // Weather & Theme
+  Sun,
+  Moon,
+  
+  // Construction
+  Construction,
+  
+  // Lab & Science
+  Microscope
 };
 
 /**
- * Provider Lucide avec toutes les icônes de l'application
+ * Provider Lucide avec toutes les icÃ´nes de l'application
  * Usage: providers: [ALL_ICONS_PROVIDER]
  */
 export const ALL_ICONS_PROVIDER = {
@@ -395,7 +435,7 @@ export const ALL_ICONS_PROVIDER = {
   useValue: new LucideIconProvider(ALL_ICONS)
 };
 
-// Icônes spécifiques pour le sidebar médecin
+// IcÃ´nes spÃ©cifiques pour le sidebar mÃ©decin
 export const MEDECIN_SIDEBAR_ICONS = {
   LayoutDashboard,
   UserCog,
@@ -405,7 +445,7 @@ export const MEDECIN_SIDEBAR_ICONS = {
   Users
 };
 
-// Icônes spécifiques pour le sidebar patient
+// IcÃ´nes spÃ©cifiques pour le sidebar patient
 export const PATIENT_SIDEBAR_ICONS = {
   LayoutDashboard,
   User,
@@ -416,7 +456,7 @@ export const PATIENT_SIDEBAR_ICONS = {
   Receipt
 };
 
-// Provider pour sidebar médecin
+// Provider pour sidebar mÃ©decin
 export const MEDECIN_ICONS_PROVIDER = {
   provide: LUCIDE_ICONS,
   useValue: new LucideIconProvider(MEDECIN_SIDEBAR_ICONS)

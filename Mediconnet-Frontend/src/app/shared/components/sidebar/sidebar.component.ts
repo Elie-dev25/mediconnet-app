@@ -6,7 +6,7 @@ import {
   LUCIDE_ICONS, 
   LucideIconProvider,
   Home, Calendar, CalendarCheck, Pill, FlaskConical, Receipt, Settings, X, 
-  LayoutDashboard, FolderOpen, UserCog, User, Users, Building2, BarChart3, Shield,
+  LayoutDashboard, FolderOpen, UserCog, User, Users, Building2, BarChart3, Shield, ShieldCheck,
   Stethoscope, HeartPulse, ClipboardList, FileText, UserPlus, CheckCircle, Clock,
   CreditCard, Wallet, PiggyBank, Banknote, TrendingUp, TrendingDown, DollarSign,
   ArrowDownRight, ArrowUpRight,
@@ -35,7 +35,8 @@ export interface MenuItem {
       provide: LUCIDE_ICONS, 
       useValue: new LucideIconProvider({ 
         Home, Calendar, CalendarCheck, Pill, FlaskConical, Receipt, Settings, X, 
-        LayoutDashboard, FolderOpen, UserCog, User, Users, Building2, BarChart3, Shield,
+        LayoutDashboard, FolderOpen, UserCog, User, Users, Building2, BarChart3, Shield, ShieldCheck,
+        'shield-check': ShieldCheck,
         Stethoscope, HeartPulse, ClipboardList, FileText, UserPlus, CheckCircle, Clock,
         CreditCard, Wallet, PiggyBank, Banknote, TrendingUp, TrendingDown, DollarSign,
         ArrowDownRight, ArrowUpRight,

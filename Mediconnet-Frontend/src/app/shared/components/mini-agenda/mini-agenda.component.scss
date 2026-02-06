@@ -1,8 +1,13 @@
 .mini-agenda {
   background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 10px;
+  padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  @media (min-width: 768px) {
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
 }
 
 // Header
@@ -10,18 +15,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 0.75rem;
+  }
 
   .header-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
+    
+    @media (min-width: 768px) {
+      gap: 0.5rem;
+    }
 
     h3 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       color: #1e293b;
+      
+      @media (min-width: 768px) {
+        font-size: 1.1rem;
+      }
     }
 
     lucide-icon {
@@ -40,14 +59,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: white;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s;
+  
+  @media (min-width: 768px) {
+    width: 32px;
+    height: 32px;
+  }
 
   &:hover {
     background: #f1f5f9;
@@ -57,15 +81,20 @@
 }
 
 .today-btn {
-  padding: 0.375rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid #2563eb;
   border-radius: 6px;
   background: white;
   color: #2563eb;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  
+  @media (min-width: 768px) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
 
   &:hover {
     background: #2563eb;
@@ -150,13 +179,31 @@
 // Days Grid
 .days-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.375rem;
+  }
+  
+  @media (min-width: 768px) {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
 }
 
 .day-column {
   min-width: 0;
+  
+  // Hide weekend on very small screens
+  @media (max-width: 639px) {
+    &:nth-child(6),
+    &:nth-child(7) {
+      display: none;
+    }
+  }
 
   &.today {
     .day-header {
@@ -170,23 +217,37 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.5rem;
+  padding: 0.375rem 0.25rem;
   background: #f8fafc;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.375rem;
+  
+  @media (min-width: 768px) {
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+  }
 
   .day-name {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     text-transform: uppercase;
     font-weight: 600;
     color: inherit;
     opacity: 0.8;
+    
+    @media (min-width: 768px) {
+      font-size: 0.7rem;
+    }
   }
 
   .day-number {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: inherit;
+    
+    @media (min-width: 768px) {
+      font-size: 1.1rem;
+    }
 
     &.today-number {
       color: white;
@@ -197,17 +258,31 @@
 .day-stats {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.25rem;
+  margin-bottom: 0.375rem;
+  flex-wrap: nowrap; // Always side by side
+  
+  @media (min-width: 768px) {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
 
   .stat {
     display: flex;
     align-items: center;
-    gap: 2px;
-    font-size: 0.7rem;
+    gap: 1px;
+    font-size: 0.55rem;
     font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    white-space: nowrap;
+    
+    @media (min-width: 768px) {
+      gap: 2px;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
 
     &.disponible {
       background: #dcfce7;
@@ -225,32 +300,37 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 150px;
+  max-height: 100px;
   overflow-y: auto;
-
+  
+  // Hide scrollbar but keep functionality
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // IE/Edge
+  
   &::-webkit-scrollbar {
-    width: 4px;
+    display: none; // Chrome/Safari/Opera
   }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 2px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 2px;
+  
+  @media (min-width: 768px) {
+    max-height: 150px;
   }
 }
 
 .slot-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  gap: 2px;
+  padding: 3px 4px;
+  border-radius: 3px;
+  font-size: 0.6rem;
   transition: all 0.2s;
+  
+  @media (min-width: 768px) {
+    gap: 4px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+  }
 
   &.clickable {
     cursor: pointer;
@@ -271,6 +351,11 @@
     white-space: nowrap;
     flex: 1;
     min-width: 0;
+    display: none;
+    
+    @media (min-width: 768px) {
+      display: block;
+    }
   }
 }
 
@@ -319,24 +404,41 @@
 .agenda-legend {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  padding: 0.75rem 0;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
   border-top: 1px solid #f1f5f9;
-  margin-top: 0.5rem;
+  margin-top: 0.375rem;
+  flex-wrap: wrap;
+  
+  @media (min-width: 768px) {
+    gap: 1rem;
+    padding: 0.75rem 0;
+    margin-top: 0.5rem;
+  }
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
+  gap: 0.25rem;
+  font-size: 0.65rem;
   color: #64748b;
+  
+  @media (min-width: 768px) {
+    gap: 0.375rem;
+    font-size: 0.75rem;
+  }
 }
 
 .legend-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  
+  @media (min-width: 768px) {
+    width: 10px;
+    height: 10px;
+  }
 
   &.disponible { background: #22c55e; }
   &.occupe { background: #ef4444; }
@@ -493,18 +595,418 @@
   }
 }
 
-// Responsive
-@media (max-width: 768px) {
-  .days-grid {
-    grid-template-columns: repeat(5, 1fr);
+// Responsive - Additional mobile optimizations
+@media (max-width: 479px) {
+  .mini-agenda {
+    padding: 0.75rem;
   }
+  
+  .agenda-header {
+    .header-title h3 {
+      font-size: 0.875rem;
+    }
+  }
+  
+  .days-grid {
+    gap: 0.2rem;
+  }
+  
+  .day-header {
+    padding: 0.25rem 0.125rem;
+    
+    .day-name {
+      font-size: 0.55rem;
+    }
+    
+    .day-number {
+      font-size: 0.8rem;
+    }
+  }
+  
+  .slot-item {
+    padding: 2px 3px;
+    font-size: 0.55rem;
+  }
+}
 
-  .day-column:nth-child(n+6) {
+// ==================== MOBILE VIEW STYLES ====================
+.mini-agenda.mobile-view {
+  padding: 0.875rem;
+}
+
+// Mobile Header
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  
+  .mobile-title {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    
+    lucide-icon {
+      color: #2563eb;
+    }
+    
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+  }
+}
+
+.mobile-today-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: white;
+  border: 1px solid #2563eb;
+  border-radius: 20px;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover, &.active {
+    background: #2563eb;
+    color: white;
+  }
+}
+
+// Mobile Week Navigation
+.mobile-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.week-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+  }
+}
+
+.week-range-mobile {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #475569;
+  text-align: center;
+}
+
+// Mobile Day View
+.mobile-day-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+// Mobile Day Navigation
+.mobile-day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.day-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  
+  &:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+    border-color: #2563eb;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.mobile-day-header {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  transition: all 0.2s;
+  
+  &.today {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    
+    .mobile-day-name,
+    .mobile-day-date {
+      color: white;
+    }
+  }
+  
+  .mobile-day-name {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.125rem;
+  }
+  
+  .mobile-day-date {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+}
+
+// Mobile Day Stats
+.mobile-day-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.mobile-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  
+  .stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+  
+  &.disponible {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  
+  &.occupe {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  
+  &.indisponible {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+}
+
+// Mobile Day Indicators (dots)
+.mobile-day-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.day-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  
+  &.active {
+    width: 24px;
+    border-radius: 5px;
+    background: #2563eb;
+  }
+  
+  &.today:not(.active) {
+    background: #93c5fd;
+  }
+  
+  &.has-rdv:not(.active) {
+    background: #fca5a5;
+  }
+  
+  &:hover:not(.active) {
+    transform: scale(1.2);
+  }
+}
+
+// Mobile Slots List - Compact Grid Layout (4 colonnes)
+.mobile-slots-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.25rem;
+  
+  // Hide scrollbar
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
     display: none;
   }
+}
 
-  .agenda-legend {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+.mobile-slot-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.125rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.15s;
+  min-height: 44px;
+  text-align: center;
+  
+  &.clickable {
+    cursor: pointer;
+    
+    &:active {
+      transform: scale(0.95);
+      background: #f8fafc;
+    }
+  }
+  
+  &.slot-disponible {
+    border-color: #86efac;
+    background: #f0fdf4;
+    
+    .slot-time-block {
+      color: #16a34a;
+    }
+  }
+  
+  &.slot-occupe {
+    border-color: #fca5a5;
+    background: #fef2f2;
+    
+    .slot-time-block {
+      color: #dc2626;
+    }
+    
+    .slot-info {
+      .slot-patient-name {
+        color: #991b1b;
+      }
+    }
+  }
+  
+  &.slot-indisponible {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+    opacity: 0.6;
+    
+    .slot-time-block {
+      color: #64748b;
+    }
+  }
+  
+  &.slot-passe {
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    opacity: 0.4;
+    
+    .slot-time-block {
+      color: #94a3b8;
+    }
+  }
+  
+  .slot-time-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    
+    lucide-icon {
+      display: none; // Hide icon in compact view
+    }
+    
+    .slot-time {
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+  }
+  
+  .slot-info {
+    width: 100%;
+    overflow: hidden;
+    
+    .slot-patient-name {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    .slot-status-text {
+      display: none; // Hide in compact view
+    }
+    
+    .slot-motif {
+      display: none; // Hide in compact view
+    }
+  }
+  
+  .slot-arrow {
+    display: none; // Hide arrow in compact view
+  }
+}
+
+// Mobile Empty Day
+.mobile-empty-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #94a3b8;
+  text-align: center;
+  
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
   }
 }

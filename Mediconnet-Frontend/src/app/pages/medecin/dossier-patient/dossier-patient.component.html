@@ -23,7 +23,8 @@
       [showStartConsultation]="true"
       [consultationId]="consultationId"
       (retry)="loadDossier()"
-      (startConsultation)="startConsultation()">
+      (startConsultation)="startConsultation()"
+      (viewConsultation)="onViewConsultation($event)">
     </app-dossier-medical-view>
   </div>
 

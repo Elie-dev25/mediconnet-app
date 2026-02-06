@@ -1,0 +1,121 @@
+<div class="prescription-medicaments">
+  <div class="section-header">
+    <h4>
+      <lucide-icon name="pill" [size]="16"></lucide-icon>
+      Prescription de médicaments
+    </h4>
+    <button type="button" class="btn-add" (click)="addMedicament()">
+      <lucide-icon name="plus" [size]="14"></lucide-icon>
+      Ajouter médicament
+    </button>
+  </div>
+
+  <div class="medicaments-list" [formGroup]="medicamentsForm">
+    <div formArrayName="medicaments">
+      <div class="medicament-card" *ngFor="let med of medicamentsArray.controls; let i = index" [formGroupName]="i">
+        <div class="card-header">
+          <span class="medicament-number">Médicament {{ i + 1 }}</span>
+          <button type="button" class="btn-remove" (click)="removeMedicament(i)" title="Supprimer">
+            <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+          </button>
+        </div>
+
+        <div class="card-body">
+          <!-- Ligne 1: Nom + Dosage -->
+          <div class="form-row">
+            <div class="form-group flex-2 autocomplete-container">
+              <label>Médicament *</label>
+              <input type="text" formControlName="nomMedicament" 
+                     placeholder="Rechercher un médicament..."
+                     (input)="onMedicamentSearch(i, $event)"
+                     (blur)="hideMedicamentSuggestions()"
+                     autocomplete="off">
+              <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
+                <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
+                     (mousedown)="selectMedicament(i, suggestion)">
+                  <span class="med-name">{{ suggestion.nom }}</span>
+                  <span class="med-dosage" *ngIf="suggestion.dosage">{{ suggestion.dosage }}</span>
+                  <span class="med-forme" *ngIf="suggestion.formeGalenique">{{ suggestion.formeGalenique }}</span>
+                  <span class="med-stock" [class.low]="suggestion.stock && suggestion.stock < 10">
+                    Stock: {{ suggestion.stock ?? 'N/A' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="form-group flex-1">
+              <label>Dosage</label>
+              <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g...">
+            </div>
+          </div>
+
+          <!-- Ligne 2: Posologie + Forme pharmaceutique -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Posologie</label>
+              <select formControlName="posologie">
+                <option value="">-- Sélectionner --</option>
+                <option *ngFor="let p of posologiesOptions" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-1" *ngIf="isPosologieAutre(i)">
+              <label>Préciser la posologie</label>
+              <input type="text" formControlName="posologieAutre" placeholder="Posologie personnalisée...">
+            </div>
+            <div class="form-group flex-1">
+              <label>Forme pharmaceutique</label>
+              <select formControlName="formePharmaceutique">
+                <option value="">-- Sélectionner --</option>
+                <option *ngFor="let f of formesPharmaceutiques" [value]="f">{{ f }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-1" *ngIf="isFormeAutre(i)">
+              <label>Préciser la forme</label>
+              <input type="text" formControlName="formeAutre" placeholder="Forme personnalisée...">
+            </div>
+          </div>
+
+          <!-- Ligne 3: Voie d'administration + Durée -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Voie d'administration</label>
+              <select formControlName="voieAdministration">
+                <option value="">-- Sélectionner --</option>
+                <option *ngFor="let v of voiesAdministration" [value]="v">{{ v }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-1" *ngIf="isVoieAutre(i)">
+              <label>Préciser la voie</label>
+              <input type="text" formControlName="voieAutre" placeholder="Voie personnalisée...">
+            </div>
+            <div class="form-group flex-1">
+              <label>Durée du traitement</label>
+              <input type="text" formControlName="dureeTraitement" placeholder="Ex: 7 jours, 1 mois...">
+            </div>
+            <div class="form-group flex-half">
+              <label>Quantité</label>
+              <input type="number" formControlName="quantite" placeholder="Qté" min="1">
+            </div>
+          </div>
+
+          <!-- Ligne 4: Instructions -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Instructions particulières</label>
+              <textarea formControlName="instructions" rows="2" 
+                        placeholder="Précautions, interactions, conseils..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="medicamentsArray.length === 0">
+    <lucide-icon name="pill" [size]="32"></lucide-icon>
+    <p>Aucun médicament prescrit</p>
+    <button type="button" class="btn-add-empty" (click)="addMedicament()">
+      <lucide-icon name="plus" [size]="16"></lucide-icon>
+      Ajouter un médicament
+    </button>
+  </div>
+</div>

@@ -43,7 +43,7 @@
               <div class="queue-info">
                 <div class="queue-patient">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</div>
                 <div class="queue-origin" [class.origin-pending]="isRdvConfirme(rdv)">
-                  <lucide-icon [name]="isRdvConfirme(rdv) ? 'clock' : 'check-circle'" [size]="12"></lucide-icon>
+                  <lucide-icon [name]="isRdvConfirme(rdv) ? 'clock' : 'check-circle-2'" [size]="12"></lucide-icon>
                   {{ getOrigineLabel(rdv) }}
                 </div>
               </div>
@@ -51,10 +51,9 @@
                 <button 
                   class="btn-action btn-action-primary" 
                   type="button" 
-                  (click)="openFichePatientForConsultation(rdv)"
-                  [disabled]="isRdvConfirme(rdv)">
+                  (click)="openFichePatientForConsultation(rdv)">
                   <lucide-icon name="folder-open" [size]="16"></lucide-icon>
-                  {{ isRdvConfirme(rdv) ? 'En attente' : 'Ouvrir' }}
+                  Ouvrir
                 </button>
               </div>
             </div>
@@ -89,27 +88,27 @@
           <div *ngIf="!isLoadingPending && pendingError" class="queue-error">{{ pendingError }}</div>
 
           <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length === 0" class="empty-state">
-            <lucide-icon name="check-circle" [size]="40"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="40"></lucide-icon>
             <p>Aucun RDV en attente</p>
           </div>
 
           <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length > 0" class="pending-list-compact">
             <div class="pending-row" *ngFor="let rdv of rdvEnAttente">
-              <div class="pending-info" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" style="cursor: pointer;" title="Voir fiche patient">
-                <span class="pending-name">{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
-                <span class="pending-datetime">{{ formatDate(rdv.dateHeure) }} · {{ formatTime(rdv.dateHeure) }}</span>
+              <div class="pending-datetime">
+                <span class="pending-date">{{ formatDateShort(rdv.dateHeure) }}</span>
+                <span class="pending-time">{{ formatTime(rdv.dateHeure) }}</span>
               </div>
-              <div class="pending-btns">
-                <button class="btn-icon btn-icon-info" type="button" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" [disabled]="isProcessing" title="Voir fiche">
-                  <lucide-icon name="user" [size]="14"></lucide-icon>
-                </button>
-                <button class="btn-icon btn-icon-success" type="button" (click)="validerRdv(rdv)" [disabled]="isProcessing" title="Valider">
+              <div class="pending-patient" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" title="Voir fiche patient">
+                {{ rdv.patientPrenom }} {{ rdv.patientNom }}
+              </div>
+              <div class="pending-actions">
+                <button class="btn-mini btn-mini-success" type="button" (click)="validerRdv(rdv)" [disabled]="isProcessing" title="Valider">
                   <lucide-icon name="check" [size]="14"></lucide-icon>
                 </button>
-                <button class="btn-icon btn-icon-warning" type="button" (click)="openSuggererModal(rdv)" [disabled]="isProcessing" title="Suggérer">
+                <button class="btn-mini btn-mini-warning" type="button" (click)="openSuggererModal(rdv)" [disabled]="isProcessing" title="Suggérer">
                   <lucide-icon name="calendar-clock" [size]="14"></lucide-icon>
                 </button>
-                <button class="btn-icon btn-icon-danger" type="button" (click)="openAnnulerModal(rdv)" [disabled]="isProcessing" title="Annuler">
+                <button class="btn-mini btn-mini-danger" type="button" (click)="openAnnulerModal(rdv)" [disabled]="isProcessing" title="Refuser">
                   <lucide-icon name="x" [size]="14"></lucide-icon>
                 </button>
               </div>
@@ -205,14 +204,14 @@
     </div>
   </app-modal>
 
-  <!-- Modal Suggestion de créneau -->
+  <!-- Modal Suggestion de créneau avec créneaux colorés -->
   <app-modal
     [isOpen]="showSuggererModal"
     title="Suggérer un nouveau créneau"
     icon="calendar-clock"
-    size="md"
+    size="lg"
     (closed)="closeSuggererModal()">
-    <div class="modal-form" *ngIf="selectedRdvForAction">
+    <div class="modal-form suggerer-modal" *ngIf="selectedRdvForAction">
       <p class="modal-info">
         Proposer un nouveau créneau pour le rendez-vous de 
         <strong>{{ selectedRdvForAction.patientPrenom }} {{ selectedRdvForAction.patientNom }}</strong>.
@@ -220,14 +219,56 @@
       <p class="modal-info-current">
         Créneau actuel : <strong>{{ formatDate(selectedRdvForAction.dateHeure) }} à {{ formatTime(selectedRdvForAction.dateHeure) }}</strong>
       </p>
+
+      <!-- Sélection de date -->
       <div class="form-group">
-        <label for="nouveauCreneau">Nouveau créneau *</label>
+        <label for="suggestionDate">Date du nouveau créneau *</label>
         <input 
-          type="datetime-local" 
-          id="nouveauCreneau" 
-          [(ngModel)]="nouveauCreneau" 
+          type="date" 
+          id="suggestionDate" 
+          [(ngModel)]="suggestionDate"
+          (change)="onSuggestionDateChange()"
           class="form-control">
       </div>
+
+      <!-- Chargement des créneaux -->
+      <div class="creneaux-loading" *ngIf="isLoadingCreneaux">
+        <lucide-icon name="loader-2" [size]="20" class="spinner"></lucide-icon>
+        <span>Chargement des créneaux...</span>
+      </div>
+
+      <!-- Légende des créneaux -->
+      <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length > 0">
+        <span class="legende-item disponible"><span class="dot"></span> Disponible</span>
+        <span class="legende-item occupe"><span class="dot"></span> Occupé</span>
+        <span class="legende-item passe"><span class="dot"></span> Passé</span>
+      </div>
+
+      <!-- Grille des créneaux avec statut -->
+      <div class="creneaux-grid-statut" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length > 0">
+        <button type="button" 
+                *ngFor="let creneau of creneauxSuggestion"
+                class="creneau-btn-statut"
+                [ngClass]="getCreneauClass(creneau)"
+                [class.selected]="isCreneauSelected(creneau)"
+                [disabled]="creneau.statut !== 'disponible'"
+                (click)="selectCreneauSuggestion(creneau)">
+          {{ creneau.heureDebut }}
+        </button>
+      </div>
+
+      <!-- Aucun créneau -->
+      <div class="no-creneaux" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length === 0 && suggestionDate">
+        <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+        <p>Aucun créneau configuré pour cette date.</p>
+      </div>
+
+      <!-- Créneau sélectionné -->
+      <div class="selected-creneau-info" *ngIf="selectedCreneauSuggestion">
+        <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
+        <span>Créneau sélectionné : <strong>{{ selectedCreneauSuggestion.heureDebut }} - {{ selectedCreneauSuggestion.heureFin }}</strong></span>
+      </div>
+
       <div class="form-group">
         <label for="messageSuggestion">Message au patient (optionnel)</label>
         <textarea 
@@ -240,7 +281,7 @@
       <p class="modal-warning">Le patient sera notifié par email du nouveau créneau proposé.</p>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="closeSuggererModal()">Annuler</button>
-        <button type="button" class="btn btn-primary" (click)="confirmSuggerer()" [disabled]="!nouveauCreneau || isProcessing">
+        <button type="button" class="btn btn-primary" (click)="confirmSuggerer()" [disabled]="!selectedCreneauSuggestion || isProcessing">
           <lucide-icon name="send" [size]="16" *ngIf="!isProcessing"></lucide-icon>
           <span *ngIf="isProcessing">...</span>
           Envoyer la proposition
@@ -249,5 +290,11 @@
     </div>
   </app-modal>
 
+  <!-- Panneau Fiche Patient (sidebar droite) -->
+  <app-fiche-patient-panel
+    [patientId]="selectedPatientId"
+    [isOpen]="isFichePanelOpen"
+    (close)="closeFichePanel()">
+  </app-fiche-patient-panel>
 
 </app-dashboard-layout>

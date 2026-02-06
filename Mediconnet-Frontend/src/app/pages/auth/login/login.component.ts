@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -57,12 +57,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   isResendingEmail = false;
   resendSuccess = false;
   
+  // État pour session expirée
+  sessionExpired = false;
+  hasRedirectUrl = false;
+  
   private destroy$ = new Subject<void>();
 
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private authNavigation: AuthNavigationService,
     private cdr: ChangeDetectorRef
   ) {
@@ -70,7 +75,29 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Initialisation si nécessaire
+    // Toujours réinitialiser le formulaire au chargement de la page
+    this.resetForm();
+    
+    // Vérifier si la session a expiré
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      if (params['sessionExpired'] === 'true') {
+        this.sessionExpired = true;
+        this.hasRedirectUrl = this.authService.hasRedirectUrl();
+        // S'assurer que le formulaire est vide après une déconnexion
+        this.resetForm();
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /**
+   * Réinitialise le formulaire de connexion
+   */
+  private resetForm(): void {
+    this.loginForm.reset();
+    this.loginForm.patchValue({ identifier: '', password: '' });
+    this.errorMessage = null;
+    this.emailNotConfirmed = false;
   }
 
   ngOnDestroy(): void {
@@ -159,6 +186,12 @@ export class LoginComponent implements OnInit, OnDestroy {
             return;
           }
           
+          // Vérifier s'il y a une URL de redirection (session expirée)
+          if (this.authService.hasRedirectUrl()) {
+            this.authService.redirectAfterLogin();
+            return;
+          }
+          
           // Rediriger vers le dashboard selon le role
           const dashboardRoute = this.getDashboardRoute(user?.role);
           this.router.navigate([dashboardRoute]);
@@ -213,7 +246,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       'caissier': '/caissier',
       'accueil': '/accueil',
       'pharmacien': '/pharmacien',
-      'biologiste': '/biologiste'
+      'laborantin': '/laborantin'
     };
     return routes[role] || '/patient';
   }

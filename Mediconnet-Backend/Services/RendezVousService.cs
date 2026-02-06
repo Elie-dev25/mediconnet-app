@@ -2,6 +2,7 @@ using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.RendezVous;
+using AccueilDtos = Mediconnet_Backend.DTOs.Accueil;
 using Mediconnet_Backend.Helpers;
 using Mediconnet_Backend.Hubs;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,20 @@ public class RendezVousService : IRendezVousService
     private readonly ILogger<RendezVousService> _logger;
     private readonly ISlotLockService _slotLockService;
     private readonly IAppointmentNotificationService _notificationService;
+    private readonly NotificationIntegrationService _notificationIntegration;
 
     public RendezVousService(
         ApplicationDbContext context, 
         ILogger<RendezVousService> logger,
         ISlotLockService slotLockService,
-        IAppointmentNotificationService notificationService)
+        IAppointmentNotificationService notificationService,
+        NotificationIntegrationService notificationIntegration)
     {
         _context = context;
         _logger = logger;
         _slotLockService = slotLockService;
         _notificationService = notificationService;
+        _notificationIntegration = notificationIntegration;
     }
 
     // ==================== PATIENT ====================
@@ -70,7 +74,17 @@ public class RendezVousService : IRendezVousService
             .OrderBy(r => r.DateHeure)
             .ToListAsync();
 
-        return rdvs.Select(MapToListDto).ToList();
+        // Récupérer les consultations liées
+        var rdvIds = rdvs.Select(r => r.IdRendezVous).ToList();
+        var consultations = await _context.Consultations
+            .Where(c => c.IdRendezVous.HasValue && rdvIds.Contains(c.IdRendezVous.Value))
+            .Select(c => new { c.IdRendezVous, c.IdConsultation, c.Anamnese })
+            .ToListAsync();
+
+        return rdvs.Select(r => {
+            var consultation = consultations.FirstOrDefault(c => c.IdRendezVous == r.IdRendezVous);
+            return MapToListDtoWithConsultation(r, consultation?.IdConsultation, !string.IsNullOrEmpty(consultation?.Anamnese));
+        }).ToList();
     }
 
     public async Task<List<RendezVousListDto>> GetPatientHistoryAsync(int patientId, int limite = 20)
@@ -85,7 +99,17 @@ public class RendezVousService : IRendezVousService
             .Take(limite)
             .ToListAsync();
 
-        return rdvs.Select(MapToListDto).ToList();
+        // Récupérer les consultations liées
+        var rdvIds = rdvs.Select(r => r.IdRendezVous).ToList();
+        var consultations = await _context.Consultations
+            .Where(c => c.IdRendezVous.HasValue && rdvIds.Contains(c.IdRendezVous.Value))
+            .Select(c => new { c.IdRendezVous, c.IdConsultation, c.Anamnese })
+            .ToListAsync();
+
+        return rdvs.Select(r => {
+            var consultation = consultations.FirstOrDefault(c => c.IdRendezVous == r.IdRendezVous);
+            return MapToListDtoWithConsultation(r, consultation?.IdConsultation, !string.IsNullOrEmpty(consultation?.Anamnese));
+        }).ToList();
     }
 
     public async Task<RendezVousDto?> GetRendezVousAsync(int rdvId, int patientId)
@@ -166,6 +190,34 @@ public class RendezVousService : IRendezVousService
 
             try
             {
+                // Récupérer les infos patient pour l'assurance
+                var patient = await _context.Patients
+                    .Include(p => p.Utilisateur)
+                    .Include(p => p.Assurance)
+                    .FirstOrDefaultAsync(p => p.IdUser == patientId);
+
+                if (patient == null)
+                {
+                    await _slotLockService.ReleaseLockAsync(lockResult.LockToken!, patientId);
+                    return (false, "Patient introuvable", null);
+                }
+
+                var now = DateTime.UtcNow;
+
+                // Vérifier si un paiement valide existe déjà (14 jours, même service/spécialité)
+                var paymentValidSince = now.AddDays(-14);
+                var factureValide = await _context.Factures
+                    .Where(f => f.IdPatient == patientId)
+                    .Where(f => f.TypeFacture == "consultation")
+                    .Where(f => f.Statut == "payee")
+                    .Where(f => f.DatePaiement.HasValue && f.DatePaiement.Value >= paymentValidSince)
+                    .Where(f => f.IdService == medecin.IdService)
+                    .Where(f => f.IdSpecialite == medecin.IdSpecialite)
+                    .OrderByDescending(f => f.DatePaiement)
+                    .FirstOrDefaultAsync();
+
+                // Statut RDV: "planifie" (en attente validation médecin)
+                // Après validation médecin: "confirme" si paiement valide, sinon reste "planifie" jusqu'au paiement
                 var rdv = new RendezVous
                 {
                     IdPatient = patientId,
@@ -176,11 +228,79 @@ public class RendezVousService : IRendezVousService
                     Motif = request.Motif,
                     Notes = request.Notes,
                     TypeRdv = request.TypeRdv,
-                    Statut = "planifie"
+                    Statut = "planifie",
+                    DateCreation = now
                 };
 
                 _context.RendezVous.Add(rdv);
                 await _context.SaveChangesAsync();
+
+                // Créer la consultation liée au RDV (pour le workflow patient en ligne)
+                var consultation = new Consultation
+                {
+                    IdPatient = patientId,
+                    IdMedecin = request.IdMedecin,
+                    IdRendezVous = rdv.IdRendezVous,
+                    Motif = request.Motif,
+                    DateHeure = request.DateHeure,
+                    Statut = "planifie",
+                    TypeConsultation = "normale"
+                };
+
+                _context.Consultations.Add(consultation);
+                await _context.SaveChangesAsync();
+
+                // Générer un numéro de facture unique
+                var numeroFacture = await GenererNumeroFactureAsync();
+
+                // Calculer la couverture assurance si le patient est assuré
+                var estAssure = patient.AssuranceId.HasValue && 
+                                patient.Assurance != null &&
+                                (!patient.DateFinValidite.HasValue || patient.DateFinValidite.Value >= now);
+                
+                // Prix consultation par défaut (peut être configuré)
+                decimal prixConsultation = 5000; // FCFA - à récupérer depuis config ou spécialité
+                
+                decimal tauxCouverture = 0;
+                decimal montantAssurance = 0;
+                decimal montantPatient = prixConsultation;
+                
+                if (estAssure)
+                {
+                    tauxCouverture = patient.CouvertureAssurance ?? 0;
+                    montantAssurance = Math.Round(prixConsultation * tauxCouverture / 100, 2);
+                    montantPatient = prixConsultation - montantAssurance;
+                }
+
+                // Créer la facture (en attente de paiement, sauf si paiement valide existe)
+                var facture = new Facture
+                {
+                    NumeroFacture = numeroFacture,
+                    IdPatient = patientId,
+                    IdMedecin = request.IdMedecin,
+                    IdService = medecin.IdService,
+                    IdSpecialite = medecin.IdSpecialite,
+                    IdConsultation = consultation.IdConsultation,
+                    MontantTotal = factureValide != null ? 0 : prixConsultation,
+                    MontantPaye = 0,
+                    MontantRestant = factureValide != null ? 0 : montantPatient,
+                    Statut = factureValide != null ? "payee" : "en_attente",
+                    TypeFacture = "consultation",
+                    DateCreation = now,
+                    DateEcheance = factureValide != null ? null : request.DateHeure.AddDays(-1), // Payer avant le RDV
+                    CouvertureAssurance = estAssure,
+                    IdAssurance = estAssure ? patient.AssuranceId : null,
+                    TauxCouverture = estAssure ? tauxCouverture : null,
+                    MontantAssurance = estAssure ? montantAssurance : null,
+                    DatePaiement = factureValide?.DatePaiement,
+                    Notes = factureValide != null
+                        ? $"Paiement consultation déjà valable jusqu'au {factureValide.DatePaiement!.Value.AddDays(14):yyyy-MM-dd}. Facture de référence: {factureValide.NumeroFacture}"
+                        : "Facture pour RDV pris en ligne - Paiement requis avant la consultation"
+                };
+
+                _context.Factures.Add(facture);
+                await _context.SaveChangesAsync();
+
                 await transaction.CommitAsync();
 
                 // Libérer le verrou après création réussie
@@ -193,14 +313,37 @@ public class RendezVousService : IRendezVousService
                     .Include(r => r.Service)
                     .FirstAsync(r => r.IdRendezVous == rdv.IdRendezVous);
 
-                _logger.LogInformation($"Rendez-vous créé: {rdv.IdRendezVous} pour patient {patientId}");
+                _logger.LogInformation($"RDV en ligne créé: RDV={rdv.IdRendezVous}, Consultation={consultation.IdConsultation}, Facture={facture.IdFacture} pour patient {patientId}");
 
-                // Notification temps réel
+                // Notification temps réel (SignalR)
                 var rdvDto = MapToDto(rdvComplet);
                 await _notificationService.NotifyAppointmentCreatedAsync(
                     rdv.IdMedecin, patientId, rdvDto);
 
-                return (true, "Rendez-vous créé avec succès", rdvDto);
+                // Notifier la création de facture (pour la caisse)
+                await _notificationService.NotifyFactureCreatedAsync(new
+                {
+                    idFacture = facture.IdFacture,
+                    numeroFacture = facture.NumeroFacture,
+                    typeFacture = facture.TypeFacture,
+                    statut = facture.Statut,
+                    idPatient = facture.IdPatient,
+                    idMedecin = facture.IdMedecin,
+                    idService = facture.IdService,
+                    idSpecialite = facture.IdSpecialite,
+                    montantRestant = facture.MontantRestant,
+                    dateCreation = facture.DateCreation,
+                    sourceRdvEnLigne = true
+                });
+
+                // Notification persistante (cloche) - notifier le médecin du nouveau RDV
+                var patientNomComplet = patient.Utilisateur != null 
+                    ? $"{patient.Utilisateur.Prenom} {patient.Utilisateur.Nom}"
+                    : "Patient";
+                await _notificationIntegration.NotifyRendezVousCreatedAsync(
+                    rdv.IdMedecin, patientId, patientNomComplet, rdv.DateHeure);
+
+                return (true, "Rendez-vous créé avec succès. Une facture a été générée pour le paiement.", rdvDto);
             }
             catch (DbUpdateConcurrencyException ex)
             {
@@ -307,6 +450,23 @@ public class RendezVousService : IRendezVousService
         return (true, "Rendez-vous annulé avec succès");
     }
 
+    // ==================== SERVICES ====================
+
+    public async Task<List<AccueilDtos.ServiceDto>> GetServicesAsync()
+    {
+        var services = await _context.Services
+            .OrderBy(s => s.NomService)
+            .Select(s => new AccueilDtos.ServiceDto
+            {
+                IdService = s.IdService,
+                NomService = s.NomService,
+                Description = s.Description
+            })
+            .ToListAsync();
+
+        return services;
+    }
+
     // ==================== CRÉNEAUX ====================
 
     public async Task<List<MedecinDisponibleDto>> GetMedecinsDisponiblesAsync(int? serviceId = null)
@@ -375,6 +535,18 @@ public class RendezVousService : IRendezVousService
                        r.DateHeure <= dateFin)
             .ToListAsync();
 
+        // Récupérer les consultations EN COURS du médecin (statut "en_cours" = médecin a cliqué sur "Commencer")
+        // Ces consultations occupent le créneau actuel
+        var consultationsEnCours = await _context.Consultations
+            .Include(c => c.RendezVous)
+            .Where(c => c.IdMedecin == medecinId &&
+                       c.Statut == "en_cours" &&
+                       c.RendezVous != null &&
+                       c.RendezVous.DateHeure >= dateDebut &&
+                       c.RendezVous.DateHeure <= dateFin)
+            .Select(c => c.RendezVous!)
+            .ToListAsync();
+
         // Récupérer les indisponibilités du médecin
         var indisponibilites = await _context.IndisponibilitesMedecin
             .Where(i => i.IdMedecin == medecinId &&
@@ -441,37 +613,52 @@ public class RendezVousService : IRendezVousService
                         raison = indispoJour.Motif ?? $"Médecin en {indispoJour.Type}";
                         disponible = false;
                     }
-                    // Vérifier si le créneau est pris
+                    // Vérifier si le créneau est pris par une consultation EN COURS (médecin a cliqué "Commencer")
                     else
                     {
-                        var rdvPris = rdvExistants.FirstOrDefault(r =>
+                        var consultationEnCours = consultationsEnCours.FirstOrDefault(r =>
                             dateHeure < r.DateHeure.AddMinutes(r.Duree) &&
                             dateHeure.AddMinutes(duree) > r.DateHeure);
 
-                        if (rdvPris != null)
+                        if (consultationEnCours != null)
                         {
                             statut = "occupe";
-                            raison = "Rendez-vous existant";
-                            idRdv = rdvPris.IdRendezVous;
+                            raison = "Consultation en cours";
+                            idRdv = consultationEnCours.IdRendezVous;
                             disponible = false;
                         }
-                        // Vérifier si le créneau est verrouillé
+                        // Vérifier si le créneau est pris par un RDV confirmé
                         else
                         {
-                            var verrouActif = verrous.FirstOrDefault(l =>
-                                dateHeure < l.DateHeure.AddMinutes(l.Duree) &&
-                                dateHeure.AddMinutes(duree) > l.DateHeure);
+                            var rdvPris = rdvExistants.FirstOrDefault(r =>
+                                dateHeure < r.DateHeure.AddMinutes(r.Duree) &&
+                                dateHeure.AddMinutes(duree) > r.DateHeure);
 
-                            if (verrouActif != null)
+                            if (rdvPris != null)
                             {
-                                statut = "verrouille";
-                                raison = "Réservation en cours par un autre utilisateur";
+                                statut = "occupe";
+                                raison = "Rendez-vous existant";
+                                idRdv = rdvPris.IdRendezVous;
                                 disponible = false;
                             }
+                            // Vérifier si le créneau est verrouillé
                             else
                             {
-                                statut = "disponible";
-                                disponible = true;
+                                var verrouActif = verrous.FirstOrDefault(l =>
+                                    dateHeure < l.DateHeure.AddMinutes(l.Duree) &&
+                                    dateHeure.AddMinutes(duree) > l.DateHeure);
+
+                                if (verrouActif != null)
+                                {
+                                    statut = "verrouille";
+                                    raison = "Réservation en cours par un autre utilisateur";
+                                    disponible = false;
+                                }
+                                else
+                                {
+                                    statut = "disponible";
+                                    disponible = true;
+                                }
                             }
                         }
                     }
@@ -523,9 +710,15 @@ public class RendezVousService : IRendezVousService
 
     private RendezVousListDto MapToListDto(RendezVous rdv)
     {
+        return MapToListDtoWithConsultation(rdv, null, false);
+    }
+
+    private RendezVousListDto MapToListDtoWithConsultation(RendezVous rdv, int? idConsultation, bool anamneseRemplie)
+    {
         return new RendezVousListDto
         {
             IdRendezVous = rdv.IdRendezVous,
+            IdConsultation = idConsultation,
             DateHeure = rdv.DateHeure,
             Duree = rdv.Duree,
             Statut = rdv.Statut,
@@ -534,7 +727,8 @@ public class RendezVousService : IRendezVousService
             MedecinNom = rdv.Medecin?.Utilisateur != null
                 ? $"Dr. {rdv.Medecin.Utilisateur.Prenom} {rdv.Medecin.Utilisateur.Nom}"
                 : "",
-            ServiceNom = rdv.Service?.NomService
+            ServiceNom = rdv.Service?.NomService,
+            AnamneseRemplie = anamneseRemplie
         };
     }
 
@@ -663,9 +857,16 @@ public class RendezVousService : IRendezVousService
         response.Message = "Rendez-vous confirmé avec succès";
         response.RendezVous = MapToDto(rdv);
 
-        // Notification temps réel
+        // Notification temps réel (SignalR)
         await _notificationService.NotifyAppointmentUpdatedAsync(
             medecinId, rdv.IdPatient, response.RendezVous);
+
+        // Notification persistante (cloche) - notifier le patient de la confirmation
+        var medecinNom = rdv.Medecin?.Utilisateur != null 
+            ? $"{rdv.Medecin.Utilisateur.Prenom} {rdv.Medecin.Utilisateur.Nom}"
+            : "Médecin";
+        await _notificationIntegration.NotifyRendezVousConfirmedAsync(
+            rdv.IdPatient, medecinNom, rdv.DateHeure);
 
         return response;
     }
@@ -715,9 +916,16 @@ public class RendezVousService : IRendezVousService
         response.Message = "Rendez-vous annulé avec succès";
         response.RendezVous = MapToDto(rdv);
 
-        // Notification temps réel
+        // Notification temps réel (SignalR)
         await _notificationService.NotifyAppointmentCancelledAsync(
             medecinId, rdv.IdPatient, request.IdRendezVous);
+
+        // Notification persistante (cloche) - notifier le patient de l'annulation
+        var medecinNom = rdv.Medecin?.Utilisateur != null 
+            ? $"{rdv.Medecin.Utilisateur.Prenom} {rdv.Medecin.Utilisateur.Nom}"
+            : "Médecin";
+        await _notificationIntegration.NotifyRendezVousCancelledAsync(
+            rdv.IdPatient, medecinNom, request.Motif ?? "Non spécifiée", rdv.DateHeure);
 
         return response;
     }
@@ -1048,5 +1256,186 @@ public class RendezVousService : IRendezVousService
             rdv.IdMedecin, patientId, response.RendezVous);
 
         return response;
+    }
+
+    /// <summary>
+    /// Génère un numéro de facture unique
+    /// Format: FAC-YYYYMMDD-XXXXX
+    /// </summary>
+    private async Task<string> GenererNumeroFactureAsync()
+    {
+        var prefix = $"FAC-{DateTime.UtcNow:yyyyMMdd}-";
+        
+        var derniereFacture = await _context.Factures
+            .Where(f => f.NumeroFacture != null && f.NumeroFacture.StartsWith(prefix))
+            .OrderByDescending(f => f.NumeroFacture)
+            .Select(f => f.NumeroFacture)
+            .FirstOrDefaultAsync();
+        
+        int nextNumber = 1;
+        if (!string.IsNullOrEmpty(derniereFacture))
+        {
+            var lastNumberStr = derniereFacture.Substring(prefix.Length);
+            if (int.TryParse(lastNumberStr, out int lastNumber))
+            {
+                nextNumber = lastNumber + 1;
+            }
+        }
+        
+        return $"{prefix}{nextNumber:D5}";
+    }
+
+    // ==================== PAIEMENT EN LIGNE ====================
+
+    public async Task<List<FacturePatientDto>> GetFacturesPatientEnAttenteAsync(int patientId)
+    {
+        var factures = await _context.Factures
+            .Include(f => f.Consultation)
+                .ThenInclude(c => c!.RendezVous)
+            .Include(f => f.Medecin)
+                .ThenInclude(m => m!.Utilisateur)
+            .Include(f => f.Service)
+            .Where(f => f.IdPatient == patientId)
+            .Where(f => f.Statut == "en_attente" || f.Statut == "partiel")
+            .Where(f => f.TypeFacture == "consultation")
+            .OrderByDescending(f => f.DateCreation)
+            .ToListAsync();
+
+        return factures.Select(f => new FacturePatientDto
+        {
+            IdFacture = f.IdFacture,
+            NumeroFacture = f.NumeroFacture,
+            IdRendezVous = f.Consultation?.IdRendezVous,
+            DateRendezVous = f.Consultation?.RendezVous?.DateHeure,
+            MedecinNom = f.Medecin?.Utilisateur != null 
+                ? $"Dr. {f.Medecin.Utilisateur.Prenom} {f.Medecin.Utilisateur.Nom}" 
+                : null,
+            ServiceNom = f.Service?.NomService,
+            MontantTotal = f.MontantTotal,
+            MontantRestant = f.MontantRestant,
+            Statut = f.Statut ?? "en_attente",
+            DateCreation = f.DateCreation,
+            DateEcheance = f.DateEcheance,
+            CouvertureAssurance = f.CouvertureAssurance,
+            TauxCouverture = f.TauxCouverture,
+            MontantAssurance = f.MontantAssurance
+        }).ToList();
+    }
+
+    public async Task<PayerFactureEnLigneResponse> PayerFactureEnLigneAsync(int patientId, PayerFactureEnLigneRequest request)
+    {
+        var response = new PayerFactureEnLigneResponse();
+
+        // Vérifier la facture
+        var facture = await _context.Factures
+            .Include(f => f.Consultation)
+            .FirstOrDefaultAsync(f => f.IdFacture == request.IdFacture && f.IdPatient == patientId);
+
+        if (facture == null)
+        {
+            response.Message = "Facture introuvable";
+            return response;
+        }
+
+        if (facture.Statut == "payee")
+        {
+            response.Message = "Cette facture est déjà payée";
+            return response;
+        }
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var now = DateTime.UtcNow;
+
+            // Générer numéro transaction
+            var numeroTransaction = $"TXN-ONLINE-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
+
+            // Créer la transaction (paiement en ligne)
+            var newTransaction = new Transaction
+            {
+                NumeroTransaction = numeroTransaction,
+                TransactionUuid = Guid.NewGuid().ToString(),
+                IdFacture = request.IdFacture,
+                IdPatient = patientId,
+                IdCaissier = null, // Paiement en ligne, pas de caissier
+                IdSessionCaisse = null,
+                Montant = facture.MontantRestant,
+                ModePaiement = request.ModePaiement,
+                Statut = "complete",
+                Reference = request.Reference,
+                Notes = request.Notes ?? "Paiement en ligne par le patient",
+                MontantRecu = facture.MontantRestant,
+                RenduMonnaie = 0,
+                EstPaiementPartiel = false
+            };
+
+            _context.Transactions.Add(newTransaction);
+
+            // Mettre à jour la facture
+            facture.MontantPaye = facture.MontantTotal;
+            facture.MontantRestant = 0;
+            facture.Statut = "payee";
+            facture.DatePaiement = now;
+
+            // Confirmer le RDV associé si existe
+            int? idRdv = null;
+            string? statutRdv = null;
+
+            if (facture.Consultation?.IdRendezVous.HasValue == true)
+            {
+                var rdv = await _context.RendezVous
+                    .FirstOrDefaultAsync(r => r.IdRendezVous == facture.Consultation.IdRendezVous.Value);
+
+                if (rdv != null && (rdv.Statut == "planifie" || rdv.Statut == "en_attente"))
+                {
+                    rdv.Statut = "confirme";
+                    rdv.DateModification = now;
+                    idRdv = rdv.IdRendezVous;
+                    statutRdv = "confirme";
+                    _logger.LogInformation($"RDV {rdv.IdRendezVous} confirmé après paiement en ligne");
+                }
+                else if (rdv != null)
+                {
+                    idRdv = rdv.IdRendezVous;
+                    statutRdv = rdv.Statut;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Notification de paiement
+            await _notificationService.NotifyFacturePaidAsync(new
+            {
+                idFacture = facture.IdFacture,
+                numeroFacture = facture.NumeroFacture,
+                typeFacture = facture.TypeFacture,
+                statut = facture.Statut,
+                idPatient = facture.IdPatient,
+                idMedecin = facture.IdMedecin,
+                idService = facture.IdService,
+                idSpecialite = facture.IdSpecialite,
+                datePaiement = facture.DatePaiement,
+                paiementEnLigne = true
+            });
+
+            _logger.LogInformation($"Paiement en ligne effectué: Transaction={numeroTransaction}, Facture={facture.NumeroFacture}, Patient={patientId}");
+
+            response.Success = true;
+            response.Message = "Paiement effectué avec succès. Votre rendez-vous est confirmé.";
+            response.NumeroTransaction = numeroTransaction;
+            response.IdRendezVous = idRdv;
+            response.StatutRdv = statutRdv;
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError($"Erreur paiement en ligne: {ex.Message}");
+            response.Message = "Erreur lors du paiement. Veuillez réessayer.";
+            return response;
+        }
     }
 }

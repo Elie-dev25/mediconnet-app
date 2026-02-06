@@ -35,6 +35,10 @@ public class Ordonnance
 [Table("prescription_medicament")]
 public class PrescriptionMedicament
 {
+    [Key]
+    [Column("id_prescription_med")]
+    public int IdPrescriptionMed { get; set; }
+
     [Column("id_ord")]
     public int IdOrdonnance { get; set; }
 
@@ -49,6 +53,18 @@ public class PrescriptionMedicament
 
     [Column("posologie")]
     public string? Posologie { get; set; }
+
+    [Column("frequence")]
+    public string? Frequence { get; set; }
+
+    [Column("voie_administration")]
+    public string? VoieAdministration { get; set; }
+
+    [Column("forme_pharmaceutique")]
+    public string? FormePharmaceutique { get; set; }
+
+    [Column("instructions")]
+    public string? Instructions { get; set; }
 
     // Navigation
     [ForeignKey("IdOrdonnance")]

@@ -251,6 +251,28 @@ export class MedecinPlanningService {
       message 
     });
   }
+
+  // ==================== CONSULTATION DIRECTE ====================
+
+  /**
+   * Créer et démarrer une consultation directement à partir d'un RDV confirmé
+   * Permet au médecin d'initier une consultation sans passage préalable par l'infirmière
+   */
+  creerConsultationDirecte(idRendezVous: number): Observable<CreerConsultationResponse> {
+    return this.http.post<CreerConsultationResponse>(
+      `${environment.apiUrl}/medecin/rdv/${idRendezVous}/creer-consultation`, {}
+    );
+  }
+
+  /**
+   * Créer une consultation spontanée pour un patient (sans RDV préalable)
+   */
+  creerConsultationSpontanee(idPatient: number, motif?: string): Observable<CreerConsultationResponse> {
+    return this.http.post<CreerConsultationResponse>(
+      `${environment.apiUrl}/medecin/patient/${idPatient}/consultation-spontanee`, 
+      { motif }
+    );
+  }
 }
 
 // Interface pour les réponses d'action
@@ -259,4 +281,11 @@ export interface ActionRdvResponse {
   message: string;
   rendezVous?: RdvPlanningDto;
   conflitDetecte?: boolean;
+}
+
+export interface CreerConsultationResponse {
+  success: boolean;
+  idConsultation: number;
+  message: string;
+  isNew?: boolean;
 }

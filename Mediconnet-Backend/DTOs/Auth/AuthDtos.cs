@@ -35,6 +35,9 @@ public class LoginResponse
     
     public string Role { get; set; } = string.Empty;
     
+    /// <summary>Titre affiché (ex: "Major Pédiatrie" pour un infirmier major)</summary>
+    public string? TitreAffiche { get; set; }
+    
     /// <summary>JWT Token</summary>
     public string? Token { get; set; } = string.Empty;
     
@@ -102,6 +105,8 @@ public class RegisterRequest
     public string? Adresse { get; set; }
     public string? SituationMatrimoniale { get; set; }
     public string? Profession { get; set; }
+    public int? NbEnfants { get; set; }
+    public string? Ethnie { get; set; }
     
     // === Étape 3: Informations médicales ===
     public string? GroupeSanguin { get; set; }
@@ -113,7 +118,13 @@ public class RegisterRequest
     public bool AntecedentsFamiliaux { get; set; }
     public string? AntecedentsFamiliauxDetails { get; set; }
     
-    // === Étape 4: Contact d'urgence ===
+    // === Étape 4: Habitudes de vie ===
+    public bool? ConsommationAlcool { get; set; }
+    public string? FrequenceAlcool { get; set; }
+    public bool? Tabagisme { get; set; }
+    public bool? ActivitePhysique { get; set; }
+    
+    // === Étape 5: Contact d'urgence ===
     public string? PersonneContact { get; set; }
     public string? NumeroContact { get; set; }
     

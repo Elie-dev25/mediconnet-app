@@ -60,9 +60,10 @@ export class PatientProfileComponent implements OnInit {
   dossierMedical: DossierMedicalDto | null = null;
   
   // Visites et traitements
-  activeTab: 'future' | 'past' | 'treatments' = 'future';
+  activeTab: 'future' | 'past' | 'missed' | 'treatments' = 'future';
   futureVisits: VisiteDto[] = [];
   pastVisits: VisiteDto[] = [];
+  missedVisits: VisiteDto[] = [];
   traitements: TraitementDto[] = [];
   
   // Fichiers
@@ -135,7 +136,8 @@ export class PatientProfileComponent implements OnInit {
         this.patient = profile;
         this.dossierMedical = dossier;
         this.futureVisits = dashboard.visitesAVenir || [];
-        this.pastVisits = dashboard.visitesPassees || [];
+        this.pastVisits = (dashboard.visitesPassees || []).filter(v => v.statut !== 'absent');
+        this.missedVisits = (dashboard.visitesPassees || []).filter(v => v.statut === 'absent');
         this.traitements = dashboard.traitementsPrevus || [];
         this.populateProfileForm();
       },
@@ -281,8 +283,21 @@ export class PatientProfileComponent implements OnInit {
   }
 
   // === Gestion des onglets visites ===
-  setActiveTab(tab: 'future' | 'past' | 'treatments'): void {
+  setActiveTab(tab: 'future' | 'past' | 'missed' | 'treatments'): void {
     this.activeTab = tab;
+  }
+
+  get missedCount(): number {
+    return this.missedVisits.length;
+  }
+
+  // Navigation vers la prise de RDV
+  navigateToNewRdv(medecinId?: number): void {
+    if (medecinId) {
+      this.router.navigate(['/patient/nouveau-rdv'], { queryParams: { medecinId } });
+    } else {
+      this.router.navigate(['/patient/nouveau-rdv']);
+    }
   }
 
   get upcomingCount(): number {

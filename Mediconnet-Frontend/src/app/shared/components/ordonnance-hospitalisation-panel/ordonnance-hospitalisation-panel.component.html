@@ -1,0 +1,79 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <lucide-icon name="pill" [size]="22"></lucide-icon>
+        <div>
+          <h2>Nouvelle ordonnance</h2>
+          <span class="patient-name" *ngIf="patientPrenom || patientNom">{{ patientPrenom }} {{ patientNom }}</span>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content">
+      <!-- Success Message -->
+      <div class="success-message" *ngIf="success">
+        <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+        <h3>Ordonnance enregistrée</h3>
+        <p>L'ordonnance a été ajoutée avec succès.</p>
+      </div>
+
+      <!-- Form -->
+      <div class="form-container" *ngIf="!success">
+        <!-- Error -->
+        <div class="error-message" *ngIf="error">
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Composant médicaments réutilisé -->
+        <app-prescription-medicaments
+          [medicaments]="medicaments"
+          (medicamentsChange)="onMedicamentsChange($event)">
+        </app-prescription-medicaments>
+
+        <!-- Notes générales -->
+        <div class="form-section">
+          <h4>
+            <lucide-icon name="file-text" [size]="16"></lucide-icon>
+            Notes de l'ordonnance
+          </h4>
+          <textarea 
+            [(ngModel)]="notes" 
+            rows="3" 
+            placeholder="Notes ou instructions générales pour l'ordonnance...">
+          </textarea>
+        </div>
+
+        <!-- Durée globale -->
+        <div class="form-section">
+          <h4>
+            <lucide-icon name="clock" [size]="16"></lucide-icon>
+            Durée du traitement
+          </h4>
+          <input 
+            type="text" 
+            [(ngModel)]="dureeTraitement" 
+            placeholder="Ex: 7 jours, 1 mois...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" *ngIf="!success">
+      <button class="btn btn-outline" (click)="onClose()" [disabled]="isSubmitting">
+        Annuler
+      </button>
+      <button class="btn btn-primary" (click)="submit()" [disabled]="!canSubmit">
+        <lucide-icon name="loader-2" [size]="16" class="spinner" *ngIf="isSubmitting"></lucide-icon>
+        <lucide-icon name="save" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer l\'ordonnance' }}
+      </button>
+    </div>
+  </div>
+</div>

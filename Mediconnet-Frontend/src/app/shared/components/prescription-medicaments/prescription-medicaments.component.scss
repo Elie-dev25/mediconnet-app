@@ -1,0 +1,248 @@
+.prescription-medicaments {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+
+      lucide-icon { color: #8b5cf6; }
+    }
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #7c3aed;
+    }
+  }
+
+  .medicaments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .medicament-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+
+      .medicament-number {
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+
+      .btn-remove {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #ef4444;
+        }
+      }
+    }
+
+    .card-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    &.flex-1 { flex: 1; min-width: 150px; }
+    &.flex-2 { flex: 2; min-width: 200px; }
+    &.flex-half { flex: 0.5; min-width: 80px; }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    input, select, textarea {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+      }
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+  }
+
+  .autocomplete-container {
+    position: relative;
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+
+      .autocomplete-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.15s;
+
+        &:last-child { border-bottom: none; }
+
+        &:hover {
+          background: #f3f4f6;
+        }
+
+        .med-name {
+          font-weight: 500;
+          color: #1f2937;
+          flex: 1;
+        }
+
+        .med-dosage {
+          font-size: 0.8rem;
+          color: #6b7280;
+          background: #e5e7eb;
+          padding: 0.125rem 0.5rem;
+          border-radius: 4px;
+        }
+
+        .med-forme {
+          font-size: 0.75rem;
+          color: #8b5cf6;
+        }
+
+        .med-stock {
+          font-size: 0.75rem;
+          color: #059669;
+
+          &.low {
+            color: #dc2626;
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    color: #9ca3af;
+
+    lucide-icon {
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0 0 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .btn-add-empty {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: white;
+      border: 1px solid #8b5cf6;
+      color: #8b5cf6;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #8b5cf6;
+        color: white;
+      }
+    }
+  }
+}

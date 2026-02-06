@@ -9,7 +9,10 @@ import {
   LitAdminDto,
   ChambresStats,
   CreateChambreRequest,
-  CreateLitRequest
+  CreateLitRequest,
+  StandardChambreDto,
+  CreateStandardChambreRequest,
+  StandardChambreSelectDto
 } from '../../../services/admin-settings.service';
 import { 
   AuditService, 
@@ -18,7 +21,8 @@ import {
   AuditLogsFilter 
 } from '../../../services/audit.service';
 
-type TabType = 'laboratoires' | 'chambres' | 'logs';
+type TabType = 'chambres' | 'laboratoires' | 'logs';
+type ChambreSubTabType = 'chambres' | 'standards';
 
 @Component({
   selector: 'app-admin-settings',
@@ -33,6 +37,7 @@ export class AdminSettingsComponent implements OnInit {
   sidebarTitle = ADMIN_SIDEBAR_TITLE;
 
   activeTab: TabType = 'chambres';
+  chambreSubTab: ChambreSubTabType = 'chambres';
   
   // Chambres
   chambres: ChambreAdminDto[] = [];
@@ -64,7 +69,22 @@ export class AdminSettingsComponent implements OnInit {
 
   // Confirmation suppression
   showDeleteConfirm = false;
-  deleteTarget: { type: 'chambre' | 'lit'; id: number; label: string } | null = null;
+  deleteTarget: { type: 'chambre' | 'lit' | 'standard'; id: number; label: string } | null = null;
+
+  // Standards de chambre
+  standards: StandardChambreDto[] = [];
+  standardsForSelect: StandardChambreSelectDto[] = [];
+  isLoadingStandards = false;
+  showStandardModal = false;
+  editingStandard: StandardChambreDto | null = null;
+  standardForm: CreateStandardChambreRequest = {
+    nom: '',
+    description: '',
+    prixJournalier: 0,
+    privileges: [],
+    localisation: ''
+  };
+  newPrivilege = '';
 
   // Audit Logs
   auditLogs: AuditLogDto[] = [];
@@ -96,8 +116,22 @@ export class AdminSettingsComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'chambres') {
       this.loadChambres();
+      this.loadStandardsForSelect();
+      if (this.chambreSubTab === 'standards') {
+        this.loadStandards();
+      }
     } else if (tab === 'logs') {
       this.loadLogsData();
+    }
+  }
+
+  setChambreSubTab(subTab: ChambreSubTabType): void {
+    this.chambreSubTab = subTab;
+    if (subTab === 'standards') {
+      this.loadStandards();
+    } else {
+      this.loadChambres();
+      this.loadStandardsForSelect();
     }
   }
 
@@ -167,6 +201,134 @@ export class AdminSettingsComponent implements OnInit {
     }
   }
 
+  // ==================== STANDARDS DE CHAMBRE ====================
+
+  loadStandards(): void {
+    this.isLoadingStandards = true;
+    this.settingsService.getStandards().subscribe({
+      next: (response) => {
+        this.standards = response.data;
+        this.isLoadingStandards = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement standards:', err);
+        this.error = 'Impossible de charger les standards';
+        this.isLoadingStandards = false;
+      }
+    });
+  }
+
+  loadStandardsForSelect(): void {
+    this.settingsService.getStandardsForSelect().subscribe({
+      next: (response) => {
+        this.standardsForSelect = response.data;
+      },
+      error: (err) => {
+        console.error('Erreur chargement standards pour select:', err);
+      }
+    });
+  }
+
+  openStandardModal(standard?: StandardChambreDto): void {
+    if (standard) {
+      this.editingStandard = standard;
+      this.standardForm = {
+        nom: standard.nom,
+        description: standard.description || '',
+        prixJournalier: standard.prixJournalier,
+        privileges: [...standard.privileges],
+        localisation: standard.localisation || ''
+      };
+    } else {
+      this.editingStandard = null;
+      this.standardForm = {
+        nom: '',
+        description: '',
+        prixJournalier: 0,
+        privileges: [],
+        localisation: ''
+      };
+    }
+    this.newPrivilege = '';
+    this.showStandardModal = true;
+  }
+
+  closeStandardModal(): void {
+    this.showStandardModal = false;
+    this.editingStandard = null;
+  }
+
+  addPrivilege(): void {
+    if (this.newPrivilege.trim() && !this.standardForm.privileges.includes(this.newPrivilege.trim())) {
+      this.standardForm.privileges.push(this.newPrivilege.trim());
+      this.newPrivilege = '';
+    }
+  }
+
+  removePrivilege(index: number): void {
+    this.standardForm.privileges.splice(index, 1);
+  }
+
+  saveStandard(): void {
+    if (!this.standardForm.nom.trim() || this.standardForm.prixJournalier <= 0) return;
+
+    this.isLoadingStandards = true;
+
+    if (this.editingStandard) {
+      this.settingsService.updateStandard(this.editingStandard.idStandard, this.standardForm).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadStandards();
+            this.closeStandardModal();
+          } else {
+            this.error = response.message || 'Erreur lors de la mise à jour';
+          }
+          this.isLoadingStandards = false;
+        },
+        error: () => {
+          this.error = 'Erreur lors de la mise à jour';
+          this.isLoadingStandards = false;
+        }
+      });
+    } else {
+      this.settingsService.createStandard(this.standardForm).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadStandards();
+            this.closeStandardModal();
+          } else {
+            this.error = response.message || 'Erreur lors de la création';
+          }
+          this.isLoadingStandards = false;
+        },
+        error: () => {
+          this.error = 'Erreur lors de la création';
+          this.isLoadingStandards = false;
+        }
+      });
+    }
+  }
+
+  confirmDeleteStandard(standard: StandardChambreDto): void {
+    this.deleteTarget = {
+      type: 'standard',
+      id: standard.idStandard,
+      label: `Standard "${standard.nom}"`
+    };
+    this.showDeleteConfirm = true;
+  }
+
+  toggleStandardActif(standard: StandardChambreDto): void {
+    this.settingsService.updateStandard(standard.idStandard, { actif: !standard.actif }).subscribe({
+      next: () => {
+        this.loadStandards();
+      },
+      error: () => {
+        this.error = 'Erreur lors de la mise à jour';
+      }
+    });
+  }
+
   // ==================== CHAMBRES ====================
 
   loadChambres(): void {
@@ -200,13 +362,15 @@ export class AdminSettingsComponent implements OnInit {
   }
 
   openChambreModal(chambre?: ChambreAdminDto): void {
+    this.loadStandardsForSelect();
     if (chambre) {
       this.editingChambre = chambre;
       this.chambreForm = {
         numero: chambre.numero,
         capacite: chambre.capacite,
         etat: chambre.etat,
-        statut: chambre.statut
+        statut: chambre.statut,
+        idStandard: chambre.idStandard
       };
     } else {
       this.editingChambre = null;
@@ -214,7 +378,8 @@ export class AdminSettingsComponent implements OnInit {
         numero: '',
         capacite: 1,
         etat: 'bon',
-        statut: 'actif'
+        statut: 'actif',
+        idStandard: undefined
       };
     }
     this.showChambreModal = true;
@@ -376,6 +541,23 @@ export class AdminSettingsComponent implements OnInit {
         },
         error: () => {
           this.error = 'Erreur lors de la suppression';
+          this.isLoading = false;
+          this.cancelDelete();
+        }
+      });
+    } else if (this.deleteTarget.type === 'standard') {
+      this.settingsService.deleteStandard(this.deleteTarget.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadStandards();
+          } else {
+            this.error = response.message;
+          }
+          this.isLoading = false;
+          this.cancelDelete();
+        },
+        error: (err) => {
+          this.error = err.error?.message || 'Erreur lors de la suppression';
           this.isLoading = false;
           this.cancelDelete();
         }

@@ -1,17 +1,23 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Mediconnet_Backend.Core.Interfaces.Services;
 
 namespace Mediconnet_Backend.Controllers.Base;
 
 /// <summary>
 /// Contrôleur de base pour tous les contrôleurs API
-/// Fournit les méthodes communes : récupération de l'ID utilisateur, vérification des rôles
+/// Fournit les méthodes communes : récupération de l'ID utilisateur, vérification des rôles et permissions
 /// </summary>
 [ApiController]
 [Authorize]
 public abstract class BaseApiController : ControllerBase
 {
+    /// <summary>
+    /// Service de permissions (injecté via HttpContext.RequestServices)
+    /// </summary>
+    protected IPermissionService? PermissionService => 
+        HttpContext.RequestServices.GetService<IPermissionService>();
     /// <summary>
     /// Obtient l'ID de l'utilisateur connecté depuis les claims JWT
     /// </summary>
@@ -87,4 +93,60 @@ public abstract class BaseApiController : ControllerBase
     /// Retourne Forbid si l'utilisateur n'est pas médecin
     /// </summary>
     protected IActionResult? CheckMedecinAccess() => CheckRole("medecin");
+
+    #region Méthodes de vérification des permissions (RBAC)
+
+    /// <summary>
+    /// Vérifie si l'utilisateur courant a une permission spécifique
+    /// </summary>
+    protected async Task<bool> HasPermissionAsync(string permissionCode)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null || PermissionService == null)
+            return false;
+
+        return await PermissionService.HasPermissionAsync(userId.Value, permissionCode);
+    }
+
+    /// <summary>
+    /// Vérifie si l'utilisateur courant a au moins une des permissions spécifiées
+    /// </summary>
+    protected async Task<bool> HasAnyPermissionAsync(params string[] permissionCodes)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null || PermissionService == null)
+            return false;
+
+        return await PermissionService.HasAnyPermissionAsync(userId.Value, permissionCodes);
+    }
+
+    /// <summary>
+    /// Retourne Forbid si l'utilisateur n'a pas la permission requise
+    /// </summary>
+    protected async Task<IActionResult?> CheckPermissionAsync(string permissionCode)
+    {
+        return await HasPermissionAsync(permissionCode) ? null : Forbid();
+    }
+
+    /// <summary>
+    /// Retourne Forbid si l'utilisateur n'a aucune des permissions requises
+    /// </summary>
+    protected async Task<IActionResult?> CheckAnyPermissionAsync(params string[] permissionCodes)
+    {
+        return await HasAnyPermissionAsync(permissionCodes) ? null : Forbid();
+    }
+
+    /// <summary>
+    /// Récupère toutes les permissions de l'utilisateur courant
+    /// </summary>
+    protected async Task<List<string>> GetCurrentUserPermissionsAsync()
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null || PermissionService == null)
+            return new List<string>();
+
+        return await PermissionService.GetUserPermissionsAsync(userId.Value);
+    }
+
+    #endregion
 }

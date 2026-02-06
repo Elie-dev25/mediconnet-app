@@ -43,12 +43,16 @@ export interface UpdateProfileRequest {
   telephone?: string;
   situationMatrimoniale?: string;
   adresse?: string;
+  nationalite?: string;
+  regionOrigine?: string;
   ethnie?: string;
   groupeSanguin?: string;
   nbEnfants?: number;
   personneContact?: string;
   numeroContact?: string;
   profession?: string;
+  frequenceAlcool?: string;
+  allergiesDetails?: string;
 }
 
 @Injectable({

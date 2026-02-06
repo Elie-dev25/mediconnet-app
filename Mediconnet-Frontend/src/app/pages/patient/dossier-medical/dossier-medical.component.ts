@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { PatientService, DossierMedicalDto } from '../../../services/patient.service';
 import { 
@@ -36,7 +36,10 @@ export class DossierMedicalComponent implements OnInit {
   dossier: DossierMedicalDto | null = null;
   dossierData: DossierMedicalData | null = null;
 
-  constructor(private patientService: PatientService) {}
+  constructor(
+    private patientService: PatientService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadDossierMedical();
@@ -63,15 +66,49 @@ export class DossierMedicalComponent implements OnInit {
   private mapToDossierData(dto: DossierMedicalDto): DossierMedicalData {
     return {
       patient: {
+        idUser: dto.patient.idUser,
         nom: dto.patient.nom,
         prenom: dto.patient.prenom,
         numeroDossier: dto.patient.numeroDossier,
         groupeSanguin: dto.patient.groupeSanguin,
         naissance: dto.patient.naissance,
-        sexe: dto.patient.sexe
+        sexe: dto.patient.sexe,
+        // Informations personnelles
+        telephone: dto.patient.telephone,
+        email: dto.patient.email,
+        adresse: dto.patient.adresse,
+        nationalite: dto.patient.nationalite,
+        regionOrigine: dto.patient.regionOrigine,
+        situationMatrimoniale: dto.patient.situationMatrimoniale,
+        profession: dto.patient.profession,
+        ethnie: dto.patient.ethnie,
+        nbEnfants: dto.patient.nbEnfants,
+        // Informations médicales
+        maladiesChroniques: dto.patient.maladiesChroniques,
+        allergiesConnues: dto.patient.allergiesConnues,
+        allergiesDetails: dto.patient.allergiesDetails,
+        antecedentsFamiliaux: dto.patient.antecedentsFamiliaux,
+        antecedentsFamiliauxDetails: dto.patient.antecedentsFamiliauxDetails,
+        operationsChirurgicales: dto.patient.operationsChirurgicales,
+        operationsDetails: dto.patient.operationsDetails,
+        // Habitudes de vie
+        consommationAlcool: dto.patient.consommationAlcool,
+        frequenceAlcool: dto.patient.frequenceAlcool,
+        tabagisme: dto.patient.tabagisme,
+        activitePhysique: dto.patient.activitePhysique,
+        // Contact d'urgence
+        personneContact: dto.patient.personneContact,
+        numeroContact: dto.patient.numeroContact,
+        // Assurance
+        nomAssurance: dto.patient.nomAssurance,
+        numeroCarteAssurance: dto.patient.numeroCarteAssurance,
+        couvertureAssurance: dto.patient.couvertureAssurance,
+        dateDebutValidite: dto.patient.dateDebutValidite,
+        dateFinValidite: dto.patient.dateFinValidite
       },
       stats: dto.stats,
       consultations: dto.consultations.map(c => ({
+        idConsultation: c.idConsultation,
         dateConsultation: c.dateConsultation,
         motif: c.motif,
         diagnosticPrincipal: c.diagnosticPrincipal,
@@ -115,5 +152,9 @@ export class DossierMedicalComponent implements OnInit {
         reaction: a.reaction
       }))
     };
+  }
+
+  onViewConsultation(consultationId: number): void {
+    this.router.navigate(['/patient/consultation', consultationId]);
   }
 }

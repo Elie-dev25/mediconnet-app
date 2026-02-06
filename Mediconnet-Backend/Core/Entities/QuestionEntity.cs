@@ -8,31 +8,29 @@ namespace Mediconnet_Backend.Core.Entities;
 public class Question
 {
     [Key]
-    [Column("id")]
+    [Column("id_question")]
     public int Id { get; set; }
 
-    [Column("texte_question")]
+    [Column("texte")]
     [Required]
     public string TexteQuestion { get; set; } = string.Empty;
 
-    [Column("type_question")]
-    [Required]
+    [Column("type")]
     [MaxLength(50)]
-    public string TypeQuestion { get; set; } = "texte";
+    public string? TypeQuestion { get; set; } = "text";
 
-    [Column("est_predefinie")]
-    public bool EstPredefinie { get; set; }
+    [Column("categorie")]
+    [MaxLength(100)]
+    public string? Categorie { get; set; }
 
-    [Column("created_by")]
-    public int? CreatedBy { get; set; }
+    [Column("ordre")]
+    public int Ordre { get; set; } = 0;
 
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("obligatoire")]
+    public bool Obligatoire { get; set; } = false;
 
-    [ForeignKey("CreatedBy")]
-    public virtual Utilisateur? Createur { get; set; }
+    [Column("actif")]
+    public bool Actif { get; set; } = true;
 
     public virtual ICollection<ConsultationQuestion>? ConsultationQuestions { get; set; }
-
-    public virtual ICollection<Reponse>? Reponses { get; set; }
 }

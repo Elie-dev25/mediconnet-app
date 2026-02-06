@@ -20,7 +20,7 @@
           [class.clickable]="step.id < currentStep || (step.id === currentStep + 1 && canProceed())"
           (click)="goToStep(step.id)">
           <div class="step-circle">
-            <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check" [size]="16"></lucide-icon>
+            <lucide-icon *ngIf="step.completed && currentStep !== step.id" name="check-circle-2" [size]="16"></lucide-icon>
             <lucide-icon *ngIf="!step.completed || currentStep === step.id" [name]="step.icon" [size]="16"></lucide-icon>
           </div>
           <span class="step-label">{{ step.title }}</span>
@@ -30,7 +30,7 @@
 
     <!-- Alerts -->
     <div class="alert alert-success" *ngIf="successMessage">
-      <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+      <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
       <span>{{ successMessage }}</span>
       <button type="button" class="close-btn" (click)="successMessage = null">
         <lucide-icon name="x" [size]="18"></lucide-icon>
@@ -183,7 +183,7 @@
             [class.disponible]="medecin.statut === 'disponible'"
             [class.occupe]="medecin.statut === 'occupe'"
             [class.absent]="medecin.statut === 'absent'"
-            [class.disabled]="!medecin.estDisponible"
+            [class.disabled]="medecin.statut === 'absent'"
             (click)="selectMedecin(medecin)">
             
             <div class="medecin-header">
@@ -221,7 +221,7 @@
             </div>
 
             <div class="select-indicator" *ngIf="selectedMedecin?.idMedecin === medecin.idMedecin">
-              <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
               Sélectionné
             </div>
           </div>
@@ -283,7 +283,7 @@
 
           <!-- Créneau sélectionné -->
           <div class="creneau-selected-info" *ngIf="selectedCreneau">
-            <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
             <span>Créneau sélectionné : <strong>{{ selectedCreneau.heureDebut }} - {{ selectedCreneau.heureFin }}</strong></span>
           </div>
         </div>
@@ -444,7 +444,7 @@
               Annuler
             </button>
             <button type="submit" class="btn-success" [disabled]="consultationForm.invalid || isSubmitting">
-              <lucide-icon name="check" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
               <lucide-icon name="loader-2" [size]="18" class="spin" *ngIf="isSubmitting"></lucide-icon>
               {{ isSubmitting ? 'Enregistrement...' : 'Confirmer l\'enregistrement' }}
             </button>
@@ -458,7 +458,7 @@
       <div class="modal-content success-modal" (click)="$event.stopPropagation()">
         <div class="modal-header success-header">
           <div class="success-icon-wrapper">
-            <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="48"></lucide-icon>
           </div>
           <h2>Enregistrement réussi !</h2>
           <p>La consultation a été enregistrée avec succès</p>

@@ -59,7 +59,7 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
       'caissier': '/caissier/dashboard',
       'accueil': '/accueil/dashboard',
       'pharmacien': '/pharmacien/dashboard',
-      'biologiste': '/biologiste/dashboard'
+      'laborantin': '/laborantin/dashboard'
     };
 
     const redirectRoute = user?.role ? roleRoutes[user.role] : '/login';

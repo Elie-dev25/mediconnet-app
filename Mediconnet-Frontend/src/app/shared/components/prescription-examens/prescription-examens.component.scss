@@ -1,0 +1,485 @@
+.prescription-examens {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+ 
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+ 
+      lucide-icon { color: #0891b2; }
+ 
+      .selected-count {
+        font-size: 0.875rem;
+        color: #0891b2;
+        font-weight: 500;
+      }
+    }
+  }
+ 
+  .categories-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+ 
+  .category-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+ 
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+ 
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.875rem 1rem;
+      background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+      border-bottom: 1px solid #e5e7eb;
+      cursor: pointer;
+      transition: all 0.2s;
+ 
+      &:hover {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      }
+ 
+      .category-title {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #1f2937;
+ 
+        lucide-icon { color: #0891b2; }
+ 
+        .category-count {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 20px;
+          height: 20px;
+          padding: 0 0.375rem;
+          background: #0891b2;
+          color: white;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+      }
+ 
+      .category-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+ 
+        .btn-select-all {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.375rem;
+          background: white;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.2s;
+ 
+          &:hover {
+            background: #0891b2;
+            border-color: #0891b2;
+            color: white;
+          }
+        }
+ 
+        lucide-icon {
+          color: #6b7280;
+          transition: transform 0.2s;
+        }
+      }
+    }
+ 
+    .category-body {
+      overflow: hidden;
+      animation: slideDown 0.3s ease-out;
+    }
+  }
+ 
+  .examens-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+ 
+    thead {
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
+ 
+      th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+ 
+        &.col-checkbox { width: 50px; padding-left: 1.25rem; }
+        &.col-nom { width: 35%; }
+        &.col-urgence { width: 80px; text-align: center; }
+        &.col-labo { width: 25%; }
+        &.col-notes { width: 30%; }
+      }
+    }
+ 
+    tbody {
+      tr {
+        border-bottom: 1px solid #f3f4f6;
+        transition: all 0.2s;
+        cursor: pointer;
+ 
+        &:hover {
+          background: #f9fafb;
+        }
+ 
+        &.selected {
+          background: #ecfeff;
+ 
+          &:hover {
+            background: #cffafe;
+          }
+        }
+ 
+        td {
+          padding: 0.875rem 1rem;
+          vertical-align: middle;
+ 
+          &.col-checkbox {
+            padding-left: 1.25rem;
+          }
+ 
+          &.col-nom {
+            font-weight: 500;
+            color: #1f2937;
+          }
+ 
+          &.col-urgence {
+            text-align: center;
+          }
+        }
+      }
+    }
+  }
+ 
+  .checkbox-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+ 
+    input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+ 
+      &:checked ~ .checkmark {
+        background: #0891b2;
+        border-color: #0891b2;
+ 
+        &::after {
+          display: block;
+        }
+      }
+    }
+ 
+    .checkmark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border: 2px solid #d1d5db;
+      border-radius: 4px;
+      transition: all 0.2s;
+ 
+      &::after {
+        content: '';
+        display: none;
+        width: 5px;
+        height: 9px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        margin-bottom: 2px;
+      }
+    }
+ 
+    &:hover .checkmark {
+      border-color: #0891b2;
+    }
+  }
+
+  .urgence-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    input { display: none; }
+
+    lucide-icon {
+      opacity: 0.5;
+    }
+
+    &.active {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #d97706;
+
+      lucide-icon {
+        color: #f59e0b;
+        opacity: 1;
+      }
+    }
+
+    &:hover {
+      border-color: #f59e0b;
+    }
+  }
+
+  .labo-select {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #0891b2;
+      box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+    }
+
+    option {
+      padding: 0.5rem;
+    }
+  }
+
+  .notes-input {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #0891b2;
+      box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+    }
+
+    &::placeholder {
+      color: #9ca3af;
+      font-style: italic;
+    }
+  }
+
+  .custom-examen-section {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+
+    .custom-examen-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #1f2937;
+
+      lucide-icon { color: #0891b2; }
+    }
+
+    .custom-examen-form {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+      }
+
+      .custom-type-select {
+        flex: 1;
+        min-width: 150px;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:focus {
+          outline: none;
+          border-color: #0891b2;
+          box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+        }
+      }
+
+      .custom-nom-input {
+        flex: 2;
+        min-width: 200px;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+
+        &:focus {
+          outline: none;
+          border-color: #0891b2;
+          box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+        }
+
+        &::placeholder {
+          color: #9ca3af;
+        }
+      }
+
+      .btn-add-custom {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.5rem 1rem;
+        background: #0891b2;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) {
+          background: #0e7490;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .selected-summary {
+    background: white;
+    border: 2px solid #0891b2;
+    border-radius: 12px;
+    padding: 1rem;
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #0891b2;
+
+      lucide-icon { color: #0891b2; }
+    }
+
+    .summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .summary-category {
+      .summary-category-name {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 0.375rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+
+      .summary-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .summary-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.375rem 0.75rem;
+          background: #ecfeff;
+          border: 1px solid #a5f3fc;
+          border-radius: 6px;
+          font-size: 0.8125rem;
+          color: #0e7490;
+
+          &.urgent {
+            background: #fef3c7;
+            border-color: #fde68a;
+            color: #d97706;
+
+            .urgent-icon {
+              color: #f59e0b;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 1000px;
+    }
+  }
+}

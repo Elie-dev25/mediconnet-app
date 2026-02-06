@@ -1,0 +1,133 @@
+[1mdiff --git a/Mediconnet-Backend/Controllers/RendezVousController.cs b/Mediconnet-Backend/Controllers/RendezVousController.cs[m
+[1mindex dd791fd..737eee7 100644[m
+[1m--- a/Mediconnet-Backend/Controllers/RendezVousController.cs[m
+[1m+++ b/Mediconnet-Backend/Controllers/RendezVousController.cs[m
+[36m@@ -121,6 +121,19 @@[m [mpublic class RendezVousController : BaseApiController[m
+     {[m
+         try[m
+         {[m
+[32m+[m[32m            // Validation des données reçues[m
+[32m+[m[32m            if (request == null)[m
+[32m+[m[32m                return BadRequest(new { message = "La requête ne peut pas être vide" });[m
+[32m+[m
+[32m+[m[32m            if (request.IdMedecin <= 0)[m
+[32m+[m[32m                return BadRequest(new { message = "L'ID du médecin est invalide" });[m
+[32m+[m
+[32m+[m[32m            if (request.DateHeure == DateTime.MinValue || request.DateHeure == default)[m
+[32m+[m[32m                return BadRequest(new { message = "La date et l'heure du rendez-vous sont invalides" });[m
+[32m+[m
+[32m+[m[32m            if (request.Duree <= 0)[m
+[32m+[m[32m                return BadRequest(new { message = "La durée doit être supérieure à 0" });[m
+[32m+[m
+             var userId = GetCurrentUserId();[m
+             if (!userId.HasValue) return Unauthorized();[m
+ [m
+[36m@@ -131,6 +144,11 @@[m [mpublic class RendezVousController : BaseApiController[m
+ [m
+             return Ok(new { message, rendezVous = rdv });[m
+         }[m
+[32m+[m[32m        catch (ArgumentException ex)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            _logger.LogWarning($"Erreur Create (argument invalide): {ex.Message}");[m
+[32m+[m[32m            return BadRequest(new { message = $"Données invalides: {ex.Message}" });[m
+[32m+[m[32m        }[m
+         catch (Exception ex)[m
+         {[m
+             _logger.LogError($"Erreur Create: {ex.Message}");[m
+[1mdiff --git a/Mediconnet-Backend/Data/ApplicationDbContext.cs b/Mediconnet-Backend/Data/ApplicationDbContext.cs[m
+[1mindex d4596cb..60a8719 100644[m
+[1m--- a/Mediconnet-Backend/Data/ApplicationDbContext.cs[m
+[1m+++ b/Mediconnet-Backend/Data/ApplicationDbContext.cs[m
+[36m@@ -141,6 +141,7 @@[m [mpublic class ApplicationDbContext : DbContext, IApplicationDbContext[m
+             entity.Property(e => e.ProfileCompletedAt).HasColumnName("profile_completed_at");[m
+             entity.Property(e => e.Nationalite).HasColumnName("nationalite").HasMaxLength(100);[m
+             entity.Property(e => e.RegionOrigine).HasColumnName("region_origine").HasMaxLength(100);[m
+[32m+[m[32m            entity.Property(e => e.MustChangePassword).HasColumnName("must_change_password").HasDefaultValue(false);[m
+             entity.Property(e => e.CreatedAt).HasColumnName("created_at");[m
+             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");[m
+ [m
+[36m@@ -213,7 +214,7 @@[m [mpublic class ApplicationDbContext : DbContext, IApplicationDbContext[m
+             entity.Property(e => e.DeclarationHonneurAt).HasColumnName("declaration_honneur_at");[m
+             [m
+             // Assurance (relation directe 1:N)[m
+[31m-            entity.Property(e => e.AssuranceId).HasColumnName("assurance_id");[m
+[32m+[m[32m            entity.Property(e => e.AssuranceId).HasColumnName("id_assurance");[m
+             entity.Property(e => e.NumeroCarteAssurance).HasColumnName("numero_carte_assurance").HasMaxLength(100);[m
+             entity.Property(e => e.DateDebutValidite).HasColumnName("date_debut_validite");[m
+             entity.Property(e => e.DateFinValidite).HasColumnName("date_fin_validite");[m
+[1mdiff --git a/Mediconnet-Backend/Services/NotificationIntegrationService.cs b/Mediconnet-Backend/Services/NotificationIntegrationService.cs[m
+[1mindex e04f96c..ae1a8b0 100644[m
+[1m--- a/Mediconnet-Backend/Services/NotificationIntegrationService.cs[m
+[1m+++ b/Mediconnet-Backend/Services/NotificationIntegrationService.cs[m
+[36m@@ -65,6 +65,32 @@[m [mpublic class NotificationIntegrationService[m
+         });[m
+     }[m
+ [m
+[32m+[m[32m    public async Task NotifyRendezVousConfirmedAsync(int patientId, string medecinNom, DateTime dateRdv)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        await _notificationService.CreateAsync(new CreateNotificationRequest[m
+[32m+[m[32m        {[m
+[32m+[m[32m            IdUser = patientId,[m
+[32m+[m[32m            Type = NotificationType.RendezVous,[m
+[32m+[m[32m            Titre = "Rendez-vous confirmé",[m
+[32m+[m[32m            Message = $"Dr. {medecinNom} a confirmé votre RDV du {dateRdv:dd/MM/yyyy à HH:mm}",[m
+[32m+[m[32m            Lien = "/patient/rendez-vous",[m
+[32m+[m[32m            Priorite = NotificationPriority.Normale[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public async Task NotifyRendezVousRescheduledAsync(int patientId, string medecinNom, DateTime ancienneDate, DateTime nouvelleDate)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        await _notificationService.CreateAsync(new CreateNotificationRequest[m
+[32m+[m[32m        {[m
+[32m+[m[32m            IdUser = patientId,[m
+[32m+[m[32m            Type = NotificationType.RendezVous,[m
+[32m+[m[32m            Titre = "Rendez-vous reprogrammé",[m
+[32m+[m[32m            Message = $"Dr. {medecinNom} a reprogrammé votre RDV du {ancienneDate:dd/MM/yyyy} au {nouvelleDate:dd/MM/yyyy à HH:mm}",[m
+[32m+[m[32m            Lien = "/patient/rendez-vous",[m
+[32m+[m[32m            Priorite = NotificationPriority.Haute[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m
+     public async Task NotifyRendezVousReminderAsync(int patientId, string medecinNom, DateTime dateRdv)[m
+     {[m
+         await _notificationService.CreateAsync(new CreateNotificationRequest[m
+[1mdiff --git a/Mediconnet-Backend/Services/RendezVousService.cs b/Mediconnet-Backend/Services/RendezVousService.cs[m
+[1mindex 8767b2a..45c4cf1 100644[m
+[1m--- a/Mediconnet-Backend/Services/RendezVousService.cs[m
+[1m+++ b/Mediconnet-Backend/Services/RendezVousService.cs[m
+[36m@@ -19,17 +19,20 @@[m [mpublic class RendezVousService : IRendezVousService[m
+     private readonly ILogger<RendezVousService> _logger;[m
+     private readonly ISlotLockService _slotLockService;[m
+     private readonly IAppointmentNotificationService _notificationService;[m
+[32m+[m[32m    private readonly NotificationIntegrationService _notifIntegration;[m
+ [m
+     public RendezVousService([m
+         ApplicationDbContext context, [m
+         ILogger<RendezVousService> logger,[m
+         ISlotLockService slotLockService,[m
+[31m-        IAppointmentNotificationService notificationService)[m
+[32m+[m[32m        IAppointmentNotificationService notificationService,[m
+[32m+[m[32m        NotificationIntegrationService notifIntegration)[m
+     {[m
+         _context = context;[m
+         _logger = logger;[m
+         _slotLockService = slotLockService;[m
+         _notificationService = notificationService;[m
+[32m+[m[32m        _notifIntegration = notifIntegration;[m
+     }[m
+ [m
+     // ==================== PATIENT ====================[m
+[36m@@ -102,6 +105,19 @@[m [mpublic class RendezVousService : IRendezVousService[m
+     public async Task<(bool Success, string Message, RendezVousDto? RendezVous)> CreateRendezVousAsync([m
+         CreateRendezVousRequest request, int patientId)[m
+     {[m
+[32m+[m[32m        // Valider la requête[m
+[32m+[m[32m        if (request == null)[m
+[32m+[m[32m            throw new ArgumentNullException(nameof(request), "La requête de création de rendez-vous ne peut pas être nulle");[m
+[32m+[m
+[32m+[m[32m        if (request.IdMedecin <= 0)[m
+[32m+[m[32m            throw new ArgumentException("L'ID du médecin est invalide", nameof(request.IdMedecin));[m
+[32m+[m
+[32m+[m[32m        if (request.DateHeure == DateTime.MinValue || request.DateHeure == default)[m
+[32m+[m[32m            throw new ArgumentException("La date du rendez-vous n'est pas valide", nameof(request.DateHeure

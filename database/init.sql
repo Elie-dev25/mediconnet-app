@@ -37,7 +37,7 @@ CREATE TABLE `utilisateurs` (
   `email` VARCHAR(120) NOT NULL,
   `situation_matrimoniale` VARCHAR(50) DEFAULT NULL,
   `adresse` TEXT DEFAULT NULL,
-  `role` ENUM('patient','medecin','infirmier','administrateur','caissier','accueil','pharmacien','biologiste') NOT NULL,
+  `role` ENUM('patient','medecin','infirmier','administrateur','caissier','accueil','pharmacien','laborantin') NOT NULL,
   `password_hash` VARCHAR(500) DEFAULT NULL,
   `photo` VARCHAR(500) DEFAULT NULL,
   `email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
@@ -315,14 +315,22 @@ CREATE TABLE `pharmacien` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
--- Table: biologiste
+-- Table: laborantin (remplace biologiste)
 -- --------------------------------------------------------
 
-CREATE TABLE `biologiste` (
+CREATE TABLE `laborantin` (
   `id_user` INT NOT NULL,
-  `numero_ordre` VARCHAR(50) DEFAULT NULL,
+  `matricule` VARCHAR(50) DEFAULT NULL,
+  `specialisation` VARCHAR(100) DEFAULT NULL COMMENT 'Spécialisation: microbiologie, biochimie, hématologie, etc.',
+  `id_labo` INT NOT NULL COMMENT 'Laboratoire d affectation (obligatoire)',
+  `date_embauche` DATETIME DEFAULT NULL,
+  `actif` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_user`),
-  UNIQUE KEY `numero_ordre` (`numero_ordre`)
+  KEY `idx_laborantin_labo` (`id_labo`),
+  CONSTRAINT `fk_laborantin_user` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE,
+  CONSTRAINT `fk_laborantin_labo` FOREIGN KEY (`id_labo`) REFERENCES `laboratoire` (`id_labo`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -464,17 +472,20 @@ CREATE TABLE `soin_hospitalisation` (
   `id_hospitalisation` INT NOT NULL,
   `type_soin` VARCHAR(100) NOT NULL COMMENT 'Type de soin: soins_infirmiers, surveillance, reeducation, nutrition, autre',
   `description` VARCHAR(255) NOT NULL COMMENT 'Description du soin',
-  `frequence` VARCHAR(100) DEFAULT NULL COMMENT 'Fréquence: 1x/jour, 2x/jour, etc.',
-  `duree` VARCHAR(100) DEFAULT NULL COMMENT 'Durée prévue du soin',
+  `frequence` VARCHAR(100) DEFAULT NULL COMMENT 'Fréquence: 1x/jour, 2x/jour, 3x/jour, etc.',
+  `duree_jours` INT DEFAULT NULL COMMENT 'Durée en jours',
+  `moments` VARCHAR(100) DEFAULT NULL COMMENT 'Legacy: Moments matin,midi,soir (obsolète, utiliser nb_fois_par_jour)',
+  `nb_fois_par_jour` INT DEFAULT 1 COMMENT 'Nombre de séances par jour (1 à 12)',
+  `horaires_personnalises` TEXT DEFAULT NULL COMMENT 'Horaires personnalisés en JSON: ["08:00","12:00","18:00"]',
   `priorite` VARCHAR(20) DEFAULT 'normale' COMMENT 'Priorité: basse, normale, haute, urgente',
   `instructions` TEXT DEFAULT NULL COMMENT 'Instructions spécifiques',
   `statut` VARCHAR(20) DEFAULT 'prescrit' COMMENT 'Statut: prescrit, en_cours, termine, annule',
   `date_prescription` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `id_prescripteur` INT DEFAULT NULL COMMENT 'Médecin ayant prescrit le soin',
-  `nb_executions_prevues` INT DEFAULT 1 COMMENT 'Nombre total d executions prevues',
-  `nb_executions_effectuees` INT DEFAULT 0 COMMENT 'Nombre d executions effectuees',
-  `prochaine_execution` DATETIME DEFAULT NULL COMMENT 'Prochaine execution prevue',
+  `date_debut` DATE DEFAULT NULL COMMENT 'Date de debut du traitement',
   `date_fin_prevue` DATE DEFAULT NULL COMMENT 'Date de fin prevue du traitement',
+  `id_prescripteur` INT DEFAULT NULL COMMENT 'Médecin ayant prescrit le soin',
+  `nb_executions_prevues` INT DEFAULT 0 COMMENT 'Nombre total d executions prevues (calculé automatiquement)',
+  `nb_executions_effectuees` INT DEFAULT 0 COMMENT 'Nombre d executions effectuees',
   PRIMARY KEY (`id_soin`),
   KEY `fk_soin_hospitalisation` (`id_hospitalisation`),
   KEY `fk_soin_prescripteur` (`id_prescripteur`),
@@ -483,27 +494,35 @@ CREATE TABLE `soin_hospitalisation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
--- Table: execution_soin (historique des soins effectués)
+-- Table: execution_soin (planification et suivi des exécutions de soins)
 -- --------------------------------------------------------
 
 CREATE TABLE `execution_soin` (
   `id_execution` INT NOT NULL AUTO_INCREMENT,
   `id_soin` INT NOT NULL COMMENT 'Reference au soin prescrit',
-  `date_execution` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Date et heure de l execution',
-  `id_executant` INT NOT NULL COMMENT 'ID de l infirmier/personnel ayant effectue le soin',
+  `date_prevue` DATE NOT NULL COMMENT 'Date prevue pour l execution',
+  `moment` VARCHAR(50) DEFAULT NULL COMMENT 'Legacy: Moment de la journee (obsolète, utiliser numero_seance)',
+  `numero_seance` INT DEFAULT 1 COMMENT 'Numéro de la séance dans la journée (1, 2, 3...)',
+  `heure_prevue` TIME DEFAULT NULL COMMENT 'Heure prevue pour cette séance',
+  `heure_execution` TIME DEFAULT NULL COMMENT 'Heure réelle de l execution',
+  `statut` ENUM('prevu', 'fait', 'manque', 'reporte', 'annule') NOT NULL DEFAULT 'prevu' COMMENT 'Statut de l execution',
+  `date_execution` DATETIME DEFAULT NULL COMMENT 'Date et heure reelle de l execution',
+  `id_executant` INT DEFAULT NULL COMMENT 'ID de l infirmier ayant effectue le soin',
   `observations` TEXT DEFAULT NULL COMMENT 'Notes et observations lors de l execution',
-  `statut_execution` VARCHAR(20) DEFAULT 'effectue' COMMENT 'effectue, partiel, refuse_patient, reporte, annule',
-  `numero_execution` INT DEFAULT 1 COMMENT 'Numero sequentiel de l execution',
-  `duree_minutes` INT DEFAULT NULL COMMENT 'Duree reelle du soin en minutes',
+  `numero_execution` INT DEFAULT 1 COMMENT 'Numero sequentiel global de l execution',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_execution`),
   KEY `idx_execution_soin` (`id_soin`),
-  KEY `idx_execution_date` (`date_execution`),
+  KEY `idx_execution_date_prevue` (`date_prevue`),
+  KEY `idx_execution_seance` (`numero_seance`),
+  KEY `idx_execution_statut` (`statut`),
   KEY `idx_execution_executant` (`id_executant`),
+  KEY `idx_execution_jour_seance` (`date_prevue`, `numero_seance`),
   CONSTRAINT `fk_execution_soin` FOREIGN KEY (`id_soin`) 
     REFERENCES `soin_hospitalisation` (`id_soin`) ON DELETE CASCADE,
   CONSTRAINT `fk_execution_executant` FOREIGN KEY (`id_executant`) 
-    REFERENCES `utilisateurs` (`id_user`) ON DELETE RESTRICT
+    REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -832,8 +851,9 @@ CREATE TABLE `bulletin_examen` (
   `statut` VARCHAR(20) DEFAULT 'prescrit' COMMENT 'prescrit, en_cours, termine, annule',
   `date_realisation` DATETIME DEFAULT NULL COMMENT 'Date de realisation',
   `resultat_texte` TEXT DEFAULT NULL COMMENT 'Resultat textuel',
-  `resultat_fichier` VARCHAR(500) DEFAULT NULL COMMENT 'Chemin fichier resultat',
-  `id_biologiste` INT DEFAULT NULL COMMENT 'Biologiste validateur',
+  `resultat_fichier` VARCHAR(500) DEFAULT NULL COMMENT 'Chemin fichier resultat (legacy)',
+  `document_resultat_uuid` CHAR(36) DEFAULT NULL COMMENT 'UUID du document resultat dans documents_medicaux',
+  `id_biologiste` INT DEFAULT NULL COMMENT 'Laborantin validateur',
   `date_resultat` DATETIME DEFAULT NULL COMMENT 'Date saisie resultat',
   `commentaire_labo` TEXT DEFAULT NULL COMMENT 'Commentaire laboratoire',
   PRIMARY KEY (`id_bull_exam`),
@@ -841,7 +861,8 @@ CREATE TABLE `bulletin_examen` (
   KEY `id_consultation` (`id_consultation`),
   KEY `fk_bulletin_hospitalisation` (`id_hospitalisation`),
   KEY `fk_bulletin_examen` (`id_exam`),
-  KEY `idx_bulletin_statut` (`statut`)
+  KEY `idx_bulletin_statut` (`statut`),
+  KEY `idx_bulletin_document_uuid` (`document_resultat_uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1237,7 +1258,8 @@ CREATE TABLE `document_dmp` (
   `type_document` VARCHAR(100) DEFAULT NULL,
   `titre` VARCHAR(200) NOT NULL,
   `description` TEXT DEFAULT NULL,
-  `chemin_fichier` VARCHAR(500) DEFAULT NULL,
+  `chemin_fichier` VARCHAR(500) DEFAULT NULL COMMENT 'Chemin fichier (legacy)',
+  `document_uuid` CHAR(36) DEFAULT NULL COMMENT 'UUID du document dans documents_medicaux',
   `taille_fichier` INT DEFAULT NULL,
   `mime_type` VARCHAR(100) DEFAULT NULL,
   `date_document` DATE DEFAULT NULL,
@@ -1246,7 +1268,8 @@ CREATE TABLE `document_dmp` (
   `hash_fichier` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id_document`),
   KEY `fk_doc_dmp` (`id_dmp`),
-  KEY `fk_doc_createur` (`id_createur`)
+  KEY `fk_doc_createur` (`id_createur`),
+  KEY `idx_dmp_document_uuid` (`document_uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1419,6 +1442,141 @@ CREATE TABLE `historique_acces_dossier` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
+-- Table: documents_medicaux (Stockage centralisé avec UUID)
+-- --------------------------------------------------------
+
+CREATE TABLE `documents_medicaux` (
+  `uuid` CHAR(36) NOT NULL COMMENT 'Identifiant unique UUID',
+  `nom_fichier_original` VARCHAR(255) NOT NULL COMMENT 'Nom original du fichier uploade',
+  `nom_fichier_stockage` VARCHAR(255) NOT NULL COMMENT 'Nom du fichier sur le disque (UUID.extension)',
+  `chemin_relatif` VARCHAR(500) NOT NULL COMMENT 'Chemin relatif depuis la racine de stockage',
+  `extension` VARCHAR(20) DEFAULT NULL COMMENT 'Extension du fichier (.pdf, .jpg, etc.)',
+  `mime_type` VARCHAR(100) NOT NULL COMMENT 'Type MIME du fichier',
+  `taille_octets` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Taille en octets',
+  `hash_sha256` CHAR(64) DEFAULT NULL COMMENT 'Hash SHA-256 du contenu pour verification integrite',
+  `hash_calcule_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date du dernier calcul de hash',
+  `type_document` ENUM(
+    'resultat_examen',
+    'imagerie_medicale',
+    'compte_rendu_operatoire',
+    'compte_rendu_hospitalisation',
+    'ordonnance',
+    'certificat_medical',
+    'lettre_sortie',
+    'consentement',
+    'document_administratif',
+    'document_externe',
+    'autre'
+  ) NOT NULL DEFAULT 'autre' COMMENT 'Type de document medical',
+  `sous_type` VARCHAR(100) DEFAULT NULL COMMENT 'Sous-type specifique (ex: radiographie, IRM, etc.)',
+  `niveau_confidentialite` ENUM('normal', 'sensible', 'tres_sensible') NOT NULL DEFAULT 'normal',
+  `acces_patient` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'Le patient peut-il voir ce document?',
+  `acces_restreint_roles` JSON DEFAULT NULL COMMENT 'Roles autorises si acces restreint',
+  `id_patient` INT NOT NULL COMMENT 'Patient proprietaire du document',
+  `id_consultation` INT DEFAULT NULL COMMENT 'Consultation associee',
+  `id_bulletin_examen` INT DEFAULT NULL COMMENT 'Bulletin d examen associe',
+  `id_hospitalisation` INT DEFAULT NULL COMMENT 'Hospitalisation associee',
+  `id_dmp` INT DEFAULT NULL COMMENT 'DMP associe',
+  `id_createur` INT NOT NULL COMMENT 'Utilisateur ayant uploade le document',
+  `id_validateur` INT DEFAULT NULL COMMENT 'Utilisateur ayant valide le document',
+  `date_validation` TIMESTAMP NULL DEFAULT NULL,
+  `version` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Numero de version',
+  `uuid_version_precedente` CHAR(36) DEFAULT NULL COMMENT 'UUID de la version precedente',
+  `est_version_courante` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'Est-ce la version active?',
+  `date_document` DATE DEFAULT NULL COMMENT 'Date du document (peut differer de la date upload)',
+  `description` TEXT DEFAULT NULL COMMENT 'Description libre du document',
+  `tags` JSON DEFAULT NULL COMMENT 'Tags pour recherche',
+  `statut` ENUM('actif', 'archive', 'supprime', 'quarantaine') NOT NULL DEFAULT 'actif',
+  `date_archivage` TIMESTAMP NULL DEFAULT NULL,
+  `motif_archivage` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`uuid`),
+  INDEX `idx_documents_patient` (`id_patient`),
+  INDEX `idx_documents_type` (`type_document`),
+  INDEX `idx_documents_consultation` (`id_consultation`),
+  INDEX `idx_documents_bulletin` (`id_bulletin_examen`),
+  INDEX `idx_documents_hospitalisation` (`id_hospitalisation`),
+  INDEX `idx_documents_dmp` (`id_dmp`),
+  INDEX `idx_documents_statut` (`statut`),
+  INDEX `idx_documents_createur` (`id_createur`),
+  INDEX `idx_documents_date` (`date_document`),
+  INDEX `idx_documents_hash` (`hash_sha256`),
+  INDEX `idx_documents_version_courante` (`est_version_courante`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Table centralisee des documents medicaux avec UUID et integrite';
+
+-- --------------------------------------------------------
+-- Table: audit_acces_documents (Tracabilite des acces)
+-- --------------------------------------------------------
+
+CREATE TABLE `audit_acces_documents` (
+  `id_audit` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `document_uuid` CHAR(36) NOT NULL COMMENT 'UUID du document accede',
+  `id_utilisateur` INT NOT NULL COMMENT 'Utilisateur ayant effectue l action',
+  `role_utilisateur` VARCHAR(50) NOT NULL COMMENT 'Role au moment de l acces',
+  `type_action` ENUM(
+    'consultation',
+    'telechargement',
+    'impression',
+    'creation',
+    'modification',
+    'suppression',
+    'restauration',
+    'archivage',
+    'partage',
+    'verification',
+    'tentative_non_autorisee'
+  ) NOT NULL,
+  `autorise` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'L acces a-t-il ete autorise?',
+  `motif_refus` VARCHAR(255) DEFAULT NULL COMMENT 'Raison du refus si non autorise',
+  `ip_address` VARCHAR(45) DEFAULT NULL COMMENT 'Adresse IP (IPv4 ou IPv6)',
+  `user_agent` VARCHAR(500) DEFAULT NULL COMMENT 'User-Agent du navigateur',
+  `session_id` VARCHAR(100) DEFAULT NULL COMMENT 'ID de session',
+  `endpoint_api` VARCHAR(255) DEFAULT NULL COMMENT 'Endpoint API appele',
+  `contexte` JSON DEFAULT NULL COMMENT 'Contexte additionnel',
+  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_audit_document` (`document_uuid`),
+  INDEX `idx_audit_utilisateur` (`id_utilisateur`),
+  INDEX `idx_audit_action` (`type_action`),
+  INDEX `idx_audit_timestamp` (`timestamp`),
+  INDEX `idx_audit_autorise` (`autorise`),
+  INDEX `idx_audit_ip` (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Journal d audit des acces aux documents medicaux';
+
+-- --------------------------------------------------------
+-- Table: verification_integrite (Historique des controles)
+-- --------------------------------------------------------
+
+CREATE TABLE `verification_integrite` (
+  `id_verification` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `document_uuid` CHAR(36) NOT NULL COMMENT 'UUID du document verifie',
+  `statut_verification` ENUM(
+    'ok',
+    'hash_invalide',
+    'fichier_absent',
+    'erreur_lecture',
+    'hash_non_calcule'
+  ) NOT NULL,
+  `hash_attendu` CHAR(64) DEFAULT NULL COMMENT 'Hash SHA-256 attendu (stocke)',
+  `hash_calcule` CHAR(64) DEFAULT NULL COMMENT 'Hash SHA-256 calcule lors de la verification',
+  `taille_attendue` BIGINT UNSIGNED DEFAULT NULL,
+  `taille_reelle` BIGINT UNSIGNED DEFAULT NULL,
+  `type_verification` ENUM('automatique', 'manuelle', 'restauration') NOT NULL DEFAULT 'automatique',
+  `id_declencheur` INT DEFAULT NULL COMMENT 'Utilisateur ayant declenche (si manuelle)',
+  `action_corrective` VARCHAR(255) DEFAULT NULL COMMENT 'Action prise en cas de probleme',
+  `alerte_envoyee` BOOLEAN NOT NULL DEFAULT FALSE,
+  `date_alerte` TIMESTAMP NULL DEFAULT NULL,
+  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_verif_document` (`document_uuid`),
+  INDEX `idx_verif_statut` (`statut_verification`),
+  INDEX `idx_verif_timestamp` (`timestamp`),
+  INDEX `idx_verif_type` (`type_verification`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Historique des verifications d integrite des documents';
+
+-- --------------------------------------------------------
 -- Contraintes (Foreign Keys)
 -- --------------------------------------------------------
 
@@ -1450,8 +1608,7 @@ ALTER TABLE `accueil`
 ALTER TABLE `pharmacien`
   ADD CONSTRAINT `pharmacien_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
 
-ALTER TABLE `biologiste`
-  ADD CONSTRAINT `biologiste_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+-- Note: La table laborantin a ses FK définies inline dans sa création
 
 ALTER TABLE `lit`
   ADD CONSTRAINT `lit_ibfk_1` FOREIGN KEY (`id_chambre`) REFERENCES `chambre` (`id_chambre`);
@@ -1485,7 +1642,8 @@ ALTER TABLE `bulletin_examen`
   ADD CONSTRAINT `bulletin_examen_ibfk_1` FOREIGN KEY (`id_labo`) REFERENCES `laboratoire` (`id_labo`) ON DELETE SET NULL,
   ADD CONSTRAINT `bulletin_examen_ibfk_2` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_bulletin_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_bulletin_examen` FOREIGN KEY (`id_exam`) REFERENCES `examens` (`id_exam`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_bulletin_examen` FOREIGN KEY (`id_exam`) REFERENCES `examens` (`id_exam`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_bulletin_document_uuid` FOREIGN KEY (`document_resultat_uuid`) REFERENCES `documents_medicaux` (`uuid`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE `orientation_specialiste`
   ADD CONSTRAINT `fk_orientation_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
@@ -1538,6 +1696,24 @@ ALTER TABLE `acces_verification`
 ALTER TABLE `historique_acces_dossier`
   ADD CONSTRAINT `historique_acces_dossier_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`),
   ADD CONSTRAINT `historique_acces_dossier_ibfk_2` FOREIGN KEY (`id_utilisateur`) REFERENCES `utilisateurs` (`id_user`);
+
+-- Contraintes pour documents_medicaux
+ALTER TABLE `documents_medicaux`
+  ADD CONSTRAINT `fk_documents_patient` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_documents_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_documents_bulletin` FOREIGN KEY (`id_bulletin_examen`) REFERENCES `bulletin_examen` (`id_bull_exam`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_documents_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_documents_dmp` FOREIGN KEY (`id_dmp`) REFERENCES `dossier_medical_partage` (`id_dmp`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_documents_createur` FOREIGN KEY (`id_createur`) REFERENCES `utilisateurs` (`id_user`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `fk_documents_validateur` FOREIGN KEY (`id_validateur`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL;
+
+-- Contraintes pour audit_acces_documents
+ALTER TABLE `audit_acces_documents`
+  ADD CONSTRAINT `fk_audit_utilisateur` FOREIGN KEY (`id_utilisateur`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+
+-- Contraintes pour document_dmp (lien vers documents_medicaux)
+ALTER TABLE `document_dmp`
+  ADD CONSTRAINT `fk_dmp_document_uuid` FOREIGN KEY (`document_uuid`) REFERENCES `documents_medicaux` (`uuid`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- --------------------------------------------------------
 -- Tables manquantes pour le système de rendez-vous
@@ -1946,12 +2122,110 @@ SELECT 'pharmacien', `id_permission` FROM `permissions` WHERE `code` IN (
     'pharmacie.view_stock', 'pharmacie.manage_stock', 'pharmacie.order'
 );
 
--- Rôle: biologiste
+-- Rôle: laborantin
 INSERT INTO `role_permissions` (`role`, `id_permission`)
-SELECT 'biologiste', `id_permission` FROM `permissions` WHERE `code` IN (
+SELECT 'laborantin', `id_permission` FROM `permissions` WHERE `code` IN (
     'patients.view',
     'examens.view', 'examens.result', 'examens.validate'
 );
+
+-- --------------------------------------------------------
+-- Vues de monitoring pour documents médicaux
+-- --------------------------------------------------------
+
+-- Vue: dashboard_documents (tableau de bord des documents)
+CREATE OR REPLACE VIEW `v_dashboard_documents` AS
+SELECT 
+  dm.uuid,
+  dm.nom_fichier_original,
+  dm.type_document,
+  dm.sous_type,
+  dm.mime_type,
+  dm.taille_octets,
+  ROUND(dm.taille_octets / 1024 / 1024, 2) as taille_mo,
+  dm.niveau_confidentialite,
+  dm.statut,
+  dm.hash_sha256 IS NOT NULL as hash_present,
+  dm.created_at,
+  dm.date_document,
+  dm.id_patient,
+  CONCAT(u_patient.prenom, ' ', u_patient.nom) as patient_nom,
+  p.numero_dossier as patient_dossier,
+  dm.id_createur,
+  CONCAT(u_createur.prenom, ' ', u_createur.nom) as createur_nom,
+  u_createur.role as createur_role,
+  (SELECT COUNT(*) FROM audit_acces_documents aad WHERE aad.document_uuid = dm.uuid) as nb_acces_total,
+  (SELECT COUNT(*) FROM audit_acces_documents aad WHERE aad.document_uuid = dm.uuid AND aad.type_action = 'telechargement') as nb_telechargements,
+  (SELECT MAX(timestamp) FROM audit_acces_documents aad WHERE aad.document_uuid = dm.uuid) as dernier_acces,
+  (SELECT vi.statut_verification FROM verification_integrite vi WHERE vi.document_uuid = dm.uuid ORDER BY vi.timestamp DESC LIMIT 1) as derniere_verif_statut,
+  (SELECT vi.timestamp FROM verification_integrite vi WHERE vi.document_uuid = dm.uuid ORDER BY vi.timestamp DESC LIMIT 1) as derniere_verif_date
+FROM `documents_medicaux` dm
+INNER JOIN `patient` p ON dm.id_patient = p.id_user
+INNER JOIN `utilisateurs` u_patient ON p.id_user = u_patient.id_user
+INNER JOIN `utilisateurs` u_createur ON dm.id_createur = u_createur.id_user
+WHERE dm.est_version_courante = TRUE;
+
+-- Vue: documents_problemes (documents avec problèmes d'intégrité)
+CREATE OR REPLACE VIEW `v_documents_problemes` AS
+SELECT 
+  dm.uuid,
+  dm.nom_fichier_original,
+  dm.chemin_relatif,
+  dm.type_document,
+  dm.id_patient,
+  CONCAT(u.prenom, ' ', u.nom) as patient_nom,
+  p.numero_dossier,
+  vi.statut_verification as probleme_type,
+  vi.hash_attendu,
+  vi.hash_calcule,
+  vi.taille_attendue,
+  vi.taille_reelle,
+  vi.timestamp as date_detection,
+  vi.action_corrective,
+  vi.alerte_envoyee,
+  CASE vi.statut_verification
+    WHEN 'hash_invalide' THEN 'CRITIQUE - Fichier potentiellement corrompu'
+    WHEN 'fichier_absent' THEN 'URGENT - Fichier introuvable'
+    WHEN 'erreur_lecture' THEN 'ATTENTION - Erreur de lecture'
+    WHEN 'hash_non_calcule' THEN 'INFO - Hash non calcule'
+    ELSE 'INCONNU'
+  END as description_probleme,
+  CASE vi.statut_verification
+    WHEN 'hash_invalide' THEN 1
+    WHEN 'fichier_absent' THEN 2
+    WHEN 'erreur_lecture' THEN 3
+    ELSE 4
+  END as priorite
+FROM `documents_medicaux` dm
+INNER JOIN `verification_integrite` vi ON dm.uuid = vi.document_uuid
+INNER JOIN `patient` p ON dm.id_patient = p.id_user
+INNER JOIN `utilisateurs` u ON p.id_user = u.id_user
+WHERE vi.statut_verification NOT IN ('ok')
+  AND vi.id_verification = (
+    SELECT MAX(vi2.id_verification) 
+    FROM verification_integrite vi2 
+    WHERE vi2.document_uuid = dm.uuid
+  )
+ORDER BY priorite ASC, vi.timestamp DESC;
+
+-- Vue: statistiques_documents (statistiques globales)
+CREATE OR REPLACE VIEW `v_statistiques_documents` AS
+SELECT 
+  type_document,
+  COUNT(*) as nombre_documents,
+  SUM(taille_octets) as taille_totale_octets,
+  ROUND(SUM(taille_octets) / 1024 / 1024 / 1024, 2) as taille_totale_go,
+  SUM(CASE WHEN hash_sha256 IS NOT NULL THEN 1 ELSE 0 END) as avec_hash,
+  SUM(CASE WHEN hash_sha256 IS NULL THEN 1 ELSE 0 END) as sans_hash,
+  SUM(CASE WHEN statut = 'actif' THEN 1 ELSE 0 END) as actifs,
+  SUM(CASE WHEN statut = 'archive' THEN 1 ELSE 0 END) as archives,
+  SUM(CASE WHEN statut = 'quarantaine' THEN 1 ELSE 0 END) as en_quarantaine,
+  MIN(created_at) as premier_document,
+  MAX(created_at) as dernier_document
+FROM `documents_medicaux`
+WHERE est_version_courante = TRUE
+GROUP BY type_document
+WITH ROLLUP;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

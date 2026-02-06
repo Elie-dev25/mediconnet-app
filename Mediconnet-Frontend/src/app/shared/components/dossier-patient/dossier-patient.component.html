@@ -71,15 +71,39 @@
           </div>
           <div class="info-row">
             <span class="label">Téléphone</span>
-            <span class="value">{{ dossier.telephone || '-' }}</span>
+            <span class="value">{{ dossier.telephone || 'Non renseigné' }}</span>
           </div>
           <div class="info-row">
             <span class="label">Email</span>
-            <span class="value">{{ dossier.email || '-' }}</span>
+            <span class="value">{{ dossier.email || 'Non renseigné' }}</span>
           </div>
           <div class="info-row">
             <span class="label">Adresse</span>
-            <span class="value">{{ dossier.adresse || '-' }}</span>
+            <span class="value">{{ dossier.adresse || 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Nationalité</span>
+            <span class="value">{{ dossier.nationalite || 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Région d'origine</span>
+            <span class="value">{{ dossier.regionOrigine || 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Situation matrimoniale</span>
+            <span class="value">{{ dossier.situationMatrimoniale || 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Profession</span>
+            <span class="value">{{ dossier.profession || 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Nombre d'enfants</span>
+            <span class="value">{{ dossier.nbEnfants !== null && dossier.nbEnfants !== undefined ? dossier.nbEnfants : 'Non renseigné' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Ethnie</span>
+            <span class="value">{{ dossier.ethnie || 'Non renseigné' }}</span>
           </div>
         </div>
 
@@ -87,55 +111,92 @@
           <h4><lucide-icon name="heart-pulse" [size]="16"></lucide-icon> Informations médicales</h4>
           <div class="info-row">
             <span class="label">Groupe sanguin</span>
-            <span class="value">{{ dossier.groupeSanguin || '-' }}</span>
+            <span class="value blood" *ngIf="dossier.groupeSanguin">{{ dossier.groupeSanguin }}</span>
+            <span class="value" *ngIf="!dossier.groupeSanguin">Non renseigné</span>
           </div>
           <div class="info-row">
             <span class="label">Maladies chroniques</span>
             <span class="value">{{ dossier.maladiesChroniques || 'Aucune' }}</span>
           </div>
           <div class="info-row">
-            <span class="label">Allergies</span>
-            <span class="value">{{ dossier.allergiesDetails || 'Aucune connue' }}</span>
+            <span class="label">Allergies connues</span>
+            <span class="value">
+              <span *ngIf="dossier.allergiesConnues">Oui - {{ dossier.allergiesDetails || 'Détails non renseignés' }}</span>
+              <span *ngIf="!dossier.allergiesConnues">Non</span>
+            </span>
           </div>
           <div class="info-row">
             <span class="label">Antécédents familiaux</span>
-            <span class="value">{{ dossier.antecedentsFamiliauxDetails || 'Aucun' }}</span>
+            <span class="value">
+              <span *ngIf="dossier.antecedentsFamiliaux">Oui - {{ dossier.antecedentsFamiliauxDetails || 'Détails non renseignés' }}</span>
+              <span *ngIf="!dossier.antecedentsFamiliaux">Non</span>
+            </span>
           </div>
           <div class="info-row">
-            <span class="label">Opérations</span>
-            <span class="value">{{ dossier.operationsDetails || 'Aucune' }}</span>
+            <span class="label">Opérations chirurgicales</span>
+            <span class="value">
+              <span *ngIf="dossier.operationsChirurgicales">Oui - {{ dossier.operationsDetails || 'Détails non renseignés' }}</span>
+              <span *ngIf="!dossier.operationsChirurgicales">Non</span>
+            </span>
           </div>
         </div>
 
         <div class="info-section">
-          <h4><lucide-icon name="activity" [size]="16"></lucide-icon> Mode de vie</h4>
+          <h4><lucide-icon name="activity" [size]="16"></lucide-icon> Habitudes de vie</h4>
           <div class="info-row">
-            <span class="label">Tabac</span>
+            <span class="label">Tabagisme</span>
             <span class="value" [class.text-danger]="dossier.tabagisme">{{ dossier.tabagisme ? 'Oui' : 'Non' }}</span>
           </div>
           <div class="info-row">
-            <span class="label">Alcool</span>
-            <span class="value">{{ dossier.consommationAlcool ? 'Oui' : 'Non' }}</span>
+            <span class="label">Consommation d'alcool</span>
+            <span class="value">
+              <span *ngIf="dossier.consommationAlcool">Oui - {{ dossier.frequenceAlcool || 'Fréquence non renseignée' }}</span>
+              <span *ngIf="!dossier.consommationAlcool">Non</span>
+            </span>
           </div>
           <div class="info-row">
-            <span class="label">Activité physique</span>
+            <span class="label">Activité physique régulière</span>
             <span class="value" [class.text-success]="dossier.activitePhysique">{{ dossier.activitePhysique ? 'Oui' : 'Non' }}</span>
           </div>
         </div>
 
-        <div class="info-section" *ngIf="dossier.nomAssurance">
+        <div class="info-section">
+          <h4><lucide-icon name="phone-call" [size]="16"></lucide-icon> Contact d'urgence</h4>
+          <div class="info-row" *ngIf="dossier.personneContact">
+            <span class="label">Personne à contacter</span>
+            <span class="value">{{ dossier.personneContact }}</span>
+          </div>
+          <div class="info-row" *ngIf="dossier.numeroContact">
+            <span class="label">Téléphone</span>
+            <span class="value">{{ dossier.numeroContact }}</span>
+          </div>
+          <div class="info-row" *ngIf="!dossier.personneContact && !dossier.numeroContact">
+            <span class="value not-provided">Non renseigné</span>
+          </div>
+        </div>
+
+        <div class="info-section">
           <h4><lucide-icon name="shield" [size]="16"></lucide-icon> Assurance</h4>
-          <div class="info-row">
-            <span class="label">Assurance</span>
-            <span class="value">{{ dossier.nomAssurance }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">N° Carte</span>
-            <span class="value">{{ dossier.numeroCarteAssurance || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Couverture</span>
-            <span class="value">{{ dossier.couvertureAssurance ? dossier.couvertureAssurance + '%' : '-' }}</span>
+          <ng-container *ngIf="dossier.nomAssurance">
+            <div class="info-row">
+              <span class="label">Assurance</span>
+              <span class="value">{{ dossier.nomAssurance }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">N° Carte</span>
+              <span class="value">{{ dossier.numeroCarteAssurance || 'Non renseigné' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Couverture</span>
+              <span class="value">{{ dossier.couvertureAssurance ? dossier.couvertureAssurance + '%' : 'Non renseigné' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Validité</span>
+              <span class="value">{{ formatDate(dossier.dateDebutValidite) }} - {{ formatDate(dossier.dateFinValidite) }}</span>
+            </div>
+          </ng-container>
+          <div class="info-row" *ngIf="!dossier.nomAssurance">
+            <span class="value not-provided">Aucune assurance enregistrée</span>
           </div>
         </div>
       </div>

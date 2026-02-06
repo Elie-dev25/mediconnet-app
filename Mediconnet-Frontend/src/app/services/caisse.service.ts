@@ -306,27 +306,276 @@ export class CaisseService {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
     let lignesHtml = recu.lignes?.length > 0
-      ? recu.lignes.map(l => `<tr><td>${l.description}</td><td style="text-align:right">${this.formatMontant(l.montant)}</td></tr>`).join('')
-      : `<tr><td>${recu.typeFacture || 'Consultation'}</td><td style="text-align:right">${this.formatMontant(recu.montantTotal)}</td></tr>`;
+      ? recu.lignes.map(l => `<tr><td>${l.description}</td><td class="amount">${this.formatMontant(l.montant)}</td></tr>`).join('')
+      : `<tr><td>${recu.typeFacture || 'Consultation'}</td><td class="amount">${this.formatMontant(recu.montantTotal)}</td></tr>`;
 
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu ${recu.numeroRecu}</title>
-<style>body{font-family:'Courier New',monospace;font-size:12px;margin:20px}.header{text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;margin-bottom:10px}.header h2{margin:0 0 5px;font-size:16px}.header p{margin:2px 0;font-size:11px}.info{margin:10px 0}.info-row{display:flex;justify-content:space-between;margin:3px 0}.info-row .label{font-weight:bold}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{padding:5px;text-align:left;border-bottom:1px dotted #ccc}.total{border-top:2px solid #000;font-weight:bold;font-size:14px}.footer{text-align:center;margin-top:20px;font-size:10px;border-top:1px dashed #000;padding-top:10px}.assurance{background:#f5f5f5;padding:5px;margin:5px 0;font-size:11px}@media print{body{margin:0}}</style></head>
-<body><div class="header"><h2>${recu.nomEtablissement}</h2><p>${recu.adresseEtablissement}</p><p>Tél: ${recu.telephoneEtablissement}</p></div>
-<div style="text-align:center;font-weight:bold;font-size:14px;margin:10px 0">REÇU DE PAIEMENT</div>
-<div style="text-align:center;margin-bottom:10px">N° ${recu.numeroRecu}</div>
-<div class="info"><div class="info-row"><span class="label">Date:</span><span>${dateFormatee}</span></div>
-<div class="info-row"><span class="label">Patient:</span><span>${recu.patientPrenom} ${recu.patientNom}</span></div>
-${recu.numeroDossier ? `<div class="info-row"><span class="label">Dossier:</span><span>${recu.numeroDossier}</span></div>` : ''}
-${recu.medecinNom ? `<div class="info-row"><span class="label">Médecin:</span><span>${recu.medecinNom}</span></div>` : ''}</div>
-<table><thead><tr><th>Description</th><th style="text-align:right">Montant</th></tr></thead><tbody>${lignesHtml}</tbody></table>
-${recu.couvertureAssurance ? `<div class="assurance"><div>Assurance: ${recu.nomAssurance || '-'} (${recu.tauxCouverture}%)</div><div>Prise en charge: ${this.formatMontant(recu.montantAssurance || 0)}</div><div>À payer par patient: ${this.formatMontant(recu.montantPatient)}</div></div>` : ''}
-<div class="info"><div class="info-row total"><span>TOTAL:</span><span>${this.formatMontant(recu.montantTotal)}</span></div>
-<div class="info-row"><span class="label">Montant payé:</span><span>${this.formatMontant(recu.montantPaye)}</span></div>
-${recu.montantRecu ? `<div class="info-row"><span class="label">Montant reçu:</span><span>${this.formatMontant(recu.montantRecu)}</span></div>` : ''}
-${recu.renduMonnaie ? `<div class="info-row"><span class="label">Rendu monnaie:</span><span>${this.formatMontant(recu.renduMonnaie)}</span></div>` : ''}
-<div class="info-row"><span class="label">Mode:</span><span>${this.getModePaiementLabel(recu.modePaiement)}</span></div>
-${recu.reference ? `<div class="info-row"><span class="label">Réf:</span><span>${recu.reference}</span></div>` : ''}</div>
-<div class="footer"><p>Caissier: ${recu.caissierNom}</p><p>Merci de votre confiance!</p><p>Ce reçu fait foi de paiement</p></div></body></html>`;
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reçu ${recu.numeroRecu}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 13px;
+      color: #333;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    .receipt {
+      max-width: 380px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+      margin: 2px 0;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 12px;
+    }
+    .receipt-number {
+      background: #f1f5f9;
+      padding: 12px 20px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .receipt-number span {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e40af;
+    }
+    .content { padding: 20px; }
+    .section {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .info-row .label {
+      color: #64748b;
+      font-size: 12px;
+    }
+    .info-row .value {
+      font-weight: 500;
+      color: #1e293b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px 0;
+      text-align: left;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    td.amount, th.amount { text-align: right; }
+    .total-section {
+      background: #f8fafc;
+      margin: 0 -20px;
+      padding: 16px 20px;
+      border-radius: 8px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .total-row.main {
+      font-size: 18px;
+      font-weight: 700;
+      color: #059669;
+      border-top: 2px solid #e2e8f0;
+      padding-top: 12px;
+      margin-top: 8px;
+    }
+    .assurance-box {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .assurance-box .title {
+      font-weight: 600;
+      color: #92400e;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .assurance-box .detail {
+      font-size: 11px;
+      color: #78350f;
+    }
+    .footer {
+      background: #f8fafc;
+      padding: 20px;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer .caissier {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .footer .thanks {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+    .footer .legal {
+      font-size: 10px;
+      color: #94a3b8;
+    }
+    .checkmark {
+      width: 48px;
+      height: 48px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .checkmark svg {
+      width: 24px;
+      height: 24px;
+      color: #16a34a;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .receipt { box-shadow: none; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <h1>${recu.nomEtablissement}</h1>
+      <p>${recu.adresseEtablissement}</p>
+      <p>Tél: ${recu.telephoneEtablissement}</p>
+      <div class="badge">Reçu de paiement</div>
+    </div>
+    
+    <div class="receipt-number">
+      <span>N° ${recu.numeroRecu}</span>
+    </div>
+    
+    <div class="content">
+      <div class="section">
+        <div class="section-title">Informations</div>
+        <div class="info-row">
+          <span class="label">Date</span>
+          <span class="value">${dateFormatee}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Patient</span>
+          <span class="value">${recu.patientPrenom} ${recu.patientNom}</span>
+        </div>
+        ${recu.numeroDossier ? `<div class="info-row"><span class="label">N° Dossier</span><span class="value">${recu.numeroDossier}</span></div>` : ''}
+        ${recu.medecinNom ? `<div class="info-row"><span class="label">Médecin</span><span class="value">${recu.medecinNom}</span></div>` : ''}
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Détails</div>
+        <table>
+          <thead>
+            <tr><th>Description</th><th class="amount">Montant</th></tr>
+          </thead>
+          <tbody>${lignesHtml}</tbody>
+        </table>
+      </div>
+      
+      ${recu.couvertureAssurance ? `
+      <div class="assurance-box">
+        <div class="title">🏥 Couverture Assurance</div>
+        <div class="detail">
+          <strong>${recu.nomAssurance || '-'}</strong> (${recu.tauxCouverture}%)<br>
+          Prise en charge: ${this.formatMontant(recu.montantAssurance || 0)}<br>
+          À payer: ${this.formatMontant(recu.montantPatient)}
+        </div>
+      </div>` : ''}
+      
+      <div class="section">
+        <div class="total-section">
+          <div class="total-row">
+            <span>Montant payé</span>
+            <span>${this.formatMontant(recu.montantPaye)}</span>
+          </div>
+          ${recu.montantRecu ? `<div class="total-row"><span>Montant reçu</span><span>${this.formatMontant(recu.montantRecu)}</span></div>` : ''}
+          ${recu.renduMonnaie ? `<div class="total-row"><span>Rendu monnaie</span><span>${this.formatMontant(recu.renduMonnaie)}</span></div>` : ''}
+          <div class="total-row">
+            <span>Mode de paiement</span>
+            <span>${this.getModePaiementLabel(recu.modePaiement)}</span>
+          </div>
+          ${recu.reference ? `<div class="total-row"><span>Référence</span><span>${recu.reference}</span></div>` : ''}
+          <div class="total-row main">
+            <span>TOTAL</span>
+            <span>${this.formatMontant(recu.montantTotal)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div class="checkmark">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <div class="caissier">Caissier: ${recu.caissierNom}</div>
+      <div class="thanks">Merci de votre confiance!</div>
+      <div class="legal">Ce reçu fait foi de paiement</div>
+    </div>
+  </div>
+</body>
+</html>`;
   }
 
   // ==================== HELPERS ====================

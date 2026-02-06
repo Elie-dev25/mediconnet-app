@@ -230,8 +230,10 @@ export class EnregistrementComponent implements OnInit {
   }
 
   selectMedecin(medecin: MedecinAvecDisponibilite): void {
-    if (!medecin.estDisponible) {
-      return; // Ne pas permettre la sélection d'un médecin non disponible
+    // Un médecin "absent" (sans créneaux) ne peut pas être sélectionné
+    // Un médecin "occupé" ou "disponible" peut être sélectionné (les créneaux indisponibles seront grisés)
+    if (medecin.statut === 'absent') {
+      return; // Ne pas permettre la sélection d'un médecin absent
     }
     this.selectedMedecin = medecin;
     this.selectedCreneau = null;

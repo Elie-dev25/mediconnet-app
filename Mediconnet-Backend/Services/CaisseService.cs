@@ -34,81 +34,41 @@ public class CaisseService : ICaisseService
         _notificationService = notificationService;
     }
 
-    private async Task<(bool Success, string Message, int? IdRendezVous)> TryAssignConfirmedRdvTodayAsync(
-        Facture facture,
-        int actorUserId,
-        string? motif)
+    /// <summary>
+    /// Confirme le RDV existant lié à la consultation de la facture après paiement.
+    /// Ne crée PAS de nouveau RDV - confirme seulement celui existant.
+    /// </summary>
+    private async Task<(bool Success, string Message, int? IdRendezVous)> ConfirmExistingRdvAsync(Facture facture)
     {
-        if (facture.IdMedecin == null)
-            return (false, "Impossible d'assigner un créneau: médecin non défini sur la facture", null);
+        // Chercher le RDV existant lié à la consultation de cette facture
+        if (!facture.IdConsultation.HasValue)
+            return (false, "Aucune consultation liée à cette facture", null);
 
-        var medecinId = facture.IdMedecin.Value;
-        var todayStart = DateTime.Today;
-        var todayEnd = todayStart.AddDays(1).AddSeconds(-1);
+        var consultation = await _context.Consultations
+            .FirstOrDefaultAsync(c => c.IdConsultation == facture.IdConsultation.Value);
 
-        // Éviter doublon: le patient a déjà un RDV aujourd'hui avec ce médecin
-        var hasExisting = await _context.RendezVous
-            .AnyAsync(r => r.IdPatient == facture.IdPatient &&
-                          r.IdMedecin == medecinId &&
-                          r.Statut != "annule" &&
-                          r.DateHeure.Date == todayStart.Date);
-        if (hasExisting)
-            return (true, "Le patient a déjà un rendez-vous aujourd'hui", null);
+        if (consultation == null)
+            return (false, "Consultation introuvable", null);
 
-        var slots = await _rendezVousService.GetCreneauxDisponiblesAsync(medecinId, todayStart, todayEnd);
-        var nextSlot = slots.Creneaux.FirstOrDefault(c => c.Disponible);
-        if (nextSlot == null)
-            return (false, "Aucun créneau disponible aujourd'hui pour ce médecin", null);
+        if (!consultation.IdRendezVous.HasValue)
+            return (false, "Aucun RDV lié à cette consultation", null);
 
-        var lockResult = await _slotLockService.AcquireLockAsync(
-            medecinId,
-            nextSlot.DateHeure,
-            nextSlot.Duree,
-            actorUserId);
+        var rdv = await _context.RendezVous
+            .FirstOrDefaultAsync(r => r.IdRendezVous == consultation.IdRendezVous.Value);
 
-        if (!lockResult.Success)
-            return (false, lockResult.Message, null);
+        if (rdv == null)
+            return (false, "RDV introuvable", null);
 
-        try
+        // Confirmer le RDV existant (passer de "en_attente" à "confirme")
+        if (rdv.Statut == "en_attente" || rdv.Statut == "planifie")
         {
-            // Double vérification après verrou
-            var conflit = await _context.RendezVous
-                .AnyAsync(r => r.IdMedecin == medecinId &&
-                              r.Statut != "annule" &&
-                              r.DateHeure < nextSlot.DateHeure.AddMinutes(nextSlot.Duree) &&
-                              r.DateHeure.AddMinutes(r.Duree) > nextSlot.DateHeure);
-
-            if (conflit)
-            {
-                await _slotLockService.ReleaseLockAsync(lockResult.LockToken!, actorUserId);
-                return (false, "Le créneau sélectionné vient d'être occupé. Veuillez réessayer.", null);
-            }
-
-            var rdv = new RendezVous
-            {
-                IdPatient = facture.IdPatient,
-                IdMedecin = medecinId,
-                IdService = facture.IdService,
-                DateHeure = nextSlot.DateHeure,
-                Duree = nextSlot.Duree,
-                Motif = motif,
-                TypeRdv = "consultation",
-                Statut = "confirme",
-                DateCreation = DateTime.UtcNow
-            };
-
-            _context.RendezVous.Add(rdv);
+            rdv.Statut = "confirme";
+            rdv.DateModification = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+            _logger.LogInformation($"RDV {rdv.IdRendezVous} confirmé après paiement facture {facture.IdFacture}");
+        }
 
-            await _slotLockService.ReleaseLockAsync(lockResult.LockToken!, actorUserId);
-            return (true, "Rendez-vous assigné et confirmé", rdv.IdRendezVous);
-        }
-        catch
-        {
-            if (lockResult.LockToken != null)
-                await _slotLockService.ReleaseLockAsync(lockResult.LockToken, actorUserId);
-            throw;
-        }
+        return (true, "RDV confirmé après paiement", rdv.IdRendezVous);
     }
 
     // ==================== KPIs ====================
@@ -443,37 +403,20 @@ public class CaisseService : ICaisseService
                 facture.Statut = "partiel";
             }
 
-            // Si la facture consultation est entièrement payée, assigner un RDV confirmé au créneau le plus proche aujourd'hui
-            // et ainsi alimenter la file d'attente du médecin (RDV confirmés du jour).
+            // Si la facture consultation est entièrement payée, confirmer le RDV existant
+            // (ne pas créer de nouveau RDV, juste confirmer celui créé à l'accueil)
             if (facture.Statut == "payee" && facture.TypeFacture == "consultation")
             {
-                var (assigned, assignMessage, idRdv) = await TryAssignConfirmedRdvTodayAsync(
-                    facture,
-                    caissierUserId,
-                    motif: "Consultation");
+                var (confirmed, confirmMessage, idRdv) = await ConfirmExistingRdvAsync(facture);
 
-                if (!assigned)
+                if (!confirmed)
                 {
-                    _logger.LogWarning($"Paiement bloqué: pas de créneau disponible aujourd'hui. Facture={facture.IdFacture}, Raison={assignMessage}");
-                    await transaction.RollbackAsync();
-                    return (false, assignMessage, null);
+                    _logger.LogWarning($"Impossible de confirmer le RDV: Facture={facture.IdFacture}, Raison={confirmMessage}");
+                    // Ne pas bloquer le paiement, juste logger l'avertissement
                 }
-                else if (idRdv.HasValue)
+                else
                 {
-                    _logger.LogInformation($"RDV confirmé créé automatiquement après paiement: RDV={idRdv.Value}, Facture={facture.IdFacture}");
-
-                    if (facture.IdConsultation.HasValue)
-                    {
-                        var consultation = await _context.Consultations
-                            .FirstOrDefaultAsync(c => c.IdConsultation == facture.IdConsultation.Value);
-
-                        if (consultation != null)
-                        {
-                            consultation.IdRendezVous = idRdv.Value;
-                            consultation.UpdatedAt = DateTime.UtcNow;
-                            await _context.SaveChangesAsync();
-                        }
-                    }
+                    _logger.LogInformation($"RDV {idRdv} confirmé après paiement facture {facture.IdFacture}");
                 }
             }
 

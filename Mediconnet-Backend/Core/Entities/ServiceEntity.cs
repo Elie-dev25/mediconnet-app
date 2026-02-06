@@ -21,12 +21,26 @@ public class Service
     [Column("responsable_service")]
     public int? ResponsableService { get; set; }
 
+    /// <summary>
+    /// ID de l'infirmier Major du service
+    /// </summary>
+    [Column("id_major")]
+    public int? IdMajor { get; set; }
+
     [Column("description")]
     public string? Description { get; set; }
 
     // Navigation
     [ForeignKey("ResponsableService")]
     public virtual Utilisateur? Responsable { get; set; }
+
+    [ForeignKey("IdMajor")]
+    public virtual Infirmier? Major { get; set; }
     
     public virtual ICollection<Medecin> Medecins { get; set; } = new List<Medecin>();
+    
+    /// <summary>
+    /// Infirmiers rattachés à ce service
+    /// </summary>
+    public virtual ICollection<Infirmier> Infirmiers { get; set; } = new List<Infirmier>();
 }

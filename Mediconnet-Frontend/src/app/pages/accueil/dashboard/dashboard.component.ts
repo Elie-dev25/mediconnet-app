@@ -75,7 +75,7 @@ export class AccueilDashboardComponent implements OnInit {
     this.stats = [
       { icon: 'user-plus', label: 'Patients enregistrés', value: data.patientsEnregistresAujourdHui, colorClass: 'primary' },
       { icon: 'calendar-check', label: 'RDV prévus', value: data.rdvPrevusAujourdHui, colorClass: 'info' },
-      { icon: 'check-circle', label: 'Patients arrivés', value: data.rdvEnCours, colorClass: 'success' },
+      { icon: 'users', label: 'Patients reçus', value: data.rdvEnCours, colorClass: 'success' }, // Updated
       { icon: 'clock', label: 'En attente', value: data.patientsEnAttente, colorClass: 'warning' }
     ];
   }

@@ -18,6 +18,9 @@ export class FichePatientPanelComponent implements OnChanges {
   @Input() consultationId: number | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() startConsultation = new EventEmitter<void>();
+  @Output() hospitaliser = new EventEmitter<number>();
+  @Output() prescrireExamen = new EventEmitter<number>();
+  @Output() faireOrdonnance = new EventEmitter<number>();
 
   selectedPatient: MedecinPatientDetailDto | null = null;
   isLoading = false;
@@ -93,6 +96,24 @@ export class FichePatientPanelComponent implements OnChanges {
 
   onStartConsultation(): void {
     this.startConsultation.emit();
+  }
+
+  onHospitaliser(): void {
+    if (this.patientId) {
+      this.hospitaliser.emit(this.patientId);
+    }
+  }
+
+  onPrescrireExamen(): void {
+    if (this.patientId) {
+      this.prescrireExamen.emit(this.patientId);
+    }
+  }
+
+  onFaireOrdonnance(): void {
+    if (this.patientId) {
+      this.faireOrdonnance.emit(this.patientId);
+    }
   }
 
   // Afficher les détails d'une consultation

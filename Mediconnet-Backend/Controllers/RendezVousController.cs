@@ -188,6 +188,26 @@ public class RendezVousController : BaseApiController
         }
     }
 
+    // ==================== SERVICES ====================
+
+    /// <summary>
+    /// Obtenir la liste des services hospitaliers
+    /// </summary>
+    [HttpGet("services")]
+    public async Task<IActionResult> GetServices()
+    {
+        try
+        {
+            var services = await _rdvService.GetServicesAsync();
+            return Ok(services);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetServices: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la récupération des services" });
+        }
+    }
+
     // ==================== MÉDECINS ET CRÉNEAUX ====================
 
     /// <summary>
@@ -485,6 +505,54 @@ public class RendezVousController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError($"Erreur RefuserProposition: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    // ==================== PAIEMENT EN LIGNE PATIENT ====================
+
+    /// <summary>
+    /// Obtenir les factures en attente de paiement pour le patient connecté
+    /// </summary>
+    [HttpGet("patient/factures")]
+    public async Task<IActionResult> GetFacturesPatient()
+    {
+        try
+        {
+            var patientId = GetCurrentUserId();
+            if (patientId == null) return Unauthorized();
+
+            var factures = await _rdvService.GetFacturesPatientEnAttenteAsync(patientId.Value);
+            return Ok(factures);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetFacturesPatient: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Payer une facture en ligne (pour RDV pris en ligne)
+    /// </summary>
+    [HttpPost("patient/payer")]
+    public async Task<IActionResult> PayerFactureEnLigne([FromBody] PayerFactureEnLigneRequest request)
+    {
+        try
+        {
+            var patientId = GetCurrentUserId();
+            if (patientId == null) return Unauthorized();
+
+            var response = await _rdvService.PayerFactureEnLigneAsync(patientId.Value, request);
+
+            if (!response.Success)
+                return BadRequest(new { message = response.Message });
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur PayerFactureEnLigne: {ex.Message}");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

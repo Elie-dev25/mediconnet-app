@@ -7,29 +7,18 @@ namespace Mediconnet_Backend.Core.Entities;
 public class Reponse
 {
     [Key]
-    [Column("id")]
+    [Column("id_reponse")]
     public int Id { get; set; }
 
-    [Column("consultation_id")]
-    public int ConsultationId { get; set; }
+    [Column("id_consultation_question")]
+    public int ConsultationQuestionId { get; set; }
 
-    [Column("question_id")]
-    public int QuestionId { get; set; }
-
-    [Column("valeur_reponse")]
+    [Column("valeur")]
     public string? ValeurReponse { get; set; }
 
-    [Column("rempli_par")]
-    [Required]
-    [MaxLength(20)]
-    public string RempliPar { get; set; } = "patient";
+    [Column("date_reponse")]
+    public DateTime DateReponse { get; set; } = DateTime.UtcNow;
 
-    [Column("date_saisie")]
-    public DateTime DateSaisie { get; set; } = DateTime.UtcNow;
-
-    [ForeignKey("ConsultationId")]
-    public virtual Consultation? Consultation { get; set; }
-
-    [ForeignKey("QuestionId")]
-    public virtual Question? Question { get; set; }
+    [ForeignKey("ConsultationQuestionId")]
+    public virtual ConsultationQuestion? ConsultationQuestion { get; set; }
 }

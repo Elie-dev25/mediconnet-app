@@ -175,6 +175,10 @@ public class AppointmentNotificationService : IAppointmentNotificationService
         await _hubContext.Clients.Group($"medecin_{medecinId}_updates")
             .SendAsync("SlotsUpdated", new { medecinId, action = "created" });
 
+        // Notifier spécifiquement le médecin d'un nouveau RDV en attente de validation
+        await _hubContext.Clients.Group($"medecin_{medecinId}")
+            .SendAsync("NewPendingAppointment", appointment);
+
         _logger.LogInformation($"Notification: RDV créé pour médecin {medecinId}, patient {patientId}");
     }
 

@@ -1,0 +1,133 @@
+<div class="popup-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="popup-container popup-large">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="header-title">
+        <lucide-icon name="clipboard-list" [size]="20"></lucide-icon>
+        <h3>Planning des exécutions</h3>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="popup-loading" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="28" class="spinner"></lucide-icon>
+      <span>Chargement...</span>
+    </div>
+
+    <!-- Error -->
+    <div class="popup-error" *ngIf="error && !isLoading">
+      <lucide-icon name="alert-circle" [size]="28"></lucide-icon>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Content -->
+    <div class="popup-content" *ngIf="soinDetails && !isLoading && !error">
+      <!-- Soin Info -->
+      <div class="soin-summary">
+        <div class="soin-title">
+          <span class="type">{{ soinDetails.typeSoin }}</span>
+          <span class="badge" [ngClass]="'priorite-' + soinDetails.priorite">{{ soinDetails.priorite }}</span>
+        </div>
+        <p class="description">{{ soinDetails.description }}</p>
+        
+        <!-- Progress -->
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Progression globale</span>
+            <span class="percent">{{ getProgressPercent() }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getProgressPercent()"></div>
+          </div>
+          <div class="progress-stats">
+            <span class="stat done">
+              <lucide-icon name="check-circle" [size]="14"></lucide-icon>
+              {{ soinDetails.nbExecutionsEffectuees }} faits
+            </span>
+            <span class="stat missed" *ngIf="soinDetails.nbExecutionsManquees > 0">
+              <lucide-icon name="x-circle" [size]="14"></lucide-icon>
+              {{ soinDetails.nbExecutionsManquees }} manqués
+            </span>
+            <span class="stat pending">
+              <lucide-icon name="clock" [size]="14"></lucide-icon>
+              {{ soinDetails.nbExecutionsPrevuesRestantes }} restants
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau des exécutions par jour et séance -->
+      <div class="executions-table-container" *ngIf="soinDetails.executionsParJour && soinDetails.executionsParJour.length > 0">
+        <table class="executions-table">
+          <thead>
+            <tr>
+              <th class="col-date">Date</th>
+              <th class="col-seance" *ngFor="let seance of getSeances()">
+                <lucide-icon name="clock" [size]="14"></lucide-icon>
+                Séance {{ seance }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let jour of soinDetails.executionsParJour">
+              <td class="col-date">
+                <div class="date-cell">
+                  <span class="day-name">{{ getDayName(jour.date) }}</span>
+                  <span class="day-date">{{ formatShortDate(jour.date) }}</span>
+                </div>
+              </td>
+              <td class="col-seance" *ngFor="let seance of getSeances()">
+                <ng-container *ngIf="getExecutionForSeance(jour.executions, seance) as exec">
+                  <div class="exec-cell" [ngClass]="getStatutClass(exec.statut)">
+                    <span class="status-icon">
+                      <lucide-icon [name]="getStatutIcon(exec.statut)" [size]="14"></lucide-icon>
+                    </span>
+                    <span class="status-text">{{ getStatutLabel(exec.statut) }}</span>
+                    <!-- Heures: Prévue | Effectuée -->
+                    <div class="exec-horaires">
+                      <span class="heure-prevue" [title]="'Heure prévue'">
+                        <lucide-icon name="clock" [size]="10"></lucide-icon>
+                        {{ formatHeurePrevue(exec.heurePrevue) }}
+                      </span>
+                      <span class="heure-separator" *ngIf="exec.statut === 'fait'">→</span>
+                      <span class="heure-effective" *ngIf="exec.statut === 'fait'" 
+                            [class.en-retard]="isEnRetard(exec)"
+                            [title]="'Heure effective'">
+                        {{ formatHeureExecution(exec) }}
+                      </span>
+                    </div>
+                    <div class="exec-by" *ngIf="exec.statut === 'fait' && exec.executant">{{ exec.executant }}</div>
+                    <div class="exec-obs" *ngIf="exec.observations">{{ exec.observations }}</div>
+                  </div>
+                </ng-container>
+                <div class="exec-cell empty" *ngIf="!getExecutionForSeance(jour.executions, seance)">-</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Message si aucune exécution -->
+      <div class="no-executions" *ngIf="!soinDetails.executionsParJour || soinDetails.executionsParJour.length === 0">
+        <lucide-icon name="calendar-x" [size]="32"></lucide-icon>
+        <p>Aucune exécution planifiée pour ce soin</p>
+      </div>
+
+      <!-- Légende -->
+      <div class="legend">
+        <span class="legend-item">
+          <span class="legend-dot status-done"></span> Fait
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot status-pending"></span> Prévu
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot status-missed"></span> Manqué
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

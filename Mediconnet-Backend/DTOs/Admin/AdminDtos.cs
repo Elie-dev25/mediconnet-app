@@ -50,8 +50,12 @@ public class CreateUserRequest
     public int? IdService { get; set; }
     public string? NumeroOrdre { get; set; }
 
-    // Champs specifiques infirmier
+    // Champs specifiques infirmier (IdService aussi utilisé)
     public string? Matricule { get; set; }
+
+    // Champs specifiques laborantin
+    public int? IdLabo { get; set; }
+    public string? Specialisation { get; set; }
 }
 
 /// <summary>

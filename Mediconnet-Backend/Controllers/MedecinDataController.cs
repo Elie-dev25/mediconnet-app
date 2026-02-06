@@ -34,7 +34,7 @@ public class MedecinDataController : BaseApiController
             var medecinId = GetCurrentUserId();
             if (!medecinId.HasValue) return Unauthorized();
 
-            var today = DateTime.UtcNow.Date;
+            var today = DateTime.Now.Date;
             var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
             var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
@@ -45,12 +45,12 @@ public class MedecinDataController : BaseApiController
 
             var stats = new ConsultationStatsDto
             {
-                TotalConsultations = consultations.Count(r => r.Statut == "termine"),
-                ConsultationsAujourdHui = consultations.Count(r => r.Statut == "termine" && r.DateHeure.Date == today),
-                ConsultationsSemaine = consultations.Count(r => r.Statut == "termine" && r.DateHeure.Date >= startOfWeek),
-                ConsultationsMois = consultations.Count(r => r.Statut == "termine" && r.DateHeure.Date >= startOfMonth),
+                TotalConsultations = consultations.Count(r => r.Statut == "termine" || r.Statut == "terminee"),
+                ConsultationsAujourdHui = consultations.Count(r => (r.Statut == "termine" || r.Statut == "terminee") && r.DateHeure.Date == today),
+                ConsultationsSemaine = consultations.Count(r => (r.Statut == "termine" || r.Statut == "terminee") && r.DateHeure.Date >= startOfWeek),
+                ConsultationsMois = consultations.Count(r => (r.Statut == "termine" || r.Statut == "terminee") && r.DateHeure.Date >= startOfMonth),
                 EnAttente = consultations.Count(r => r.Statut == "en_cours"),
-                Terminees = consultations.Count(r => r.Statut == "termine")
+                Terminees = consultations.Count(r => r.Statut == "termine" || r.Statut == "terminee")
             };
 
             return Ok(stats);
@@ -87,7 +87,7 @@ public class MedecinDataController : BaseApiController
                 .Include(r => r.Patient)
                     .ThenInclude(p => p!.Utilisateur)
                 .Where(r => r.IdMedecin == medecinId.Value)
-                .Where(r => r.Statut == "en_cours" || r.Statut == "termine")
+                .Where(r => r.Statut == "confirme" || r.Statut == "en_cours" || r.Statut == "termine" || r.Statut == "terminee")
                 .AsQueryable();
 
             if (dateDebut.HasValue)
@@ -117,7 +117,7 @@ public class MedecinDataController : BaseApiController
                     Motif = r.Motif ?? "",
                     Diagnostic = r.Notes,
                     Notes = r.Notes,
-                    Statut = r.Statut == "termine" ? "terminee" : "en_cours",
+                    Statut = (r.Statut == "termine" || r.Statut == "terminee") ? "terminee" : (r.Statut == "en_cours" ? "en_cours" : "a_faire"),
                     Duree = r.Duree,
                     HasOrdonnance = false,
                     HasExamens = false,
@@ -156,14 +156,14 @@ public class MedecinDataController : BaseApiController
                 .FirstOrDefaultAsync();
             var specialiteId = medecin?.IdSpecialite ?? 0;
 
-            var targetDate = date?.Date ?? DateTime.UtcNow.Date;
+            var targetDate = date?.Date ?? DateTime.Now.Date;
 
             var consultations = await _context.RendezVous
                 .Include(r => r.Patient)
                     .ThenInclude(p => p!.Utilisateur)
                 .Where(r => r.IdMedecin == medecinId.Value)
                 .Where(r => r.DateHeure.Date == targetDate)
-                .Where(r => r.Statut == "confirme" || r.Statut == "en_cours" || r.Statut == "termine")
+                .Where(r => r.Statut == "confirme" || r.Statut == "en_cours" || r.Statut == "termine" || r.Statut == "terminee")
                 .OrderBy(r => r.DateHeure)
                 .Select(r => new ConsultationDto
                 {
@@ -180,7 +180,7 @@ public class MedecinDataController : BaseApiController
                     Motif = r.Motif ?? "",
                     Diagnostic = r.Notes,
                     Notes = r.Notes,
-                    Statut = r.Statut == "termine" ? "terminee" : (r.Statut == "en_cours" ? "en_cours" : "a_faire"),
+                    Statut = (r.Statut == "termine" || r.Statut == "terminee") ? "terminee" : (r.Statut == "en_cours" ? "en_cours" : "a_faire"),
                     Duree = r.Duree,
                     HasOrdonnance = false,
                     HasExamens = false,
@@ -214,7 +214,7 @@ public class MedecinDataController : BaseApiController
             var medecinId = GetCurrentUserId();
             if (!medecinId.HasValue) return Unauthorized();
 
-            var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
             // Patients uniques qui ont eu un RDV avec ce médecin
             var patientIds = await _context.RendezVous
@@ -234,7 +234,7 @@ public class MedecinDataController : BaseApiController
             // Patients avec RDV planifié
             var avecRdv = await _context.RendezVous
                 .Where(r => r.IdMedecin == medecinId.Value)
-                .Where(r => r.DateHeure > DateTime.UtcNow)
+                .Where(r => r.DateHeure > DateTime.Now)
                 .Where(r => r.Statut == "planifie" || r.Statut == "confirme")
                 .Select(r => r.IdPatient)
                 .Distinct()
@@ -258,7 +258,10 @@ public class MedecinDataController : BaseApiController
     /// Obtenir la liste des patients du médecin
     /// </summary>
     [HttpGet("patients")]
-    public async Task<IActionResult> GetPatients([FromQuery] string? recherche)
+    public async Task<IActionResult> GetPatients(
+        [FromQuery] string? recherche,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
         try
         {
@@ -288,40 +291,43 @@ public class MedecinDataController : BaseApiController
                 );
             }
 
+            // Limiter la taille de page
+            pageSize = Math.Min(pageSize, 100);
+            var skip = (page - 1) * pageSize;
+
+            var totalCount = await query.CountAsync();
+            
             var patients = await query
                 .OrderBy(p => p.Utilisateur!.Nom)
                 .ThenBy(p => p.Utilisateur!.Prenom)
-                .Take(100)
+                .Skip(skip)
+                .Take(pageSize)
                 .ToListAsync();
 
-            var now = DateTime.UtcNow;
-            var result = new List<MedecinPatientDto>();
+            var now = DateTime.Now;
+            var patientIds = patients.Select(p => p.IdUser).ToList();
 
-            foreach (var patient in patients)
+            // Pré-charger les données de RDV en une seule requête pour éviter N+1
+            var rdvData = await _context.RendezVous
+                .Where(r => r.IdMedecin == medecinId.Value && patientIds.Contains(r.IdPatient))
+                .GroupBy(r => r.IdPatient)
+                .Select(g => new
+                {
+                    PatientId = g.Key,
+                    DerniereVisite = g.Where(r => r.Statut == "termine" || r.Statut == "terminee")
+                                      .OrderByDescending(r => r.DateHeure)
+                                      .Select(r => (DateTime?)r.DateHeure)
+                                      .FirstOrDefault(),
+                    ProchaineVisite = g.Where(r => r.DateHeure > now && (r.Statut == "planifie" || r.Statut == "confirme"))
+                                       .OrderBy(r => r.DateHeure)
+                                       .Select(r => (DateTime?)r.DateHeure)
+                                       .FirstOrDefault(),
+                    NbConsultations = g.Count(r => r.Statut == "termine" || r.Statut == "terminee")
+                })
+                .ToDictionaryAsync(x => x.PatientId);
+
+            var result = patients.Select(patient =>
             {
-                // Dernière visite
-                var derniereVisite = await _context.RendezVous
-                    .Where(r => r.IdMedecin == medecinId.Value && r.IdPatient == patient.IdUser)
-                    .Where(r => r.Statut == "termine")
-                    .OrderByDescending(r => r.DateHeure)
-                    .Select(r => r.DateHeure)
-                    .FirstOrDefaultAsync();
-
-                // Prochaine visite
-                var prochaineVisite = await _context.RendezVous
-                    .Where(r => r.IdMedecin == medecinId.Value && r.IdPatient == patient.IdUser)
-                    .Where(r => r.DateHeure > now)
-                    .Where(r => r.Statut == "planifie" || r.Statut == "confirme")
-                    .OrderBy(r => r.DateHeure)
-                    .Select(r => r.DateHeure)
-                    .FirstOrDefaultAsync();
-
-                // Nombre de consultations
-                var nbConsultations = await _context.RendezVous
-                    .Where(r => r.IdMedecin == medecinId.Value && r.IdPatient == patient.IdUser)
-                    .Where(r => r.Statut == "termine")
-                    .CountAsync();
-
                 int? age = null;
                 if (patient.Utilisateur?.Naissance.HasValue == true)
                 {
@@ -329,7 +335,9 @@ public class MedecinDataController : BaseApiController
                     if (now.DayOfYear < patient.Utilisateur.Naissance.Value.DayOfYear) age--;
                 }
 
-                result.Add(new MedecinPatientDto
+                var rdv = rdvData.GetValueOrDefault(patient.IdUser);
+
+                return new MedecinPatientDto
                 {
                     IdPatient = patient.IdUser,
                     IdUser = patient.IdUser,
@@ -340,14 +348,20 @@ public class MedecinDataController : BaseApiController
                     Email = patient.Utilisateur?.Email,
                     Sexe = patient.Utilisateur?.Sexe,
                     Age = age,
-                    DerniereVisite = derniereVisite == default ? null : derniereVisite,
-                    ProchaineVisite = prochaineVisite == default ? null : prochaineVisite,
-                    NombreConsultations = nbConsultations,
+                    DerniereVisite = rdv?.DerniereVisite,
+                    ProchaineVisite = rdv?.ProchaineVisite,
+                    NombreConsultations = rdv?.NbConsultations ?? 0,
                     GroupeSanguin = patient.GroupeSanguin
-                });
-            }
+                };
+            }).ToList();
 
-            return Ok(result);
+            return Ok(new { 
+                data = result, 
+                totalCount = totalCount, 
+                page = page, 
+                pageSize = pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
         }
         catch (Exception ex)
         {
@@ -376,6 +390,7 @@ public class MedecinDataController : BaseApiController
 
             var patient = await _context.Patients
                 .Include(p => p.Utilisateur)
+                .Include(p => p.Assurance)
                 .FirstOrDefaultAsync(p => p.IdUser == idPatient);
 
             if (patient == null)
@@ -400,7 +415,7 @@ public class MedecinDataController : BaseApiController
             {
                 dernieresConsultations = await _context.RendezVous
                     .Where(r => r.IdMedecin == medecinId.Value && r.IdPatient == idPatient)
-                    .Where(r => r.Statut == "termine")
+                    .Where(r => r.Statut == "termine" || r.Statut == "terminee")
                     .OrderByDescending(r => r.DateHeure)
                     .Take(10)
                     .Select(r => new ConsultationHistoriqueDto
@@ -416,7 +431,7 @@ public class MedecinDataController : BaseApiController
             // Prochains RDV
             var prochainsRdv = await _context.RendezVous
                 .Where(r => r.IdMedecin == medecinId.Value && r.IdPatient == idPatient)
-                .Where(r => r.DateHeure > DateTime.UtcNow)
+                .Where(r => r.DateHeure > DateTime.Now)
                 .Where(r => r.Statut == "planifie" || r.Statut == "confirme")
                 .OrderBy(r => r.DateHeure)
                 .Take(5)
@@ -446,6 +461,34 @@ public class MedecinDataController : BaseApiController
                 PersonneContact = patient.PersonneContact,
                 NumeroContact = patient.NumeroContact,
                 Profession = patient.Profession,
+                // Informations utilisateur supplémentaires
+                Nationalite = patient.Utilisateur?.Nationalite,
+                RegionOrigine = patient.Utilisateur?.RegionOrigine,
+                SituationMatrimoniale = patient.Utilisateur?.SituationMatrimoniale,
+                // Informations médicales
+                MaladiesChroniques = patient.MaladiesChroniques,
+                OperationsChirurgicales = patient.OperationsChirurgicales,
+                OperationsDetails = patient.OperationsDetails,
+                AllergiesConnues = patient.AllergiesConnues,
+                AllergiesDetails = patient.AllergiesDetails,
+                AntecedentsFamiliaux = patient.AntecedentsFamiliaux,
+                AntecedentsFamiliauxDetails = patient.AntecedentsFamiliauxDetails,
+                // Habitudes de vie
+                ConsommationAlcool = patient.ConsommationAlcool,
+                FrequenceAlcool = patient.FrequenceAlcool,
+                Tabagisme = patient.Tabagisme,
+                ActivitePhysique = patient.ActivitePhysique,
+                // Famille
+                NbEnfants = patient.NbEnfants,
+                // Assurance
+                AssuranceNom = patient.Assurance?.Nom,
+                NumeroCarteAssurance = patient.NumeroCarteAssurance,
+                DateDebutValidite = patient.DateDebutValidite,
+                DateFinValidite = patient.DateFinValidite,
+                CouvertureAssurance = patient.CouvertureAssurance,
+                // Dates
+                DateCreation = patient.DateCreation,
+                // Historique
                 DernieresConsultations = dernieresConsultations,
                 ProchainsRdv = prochainsRdv
             });

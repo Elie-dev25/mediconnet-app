@@ -7,7 +7,8 @@ import {
   Users, Calendar, Stethoscope, Pill, ClipboardList, Receipt,
   UserCog, Building2, Shield, Activity, TrendingUp, Heart,
   Syringe, FileText, CreditCard, Wallet, BadgeDollarSign,
-  FlaskConical, BedDouble, UserPlus, CalendarCheck, Clock
+  FlaskConical, BedDouble, UserPlus, CalendarCheck, Clock,
+  CheckCircle2
 } from 'lucide-angular';
 
 export interface StatItem {
@@ -28,7 +29,8 @@ export interface StatItem {
         Users, Calendar, Stethoscope, Pill, ClipboardList, Receipt,
         UserCog, Building2, Shield, Activity, TrendingUp, Heart,
         Syringe, FileText, CreditCard, Wallet, BadgeDollarSign,
-        FlaskConical, BedDouble, UserPlus, CalendarCheck, Clock
+        FlaskConical, BedDouble, UserPlus, CalendarCheck, Clock,
+        CheckCircle2
       })
     }
   ],

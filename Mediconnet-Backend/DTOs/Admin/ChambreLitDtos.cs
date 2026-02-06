@@ -9,6 +9,9 @@ public class ChambreAdminDto
     public int Capacite { get; set; }
     public string Etat { get; set; } = "bon";
     public string Statut { get; set; } = "actif";
+    public int? IdStandard { get; set; }
+    public string? StandardNom { get; set; }
+    public decimal? StandardPrix { get; set; }
     public int NombreLits { get; set; }
     public int LitsLibres { get; set; }
     public int LitsOccupes { get; set; }
@@ -23,6 +26,7 @@ public class CreateChambreRequest
     public int Capacite { get; set; } = 1;
     public string? Etat { get; set; } = "bon";
     public string? Statut { get; set; } = "actif";
+    public int? IdStandard { get; set; }
     public List<CreateLitRequest>? Lits { get; set; }
 }
 
@@ -32,6 +36,7 @@ public class UpdateChambreRequest
     public int? Capacite { get; set; }
     public string? Etat { get; set; }
     public string? Statut { get; set; }
+    public int? IdStandard { get; set; }
 }
 
 // ==================== LITS ====================
@@ -92,6 +97,24 @@ public class LitResponse
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public LitAdminDto? Lit { get; set; }
+}
+
+// ==================== CHAMBRES DISPONIBLES (pour hospitalisation) ====================
+
+public class ChambreDisponibleDto
+{
+    public int IdChambre { get; set; }
+    public string Numero { get; set; } = string.Empty;
+    public string StandardNom { get; set; } = string.Empty;
+    public decimal PrixJournalier { get; set; }
+    public string? Localisation { get; set; }
+    public List<LitDisponibleDto> LitsDisponibles { get; set; } = new();
+}
+
+public class LitDisponibleDto
+{
+    public int IdLit { get; set; }
+    public string Numero { get; set; } = string.Empty;
 }
 
 // ==================== LABORATOIRES (Placeholder) ====================

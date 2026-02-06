@@ -8,7 +8,7 @@ import {
   LucideIconProvider,
   Bell, BellRing, Check, CheckCheck, Trash2, X,
   Calendar, CreditCard, Stethoscope, AlertTriangle, HeartPulse,
-  Package, Settings, MessageCircle, CheckCircle
+  Package, Settings, MessageCircle, CheckCircle, CheckCircle2
 } from 'lucide-angular';
 import { NotificationService, Notification } from '../../../services/notification.service';
 
@@ -22,7 +22,8 @@ import { NotificationService, Notification } from '../../../services/notificatio
       useValue: new LucideIconProvider({ 
         Bell, BellRing, Check, CheckCheck, Trash2, X,
         Calendar, CreditCard, Stethoscope, AlertTriangle, HeartPulse,
-        Package, Settings, MessageCircle, CheckCircle
+        Package, Settings, MessageCircle, CheckCircle, CheckCircle2,
+        'check-circle-2': CheckCircle2
       })
     }
   ],
@@ -49,10 +50,10 @@ import { NotificationService, Notification } from '../../../services/notificatio
           </div>
         </div>
 
-        <!-- Liste des notifications -->
+        <!-- Liste des notifications (limitée à 5) -->
         <div class="notifications-list" *ngIf="!loading; else loadingTpl">
           <div 
-            *ngFor="let notif of notifications; trackBy: trackByNotification"
+            *ngFor="let notif of displayedNotifications; trackBy: trackByNotification"
             class="notification-item"
             [class.unread]="!notif.lu"
             [class.priority-haute]="notif.priorite === 'haute'"
@@ -69,7 +70,7 @@ import { NotificationService, Notification } from '../../../services/notificatio
             </div>
             <div class="notif-actions">
               <button class="notif-action" (click)="markAsRead(notif, $event)" *ngIf="!notif.lu" title="Marquer comme lu">
-                <lucide-icon name="check" [size]="14"></lucide-icon>
+                <lucide-icon name="check-circle-2" [size]="14"></lucide-icon>
               </button>
               <button class="notif-action delete" (click)="deleteNotification(notif, $event)" title="Supprimer">
                 <lucide-icon name="x" [size]="14"></lucide-icon>
@@ -94,8 +95,9 @@ import { NotificationService, Notification } from '../../../services/notificatio
 
         <!-- Footer -->
         <div class="dropdown-footer" *ngIf="notifications.length > 0">
+          <span class="notif-count" *ngIf="notifications.length > 5">{{ notifications.length }} notifications au total</span>
           <button class="view-all-btn" (click)="viewAllNotifications()">
-            Voir toutes les notifications
+            Voir plus
           </button>
         </div>
       </div>
@@ -374,6 +376,15 @@ import { NotificationService, Notification } from '../../../services/notificatio
       padding: 12px 20px;
       border-top: 1px solid #e2e8f0;
       background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+
+      .notif-count {
+        font-size: 11px;
+        color: #94a3b8;
+      }
     }
 
     .view-all-btn {
@@ -413,6 +424,11 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
+  /** Notifications affichées dans le dropdown (limitées à 5) */
+  get displayedNotifications(): Notification[] {
+    return this.notifications.slice(0, 5);
+  }
+
   constructor(
     private notificationService: NotificationService,
     private router: Router
@@ -423,10 +439,10 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
     this.notificationService.notifications$
       .pipe(takeUntil(this.destroy$))
       .subscribe(notifications => {
-        this.notifications = notifications.slice(0, 10); // Afficher les 10 dernières
+        this.notifications = notifications;
       });
 
-    // S'abonner au compteur
+    // S'abonner au compteur - mise à jour automatique du badge
     this.notificationService.unreadCount$
       .pipe(takeUntil(this.destroy$))
       .subscribe(count => {
@@ -439,6 +455,9 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
       .subscribe(loading => {
         this.loading = loading;
       });
+
+    // Charger les notifications au démarrage (pour le badge)
+    this.loadNotifications();
   }
 
   @HostListener('document:click', ['$event'])
@@ -493,8 +512,8 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
 
   viewAllNotifications(): void {
     this.isOpen = false;
-    // Navigation vers une page dédiée aux notifications si elle existe
-    // this.router.navigate(['/notifications']);
+    // Navigation vers la page dédiée aux notifications
+    this.router.navigate(['/notifications']);
   }
 
   getTempsEcoule(date: Date | string): string {
@@ -511,7 +530,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
       'package': 'package',
       'settings': 'settings',
       'message-circle': 'message-circle',
-      'check-circle': 'check-circle',
+      'check-circle-2': 'check-circle-2',
       'bell': 'bell',
       'rdv': 'calendar',
       'facture': 'credit-card',
@@ -522,7 +541,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
       'systeme': 'settings',
       'message': 'message-circle',
       'rappel': 'bell',
-      'validation': 'check-circle'
+      'validation': 'check-circle-2'
     };
     return iconMap[iconOrType] || 'bell';
   }

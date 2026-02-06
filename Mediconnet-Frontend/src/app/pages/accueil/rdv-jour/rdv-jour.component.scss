@@ -1,5 +1,6 @@
 // Styles de la page RDV du jour - utilise les variables partagées
 @use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as *;
 
 .rdv-jour-page {
   padding: 1.5rem;
@@ -211,6 +212,11 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+
+  // Scroll invisible après 5 éléments (~350px)
+  .table-body {
+    @include scrollable-list(350px);
+  }
 
   .table-header {
     display: grid;

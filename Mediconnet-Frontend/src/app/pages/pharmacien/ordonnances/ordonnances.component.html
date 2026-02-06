@@ -74,7 +74,7 @@
             (click)="openDispensationModal(ord)"
             [disabled]="ord.statut === 'complete'"
           >
-            <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
             Dispenser
           </button>
         </div>
@@ -180,7 +180,7 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="closeDispensationModal()">Annuler</button>
       <button class="btn btn-primary" (click)="dispenser()" [disabled]="getTotalDispensation() === 0">
-        <lucide-icon name="check" [size]="16"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
         Confirmer la dispensation
       </button>
     </div>

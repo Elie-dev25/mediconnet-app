@@ -39,14 +39,19 @@ export class PatientRendezVousComponent implements OnInit {
   sidebarTitle = PATIENT_SIDEBAR_TITLE;
 
   // État
-  activeTab: 'upcoming' | 'history' = 'upcoming';
+  activeTab: 'upcoming' | 'history' | 'missed' = 'upcoming';
   isLoading = true;
   
   // Données
   stats: RendezVousStatsDto | null = null;
   upcomingRdvs: RendezVousListDto[] = [];
   historyRdvs: RendezVousListDto[] = [];
+  missedRdvs: RendezVousListDto[] = [];
   propositions: RendezVousDto[] = [];
+  
+  // Modal questionnaire
+  showQuestionnaireModal = false;
+  selectedRdvForQuestionnaire: RendezVousListDto | null = null;
 
   // Modal nouveau RDV
   showNewRdvModal = false;
@@ -123,7 +128,9 @@ export class PatientRendezVousComponent implements OnInit {
       next: ({ stats, upcoming, history, propositions }) => {
         this.stats = stats;
         this.upcomingRdvs = upcoming;
-        this.historyRdvs = history;
+        // Séparer les RDV manqués (absent) de l'historique
+        this.missedRdvs = history.filter(rdv => rdv.statut === 'absent');
+        this.historyRdvs = history.filter(rdv => rdv.statut !== 'absent');
         this.propositions = propositions;
       },
       error: (err) => {
@@ -132,12 +139,48 @@ export class PatientRendezVousComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'upcoming' | 'history'): void {
+  setActiveTab(tab: 'upcoming' | 'history' | 'missed'): void {
     this.activeTab = tab;
   }
 
   get currentRdvs(): RendezVousListDto[] {
-    return this.activeTab === 'upcoming' ? this.upcomingRdvs : this.historyRdvs;
+    switch (this.activeTab) {
+      case 'upcoming': return this.upcomingRdvs;
+      case 'history': return this.historyRdvs;
+      case 'missed': return this.missedRdvs;
+      default: return this.upcomingRdvs;
+    }
+  }
+
+  // Méthode pour obtenir la classe du badge de statut
+  getStatusBadgeClass(statut: string): string {
+    const classes: { [key: string]: string } = {
+      'planifie': 'list-page-status-badge--pending',
+      'confirme': 'list-page-status-badge--confirmed',
+      'en_cours': 'list-page-status-badge--progress',
+      'termine': 'list-page-status-badge--completed',
+      'annule': 'list-page-status-badge--cancelled',
+      'absent': 'list-page-status-badge--absent'
+    };
+    return classes[statut] || 'list-page-status-badge--pending';
+  }
+
+  // Ouvrir le modal de questionnaire
+  openQuestionnaireModal(rdv: RendezVousListDto): void {
+    this.selectedRdvForQuestionnaire = rdv;
+    this.showQuestionnaireModal = true;
+  }
+
+  closeQuestionnaireModal(): void {
+    this.showQuestionnaireModal = false;
+    this.selectedRdvForQuestionnaire = null;
+  }
+
+  // Reprogrammer un RDV manqué
+  reprogrammerRdv(rdv: RendezVousListDto): void {
+    // Rediriger vers la page de nouveau RDV avec le médecin pré-sélectionné
+    // Pour l'instant, on redirige simplement vers la page nouveau-rdv
+    window.location.href = '/patient/nouveau-rdv';
   }
 
   // ==================== MODAL NOUVEAU RDV ====================

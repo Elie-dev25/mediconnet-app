@@ -98,7 +98,7 @@ export class AlertMessageComponent {
 
   getIcon(): string {
     switch (this.type) {
-      case 'success': return 'check-circle';
+      case 'success': return 'check-circle-2';
       case 'error': return 'alert-circle';
       case 'warning': return 'alert-triangle';
       case 'info': return 'info';

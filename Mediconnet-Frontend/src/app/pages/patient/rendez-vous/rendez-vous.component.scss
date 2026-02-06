@@ -1,5 +1,7 @@
 @use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as *;
 @use '../../../shared/styles/common';
+@use '../../../shared/styles/list-page';
 
 // Couleurs thématiques (utilise les variables partagées)
 $rdv-primary: $secondary-color;
@@ -7,39 +9,40 @@ $rdv-success: $success-color;
 $rdv-warning: $warning-color;
 $rdv-danger: $error-color;
 
-.rdv-page {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+// Grille spécifique pour les RDV patient (5 colonnes)
+.patient-rdv-grid {
+  grid-template-columns: 90px 1.2fr 1fr 90px 120px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-// NOTE: .page-header, .btn-icon, .btn-primary, .btn-secondary, .btn-danger sont dans _common.scss
+// Bouton nouveau RDV
+.btn-new-rdv {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  background: $rdv-primary;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+
+  &:hover {
+    background: darken($rdv-primary, 8%);
+    transform: translateY(-1px);
+  }
+}
 
 .btn-link {
   background: none; border: none; color: $rdv-primary; cursor: pointer;
   font-size: 0.875rem; text-decoration: underline;
-}
-
-// ==================== STATS ====================
-.stats-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;
-  @media (max-width: 768px) { grid-template-columns: 1fr; }
-}
-
-.stat-card {
-  display: flex; align-items: center; gap: 1rem; padding: 1.25rem;
-  background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid;
-
-  &.upcoming { border-color: $rdv-primary; .stat-icon { background: rgba($rdv-primary, 0.1); color: $rdv-primary; } }
-  &.completed { border-color: $rdv-success; .stat-icon { background: $success-light; color: $rdv-success; } }
-  &.cancelled { border-color: $rdv-danger; .stat-icon { background: $error-light; color: $rdv-danger; } }
-
-  .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-  .stat-content { display: flex; flex-direction: column;
-    .stat-value { font-size: 1.5rem; font-weight: 700; color: #1f2937; }
-    .stat-label { font-size: 0.875rem; color: #6b7280; }
-  }
 }
 
 // ==================== PROCHAIN RDV ====================

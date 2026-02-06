@@ -152,14 +152,27 @@ public class ParametreService : IParametreService
         if (patient == null)
             throw new InvalidOperationException("Patient introuvable");
 
-        // Chercher une consultation planifiée existante pour ce patient (du jour)
+        // Chercher une consultation du jour pour ce patient qui n'a PAS encore de paramètres
+        // Priorité : consultation sans paramètres avec facture payée (file d'attente infirmier)
         var aujourdhui = DateTime.UtcNow.Date;
         var consultation = await _context.Consultations
             .Where(c => c.IdPatient == request.IdPatient 
                 && c.DateHeure.Date == aujourdhui
-                && (c.Statut == "planifie" || c.Statut == "en_attente" || c.Statut == "arrive" || c.Statut == "pret_consultation"))
+                && (c.Statut == "planifie" || c.Statut == "en_attente" || c.Statut == "arrive")
+                && !_context.Parametres.Any(p => p.IdConsultation == c.IdConsultation)) // Sans paramètres
             .OrderBy(c => c.DateHeure)
             .FirstOrDefaultAsync();
+        
+        // Si pas trouvé, chercher une consultation existante (même avec paramètres) pour mise à jour
+        if (consultation == null)
+        {
+            consultation = await _context.Consultations
+                .Where(c => c.IdPatient == request.IdPatient 
+                    && c.DateHeure.Date == aujourdhui
+                    && (c.Statut == "planifie" || c.Statut == "en_attente" || c.Statut == "arrive" || c.Statut == "pret_consultation"))
+                .OrderBy(c => c.DateHeure)
+                .FirstOrDefaultAsync();
+        }
 
         // Si pas de consultation, chercher un rendez-vous confirmé/planifié du jour
         if (consultation == null)

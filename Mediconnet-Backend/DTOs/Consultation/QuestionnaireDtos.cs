@@ -11,13 +11,13 @@ public class QuestionDto
 public class ConsultationQuestionDto
 {
     public int QuestionId { get; set; }
+    public int ConsultationQuestionId { get; set; }
     public int OrdreAffichage { get; set; }
     public string TexteQuestion { get; set; } = string.Empty;
-    public string TypeQuestion { get; set; } = "texte";
+    public string? TypeQuestion { get; set; } = "texte";
     public bool EstPredefinie { get; set; }
 
     public string? ValeurReponse { get; set; }
-    public string? RempliPar { get; set; }
     public DateTime? DateSaisie { get; set; }
 }
 

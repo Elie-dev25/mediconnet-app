@@ -46,7 +46,7 @@ export class PatientDashboardComponent implements OnInit {
 
   stats: StatItem[] = [
     { icon: 'calendar', label: 'Visites à venir', value: 0, colorClass: 'rdv' },
-    { icon: 'check-circle', label: 'Visites passées', value: 0, colorClass: 'consultations' },
+    { icon: 'check-circle-2', label: 'Visites passées', value: 0, colorClass: 'consultations' },
     { icon: 'pill', label: 'Ordonnances', value: 0, colorClass: 'ordonnances' },
     { icon: 'flask-conical', label: 'Examens', value: 0, colorClass: 'examens' }
   ];
@@ -78,7 +78,7 @@ export class PatientDashboardComponent implements OnInit {
         // Mettre à jour les stats
         this.stats = [
           { icon: 'calendar', label: 'Visites à venir', value: data.stats.rendezVousAVenir, colorClass: 'rdv' },
-          { icon: 'check-circle', label: 'Visites passées', value: data.stats.rendezVousPasses, colorClass: 'consultations' },
+          { icon: 'check-circle-2', label: 'Visites passées', value: data.stats.rendezVousPasses, colorClass: 'consultations' },
           { icon: 'pill', label: 'Ordonnances', value: data.stats.ordonnances, colorClass: 'ordonnances' },
           { icon: 'flask-conical', label: 'Examens', value: data.stats.examens, colorClass: 'examens' }
         ];

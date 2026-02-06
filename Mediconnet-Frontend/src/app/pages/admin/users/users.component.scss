@@ -1,9 +1,66 @@
 // Import des variables globales
 @use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as *;
 @use '../../../shared/styles/common';
 
 .users-page {
   padding: 0;
+}
+
+// Onglets Personnel / Patients
+.users-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: #f1f5f9;
+  padding: 0.35rem;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.users-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.active) {
+    color: $text-dark;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  &.active {
+    background: white;
+    color: $primary-color;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .tab-count {
+      background: rgba($primary-color, 0.15);
+      color: $primary-color;
+    }
+  }
+
+  .tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 0.5rem;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
 }
 
 // NOTE: .page-header, .btn-primary, .btn-secondary sont dans _common.scss
@@ -134,6 +191,18 @@
   td {
     font-size: 0.9rem;
     color: $text-primary;
+  }
+
+  // Scroll invisible après 5 éléments (~350px)
+  tbody {
+    display: block;
+    @include scrollable-list(350px);
+  }
+
+  thead, tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
   }
 
   tbody tr:hover {
@@ -483,3 +552,321 @@
 }
 
 // NOTE: .alert, .alert-error, .alert-success sont dans _common.scss
+
+// ==================== SIDEBAR FICHE UTILISATEUR ====================
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user-sidebar {
+  width: 480px;
+  max-width: 100%;
+  height: 100%;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @media (max-width: 520px) {
+    width: 100%;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid $border-color;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+
+  .close-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $text-secondary;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+    &:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  }
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+
+  .loading-state {
+    padding: 3rem 1rem;
+  }
+}
+
+// Profil header
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+
+  &.medecin { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+  &.infirmier { background: linear-gradient(135deg, #10b981, #059669); }
+  &.administrateur { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  &.caissier { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+  &.patient { background: linear-gradient(135deg, #6b7280, #4b5563); }
+  &.accueil { background: linear-gradient(135deg, #ec4899, #be185d); }
+  &.pharmacien { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+  &.laborantin { background: linear-gradient(135deg, #f97316, #ea580c); }
+}
+
+.profile-info {
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 0.5rem;
+  }
+}
+
+// Info sections
+.info-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fafbfc;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.info-item {
+  label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+  }
+
+  span {
+    font-size: 0.9rem;
+    color: $text-dark;
+  }
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.text-success { color: #059669 !important; }
+.text-danger { color: #dc2626 !important; }
+.text-primary { color: $primary-color !important; font-weight: 600; }
+
+// Statut badges
+.statut-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  &.statut-actif {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  &.statut-bloque {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &.statut-suspendu {
+    background: #fef3c7;
+    color: #d97706;
+  }
+}
+
+// Actions section
+.actions-section {
+  background: white;
+  border: 2px solid #e0e7ff;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: $primary-color;
+    color: $primary-color;
+    background: #f5f3ff;
+  }
+
+  &.active {
+    border-color: $primary-color;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    color: $primary-color;
+  }
+
+  &.danger:hover:not(:disabled) {
+    border-color: #dc2626;
+    color: #dc2626;
+    background: #fef2f2;
+  }
+
+  &.warning:hover:not(:disabled) {
+    border-color: #d97706;
+    color: #d97706;
+    background: #fffbeb;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #b91c1c;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ==================== SIDEBAR NOMINATION MAJOR ====================
+.nomination-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  max-width: 100%;
+  height: 100%;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 400px) {
+    width: 100%;
+  }
+}
+
+.nomination-info {
+  font-size: 0.95rem;
+  color: $text-secondary;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+
+  strong {
+    color: $text-dark;
+  }
+}
+
+.nomination-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $border-color;
+}

@@ -24,6 +24,33 @@ public class PatientProfileDto
     public string? Profession { get; set; }
     public DateTime? CreatedAt { get; set; }
     public bool IsProfileComplete { get; set; }
+    
+    // Informations utilisateur étendues
+    public string? Nationalite { get; set; }
+    public string? RegionOrigine { get; set; }
+    
+    // Informations médicales
+    public string? MaladiesChroniques { get; set; }
+    public bool? AllergiesConnues { get; set; }
+    public string? AllergiesDetails { get; set; }
+    public bool? AntecedentsFamiliaux { get; set; }
+    public string? AntecedentsFamiliauxDetails { get; set; }
+    public bool? OperationsChirurgicales { get; set; }
+    public string? OperationsDetails { get; set; }
+    
+    // Habitudes de vie
+    public bool? ConsommationAlcool { get; set; }
+    public string? FrequenceAlcool { get; set; }
+    public bool? Tabagisme { get; set; }
+    public bool? ActivitePhysique { get; set; }
+    
+    // Assurance
+    public int? AssuranceId { get; set; }
+    public string? NomAssurance { get; set; }
+    public string? NumeroCarteAssurance { get; set; }
+    public decimal? CouvertureAssurance { get; set; }
+    public DateTime? DateDebutValidite { get; set; }
+    public DateTime? DateFinValidite { get; set; }
 }
 
 /// <summary>
@@ -36,12 +63,16 @@ public class UpdatePatientProfileRequest
     public string? Telephone { get; set; }
     public string? SituationMatrimoniale { get; set; }
     public string? Adresse { get; set; }
+    public string? Nationalite { get; set; }
+    public string? RegionOrigine { get; set; }
     public string? Ethnie { get; set; }
     public string? GroupeSanguin { get; set; }
     public int? NbEnfants { get; set; }
     public string? PersonneContact { get; set; }
     public string? NumeroContact { get; set; }
     public string? Profession { get; set; }
+    public string? FrequenceAlcool { get; set; }
+    public string? AllergiesDetails { get; set; }
 }
 
 /// <summary>
@@ -173,17 +204,20 @@ public class MedicamentPrescritDto
 
 /// <summary>
 /// DTO pour un examen medical
+/// Hiérarchie: Catégorie → Spécialité → Nom
 /// </summary>
 public class ExamenDto
 {
     public int IdExamen { get; set; }
     public DateTime DateExamen { get; set; }
-    public string TypeExamen { get; set; } = "";
+    public string Categorie { get; set; } = "";
+    public string Specialite { get; set; } = "";
     public string NomExamen { get; set; } = "";
     public string? Resultat { get; set; }
     public string NomMedecin { get; set; } = "";
     public string Statut { get; set; } = "";
     public bool Urgent { get; set; }
+    public bool Disponible { get; set; } = true;
 }
 
 /// <summary>

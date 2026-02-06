@@ -148,7 +148,8 @@ public class UserManagementService : IUserManagementService
                 _context.Infirmiers.Add(new Infirmier
                 {
                     IdUser = utilisateur.IdUser,
-                    Matricule = request.Matricule
+                    Matricule = request.Matricule,
+                    IdService = request.IdService ?? 1
                 });
                 break;
 
@@ -186,11 +187,13 @@ public class UserManagementService : IUserManagementService
                 });
                 break;
 
-            case "biologiste":
-                _context.Biologistes.Add(new Biologiste
+            case "laborantin":
+                _context.Laborantins.Add(new Laborantin
                 {
                     IdUser = utilisateur.IdUser,
                     Matricule = request.Matricule,
+                    Specialisation = request.Specialisation,
+                    IdLabo = request.IdLabo ?? 1,
                     DateEmbauche = DateTime.UtcNow,
                     Actif = true,
                     CreatedAt = DateTime.UtcNow

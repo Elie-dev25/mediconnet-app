@@ -11,21 +11,32 @@ import {
   PrescriptionsDto,
   MedicamentDto,
   ExamenPrescritDto,
-  RecommandationDto
+  RecommandationDto,
+  CreneauDisponible,
+  CreerRdvSuiviRequest,
+  CreneauAvecStatut,
+  LaboratoireDto,
+  SpecialiteDto,
+  MedecinSpecialisteDto,
+  OrientationSpecialisteDto,
+  CreateOrientationRequest,
+  CreateOrientationManuelleRequest
 } from '../../../services/consultation-complete.service';
 import { QuestionsPredefiniesService, QuestionPredefinie } from '../../../services/questions-predefinies.service';
-import { HospitalisationService, LitDto, ChambreDto, DemandeHospitalisationRequest } from '../../../services/hospitalisation.service';
+import { HospitalisationService, OrdonnerHospitalisationRequest } from '../../../services/hospitalisation.service';
+import { HospitalisationMultiEtapesComponent, HospitalisationPatientInfo } from '../hospitalisation-multi-etapes/hospitalisation-multi-etapes.component';
+import { PrescriptionExamensComponent, ExamenPrescription } from '../prescription-examens/prescription-examens.component';
 import { SpeechRecognitionService, SupportedLanguage } from '../../../services/speech-recognition.service';
 import { PharmacieStockService, MedicamentStock } from '../../../services/pharmacie-stock.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
-type EtapeConsultation = 'anamnese' | 'diagnostic' | 'prescriptions' | 'validation';
+type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
 
 @Component({
   selector: 'app-consultation-multi-etapes',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, HospitalisationMultiEtapesComponent, PrescriptionExamensComponent],
   templateUrl: './consultation-multi-etapes.component.html',
   styleUrl: './consultation-multi-etapes.component.scss'
 })
@@ -37,7 +48,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   @Output() cancelled = new EventEmitter<void>();
 
   etapeActuelle: EtapeConsultation = 'anamnese';
-  etapes: EtapeConsultation[] = ['anamnese', 'diagnostic', 'prescriptions', 'validation'];
+  etapes: EtapeConsultation[] = ['anamnese', 'examen_clinique', 'diagnostic', 'plan_traitement', 'conclusion', 'suivi'];
   
   consultation: ConsultationEnCoursDto | null = null;
   questionsPredefinies: QuestionPredefinie[] = [];
@@ -46,31 +57,189 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   isSaving = false;
   error: string | null = null;
 
-  // Hospitalisation
+  // Hospitalisation (nouveau workflow: médecin ne choisit pas de lit)
   showHospitalisationForm = false;
-  litsDisponibles: LitDto[] = [];
-  chambresDisponibles: ChambreDto[] = [];
   hospitalisationMotif = '';
   hospitalisationUrgence = 'normale';
+  hospitalisationDiagnostic = '';
+  hospitalisationSoins = '';
   hospitalisationNotes = '';
-  selectedChambreId: number | null = null;
-  selectedLitId: number | null = null;
-  isLoadingLits = false;
+  hospitalisationDateSortie: string | null = null;
   hospitalisationDemandee = false;
+
+  // Planification RDV de suivi - Étape obligatoire
+  suiviChoix: 'rdv' | 'cloture' | null = null; // Choix obligatoire
+  showRdvSuiviForm = false;
+  rdvSuiviDate: string = '';
+  rdvSuiviMotif: string = '';
+  rdvSuiviNotes: string = '';
+  creneauxDisponibles: CreneauDisponible[] = [];
+  creneauxAvecStatut: CreneauAvecStatut[] = [];
+  selectedCreneau: CreneauDisponible | null = null;
+  isLoadingCreneaux = false;
+  rdvSuiviCree = false;
+  rdvSuiviInfo: { dateHeure: string; idRendezVous: number } | null = null;
+  minDate: string = '';
+  
+  // Clôture de dossier
+  dossierCloture = false;
+  clotureConfirmee = false;
+
+  // Panneau latéral Hospitalisation (composant multi-étapes réutilisable)
+  showHospitalisationPanel = false;
+  hospitalisationPatientInfo: HospitalisationPatientInfo | null = null;
 
   // Autocomplete médicaments
   medicamentSuggestions: MedicamentStock[] = [];
   activeMedicamentIndex: number | null = null;
   private searchMedicament$ = new Subject<{index: number, term: string}>();
 
+  // Examens prescrits (utilisé par le composant PrescriptionExamensComponent)
+  examensPrescriptions: ExamenPrescription[] = [];
+
+  // Options prédéfinies pour les prescriptions (identiques au composant hospitalisation)
+  posologiesOptions = [
+    '1 fois par jour',
+    '2 fois par jour',
+    '3 fois par jour',
+    '4 fois par jour',
+    'Matin et soir',
+    'Matin, midi et soir',
+    'Avant les repas',
+    'Après les repas',
+    'Au coucher',
+    'Selon besoin',
+    'Autre'
+  ];
+
+  formesPharmaceutiques = [
+    'Comprimé',
+    'Gélule',
+    'Sirop',
+    'Solution buvable',
+    'Ampoule injectable',
+    'Pommade',
+    'Crème',
+    'Gel',
+    'Suppositoire',
+    'Collyre',
+    'Spray nasal',
+    'Inhalateur',
+    'Patch',
+    'Sachet',
+    'Autre'
+  ];
+
+  voiesAdministration = [
+    'Voie orale',
+    'Voie intraveineuse (IV)',
+    'Voie intramusculaire (IM)',
+    'Voie sous-cutanée (SC)',
+    'Voie rectale',
+    'Voie cutanée',
+    'Voie ophtalmique',
+    'Voie nasale',
+    'Voie inhalée',
+    'Voie sublinguale',
+    'Autre'
+  ];
+
+  // Options prédéfinies pour les examens (identiques au composant hospitalisation)
+  typesExamen = [
+    { value: 'biologie', label: 'Biologie / Analyses', icon: 'test-tube' },
+    { value: 'imagerie', label: 'Imagerie médicale', icon: 'scan-line' },
+    { value: 'cardiologie', label: 'Cardiologie', icon: 'heart-pulse' },
+    { value: 'neurologie', label: 'Neurologie', icon: 'brain-circuit' },
+    { value: 'autre', label: 'Autre', icon: 'file-plus' }
+  ];
+
+  examensParType: { [key: string]: string[] } = {
+    biologie: [
+      'NFS (Numération Formule Sanguine)',
+      'Glycémie à jeun',
+      'HbA1c',
+      'Bilan lipidique complet',
+      'Bilan rénal (Urée, Créatinine)',
+      'Bilan hépatique',
+      'Ionogramme sanguin',
+      'CRP (Protéine C-Réactive)',
+      'VS (Vitesse de Sédimentation)',
+      'TSH / T3 / T4',
+      'Bilan martial (Fer, Ferritine)',
+      'Groupe sanguin / Rhésus',
+      'TP / INR',
+      'D-Dimères',
+      'Troponine',
+      'BNP / NT-proBNP',
+      'ECBU',
+      'Hémocultures',
+      'Sérologies',
+      'Autre'
+    ],
+    imagerie: [
+      'Radiographie thoracique',
+      'Radiographie osseuse',
+      'Échographie abdominale',
+      'Échographie pelvienne',
+      'Échographie cardiaque',
+      'Scanner thoracique',
+      'Scanner abdomino-pelvien',
+      'Scanner cérébral',
+      'IRM cérébrale',
+      'IRM lombaire',
+      'IRM articulaire',
+      'Mammographie',
+      'Doppler veineux',
+      'Doppler artériel',
+      'Autre'
+    ],
+    cardiologie: [
+      'ECG (Électrocardiogramme)',
+      'Holter ECG 24h',
+      'Holter tensionnel (MAPA)',
+      'Échocardiographie',
+      'Épreuve d\'effort',
+      'Coronarographie',
+      'Autre'
+    ],
+    neurologie: [
+      'EEG (Électroencéphalogramme)',
+      'EMG (Électromyogramme)',
+      'Potentiels évoqués',
+      'Ponction lombaire',
+      'Autre'
+    ],
+    autre: []
+  };
+
+  // Laboratoires disponibles
+  laboratoires: LaboratoireDto[] = [];
+
+  // Orientation spécialiste
+  specialites: SpecialiteDto[] = [];
+  medecinsSpecialite: MedecinSpecialisteDto[] = [];
+  orientations: OrientationSpecialisteDto[] = [];
+  showOrientationForm = false;
+  orientationForm!: FormGroup;
+  orientationMode: 'liste' | 'manuel' = 'liste';
+
   // Questions libres
   showAddQuestion = false;
   newQuestionText = '';
 
+  // Réponses patient déjà remplies (lecture seule)
+  questionsDejaRepondues: { question: string; reponse: string }[] = [];
+
   // Formulaires
   anamneseForm!: FormGroup;
+  examenCliniqueForm!: FormGroup;
   diagnosticForm!: FormGroup;
-  prescriptionsForm!: FormGroup;
+  planTraitementForm!: FormGroup;
+  conclusionForm!: FormGroup;
+  prescriptionsForm!: FormGroup; // Conservé pour compatibilité
+  
+  // Récapitulatif patient (pour étape diagnostic)
+  recapitulatifPatient: any = null;
 
   // Dictée vocale
   isVoiceSupported = false;
@@ -96,8 +265,180 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadConsultation();
+    this.loadLaboratoires();
+    this.loadSpecialites();
+    this.initOrientationForm();
     this.setupVoiceRecognition();
     this.setupMedicamentAutocomplete();
+    this.initMinDate();
+  }
+
+  private loadLaboratoires(): void {
+    this.consultationService.getLaboratoires().subscribe({
+      next: (labs) => this.laboratoires = labs,
+      error: (err) => console.error('Erreur chargement laboratoires:', err)
+    });
+  }
+
+  private loadSpecialites(): void {
+    this.consultationService.getSpecialites().subscribe({
+      next: (specs) => this.specialites = specs,
+      error: (err) => console.error('Erreur chargement spécialités:', err)
+    });
+  }
+
+  private initOrientationForm(): void {
+    this.orientationForm = this.fb.group({
+      idSpecialite: [null],
+      idMedecinOriente: [null],
+      specialiteManuelle: [''],
+      medecinManuel: [''],
+      motif: ['', Validators.required],
+      urgence: [false],
+      notes: ['']
+    });
+  }
+
+  onOrientationModeChange(): void {
+    this.orientationForm.patchValue({
+      idSpecialite: null,
+      idMedecinOriente: null,
+      specialiteManuelle: '',
+      medecinManuel: ''
+    });
+    this.medecinsSpecialite = [];
+  }
+
+  isOrientationFormValid(): boolean {
+    if (!this.orientationForm.get('motif')?.value) return false;
+    
+    if (this.orientationMode === 'liste') {
+      return !!this.orientationForm.get('idSpecialite')?.value;
+    } else {
+      return !!this.orientationForm.get('specialiteManuelle')?.value?.trim();
+    }
+  }
+
+  loadMedecinsSpecialite(idSpecialite: number): void {
+    if (!idSpecialite) {
+      this.medecinsSpecialite = [];
+      return;
+    }
+    this.consultationService.getMedecinsParSpecialite(idSpecialite).subscribe({
+      next: (medecins) => this.medecinsSpecialite = medecins,
+      error: (err) => console.error('Erreur chargement médecins:', err)
+    });
+  }
+
+  loadOrientations(): void {
+    if (!this.consultationId) return;
+    this.consultationService.getOrientations(this.consultationId).subscribe({
+      next: (orientations) => this.orientations = orientations,
+      error: (err) => console.error('Erreur chargement orientations:', err)
+    });
+  }
+
+  toggleOrientationForm(): void {
+    this.showOrientationForm = !this.showOrientationForm;
+    if (!this.showOrientationForm) {
+      this.orientationForm.reset();
+      this.medecinsSpecialite = [];
+      this.orientationMode = 'liste';
+    }
+  }
+
+  onSpecialiteChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const idSpecialite = parseInt(select.value, 10);
+    this.loadMedecinsSpecialite(idSpecialite);
+  }
+
+  addOrientation(): void {
+    if (!this.isOrientationFormValid() || !this.consultationId) return;
+
+    if (this.orientationMode === 'liste') {
+      const request: CreateOrientationRequest = {
+        idConsultation: this.consultationId,
+        idSpecialite: this.orientationForm.value.idSpecialite,
+        idMedecinOriente: this.orientationForm.value.idMedecinOriente || undefined,
+        motif: this.orientationForm.value.motif,
+        urgence: this.orientationForm.value.urgence || false,
+        notes: this.orientationForm.value.notes || undefined
+      };
+
+      this.consultationService.createOrientation(request).subscribe({
+        next: (orientation) => {
+          this.orientations.unshift(orientation);
+          this.toggleOrientationForm();
+        },
+        error: (err) => console.error('Erreur création orientation:', err)
+      });
+    } else {
+      // Mode manuel - créer une orientation locale sans ID spécialité BD
+      const specialiteManuelle = this.orientationForm.value.specialiteManuelle?.trim();
+      const medecinManuel = this.orientationForm.value.medecinManuel?.trim();
+      
+      const orientationManuelle: OrientationSpecialisteDto = {
+        idConsultation: this.consultationId,
+        idSpecialite: 0,
+        nomSpecialite: specialiteManuelle,
+        nomMedecinOriente: medecinManuel || undefined,
+        motif: this.orientationForm.value.motif,
+        urgence: this.orientationForm.value.urgence || false,
+        statut: 'en_attente',
+        dateOrientation: new Date(),
+        notes: this.orientationForm.value.notes || undefined
+      };
+
+      // Envoyer au backend avec spécialité manuelle
+      this.consultationService.createOrientationManuelle({
+        idConsultation: this.consultationId,
+        specialiteManuelle: specialiteManuelle,
+        medecinManuel: medecinManuel || undefined,
+        motif: this.orientationForm.value.motif,
+        urgence: this.orientationForm.value.urgence || false,
+        notes: this.orientationForm.value.notes || undefined
+      }).subscribe({
+        next: (orientation) => {
+          this.orientations.unshift(orientation);
+          this.toggleOrientationForm();
+        },
+        error: (err) => {
+          console.error('Erreur création orientation manuelle:', err);
+          // Fallback: ajouter localement si erreur
+          this.orientations.unshift(orientationManuelle);
+          this.toggleOrientationForm();
+        }
+      });
+    }
+  }
+
+  removeOrientation(idOrientation: number): void {
+    if (!confirm('Supprimer cette orientation ?')) return;
+    
+    this.consultationService.deleteOrientation(idOrientation).subscribe({
+      next: () => {
+        this.orientations = this.orientations.filter(o => o.idOrientation !== idOrientation);
+      },
+      error: (err) => console.error('Erreur suppression orientation:', err)
+    });
+  }
+
+  getStatutLabel(statut: string): string {
+    const labels: { [key: string]: string } = {
+      'en_attente': 'En attente',
+      'acceptee': 'Acceptée',
+      'refusee': 'Refusée',
+      'terminee': 'Terminée'
+    };
+    return labels[statut] || statut;
+  }
+
+  private initMinDate(): void {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    this.minDate = tomorrow.toISOString().split('T')[0];
+    this.rdvSuiviDate = this.minDate;
   }
 
   ngOnDestroy(): void {
@@ -306,15 +647,18 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   }
 
   private initForms(): void {
+    // Étape 1: Anamnèse
     this.anamneseForm = this.fb.group({
       motifConsultation: [''],
       histoireMaladie: [''],
-      antecedentsPersonnels: [''],
-      antecedentsFamiliaux: [''],
-      allergiesConnues: [''],
       traitementsEnCours: [''],
       questionsReponses: this.fb.array([]),
-      questionsLibres: this.fb.array([]),
+      questionsLibres: this.fb.array([])
+    });
+
+    // Étape 2: Examen Clinique
+    this.examenCliniqueForm = this.fb.group({
+      // Constantes vitales
       poids: [null],
       taille: [null],
       temperature: [null],
@@ -322,16 +666,44 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       frequenceCardiaque: [null],
       frequenceRespiratoire: [null],
       saturationOxygene: [null],
-      glycemie: [null]
+      glycemie: [null],
+      // Examen physique
+      inspection: [''],
+      palpation: [''],
+      auscultation: [''],
+      percussion: [''],
+      autresObservations: ['']
     });
 
+    // Étape 3: Diagnostic
     this.diagnosticForm = this.fb.group({
-      examenClinique: [''],
       diagnosticPrincipal: ['', Validators.required],
       diagnosticsSecondaires: [''],
+      hypothesesDiagnostiques: [''],
       notesCliniques: ['']
     });
 
+    // Étape 4: Plan de Traitement
+    this.planTraitementForm = this.fb.group({
+      explicationDiagnostic: [''],
+      optionsTraitement: [''],
+      ordonnanceNotes: [''],
+      dureeTraitement: [''],
+      medicaments: this.fb.array([]),
+      examens: this.fb.array([]),
+      orientationSpecialiste: [''],
+      motifOrientation: ['']
+    });
+
+    // Étape 5: Conclusion
+    this.conclusionForm = this.fb.group({
+      resumeConsultation: [''],
+      questionsPatient: [''],
+      consignesPatient: [''],
+      recommandations: ['']
+    });
+
+    // Conservé pour compatibilité
     this.prescriptionsForm = this.fb.group({
       ordonnanceNotes: [''],
       dureeTraitement: [''],
@@ -348,6 +720,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         this.consultation = data;
         this.loadQuestions();
         this.populateForms();
+        this.loadOrientations();
         this.isLoading = false;
       },
       error: (err) => {
@@ -392,37 +765,97 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   populateForms(): void {
     if (!this.consultation) return;
 
-    // Anamnèse
+    // Étape 1: Anamnèse
     if (this.consultation.anamnese) {
       const a = this.consultation.anamnese;
       this.anamneseForm.patchValue({
         motifConsultation: a.motifConsultation,
         histoireMaladie: a.histoireMaladie,
-        antecedentsPersonnels: a.antecedentsPersonnels,
-        antecedentsFamiliaux: a.antecedentsFamiliaux,
-        allergiesConnues: a.allergiesConnues,
         traitementsEnCours: a.traitementsEnCours
       });
-      if (a.parametresVitaux) {
-        this.anamneseForm.patchValue({
-          poids: a.parametresVitaux.poids,
-          taille: a.parametresVitaux.taille,
-          temperature: a.parametresVitaux.temperature,
-          tensionArterielle: a.parametresVitaux.tensionArterielle,
-          frequenceCardiaque: a.parametresVitaux.frequenceCardiaque,
-          frequenceRespiratoire: a.parametresVitaux.frequenceRespiratoire,
-          saturationOxygene: a.parametresVitaux.saturationOxygene,
-          glycemie: a.parametresVitaux.glycemie
-        });
+
+      // Stocker les réponses déjà fournies par le patient (lecture seule)
+      if (a.questionsReponses && a.questionsReponses.length > 0) {
+        this.questionsDejaRepondues = a.questionsReponses
+          .filter(qr => qr.reponse && qr.reponse.trim() !== '')
+          .map(qr => ({
+            question: qr.question,
+            reponse: qr.reponse
+          }));
       }
     }
 
-    // Diagnostic
-    if (this.consultation.diagnostic) {
-      this.diagnosticForm.patchValue(this.consultation.diagnostic);
+    // Étape 2: Examen Clinique
+    if (this.consultation.examenClinique) {
+      const ec = this.consultation.examenClinique;
+      if (ec.parametresVitaux) {
+        this.examenCliniqueForm.patchValue({
+          poids: ec.parametresVitaux.poids,
+          taille: ec.parametresVitaux.taille,
+          temperature: ec.parametresVitaux.temperature,
+          tensionArterielle: ec.parametresVitaux.tensionArterielle,
+          frequenceCardiaque: ec.parametresVitaux.frequenceCardiaque,
+          frequenceRespiratoire: ec.parametresVitaux.frequenceRespiratoire,
+          saturationOxygene: ec.parametresVitaux.saturationOxygene,
+          glycemie: ec.parametresVitaux.glycemie
+        });
+      }
+      this.examenCliniqueForm.patchValue({
+        inspection: ec.inspection,
+        palpation: ec.palpation,
+        auscultation: ec.auscultation,
+        percussion: ec.percussion,
+        autresObservations: ec.autresObservations
+      });
     }
 
-    // Prescriptions
+    // Étape 3: Diagnostic
+    if (this.consultation.diagnostic) {
+      this.diagnosticForm.patchValue({
+        diagnosticPrincipal: this.consultation.diagnostic.diagnosticPrincipal,
+        diagnosticsSecondaires: this.consultation.diagnostic.diagnosticsSecondaires,
+        hypothesesDiagnostiques: this.consultation.diagnostic.hypothesesDiagnostiques,
+        notesCliniques: this.consultation.diagnostic.notesCliniques
+      });
+      // Stocker le récapitulatif patient
+      this.recapitulatifPatient = this.consultation.diagnostic.recapitulatifPatient;
+    }
+
+    // Étape 4: Plan de Traitement
+    if (this.consultation.planTraitement) {
+      const pt = this.consultation.planTraitement;
+      this.planTraitementForm.patchValue({
+        explicationDiagnostic: pt.explicationDiagnostic,
+        optionsTraitement: pt.optionsTraitement,
+        orientationSpecialiste: pt.orientationSpecialiste,
+        motifOrientation: pt.motifOrientation
+      });
+      if (pt.ordonnance) {
+        this.planTraitementForm.patchValue({
+          ordonnanceNotes: pt.ordonnance.notes,
+          dureeTraitement: pt.ordonnance.dureeTraitement
+        });
+        pt.ordonnance.medicaments.forEach(m => this.addMedicament(m));
+      }
+      // Initialiser les examens pour le composant PrescriptionExamensComponent
+      if (pt.examensPrescrits && pt.examensPrescrits.length > 0) {
+        this.examensPrescriptions = pt.examensPrescrits.map(e => ({
+          typeExamen: e.typeExamen || '',
+          nomExamen: e.nomExamen || '',
+          description: e.description,
+          urgence: e.urgence || false,
+          notes: e.notes,
+          idLaboratoire: e.idLaboratoire
+        } as ExamenPrescription));
+      }
+    }
+
+    // Étape 5: Conclusion
+    if (this.consultation.conclusion) {
+      this.conclusionForm.patchValue(this.consultation.conclusion);
+    }
+
+    // Compatibilité: Prescriptions
     if (this.consultation.prescriptions) {
       const p = this.consultation.prescriptions;
       if (p.ordonnance) {
@@ -430,27 +863,38 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
           ordonnanceNotes: p.ordonnance.notes,
           dureeTraitement: p.ordonnance.dureeTraitement
         });
-        p.ordonnance.medicaments.forEach(m => this.addMedicament(m));
       }
-      p.examens.forEach(e => this.addExamen(e));
-      p.recommandations.forEach(r => this.addRecommandation(r));
+      p.recommandations?.forEach(r => this.addRecommandation(r));
     }
   }
 
   // Getters pour FormArrays
   get questionsArray(): FormArray { return this.anamneseForm.get('questionsReponses') as FormArray; }
   get questionsLibresArray(): FormArray { return this.anamneseForm.get('questionsLibres') as FormArray; }
-  get medicamentsArray(): FormArray { return this.prescriptionsForm.get('medicaments') as FormArray; }
-  get examensArray(): FormArray { return this.prescriptionsForm.get('examens') as FormArray; }
+  get medicamentsArray(): FormArray { return this.planTraitementForm.get('medicaments') as FormArray; }
+  get examensArray(): FormArray { return this.planTraitementForm.get('examens') as FormArray; }
   get recommandationsArray(): FormArray { return this.prescriptionsForm.get('recommandations') as FormArray; }
+  
+  // Vérifier si les paramètres ont été pris par l'infirmier
+  get parametresPrisParInfirmier(): boolean {
+    return this.consultation?.examenClinique?.parametresPrisParInfirmier ?? false;
+  }
+  
+  get infirmierNom(): string | null {
+    return this.consultation?.examenClinique?.infirmierNom ?? null;
+  }
 
   // Médicaments
   addMedicament(med?: MedicamentDto): void {
     this.medicamentsArray.push(this.fb.group({
+      idMedicament: [med?.idMedicament || null],
       nomMedicament: [med?.nomMedicament || '', Validators.required],
       dosage: [med?.dosage || ''],
+      posologie: [med?.posologie || ''],
       frequence: [med?.frequence || ''],
       duree: [med?.duree || ''],
+      voieAdministration: [med?.voieAdministration || ''],
+      formePharmaceutique: [med?.formePharmaceutique || ''],
       instructions: [med?.instructions || ''],
       quantite: [med?.quantite || null]
     }));
@@ -467,12 +911,38 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       nomExamen: [exam?.nomExamen || '', Validators.required],
       description: [exam?.description || ''],
       urgence: [exam?.urgence || false],
-      notes: [exam?.notes || '']
+      notes: [exam?.notes || ''],
+      idLaboratoire: [exam?.idLaboratoire || null]
     }));
   }
 
   removeExamen(index: number): void {
     this.examensArray.removeAt(index);
+  }
+
+  getExamensSuggestions(index: number): string[] {
+    const typeExamen = this.examensArray.at(index)?.get('typeExamen')?.value;
+    return this.examensParType[typeExamen] || [];
+  }
+
+  onExamenTypeChange(index: number): void {
+    const control = this.examensArray.at(index);
+    if (control) {
+      control.get('nomExamen')?.setValue('');
+    }
+  }
+
+  getExamenTypeIcon(type: string): string {
+    return this.typesExamen.find(t => t.value === type)?.icon || 'file-plus';
+  }
+
+  getLaboratoiresByType(type: string): LaboratoireDto[] {
+    return this.laboratoires.filter(lab => lab.type === type);
+  }
+
+  // Gestion des examens via le composant PrescriptionExamensComponent
+  onExamensChange(examens: ExamenPrescription[]): void {
+    this.examensPrescriptions = examens;
   }
 
   // Recommandations
@@ -490,99 +960,56 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.recommandationsArray.removeAt(index);
   }
 
-  // Hospitalisation
+  // Hospitalisation (nouveau workflow: médecin ne choisit pas de lit)
   toggleHospitalisationForm(): void {
     this.showHospitalisationForm = !this.showHospitalisationForm;
-    if (this.showHospitalisationForm) {
-      this.loadChambresEtLits();
-    }
   }
 
-  loadChambresEtLits(): void {
-    this.isLoadingLits = true;
-    this.chambresDisponibles = [];
-    this.litsDisponibles = [];
-    
-    // Charger les chambres avec leurs lits
-    this.hospitalisationService.getChambres().subscribe({
-      next: (response) => {
-        // Filtrer les chambres qui ont des lits disponibles
-        this.chambresDisponibles = response.chambres.filter(c => c.litsDisponibles > 0);
-        
-        // Extraire tous les lits disponibles
-        this.chambresDisponibles.forEach(chambre => {
-          if (chambre.lits) {
-            const litsLibres = chambre.lits.filter(l => l.estDisponible);
-            this.litsDisponibles.push(...litsLibres);
-          }
-        });
-        
-        this.isLoadingLits = false;
-        console.log('[Hospitalisation] Chambres:', this.chambresDisponibles.length, 'Lits:', this.litsDisponibles.length);
-      },
-      error: (err) => {
-        console.error('Erreur chargement chambres:', err);
-        // Fallback: charger les lits directement
-        this.hospitalisationService.getLitsDisponibles().subscribe({
-          next: (resp) => {
-            this.litsDisponibles = resp.lits;
-            this.isLoadingLits = false;
-          },
-          error: () => {
-            this.isLoadingLits = false;
-          }
-        });
-      }
-    });
-  }
-
-  onChambreChange(): void {
-    // Filtrer les lits de la chambre sélectionnée
-    if (this.selectedChambreId) {
-      const chambre = this.chambresDisponibles.find(c => c.idChambre === this.selectedChambreId);
-      if (chambre && chambre.lits) {
-        this.litsDisponibles = chambre.lits.filter(l => l.estDisponible);
-      }
-    } else {
-      // Recharger tous les lits disponibles
-      this.litsDisponibles = [];
-      this.chambresDisponibles.forEach(chambre => {
-        if (chambre.lits) {
-          const litsLibres = chambre.lits.filter(l => l.estDisponible);
-          this.litsDisponibles.push(...litsLibres);
-        }
-      });
-    }
-    this.selectedLitId = null;
-  }
-
-  async demanderHospitalisation(): Promise<void> {
+  /**
+   * Ordonner une hospitalisation (nouveau workflow)
+   * Le médecin renseigne uniquement les détails médicaux
+   * Le Major du service attribuera le lit ultérieurement
+   */
+  async ordonnerHospitalisation(): Promise<void> {
     if (!this.hospitalisationMotif.trim()) {
+      this.error = 'Veuillez saisir un motif d\'hospitalisation';
       return;
     }
 
     this.isSaving = true;
-    const request: DemandeHospitalisationRequest = {
+    this.error = '';
+    
+    // Convertir la chaîne de soins en tableau de SoinComplementaireDto
+    const soinsArray = this.hospitalisationSoins ? [{
+      typeSoin: 'soins_infirmiers',
+      description: this.hospitalisationSoins,
+      priorite: 'normale'
+    }] : undefined;
+
+    const request: OrdonnerHospitalisationRequest = {
       idConsultation: this.consultationId,
       idPatient: this.patientId,
       motif: this.hospitalisationMotif,
       urgence: this.hospitalisationUrgence,
-      notes: this.hospitalisationNotes
+      diagnosticPrincipal: this.hospitalisationDiagnostic || undefined,
+      soins: soinsArray,
+      dateSortiePrevue: this.hospitalisationDateSortie || undefined
     };
 
-    this.hospitalisationService.demanderHospitalisation(request).subscribe({
+    this.hospitalisationService.ordonnerHospitalisation(request).subscribe({
       next: (response) => {
         if (response.success) {
           this.hospitalisationDemandee = true;
           this.showHospitalisationForm = false;
+          console.log('[Hospitalisation] Ordonnée avec succès. En attente d\'attribution de lit par le Major.');
         } else {
           this.error = response.message;
         }
         this.isSaving = false;
       },
       error: (err) => {
-        console.error('Erreur demande hospitalisation:', err);
-        this.error = 'Erreur lors de la demande d\'hospitalisation';
+        console.error('Erreur ordonnance hospitalisation:', err);
+        this.error = err.error?.message || 'Erreur lors de l\'ordonnance d\'hospitalisation';
         this.isSaving = false;
       }
     });
@@ -592,9 +1019,10 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.showHospitalisationForm = false;
     this.hospitalisationMotif = '';
     this.hospitalisationUrgence = 'normale';
+    this.hospitalisationDiagnostic = '';
+    this.hospitalisationSoins = '';
     this.hospitalisationNotes = '';
-    this.selectedChambreId = null;
-    this.selectedLitId = null;
+    this.hospitalisationDateSortie = null;
   }
 
   // Questions libres
@@ -632,10 +1060,17 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   canGoNext(): boolean {
     switch (this.etapeActuelle) {
-      case 'anamnese': return this.anamneseForm.valid;
+      case 'anamnese': 
+        // Si le patient a déjà répondu aux questions, le formulaire est valide
+        if (this.questionsDejaRepondues.length > 0) {
+          return true;
+        }
+        return this.anamneseForm.valid;
+      case 'examen_clinique': return true; // Examen clinique optionnel
       case 'diagnostic': return this.diagnosticForm.valid;
-      case 'prescriptions': return true;
-      case 'validation': return true;
+      case 'plan_traitement': return true; // Plan de traitement optionnel
+      case 'conclusion': return true;
+      case 'suivi': return this.isSuiviComplete();
       default: return false;
     }
   }
@@ -669,11 +1104,17 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         case 'anamnese':
           await this.saveAnamnese();
           break;
+        case 'examen_clinique':
+          await this.saveExamenClinique();
+          break;
         case 'diagnostic':
           await this.saveDiagnostic();
           break;
-        case 'prescriptions':
-          await this.savePrescriptions();
+        case 'plan_traitement':
+          await this.savePlanTraitement();
+          break;
+        case 'conclusion':
+          await this.saveConclusion();
           break;
       }
     } catch (err) {
@@ -684,18 +1125,33 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   private async saveAnamnese(): Promise<void> {
     const form = this.anamneseForm.value;
-    const anamnese: AnamneseDto = {
-      motifConsultation: form.motifConsultation,
-      histoireMaladie: form.histoireMaladie,
-      antecedentsPersonnels: form.antecedentsPersonnels,
-      antecedentsFamiliaux: form.antecedentsFamiliaux,
-      allergiesConnues: form.allergiesConnues,
-      traitementsEnCours: form.traitementsEnCours,
-      questionsReponses: form.questionsReponses.map((q: any) => ({
+    
+    // Combiner questions prédéfinies et questions libres
+    const allQuestions = [
+      ...form.questionsReponses.map((q: any) => ({
         questionId: q.questionId,
         question: q.question,
         reponse: q.reponse
       })),
+      ...form.questionsLibres.map((q: any) => ({
+        questionId: 'libre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        question: q.question,
+        reponse: q.reponse
+      }))
+    ];
+    
+    const anamnese: AnamneseDto = {
+      motifConsultation: form.motifConsultation,
+      histoireMaladie: form.histoireMaladie,
+      traitementsEnCours: form.traitementsEnCours,
+      questionsReponses: allQuestions
+    };
+    await this.consultationService.saveAnamnese(this.consultationId, anamnese).toPromise();
+  }
+
+  private async saveExamenClinique(): Promise<void> {
+    const form = this.examenCliniqueForm.value;
+    const examenClinique = {
       parametresVitaux: {
         poids: form.poids,
         taille: form.taille,
@@ -705,14 +1161,41 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         frequenceRespiratoire: form.frequenceRespiratoire,
         saturationOxygene: form.saturationOxygene,
         glycemie: form.glycemie
-      }
+      },
+      inspection: form.inspection,
+      palpation: form.palpation,
+      auscultation: form.auscultation,
+      percussion: form.percussion,
+      autresObservations: form.autresObservations
     };
-    await this.consultationService.saveAnamnese(this.consultationId, anamnese).toPromise();
+    await this.consultationService.saveExamenClinique(this.consultationId, examenClinique as any).toPromise();
   }
 
   private async saveDiagnostic(): Promise<void> {
     const diagnostic: DiagnosticDto = this.diagnosticForm.value;
     await this.consultationService.saveDiagnostic(this.consultationId, diagnostic).toPromise();
+  }
+
+  private async savePlanTraitement(): Promise<void> {
+    const form = this.planTraitementForm.value;
+    const planTraitement = {
+      explicationDiagnostic: form.explicationDiagnostic,
+      optionsTraitement: form.optionsTraitement,
+      ordonnance: form.medicaments.length > 0 ? {
+        notes: form.ordonnanceNotes,
+        dureeTraitement: form.dureeTraitement,
+        medicaments: form.medicaments
+      } : undefined,
+      examensPrescrits: this.examensPrescriptions,
+      orientationSpecialiste: form.orientationSpecialiste,
+      motifOrientation: form.motifOrientation
+    };
+    await this.consultationService.savePlanTraitement(this.consultationId, planTraitement as any).toPromise();
+  }
+
+  private async saveConclusion(): Promise<void> {
+    const conclusion = this.conclusionForm.value;
+    await this.consultationService.saveConclusion(this.consultationId, conclusion).toPromise();
   }
 
   private async savePrescriptions(): Promise<void> {
@@ -723,7 +1206,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         dureeTraitement: form.dureeTraitement,
         medicaments: form.medicaments
       } : undefined,
-      examens: form.examens,
+      examens: this.examensPrescriptions,
       recommandations: form.recommandations
     };
     await this.consultationService.savePrescriptions(this.consultationId, prescriptions).toPromise();
@@ -858,5 +1341,231 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     this.cancelled.emit();
+  }
+
+  // ==================== ÉTAPE SUIVI - CHOIX OBLIGATOIRE ====================
+
+  /**
+   * Sélectionner le choix de suivi (RDV ou Clôture)
+   */
+  selectSuiviChoix(choix: 'rdv' | 'cloture'): void {
+    this.suiviChoix = choix;
+    this.error = null;
+    
+    if (choix === 'rdv') {
+      this.showRdvSuiviForm = true;
+      this.clotureConfirmee = false;
+      if (this.rdvSuiviDate) {
+        this.loadCreneauxAvecStatut();
+      }
+    } else {
+      this.showRdvSuiviForm = false;
+      this.selectedCreneau = null;
+    }
+  }
+
+  /**
+   * Vérifier si l'étape suivi est complète
+   */
+  isSuiviComplete(): boolean {
+    // Si une hospitalisation a été demandée, le suivi est considéré comme complet
+    if (this.hospitalisationDemandee) {
+      return true;
+    }
+    if (this.suiviChoix === 'rdv') {
+      return this.rdvSuiviCree;
+    } else if (this.suiviChoix === 'cloture') {
+      return this.clotureConfirmee;
+    }
+    return false;
+  }
+
+  /**
+   * Charger les créneaux avec leur statut (disponible/occupé/passé)
+   */
+  loadCreneauxAvecStatut(): void {
+    if (!this.rdvSuiviDate) return;
+    
+    this.isLoadingCreneaux = true;
+    this.creneauxAvecStatut = [];
+    this.selectedCreneau = null;
+    
+    this.consultationService.getCreneauxAvecStatut(this.rdvSuiviDate).subscribe({
+      next: (response) => {
+        this.creneauxAvecStatut = response.creneaux;
+        this.isLoadingCreneaux = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement créneaux:', err);
+        this.creneauxAvecStatut = [];
+        this.isLoadingCreneaux = false;
+      }
+    });
+  }
+
+  onDateChange(): void {
+    this.selectedCreneau = null;
+    this.creneauxAvecStatut = [];
+    if (this.rdvSuiviDate) {
+      this.loadCreneauxAvecStatut();
+    }
+  }
+
+  /**
+   * Sélectionner un créneau disponible
+   */
+  selectCreneauAvecStatut(creneau: CreneauAvecStatut): void {
+    if (creneau.statut !== 'disponible') return;
+    
+    this.selectedCreneau = {
+      heureDebut: creneau.heureDebut,
+      heureFin: creneau.heureFin,
+      dateHeure: creneau.dateHeure,
+      duree: creneau.duree
+    };
+  }
+
+  /**
+   * Créer le RDV de suivi
+   */
+  async creerRdvSuivi(): Promise<void> {
+    if (!this.selectedCreneau) {
+      this.error = 'Veuillez sélectionner un créneau disponible';
+      return;
+    }
+
+    this.isSaving = true;
+    this.error = null;
+
+    const request: CreerRdvSuiviRequest = {
+      dateHeure: this.selectedCreneau.dateHeure,
+      duree: this.selectedCreneau.duree,
+      motif: this.rdvSuiviMotif || 'Consultation de suivi',
+      notes: this.rdvSuiviNotes
+    };
+
+    this.consultationService.creerRdvSuivi(this.consultationId, request).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.rdvSuiviCree = true;
+          this.rdvSuiviInfo = {
+            dateHeure: response.dateHeure || this.selectedCreneau!.dateHeure,
+            idRendezVous: response.idRendezVous || 0
+          };
+        } else {
+          this.error = response.message || 'Erreur lors de la création du RDV';
+        }
+        this.isSaving = false;
+      },
+      error: (err) => {
+        console.error('Erreur création RDV suivi:', err);
+        this.error = err.error?.message || 'Erreur lors de la création du rendez-vous';
+        this.isSaving = false;
+      }
+    });
+  }
+
+  /**
+   * Confirmer la clôture du dossier
+   */
+  async confirmerClotureDossier(): Promise<void> {
+    this.isSaving = true;
+    this.error = null;
+
+    this.consultationService.cloturerDossier(this.consultationId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.clotureConfirmee = true;
+          this.dossierCloture = true;
+        } else {
+          this.error = response.message || 'Erreur lors de la clôture du dossier';
+        }
+        this.isSaving = false;
+      },
+      error: (err) => {
+        console.error('Erreur clôture dossier:', err);
+        this.error = err.error?.message || 'Erreur lors de la clôture du dossier';
+        this.isSaving = false;
+      }
+    });
+  }
+
+  formatCreneauDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  formatCreneauTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  /**
+   * Obtenir la classe CSS pour un créneau selon son statut
+   */
+  getCreneauClass(creneau: CreneauAvecStatut): string {
+    switch (creneau.statut) {
+      case 'disponible': return 'creneau-disponible';
+      case 'occupe': return 'creneau-occupe';
+      case 'passe': return 'creneau-passe';
+      default: return '';
+    }
+  }
+
+  /**
+   * Vérifier si un créneau est sélectionné
+   */
+  isCreneauSelected(creneau: CreneauAvecStatut): boolean {
+    return this.selectedCreneau?.dateHeure === creneau.dateHeure;
+  }
+
+  // ==================== PANNEAU HOSPITALISATION ====================
+
+  /**
+   * Ouvrir le panneau d'hospitalisation multi-étapes
+   */
+  openHospitalisationPanel(): void {
+    // Extraire nom et prénom du patientNom (format "Prénom Nom")
+    const parts = this.patientNom.split(' ');
+    const prenom = parts[0] || '';
+    const nom = parts.slice(1).join(' ') || '';
+
+    this.hospitalisationPatientInfo = {
+      idPatient: this.patientId,
+      nom: nom,
+      prenom: prenom
+    };
+    this.showHospitalisationPanel = true;
+  }
+
+  /**
+   * Fermer le panneau d'hospitalisation
+   */
+  closeHospitalisationPanel(): void {
+    this.showHospitalisationPanel = false;
+    this.hospitalisationPatientInfo = null;
+  }
+
+  /**
+   * Callback quand l'hospitalisation est complétée
+   */
+  onHospitalisationCompleted(): void {
+    this.closeHospitalisationPanel();
+    this.hospitalisationDemandee = true;
+  }
+
+  /**
+   * Callback quand l'hospitalisation est annulée
+   */
+  onHospitalisationCancelled(): void {
+    this.closeHospitalisationPanel();
   }
 }

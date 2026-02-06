@@ -38,6 +38,26 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
   return password.value === confirmPassword.value ? null : { passwordMismatch: true };
 }
 
+/**
+ * Validateur pour vérifier que le contact d'urgence est différent du contact principal
+ */
+function emergencyContactDifferentValidator(mainPhone: () => string): (control: AbstractControl) => ValidationErrors | null {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const emergencyPhone = control.value;
+    const mainPhoneValue = mainPhone();
+    
+    if (!emergencyPhone || !mainPhoneValue) return null;
+    
+    // Normaliser les numéros (enlever espaces, tirets, +)
+    const normalizePhone = (phone: string) => phone.replace(/[\s\-+]/g, '');
+    
+    if (normalizePhone(emergencyPhone) === normalizePhone(mainPhoneValue)) {
+      return { sameAsMainContact: true };
+    }
+    return null;
+  };
+}
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -63,7 +83,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 })
 export class RegisterComponent implements OnInit, OnDestroy {
   currentStep = 1;
-  totalSteps = 4;
+  totalSteps = 5;
   isLoading = false;
   errorMessage: string | null = null;
   showPassword = false;
@@ -78,20 +98,23 @@ export class RegisterComponent implements OnInit, OnDestroy {
     { id: 1, title: 'Compte', icon: 'user-plus' },
     { id: 2, title: 'Identité', icon: 'user' },
     { id: 3, title: 'Santé', icon: 'heart-pulse' },
-    { id: 4, title: 'Urgence', icon: 'phone' }
+    { id: 4, title: 'Habitudes', icon: 'activity' },
+    { id: 5, title: 'Finalisation', icon: 'shield-check' }
   ];
 
   // Formulaires par étape
   accountForm!: FormGroup;
   identityForm!: FormGroup;
   healthForm!: FormGroup;
-  emergencyForm!: FormGroup;
+  lifestyleForm!: FormGroup;
+  finalizationForm!: FormGroup;
 
   // Options
   regions = ['Adamaoua', 'Centre', 'Est', 'Extrême-Nord', 'Littoral', 'Nord', 'Nord-Ouest', 'Ouest', 'Sud', 'Sud-Ouest'];
   groupesSanguins = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Inconnu'];
   situationsMatrimoniales = ['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
   maladiesOptions = ['Diabète', 'Hypertension', 'Asthme', 'Insuffisance cardiaque', 'Épilepsie', 'Drépanocytose', 'Aucune'];
+  frequencesAlcool = ['Jamais', 'Occasionnellement', 'Régulièrement', 'Quotidiennement'];
   
   private destroy$ = new Subject<void>();
 
@@ -123,7 +146,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       confirmPassword: ['', [Validators.required]]
     }, { validators: passwordMatchValidator });
 
-    // Étape 2: Identité
+    // Étape 2: Identité (inclut nombre d'enfants et ethnie)
     this.identityForm = this.fb.group({
       dateNaissance: ['', Validators.required],
       sexe: ['', Validators.required],
@@ -131,7 +154,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
       regionOrigine: [''],
       adresse: [''],
       situationMatrimoniale: [''],
-      profession: ['']
+      profession: [''],
+      nbEnfants: [null],
+      ethnie: ['']
     });
 
     // Étape 3: Santé
@@ -146,11 +171,97 @@ export class RegisterComponent implements OnInit, OnDestroy {
       antecedentsFamiliauxDetails: ['']
     });
 
-    // Étape 4: Contact d'urgence + Déclaration
-    this.emergencyForm = this.fb.group({
+    // Étape 4: Habitudes de vie
+    this.lifestyleForm = this.fb.group({
+      consommationAlcool: [false],
+      frequenceAlcool: [''],
+      tabagisme: [false],
+      frequenceTabac: [''],
+      activitePhysique: [false]
+    });
+
+    // Étape 5: Finalisation (contact d'urgence + déclaration sur l'honneur)
+    this.finalizationForm = this.fb.group({
       personneContact: ['', Validators.required],
-      numeroContact: ['', [Validators.required, Validators.pattern(/^[0-9+\s-]{9,15}$/)]],
+      numeroContact: ['', [
+        Validators.required, 
+        Validators.pattern(/^[0-9+\s-]{9,15}$/),
+        emergencyContactDifferentValidator(() => this.accountForm?.get('telephone')?.value || '')
+      ]],
       declarationAcceptee: [false, Validators.requiredTrue]
+    });
+
+    // Configurer les validations conditionnelles
+    this.setupConditionalValidations();
+  }
+
+  /**
+   * Configure les validations conditionnelles pour les champs dépendants
+   */
+  private setupConditionalValidations(): void {
+    // Santé: opérations chirurgicales -> détails obligatoires
+    this.healthForm.get('operationsChirurgicales')?.valueChanges.subscribe(checked => {
+      const detailsControl = this.healthForm.get('operationsDetails');
+      if (checked) {
+        detailsControl?.setValidators([Validators.required]);
+      } else {
+        detailsControl?.clearValidators();
+        detailsControl?.setValue('');
+      }
+      detailsControl?.updateValueAndValidity();
+    });
+
+    // Santé: allergies connues -> détails obligatoires
+    this.healthForm.get('allergiesConnues')?.valueChanges.subscribe(checked => {
+      const detailsControl = this.healthForm.get('allergiesDetails');
+      if (checked) {
+        detailsControl?.setValidators([Validators.required]);
+      } else {
+        detailsControl?.clearValidators();
+        detailsControl?.setValue('');
+      }
+      detailsControl?.updateValueAndValidity();
+    });
+
+    // Santé: antécédents familiaux -> détails obligatoires
+    this.healthForm.get('antecedentsFamiliaux')?.valueChanges.subscribe(checked => {
+      const detailsControl = this.healthForm.get('antecedentsFamiliauxDetails');
+      if (checked) {
+        detailsControl?.setValidators([Validators.required]);
+      } else {
+        detailsControl?.clearValidators();
+        detailsControl?.setValue('');
+      }
+      detailsControl?.updateValueAndValidity();
+    });
+
+    // Habitudes: consommation d'alcool -> fréquence obligatoire
+    this.lifestyleForm.get('consommationAlcool')?.valueChanges.subscribe(checked => {
+      const frequenceControl = this.lifestyleForm.get('frequenceAlcool');
+      if (checked) {
+        frequenceControl?.setValidators([Validators.required]);
+      } else {
+        frequenceControl?.clearValidators();
+        frequenceControl?.setValue('');
+      }
+      frequenceControl?.updateValueAndValidity();
+    });
+
+    // Habitudes: tabagisme -> fréquence obligatoire
+    this.lifestyleForm.get('tabagisme')?.valueChanges.subscribe(checked => {
+      const frequenceControl = this.lifestyleForm.get('frequenceTabac');
+      if (checked) {
+        frequenceControl?.setValidators([Validators.required]);
+      } else {
+        frequenceControl?.clearValidators();
+        frequenceControl?.setValue('');
+      }
+      frequenceControl?.updateValueAndValidity();
+    });
+
+    // Revalider le numéro de contact d'urgence quand le téléphone principal change
+    this.accountForm.get('telephone')?.valueChanges.subscribe(() => {
+      this.finalizationForm.get('numeroContact')?.updateValueAndValidity();
     });
   }
 
@@ -159,7 +270,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
       case 1: return this.accountForm;
       case 2: return this.identityForm;
       case 3: return this.healthForm;
-      case 4: return this.emergencyForm;
+      case 4: return this.lifestyleForm;
+      case 5: return this.finalizationForm;
       default: return this.accountForm;
     }
   }
@@ -173,6 +285,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   nextStep(): void {
+    // Marquer tous les champs du formulaire courant comme touched pour afficher les erreurs
+    this.currentForm.markAllAsTouched();
+    
     if (this.currentStep < this.totalSteps && this.isCurrentStepValid) {
       this.currentStep++;
       this.cdr.markForCheck();
@@ -232,6 +347,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
+    // Marquer tous les champs comme touched pour afficher les erreurs
+    this.currentForm.markAllAsTouched();
+    
     if (!this.isCurrentStepValid || this.isLoading) return;
 
     this.isLoading = true;
@@ -240,7 +358,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     const account = this.accountForm.value;
     const identity = this.identityForm.value;
     const health = this.healthForm.value;
-    const emergency = this.emergencyForm.value;
+    const lifestyle = this.lifestyleForm.value;
+    const finalization = this.finalizationForm.value;
 
     const request = {
       // Compte
@@ -258,6 +377,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
       adresse: identity.adresse,
       situationMatrimoniale: identity.situationMatrimoniale,
       profession: identity.profession,
+      nbEnfants: identity.nbEnfants,
+      ethnie: identity.ethnie,
       // Santé
       groupeSanguin: health.groupeSanguin,
       maladiesChroniques: health.maladiesChroniques,
@@ -267,10 +388,15 @@ export class RegisterComponent implements OnInit, OnDestroy {
       allergiesDetails: health.allergiesDetails,
       antecedentsFamiliaux: health.antecedentsFamiliaux,
       antecedentsFamiliauxDetails: health.antecedentsFamiliauxDetails,
-      // Urgence
-      personneContact: emergency.personneContact,
-      numeroContact: emergency.numeroContact,
-      declarationHonneurAcceptee: emergency.declarationAcceptee
+      // Habitudes de vie
+      consommationAlcool: lifestyle.consommationAlcool,
+      frequenceAlcool: lifestyle.frequenceAlcool,
+      tabagisme: lifestyle.tabagisme,
+      activitePhysique: lifestyle.activitePhysique,
+      // Urgence et déclaration
+      personneContact: finalization.personneContact,
+      numeroContact: finalization.numeroContact,
+      declarationHonneurAcceptee: finalization.declarationAcceptee
     };
 
     this.authService.register(request)
@@ -287,12 +413,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
             this.registrationSuccess = true;
             this.requiresEmailConfirmation = true;
             this.registeredEmail = response.email || account.email;
+            this.cdr.markForCheck();
           } else {
             this.router.navigate(['/patient']);
           }
         },
         error: (error: any) => {
           this.errorMessage = error.message || 'Erreur lors de l\'inscription';
+          this.cdr.markForCheck();
         }
       });
   }
@@ -316,6 +444,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (field?.hasError('minlength')) return `Minimum ${field.errors?.['minlength'].requiredLength} caractères`;
     if (field?.hasError('email')) return 'Email invalide';
     if (field?.hasError('pattern')) return 'Format invalide';
+    if (field?.hasError('sameAsMainContact')) return 'Le contact d\'urgence doit être différent de votre numéro principal';
     return '';
   }
 

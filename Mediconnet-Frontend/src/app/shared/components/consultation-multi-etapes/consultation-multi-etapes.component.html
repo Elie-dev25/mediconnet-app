@@ -18,13 +18,15 @@
          (click)="goToEtape(etape)">
       <div class="step-number">
         <span *ngIf="!isEtapeComplete(etape)">{{ i + 1 }}</span>
-        <lucide-icon *ngIf="isEtapeComplete(etape)" name="check" [size]="16"></lucide-icon>
+        <lucide-icon *ngIf="isEtapeComplete(etape)" name="check-circle-2" [size]="16"></lucide-icon>
       </div>
       <div class="step-label">
         <span *ngIf="etape === 'anamnese'">Anamnèse</span>
+        <span *ngIf="etape === 'examen_clinique'">Examen Clinique</span>
         <span *ngIf="etape === 'diagnostic'">Diagnostic</span>
-        <span *ngIf="etape === 'prescriptions'">Prescriptions</span>
-        <span *ngIf="etape === 'validation'">Validation</span>
+        <span *ngIf="etape === 'plan_traitement'">Traitement</span>
+        <span *ngIf="etape === 'conclusion'">Conclusion</span>
+        <span *ngIf="etape === 'suivi'">Suivi</span>
       </div>
     </div>
   </div>
@@ -91,37 +93,6 @@
         </button>
       </div>
       
-      <!-- Paramètres vitaux en premier -->
-      <div class="form-section vitaux-section">
-        <h4><lucide-icon name="activity" [size]="16"></lucide-icon> Paramètres vitaux</h4>
-        <div class="vitaux-grid">
-          <div class="form-group">
-            <label>Poids (kg)</label>
-            <input type="number" formControlName="poids" step="0.1" placeholder="Ex: 70">
-          </div>
-          <div class="form-group">
-            <label>Taille (cm)</label>
-            <input type="number" formControlName="taille" placeholder="Ex: 175">
-          </div>
-          <div class="form-group">
-            <label>Température (°C)</label>
-            <input type="number" formControlName="temperature" step="0.1" placeholder="Ex: 37.5">
-          </div>
-          <div class="form-group">
-            <label>Tension artérielle</label>
-            <input type="text" formControlName="tensionArterielle" placeholder="120/80">
-          </div>
-          <div class="form-group">
-            <label>Fréq. cardiaque (bpm)</label>
-            <input type="number" formControlName="frequenceCardiaque" placeholder="Ex: 72">
-          </div>
-          <div class="form-group">
-            <label>SpO2 (%)</label>
-            <input type="number" formControlName="saturationOxygene" placeholder="Ex: 98">
-          </div>
-        </div>
-      </div>
-
       <div class="form-section">
         <div class="field-header">
           <h4>Motif de consultation</h4>
@@ -136,7 +107,28 @@
         <textarea formControlName="motifConsultation" rows="3" placeholder="Décrivez le motif..."></textarea>
       </div>
 
-      <div class="form-section">
+      <!-- Réponses déjà fournies par le patient (lecture seule) -->
+      <div class="form-section" *ngIf="questionsDejaRepondues.length > 0">
+        <div class="section-header">
+          <h4>
+            <lucide-icon name="check-circle-2" [size]="16" class="icon-success"></lucide-icon>
+            Réponses du patient
+          </h4>
+          <span class="badge-filled">Questionnaire rempli</span>
+        </div>
+        <div class="reponses-patient-list">
+          <div class="reponse-patient-item" *ngFor="let qr of questionsDejaRepondues">
+            <div class="reponse-question">
+              <lucide-icon name="help-circle" [size]="14"></lucide-icon>
+              {{ qr.question }}
+            </div>
+            <div class="reponse-valeur">{{ qr.reponse }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire questions (seulement si pas encore rempli) -->
+      <div class="form-section" *ngIf="questionsDejaRepondues.length === 0">
         <div class="section-header">
           <h4>Questions prédéfinies</h4>
         </div>
@@ -189,7 +181,7 @@
                    placeholder="Saisissez votre question..." (keyup.enter)="addQuestionLibre()">
           </div>
           <button type="button" class="btn-confirm-add" (click)="addQuestionLibre()" [disabled]="!newQuestionText.trim()">
-            <lucide-icon name="check" [size]="16"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
             Ajouter
           </button>
         </div>
@@ -237,47 +229,7 @@
         <textarea formControlName="histoireMaladie" rows="4" placeholder="Décrivez l'évolution..."></textarea>
       </div>
 
-      <div class="form-section">
-        <div class="field-header">
-          <h4>Antécédents personnels</h4>
-          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
-                  [class.recording]="isVoiceActive('anamnese.antecedentsPersonnels')"
-                  (click)="toggleVoiceInput('anamnese.antecedentsPersonnels')"
-                  title="Dictée vocale">
-            <lucide-icon [name]="isVoiceActive('anamnese.antecedentsPersonnels') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.antecedentsPersonnels')"></span>
-          </button>
-        </div>
-        <textarea formControlName="antecedentsPersonnels" rows="3" placeholder="Maladies antérieures, chirurgies..."></textarea>
-      </div>
-
-      <div class="form-section">
-        <div class="field-header">
-          <h4>Antécédents familiaux</h4>
-          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
-                  [class.recording]="isVoiceActive('anamnese.antecedentsFamiliaux')"
-                  (click)="toggleVoiceInput('anamnese.antecedentsFamiliaux')"
-                  title="Dictée vocale">
-            <lucide-icon [name]="isVoiceActive('anamnese.antecedentsFamiliaux') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.antecedentsFamiliaux')"></span>
-          </button>
-        </div>
-        <textarea formControlName="antecedentsFamiliaux" rows="2" placeholder="Maladies héréditaires, antécédents familiaux..."></textarea>
-      </div>
-
-      <div class="form-section">
-        <div class="field-header">
-          <h4>Allergies connues</h4>
-          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
-                  [class.recording]="isVoiceActive('anamnese.allergiesConnues')"
-                  (click)="toggleVoiceInput('anamnese.allergiesConnues')"
-                  title="Dictée vocale">
-            <lucide-icon [name]="isVoiceActive('anamnese.allergiesConnues') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.allergiesConnues')"></span>
-          </button>
-        </div>
-        <textarea formControlName="allergiesConnues" rows="2" placeholder="Médicaments, aliments, autres..."></textarea>
-      </div>
+      <!-- Note: Les antécédents et allergies sont déjà dans le dossier patient -->
 
       <div class="form-section">
         <div class="field-header">
@@ -294,28 +246,350 @@
       </div>
     </div>
 
-    <!-- ÉTAPE 2: DIAGNOSTIC -->
+    <!-- ÉTAPE 2: EXAMEN CLINIQUE -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'examen_clinique'" [formGroup]="examenCliniqueForm">
+      <div class="etape-header">
+        <h3><lucide-icon name="activity" [size]="18"></lucide-icon> Examen Clinique</h3>
+      </div>
+
+      <!-- Indicateur si paramètres pris par infirmier -->
+      <div class="info-banner" *ngIf="parametresPrisParInfirmier">
+        <lucide-icon name="info" [size]="16"></lucide-icon>
+        <span>Constantes vitales prises par <strong>{{ infirmierNom }}</strong></span>
+      </div>
+
+      <!-- Constantes vitales -->
+      <div class="form-section vitaux-section">
+        <h4><lucide-icon name="heart-pulse" [size]="16"></lucide-icon> Constantes vitales</h4>
+        <div class="vitaux-grid">
+          <div class="form-group">
+            <label>Poids (kg)</label>
+            <input type="number" formControlName="poids" step="0.1" placeholder="Ex: 70" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Taille (cm)</label>
+            <input type="number" formControlName="taille" placeholder="Ex: 175" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Température (°C)</label>
+            <input type="number" formControlName="temperature" step="0.1" placeholder="Ex: 37.5" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Tension artérielle</label>
+            <input type="text" formControlName="tensionArterielle" placeholder="120/80" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Fréq. cardiaque (bpm)</label>
+            <input type="number" formControlName="frequenceCardiaque" placeholder="Ex: 72" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>SpO2 (%)</label>
+            <input type="number" formControlName="saturationOxygene" placeholder="Ex: 98" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Fréq. respiratoire</label>
+            <input type="number" formControlName="frequenceRespiratoire" placeholder="Ex: 16" [readonly]="parametresPrisParInfirmier">
+          </div>
+          <div class="form-group">
+            <label>Glycémie (g/L)</label>
+            <input type="number" formControlName="glycemie" step="0.01" placeholder="Ex: 1.0" [readonly]="parametresPrisParInfirmier">
+          </div>
+        </div>
+      </div>
+
+      <!-- Examen physique -->
+      <div class="form-section">
+        <h4><lucide-icon name="scan-line" [size]="16"></lucide-icon> Examen physique</h4>
+        
+        <div class="form-group">
+          <div class="field-header">
+            <label>Inspection</label>
+            <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                    [class.recording]="isVoiceActive('examenClinique.inspection')"
+                    (click)="toggleVoiceInput('examenClinique.inspection')"
+                    title="Dictée vocale">
+              <lucide-icon [name]="isVoiceActive('examenClinique.inspection') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+            </button>
+          </div>
+          <textarea formControlName="inspection" rows="2" placeholder="Aspect général, peau, muqueuses, coloration..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="field-header">
+            <label>Palpation</label>
+            <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                    [class.recording]="isVoiceActive('examenClinique.palpation')"
+                    (click)="toggleVoiceInput('examenClinique.palpation')"
+                    title="Dictée vocale">
+              <lucide-icon [name]="isVoiceActive('examenClinique.palpation') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+            </button>
+          </div>
+          <textarea formControlName="palpation" rows="2" placeholder="Abdomen, ganglions, masses..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="field-header">
+            <label>Auscultation</label>
+            <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                    [class.recording]="isVoiceActive('examenClinique.auscultation')"
+                    (click)="toggleVoiceInput('examenClinique.auscultation')"
+                    title="Dictée vocale">
+              <lucide-icon [name]="isVoiceActive('examenClinique.auscultation') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+            </button>
+          </div>
+          <textarea formControlName="auscultation" rows="2" placeholder="Cœur, poumons, abdomen..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="field-header">
+            <label>Percussion</label>
+            <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                    [class.recording]="isVoiceActive('examenClinique.percussion')"
+                    (click)="toggleVoiceInput('examenClinique.percussion')"
+                    title="Dictée vocale">
+              <lucide-icon [name]="isVoiceActive('examenClinique.percussion') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+            </button>
+          </div>
+          <textarea formControlName="percussion" rows="2" placeholder="Thorax, abdomen..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="field-header">
+            <label>Autres observations</label>
+            <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                    [class.recording]="isVoiceActive('examenClinique.autresObservations')"
+                    (click)="toggleVoiceInput('examenClinique.autresObservations')"
+                    title="Dictée vocale">
+              <lucide-icon [name]="isVoiceActive('examenClinique.autresObservations') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+            </button>
+          </div>
+          <textarea formControlName="autresObservations" rows="2" placeholder="Observations complémentaires..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 3: DIAGNOSTIC -->
     <div class="etape-content" *ngIf="etapeActuelle === 'diagnostic'" [formGroup]="diagnosticForm">
-      <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Diagnostic</h3>
+      <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Diagnostic / Orientation</h3>
       
-      <!-- Indicateur de dictée vocale global -->
-      <div class="voice-status" *ngIf="isRecording && etapeActuelle === 'diagnostic'">
-        <span class="recording-dot"></span>
-        <span>Dictée en cours...</span>
+      <!-- Récapitulatif compact en 2 colonnes -->
+      <div class="recap-container">
+        <div class="recap-columns">
+          <!-- Colonne 1: Informations patient -->
+          <div class="recap-column">
+            <div class="recap-block">
+              <div class="recap-block-header">
+                <lucide-icon name="user" [size]="14"></lucide-icon>
+                <span>Informations personnelles</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row">
+                  <span class="recap-label">Région</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.regionOrigine">
+                    {{ recapitulatifPatient?.regionOrigine || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Situation</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.situationMatrimoniale">
+                    {{ recapitulatifPatient?.situationMatrimoniale || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Profession</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.profession">
+                    {{ recapitulatifPatient?.profession || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Enfants</span>
+                  <span class="recap-value" [class.recap-empty]="recapitulatifPatient?.nbEnfants === null || recapitulatifPatient?.nbEnfants === undefined">
+                    {{ recapitulatifPatient?.nbEnfants !== null && recapitulatifPatient?.nbEnfants !== undefined ? recapitulatifPatient.nbEnfants : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Ethnie</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.ethnie">
+                    {{ recapitulatifPatient?.ethnie || 'Non renseigné' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="recap-block">
+              <div class="recap-block-header">
+                <lucide-icon name="heart-pulse" [size]="14"></lucide-icon>
+                <span>Informations médicales</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row">
+                  <span class="recap-label">Groupe sanguin</span>
+                  <span class="recap-value" [class.recap-badge]="recapitulatifPatient?.groupeSanguin" [class.recap-empty]="!recapitulatifPatient?.groupeSanguin">
+                    {{ recapitulatifPatient?.groupeSanguin || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Maladies chroniques</span>
+                  <span class="recap-value" [class.recap-warning]="recapitulatifPatient?.maladiesChroniques" [class.recap-empty]="!recapitulatifPatient?.maladiesChroniques">
+                    {{ recapitulatifPatient?.maladiesChroniques || 'Aucune' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Allergies</span>
+                  <span class="recap-value" [class.recap-danger]="recapitulatifPatient?.allergiesConnues" [class.recap-empty]="!recapitulatifPatient?.allergiesConnues">
+                    {{ recapitulatifPatient?.allergiesConnues ? (recapitulatifPatient?.allergiesDetails || 'Oui') : 'Aucune' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Antécédents familiaux</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.antecedentsFamiliaux">
+                    {{ recapitulatifPatient?.antecedentsFamiliaux ? (recapitulatifPatient?.antecedentsFamiliauxDetails || 'Oui') : 'Aucun' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Chirurgies</span>
+                  <span class="recap-value" [class.recap-empty]="!recapitulatifPatient?.operationsChirurgicales">
+                    {{ recapitulatifPatient?.operationsChirurgicales ? (recapitulatifPatient?.operationsDetails || 'Oui') : 'Aucune' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="recap-block">
+              <div class="recap-block-header">
+                <lucide-icon name="activity" [size]="14"></lucide-icon>
+                <span>Habitudes de vie</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row">
+                  <span class="recap-label">Tabagisme</span>
+                  <span class="recap-value" [class.recap-danger]="recapitulatifPatient?.tabagisme" [class.recap-success]="recapitulatifPatient?.tabagisme === false">
+                    {{ recapitulatifPatient?.tabagisme === true ? 'Oui' : (recapitulatifPatient?.tabagisme === false ? 'Non' : 'Non renseigné') }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Alcool</span>
+                  <span class="recap-value" [class.recap-warning]="recapitulatifPatient?.consommationAlcool" [class.recap-success]="recapitulatifPatient?.consommationAlcool === false">
+                    {{ recapitulatifPatient?.consommationAlcool === true ? (recapitulatifPatient?.frequenceAlcool || 'Oui') : (recapitulatifPatient?.consommationAlcool === false ? 'Non' : 'Non renseigné') }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Activité physique</span>
+                  <span class="recap-value" [class.recap-success]="recapitulatifPatient?.activitePhysique" [class.recap-empty]="recapitulatifPatient?.activitePhysique === null || recapitulatifPatient?.activitePhysique === undefined">
+                    {{ recapitulatifPatient?.activitePhysique === true ? 'Oui' : (recapitulatifPatient?.activitePhysique === false ? 'Non' : 'Non renseigné') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colonne 2: Examen clinique -->
+          <div class="recap-column">
+            <div class="recap-block">
+              <div class="recap-block-header">
+                <lucide-icon name="thermometer" [size]="14"></lucide-icon>
+                <span>Constantes vitales</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row">
+                  <span class="recap-label">Poids</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('poids')?.value">
+                    {{ examenCliniqueForm.get('poids')?.value ? examenCliniqueForm.get('poids')?.value + ' kg' : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Taille</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('taille')?.value">
+                    {{ examenCliniqueForm.get('taille')?.value ? examenCliniqueForm.get('taille')?.value + ' cm' : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Température</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('temperature')?.value">
+                    {{ examenCliniqueForm.get('temperature')?.value ? examenCliniqueForm.get('temperature')?.value + ' °C' : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Tension artérielle</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('tensionArterielle')?.value">
+                    {{ examenCliniqueForm.get('tensionArterielle')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Fréq. cardiaque</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('frequenceCardiaque')?.value">
+                    {{ examenCliniqueForm.get('frequenceCardiaque')?.value ? examenCliniqueForm.get('frequenceCardiaque')?.value + ' bpm' : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">SpO2</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('saturationOxygene')?.value">
+                    {{ examenCliniqueForm.get('saturationOxygene')?.value ? examenCliniqueForm.get('saturationOxygene')?.value + ' %' : 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Glycémie</span>
+                  <span class="recap-value" [class.recap-empty]="!examenCliniqueForm.get('glycemie')?.value">
+                    {{ examenCliniqueForm.get('glycemie')?.value ? examenCliniqueForm.get('glycemie')?.value + ' g/L' : 'Non renseigné' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="recap-block">
+              <div class="recap-block-header">
+                <lucide-icon name="scan-line" [size]="14"></lucide-icon>
+                <span>Examen physique</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row">
+                  <span class="recap-label">Inspection</span>
+                  <span class="recap-value recap-text" [class.recap-empty]="!examenCliniqueForm.get('inspection')?.value">
+                    {{ examenCliniqueForm.get('inspection')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Palpation</span>
+                  <span class="recap-value recap-text" [class.recap-empty]="!examenCliniqueForm.get('palpation')?.value">
+                    {{ examenCliniqueForm.get('palpation')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Auscultation</span>
+                  <span class="recap-value recap-text" [class.recap-empty]="!examenCliniqueForm.get('auscultation')?.value">
+                    {{ examenCliniqueForm.get('auscultation')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Percussion</span>
+                  <span class="recap-value recap-text" [class.recap-empty]="!examenCliniqueForm.get('percussion')?.value">
+                    {{ examenCliniqueForm.get('percussion')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+                <div class="recap-row">
+                  <span class="recap-label">Observations</span>
+                  <span class="recap-value recap-text" [class.recap-empty]="!examenCliniqueForm.get('autresObservations')?.value">
+                    {{ examenCliniqueForm.get('autresObservations')?.value || 'Non renseigné' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <div class="form-section">
         <div class="field-header">
-          <h4>Examen clinique</h4>
+          <h4>Hypothèses diagnostiques</h4>
           <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
-                  [class.recording]="isVoiceActive('diagnostic.examenClinique')"
-                  (click)="toggleVoiceInput('diagnostic.examenClinique')"
+                  [class.recording]="isVoiceActive('diagnostic.hypothesesDiagnostiques')"
+                  (click)="toggleVoiceInput('diagnostic.hypothesesDiagnostiques')"
                   title="Dictée vocale">
-            <lucide-icon [name]="isVoiceActive('diagnostic.examenClinique') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.examenClinique')"></span>
+            <lucide-icon [name]="isVoiceActive('diagnostic.hypothesesDiagnostiques') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="examenClinique" rows="4" placeholder="Observations cliniques..."></textarea>
+        <textarea formControlName="hypothesesDiagnostiques" rows="3" placeholder="Hypothèses à explorer..."></textarea>
       </div>
 
       <div class="form-section">
@@ -326,7 +600,6 @@
                   (click)="toggleVoiceInput('diagnostic.diagnosticPrincipal')"
                   title="Dictée vocale">
             <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticPrincipal') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.diagnosticPrincipal')"></span>
           </button>
         </div>
         <textarea formControlName="diagnosticPrincipal" rows="3" placeholder="Diagnostic établi..."></textarea>
@@ -340,7 +613,6 @@
                   (click)="toggleVoiceInput('diagnostic.diagnosticsSecondaires')"
                   title="Dictée vocale">
             <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticsSecondaires') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.diagnosticsSecondaires')"></span>
           </button>
         </div>
         <textarea formControlName="diagnosticsSecondaires" rows="2" placeholder="Diagnostics associés..."></textarea>
@@ -354,18 +626,73 @@
                   (click)="toggleVoiceInput('diagnostic.notesCliniques')"
                   title="Dictée vocale">
             <lucide-icon [name]="isVoiceActive('diagnostic.notesCliniques') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
-            <span class="pulse-ring" *ngIf="isVoiceActive('diagnostic.notesCliniques')"></span>
           </button>
         </div>
         <textarea formControlName="notesCliniques" rows="3" placeholder="Remarques complémentaires..."></textarea>
       </div>
     </div>
 
-    <!-- ÉTAPE 3: PRESCRIPTIONS -->
-    <div class="etape-content" *ngIf="etapeActuelle === 'prescriptions'" [formGroup]="prescriptionsForm">
-      <h3><lucide-icon name="file-text" [size]="18"></lucide-icon> Prescriptions</h3>
-      
-      <!-- Médicaments -->
+    <!-- ÉTAPE 4: PLAN DE TRAITEMENT -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'plan_traitement'" [formGroup]="planTraitementForm">
+      <h3><lucide-icon name="clipboard-list" [size]="18"></lucide-icon> Plan de Traitement</h3>
+
+      <!-- Récapitulatif du diagnostic établi -->
+      <div class="diagnostic-recap-container">
+        <div class="diagnostic-recap-header">
+          <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+          <span>Diagnostic établi</span>
+        </div>
+        <div class="diagnostic-recap-content">
+          <div class="diagnostic-recap-grid">
+            <div class="diagnostic-recap-item" *ngIf="diagnosticForm.get('hypothesesDiagnostiques')?.value">
+              <span class="diagnostic-recap-label">Hypothèses diagnostiques</span>
+              <span class="diagnostic-recap-value">{{ diagnosticForm.get('hypothesesDiagnostiques')?.value }}</span>
+            </div>
+            <div class="diagnostic-recap-item diagnostic-recap-principal">
+              <span class="diagnostic-recap-label">Diagnostic principal</span>
+              <span class="diagnostic-recap-value" [class.recap-empty]="!diagnosticForm.get('diagnosticPrincipal')?.value">
+                {{ diagnosticForm.get('diagnosticPrincipal')?.value || 'Non renseigné' }}
+              </span>
+            </div>
+            <div class="diagnostic-recap-item" *ngIf="diagnosticForm.get('diagnosticsSecondaires')?.value">
+              <span class="diagnostic-recap-label">Diagnostics secondaires</span>
+              <span class="diagnostic-recap-value">{{ diagnosticForm.get('diagnosticsSecondaires')?.value }}</span>
+            </div>
+            <div class="diagnostic-recap-item" *ngIf="diagnosticForm.get('notesCliniques')?.value">
+              <span class="diagnostic-recap-label">Notes cliniques</span>
+              <span class="diagnostic-recap-value">{{ diagnosticForm.get('notesCliniques')?.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Explication du diagnostic au patient</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('planTraitement.explicationDiagnostic')"
+                  (click)="toggleVoiceInput('planTraitement.explicationDiagnostic')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('planTraitement.explicationDiagnostic') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
+        </div>
+        <textarea formControlName="explicationDiagnostic" rows="3" placeholder="Explication donnée au patient..."></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Options de traitement</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('planTraitement.optionsTraitement')"
+                  (click)="toggleVoiceInput('planTraitement.optionsTraitement')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('planTraitement.optionsTraitement') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
+        </div>
+        <textarea formControlName="optionsTraitement" rows="3" placeholder="Options thérapeutiques proposées..."></textarea>
+      </div>
+
+      <!-- Ordonnance médicaments -->
       <div class="form-section">
         <div class="section-header">
           <h4><lucide-icon name="pill" [size]="16"></lucide-icon> Ordonnance</h4>
@@ -376,255 +703,440 @@
         </div>
         
         <div formArrayName="medicaments">
-          <div class="prescription-item" *ngFor="let med of medicamentsArray.controls; let i = index" [formGroupName]="i">
-            <div class="prescription-grid">
-              <div class="autocomplete-container">
-                <input type="text" formControlName="nomMedicament" placeholder="Nom du médicament *"
-                       (input)="onMedicamentSearch(i, $event)"
-                       (blur)="hideMedicamentSuggestions()"
-                       autocomplete="off">
-                <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
-                  <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
-                       (mousedown)="selectMedicament(i, suggestion)">
-                    <span class="med-name">{{ suggestion.nom }}</span>
-                    <span class="med-dosage" *ngIf="suggestion.dosage">{{ suggestion.dosage }}</span>
-                    <span class="med-stock" *ngIf="suggestion.stock !== undefined">Stock: {{ suggestion.stock }}</span>
+          <div class="medicament-card" *ngFor="let med of medicamentsArray.controls; let i = index" [formGroupName]="i">
+            <div class="card-header">
+              <span class="medicament-number">Médicament {{ i + 1 }}</span>
+              <button type="button" class="btn-remove-card" (click)="removeMedicament(i)" title="Supprimer">
+                <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+              </button>
+            </div>
+            <div class="card-body">
+              <!-- Ligne 1: Nom + Dosage -->
+              <div class="form-row">
+                <div class="form-group flex-2 autocomplete-container">
+                  <label>Médicament *</label>
+                  <input type="text" formControlName="nomMedicament" 
+                         placeholder="Rechercher un médicament..."
+                         (input)="onMedicamentSearch(i, $event)"
+                         (blur)="hideMedicamentSuggestions()"
+                         autocomplete="off">
+                  <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
+                    <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
+                         (mousedown)="selectMedicament(i, suggestion)">
+                      <span class="med-name">{{ suggestion.nom }}</span>
+                      <span class="med-dosage" *ngIf="suggestion.dosage">{{ suggestion.dosage }}</span>
+                      <span class="med-stock" *ngIf="suggestion.stock !== undefined">Stock: {{ suggestion.stock }}</span>
+                    </div>
                   </div>
                 </div>
+                <div class="form-group flex-1">
+                  <label>Dosage</label>
+                  <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g...">
+                </div>
               </div>
-              <input type="text" formControlName="dosage" placeholder="Dosage">
-              <input type="text" formControlName="frequence" placeholder="Fréquence">
-              <input type="text" formControlName="duree" placeholder="Durée">
+
+              <!-- Ligne 2: Posologie + Forme pharmaceutique -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Posologie</label>
+                  <select formControlName="posologie">
+                    <option value="">-- Sélectionner --</option>
+                    <option *ngFor="let p of posologiesOptions" [value]="p">{{ p }}</option>
+                  </select>
+                </div>
+                <div class="form-group flex-1">
+                  <label>Forme pharmaceutique</label>
+                  <select formControlName="formePharmaceutique">
+                    <option value="">-- Sélectionner --</option>
+                    <option *ngFor="let f of formesPharmaceutiques" [value]="f">{{ f }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Ligne 3: Voie d'administration + Durée + Quantité -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Voie d'administration</label>
+                  <select formControlName="voieAdministration">
+                    <option value="">-- Sélectionner --</option>
+                    <option *ngFor="let v of voiesAdministration" [value]="v">{{ v }}</option>
+                  </select>
+                </div>
+                <div class="form-group flex-1">
+                  <label>Durée du traitement</label>
+                  <input type="text" formControlName="duree" placeholder="Ex: 7 jours, 1 mois...">
+                </div>
+                <div class="form-group flex-half">
+                  <label>Quantité</label>
+                  <input type="number" formControlName="quantite" placeholder="Qté" min="1">
+                </div>
+              </div>
+
+              <!-- Ligne 4: Instructions -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Instructions particulières</label>
+                  <textarea formControlName="instructions" rows="2" 
+                            placeholder="Précautions, interactions, conseils..."></textarea>
+                </div>
+              </div>
             </div>
-            <input type="text" formControlName="instructions" placeholder="Instructions particulières">
-            <button type="button" class="btn-remove" (click)="removeMedicament(i)">
-              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
-            </button>
           </div>
         </div>
-        <p class="empty-message" *ngIf="medicamentsArray.length === 0">Aucun médicament prescrit</p>
+        <p class="empty-list" *ngIf="medicamentsArray.length === 0">Aucun médicament prescrit</p>
       </div>
 
-      <!-- Examens -->
+      <!-- Examens prescrits - Utilisation du composant réutilisable -->
       <div class="form-section">
-        <div class="section-header">
-          <h4><lucide-icon name="test-tube" [size]="16"></lucide-icon> Examens</h4>
-          <button type="button" class="btn-add" (click)="addExamen()">
-            <lucide-icon name="plus" [size]="14"></lucide-icon>
-            Ajouter examen
-          </button>
-        </div>
-        
-        <div formArrayName="examens">
-          <div class="prescription-item" *ngFor="let ex of examensArray.controls; let i = index" [formGroupName]="i">
-            <div class="prescription-grid">
-              <select formControlName="typeExamen">
-                <option value="">Type *</option>
-                <option value="biologie">Biologie</option>
-                <option value="imagerie">Imagerie</option>
-                <option value="cardiologie">Cardiologie</option>
-                <option value="autre">Autre</option>
-              </select>
-              <input type="text" formControlName="nomExamen" placeholder="Nom de l'examen *">
-              <label class="checkbox-label">
-                <input type="checkbox" formControlName="urgence"> Urgent
-              </label>
-            </div>
-            <input type="text" formControlName="description" placeholder="Description">
-            <button type="button" class="btn-remove" (click)="removeExamen(i)">
-              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
-            </button>
-          </div>
-        </div>
-        <p class="empty-message" *ngIf="examensArray.length === 0">Aucun examen prescrit</p>
+        <app-prescription-examens
+          [examens]="examensPrescriptions"
+          (examensChange)="onExamensChange($event)">
+        </app-prescription-examens>
       </div>
 
-      <!-- Recommandations -->
-      <div class="form-section">
+      <!-- Orientation spécialiste -->
+      <div class="form-section orientation-section">
         <div class="section-header">
-          <h4><lucide-icon name="user-plus" [size]="16"></lucide-icon> Recommandations / Orientations</h4>
-          <button type="button" class="btn-add" (click)="addRecommandation()">
-            <lucide-icon name="plus" [size]="14"></lucide-icon>
-            Ajouter
-          </button>
-        </div>
-        
-        <div formArrayName="recommandations">
-          <div class="prescription-item" *ngFor="let rec of recommandationsArray.controls; let i = index" [formGroupName]="i">
-            <div class="prescription-grid">
-              <select formControlName="type">
-                <option value="conseil">Conseil</option>
-                <option value="orientation">Orientation spécialiste</option>
-                <option value="suivi">Suivi</option>
-              </select>
-              <input type="text" formControlName="specialiteOrientee" placeholder="Spécialité (si orientation)">
-              <label class="checkbox-label">
-                <input type="checkbox" formControlName="urgence"> Urgent
-              </label>
-            </div>
-            <textarea formControlName="description" rows="2" placeholder="Description / Motif"></textarea>
-            <button type="button" class="btn-remove" (click)="removeRecommandation(i)">
-              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
-            </button>
-          </div>
-        </div>
-        <p class="empty-message" *ngIf="recommandationsArray.length === 0">Aucune recommandation</p>
-      </div>
-
-      <!-- Hospitalisation -->
-      <div class="form-section hospitalisation-section">
-        <div class="section-header">
-          <h4><lucide-icon name="bed" [size]="16"></lucide-icon> Hospitalisation</h4>
-          <button type="button" class="btn-add" (click)="toggleHospitalisationForm()" 
-                  *ngIf="!hospitalisationDemandee && !showHospitalisationForm">
-            <lucide-icon name="plus" [size]="14"></lucide-icon>
-            Demander une hospitalisation
+          <h4><lucide-icon name="user-plus" [size]="16"></lucide-icon> Orientation vers spécialiste</h4>
+          <button type="button" class="btn-add-orientation" (click)="toggleOrientationForm()">
+            <lucide-icon [name]="showOrientationForm ? 'x' : 'plus'" [size]="16"></lucide-icon>
+            {{ showOrientationForm ? 'Annuler' : 'Ajouter une orientation' }}
           </button>
         </div>
 
-        <!-- Message si hospitalisation déjà demandée -->
-        <div class="hospitalisation-success" *ngIf="hospitalisationDemandee">
-          <lucide-icon name="check-circle" [size]="20"></lucide-icon>
-          <span>Demande d'hospitalisation enregistrée</span>
-        </div>
-
-        <!-- Formulaire d'hospitalisation -->
-        <div class="hospitalisation-form" *ngIf="showHospitalisationForm">
-          <div class="form-group">
-            <label>Motif d'hospitalisation *</label>
-            <textarea [(ngModel)]="hospitalisationMotif" [ngModelOptions]="{standalone: true}" 
-                      rows="3" placeholder="Décrivez le motif de l'hospitalisation..."></textarea>
-          </div>
-
+        <!-- Formulaire d'ajout d'orientation -->
+        <div class="orientation-form" *ngIf="showOrientationForm" [formGroup]="orientationForm">
           <div class="form-row">
             <div class="form-group">
-              <label>Niveau d'urgence</label>
-              <select [(ngModel)]="hospitalisationUrgence" [ngModelOptions]="{standalone: true}">
-                <option value="normale">Normale</option>
-                <option value="moderee">Modérée</option>
-                <option value="urgente">Urgente</option>
-                <option value="critique">Critique</option>
+              <label>Type de sélection</label>
+              <select [(ngModel)]="orientationMode" [ngModelOptions]="{standalone: true}" (change)="onOrientationModeChange()">
+                <option value="liste">Choisir dans la liste</option>
+                <option value="manuel">Saisie manuelle</option>
               </select>
             </div>
           </div>
 
-          <!-- Sélection Chambre et Lit -->
-          <div class="chambres-lits-section" *ngIf="!isLoadingLits">
-            <div class="form-row" *ngIf="chambresDisponibles.length > 0">
-              <div class="form-group">
-                <label>Chambre (optionnel)</label>
-                <select [(ngModel)]="selectedChambreId" [ngModelOptions]="{standalone: true}" 
-                        (change)="onChambreChange()">
-                  <option [ngValue]="null">-- Toutes les chambres --</option>
-                  <option *ngFor="let chambre of chambresDisponibles" [ngValue]="chambre.idChambre">
-                    Chambre {{ chambre.numero }} ({{ chambre.litsDisponibles }} lit(s) libre(s))
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group" *ngIf="litsDisponibles.length > 0">
-                <label>Lit (optionnel)</label>
-                <select [(ngModel)]="selectedLitId" [ngModelOptions]="{standalone: true}">
-                  <option [ngValue]="null">-- Attribution automatique --</option>
-                  <option *ngFor="let lit of litsDisponibles" [ngValue]="lit.idLit">
-                    {{ selectedChambreId ? 'Lit ' + lit.numero : 'Ch. ' + lit.numeroChambre + ' - Lit ' + lit.numero }}
-                  </option>
-                </select>
-              </div>
+          <!-- Mode liste : sélection depuis la BD -->
+          <div class="form-row" *ngIf="orientationMode === 'liste'">
+            <div class="form-group">
+              <label>Spécialité *</label>
+              <select formControlName="idSpecialite" (change)="onSpecialiteChange($event)">
+                <option [ngValue]="null">-- Sélectionner une spécialité --</option>
+                <option *ngFor="let spec of specialites" [ngValue]="spec.idSpecialite">
+                  {{ spec.nomSpecialite }}
+                </option>
+              </select>
             </div>
-
-            <!-- Résumé des chambres disponibles -->
-            <div class="chambres-resume" *ngIf="chambresDisponibles.length > 0">
-              <lucide-icon name="info" [size]="16"></lucide-icon>
-              <span>{{ chambresDisponibles.length }} chambre(s) disponible(s) avec {{ litsDisponibles.length }} lit(s) libre(s)</span>
+            <div class="form-group">
+              <label>Médecin (optionnel)</label>
+              <select formControlName="idMedecinOriente">
+                <option [ngValue]="null">-- Tout médecin disponible --</option>
+                <option *ngFor="let med of medecinsSpecialite" [ngValue]="med.idUser">
+                  Dr. {{ med.prenom }} {{ med.nom }}
+                </option>
+              </select>
             </div>
+          </div>
 
-            <!-- Message si aucun lit -->
-            <div class="lits-info warning" *ngIf="chambresDisponibles.length === 0 && litsDisponibles.length === 0">
-              <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
-              Aucun lit disponible actuellement. La demande sera mise en attente.
+          <!-- Mode manuel : saisie libre -->
+          <div class="form-row" *ngIf="orientationMode === 'manuel'">
+            <div class="form-group">
+              <label>Spécialité (saisie libre) *</label>
+              <input type="text" formControlName="specialiteManuelle" placeholder="Ex: Cardiologie, Neurologie...">
+            </div>
+            <div class="form-group">
+              <label>Nom du médecin (optionnel)</label>
+              <input type="text" formControlName="medecinManuel" placeholder="Dr. Nom Prénom...">
             </div>
           </div>
 
           <div class="form-group">
-            <label>Notes complémentaires</label>
-            <textarea [(ngModel)]="hospitalisationNotes" [ngModelOptions]="{standalone: true}" 
-                      rows="2" placeholder="Instructions particulières..."></textarea>
+            <label>Motif de l'orientation *</label>
+            <textarea formControlName="motif" rows="2" placeholder="Raison de l'orientation vers ce spécialiste..."></textarea>
           </div>
-
-          <div class="lits-info" *ngIf="isLoadingLits">
-            <lucide-icon name="loader-2" [size]="16" class="spinner"></lucide-icon>
-            Chargement des chambres disponibles...
+          <div class="form-row">
+            <div class="form-group">
+              <label>Notes complémentaires</label>
+              <input type="text" formControlName="notes" placeholder="Informations supplémentaires...">
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" formControlName="urgence">
+                <span class="checkmark"></span>
+                Orientation urgente
+              </label>
+            </div>
           </div>
-
-          <div class="form-actions hospitalisation-actions">
-            <button type="button" class="btn-cancel" (click)="annulerHospitalisation()">
-              <lucide-icon name="x" [size]="16"></lucide-icon>
-              Annuler
-            </button>
-            <button type="button" class="btn-confirm" (click)="demanderHospitalisation()" 
-                    [disabled]="!hospitalisationMotif.trim() || isSaving">
-              <lucide-icon name="check" [size]="16"></lucide-icon>
-              {{ isSaving ? 'En cours...' : 'Confirmer la demande' }}
+          <div class="form-actions">
+            <button type="button" class="btn-confirm-orientation" (click)="addOrientation()" 
+                    [disabled]="!isOrientationFormValid()">
+              <lucide-icon name="check" [size]="16"></lucide-icon> Confirmer l'orientation
             </button>
           </div>
         </div>
 
-        <p class="empty-message" *ngIf="!showHospitalisationForm && !hospitalisationDemandee">
-          Aucune hospitalisation demandée
-        </p>
+        <!-- Liste des orientations -->
+        <div class="orientations-list" *ngIf="orientations.length > 0">
+          <div class="orientation-card" *ngFor="let orientation of orientations" 
+               [class.urgente]="orientation.urgence">
+            <div class="orientation-header">
+              <div class="orientation-specialite">
+                <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+                <strong>{{ orientation.nomSpecialite }}</strong>
+                <span class="badge" [class.urgente]="orientation.urgence" [class.statut]="!orientation.urgence">
+                  {{ orientation.urgence ? 'Urgent' : getStatutLabel(orientation.statut) }}
+                </span>
+              </div>
+              <button type="button" class="btn-remove" (click)="removeOrientation(orientation.idOrientation!)" 
+                      title="Supprimer">
+                <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+              </button>
+            </div>
+            <div class="orientation-body">
+              <p class="orientation-motif">{{ orientation.motif }}</p>
+              <div class="orientation-details">
+                <span *ngIf="orientation.nomMedecinOriente">
+                  <lucide-icon name="user" [size]="12"></lucide-icon> {{ orientation.nomMedecinOriente }}
+                </span>
+                <span>
+                  <lucide-icon name="calendar" [size]="12"></lucide-icon> {{ orientation.dateOrientation | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+              <p class="orientation-notes" *ngIf="orientation.notes">{{ orientation.notes }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-orientations" *ngIf="orientations.length === 0 && !showOrientationForm">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          <span>Aucune orientation vers un spécialiste pour cette consultation</span>
+        </div>
       </div>
     </div>
 
-    <!-- ÉTAPE 4: VALIDATION -->
-    <div class="etape-content" *ngIf="etapeActuelle === 'validation'">
-      <h3><lucide-icon name="check-circle" [size]="18"></lucide-icon> Validation</h3>
-      
-      <div class="recap-section">
-        <div class="recap-card">
-          <h4>Anamnèse</h4>
-          <p><strong>Motif:</strong> {{ anamneseForm.get('motifConsultation')?.value || '-' }}</p>
-          <p><strong>Histoire:</strong> {{ anamneseForm.get('histoireMaladie')?.value || '-' }}</p>
-        </div>
+    <!-- ÉTAPE 5: CONCLUSION -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'conclusion'" [formGroup]="conclusionForm">
+      <h3><lucide-icon name="check-circle" [size]="18"></lucide-icon> Conclusion</h3>
 
-        <div class="recap-card">
-          <h4>Diagnostic</h4>
-          <p><strong>Principal:</strong> {{ diagnosticForm.get('diagnosticPrincipal')?.value || '-' }}</p>
-          <p *ngIf="diagnosticForm.get('diagnosticsSecondaires')?.value">
-            <strong>Secondaires:</strong> {{ diagnosticForm.get('diagnosticsSecondaires')?.value }}
-          </p>
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Résumé de la consultation</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('conclusion.resumeConsultation')"
+                  (click)="toggleVoiceInput('conclusion.resumeConsultation')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('conclusion.resumeConsultation') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
         </div>
+        <textarea formControlName="resumeConsultation" rows="4" placeholder="Synthèse de la consultation..."></textarea>
+      </div>
 
-        <div class="recap-card" *ngIf="medicamentsArray.length > 0">
-          <h4>Ordonnance ({{ medicamentsArray.length }} médicament(s))</h4>
-          <ul>
-            <li *ngFor="let med of medicamentsArray.controls">
-              {{ med.get('nomMedicament')?.value }} - {{ med.get('dosage')?.value }} {{ med.get('frequence')?.value }}
-            </li>
-          </ul>
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Questions du patient</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('conclusion.questionsPatient')"
+                  (click)="toggleVoiceInput('conclusion.questionsPatient')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('conclusion.questionsPatient') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
         </div>
+        <textarea formControlName="questionsPatient" rows="3" placeholder="Questions posées par le patient..."></textarea>
+      </div>
 
-        <div class="recap-card" *ngIf="examensArray.length > 0">
-          <h4>Examens ({{ examensArray.length }})</h4>
-          <ul>
-            <li *ngFor="let ex of examensArray.controls">
-              {{ ex.get('nomExamen')?.value }} ({{ ex.get('typeExamen')?.value }})
-              <span class="urgent-badge" *ngIf="ex.get('urgence')?.value">Urgent</span>
-            </li>
-          </ul>
+      <div class="form-section">
+        <div class="field-header">
+          <h4>Consignes au patient</h4>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('conclusion.consignesPatient')"
+                  (click)="toggleVoiceInput('conclusion.consignesPatient')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('conclusion.consignesPatient') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
         </div>
+        <textarea formControlName="consignesPatient" rows="3" placeholder="Instructions données au patient..."></textarea>
+      </div>
 
-        <div class="recap-card" *ngIf="recommandationsArray.length > 0">
+      <div class="form-section">
+        <div class="field-header">
           <h4>Recommandations</h4>
-          <ul>
-            <li *ngFor="let rec of recommandationsArray.controls">
-              {{ rec.get('type')?.value }}: {{ rec.get('description')?.value }}
-            </li>
-          </ul>
+          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                  [class.recording]="isVoiceActive('conclusion.recommandations')"
+                  (click)="toggleVoiceInput('conclusion.recommandations')"
+                  title="Dictée vocale">
+            <lucide-icon [name]="isVoiceActive('conclusion.recommandations') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          </button>
+        </div>
+        <textarea formControlName="recommandations" rows="3" placeholder="Recommandations générales..."></textarea>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 6: SUIVI - CHOIX OBLIGATOIRE -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'suivi'">
+      <h3><lucide-icon name="calendar-check" [size]="18"></lucide-icon> Suivi / Prochain rendez-vous</h3>
+      <p class="etape-description">Choisissez une action obligatoire pour terminer la consultation.</p>
+
+      <!-- Choix obligatoire -->
+      <div class="suivi-choix-container">
+        <div class="suivi-choix-cards">
+          <!-- Option 1: Programmer un RDV -->
+          <div class="suivi-choix-card" 
+               [class.selected]="suiviChoix === 'rdv'"
+               [class.completed]="rdvSuiviCree"
+               (click)="selectSuiviChoix('rdv')">
+            <div class="choix-icon rdv">
+              <lucide-icon name="calendar-plus" [size]="28"></lucide-icon>
+            </div>
+            <div class="choix-content">
+              <h4>Programmer un rendez-vous</h4>
+              <p>Planifier une consultation de suivi pour ce patient</p>
+            </div>
+            <div class="choix-check" *ngIf="rdvSuiviCree">
+              <lucide-icon name="check-circle-2" [size]="24"></lucide-icon>
+            </div>
+          </div>
+
+          <!-- Option 2: Clôturer le dossier -->
+          <div class="suivi-choix-card" 
+               [class.selected]="suiviChoix === 'cloture'"
+               [class.completed]="clotureConfirmee"
+               (click)="selectSuiviChoix('cloture')">
+            <div class="choix-icon cloture">
+              <lucide-icon name="folder-check" [size]="28"></lucide-icon>
+            </div>
+            <div class="choix-content">
+              <h4>Clôturer le dossier</h4>
+              <p>Fin du suivi - La prochaine consultation sera une première consultation</p>
+            </div>
+            <div class="choix-check" *ngIf="clotureConfirmee">
+              <lucide-icon name="check-circle-2" [size]="24"></lucide-icon>
+            </div>
+          </div>
+
+          <!-- Option 3: Hospitalisation -->
+          <div class="suivi-choix-card" 
+               [class.completed]="hospitalisationDemandee"
+               (click)="openHospitalisationPanel()">
+            <div class="choix-icon hospitalisation">
+              <lucide-icon name="bed" [size]="28"></lucide-icon>
+            </div>
+            <div class="choix-content">
+              <h4>Hospitalisation</h4>
+              <p>Ordonner une hospitalisation pour ce patient</p>
+            </div>
+            <div class="choix-check" *ngIf="hospitalisationDemandee">
+              <lucide-icon name="check-circle-2" [size]="24"></lucide-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire RDV de suivi -->
+      <div class="suivi-form-section" *ngIf="suiviChoix === 'rdv' && !rdvSuiviCree">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date du rendez-vous *</label>
+            <input type="date" [(ngModel)]="rdvSuiviDate" [ngModelOptions]="{standalone: true}"
+                   [min]="minDate" (change)="onDateChange()" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Motif (optionnel)</label>
+            <input type="text" [(ngModel)]="rdvSuiviMotif" [ngModelOptions]="{standalone: true}"
+                   placeholder="Consultation de suivi" class="form-control">
+          </div>
+        </div>
+
+        <!-- Chargement des créneaux -->
+        <div class="creneaux-loading" *ngIf="isLoadingCreneaux">
+          <lucide-icon name="loader-2" [size]="20" class="spinner"></lucide-icon>
+          <span>Chargement des créneaux...</span>
+        </div>
+
+        <!-- Légende des créneaux -->
+        <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length > 0">
+          <span class="legende-item disponible"><span class="dot"></span> Disponible</span>
+          <span class="legende-item occupe"><span class="dot"></span> Occupé</span>
+          <span class="legende-item passe"><span class="dot"></span> Passé</span>
+        </div>
+
+        <!-- Grille des créneaux avec statut -->
+        <div class="creneaux-grid-statut" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length > 0">
+          <button type="button" 
+                  *ngFor="let creneau of creneauxAvecStatut"
+                  class="creneau-btn-statut"
+                  [ngClass]="getCreneauClass(creneau)"
+                  [class.selected]="isCreneauSelected(creneau)"
+                  [disabled]="creneau.statut !== 'disponible'"
+                  (click)="selectCreneauAvecStatut(creneau)">
+            {{ creneau.heureDebut }}
+          </button>
+        </div>
+
+        <!-- Aucun créneau -->
+        <div class="no-creneaux" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length === 0 && rdvSuiviDate">
+          <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+          <p>Aucun créneau configuré pour cette date. Veuillez sélectionner une autre date.</p>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group" *ngIf="selectedCreneau">
+          <label>Notes (optionnel)</label>
+          <textarea [(ngModel)]="rdvSuiviNotes" [ngModelOptions]="{standalone: true}" rows="2" 
+                    placeholder="Notes pour le prochain rendez-vous..." class="form-control"></textarea>
+        </div>
+
+        <!-- Bouton de confirmation RDV -->
+        <div class="suivi-actions" *ngIf="selectedCreneau">
+          <button type="button" class="btn-confirm-rdv" (click)="creerRdvSuivi()" [disabled]="isSaving">
+            <lucide-icon name="calendar-check" [size]="18"></lucide-icon>
+            {{ isSaving ? 'Création...' : 'Confirmer le rendez-vous' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- RDV créé avec succès -->
+      <div class="suivi-success" *ngIf="rdvSuiviCree && rdvSuiviInfo">
+        <lucide-icon name="check-circle-2" [size]="32"></lucide-icon>
+        <div class="success-content">
+          <h4>Rendez-vous programmé</h4>
+          <p>{{ formatCreneauDate(rdvSuiviInfo.dateHeure) }} à {{ formatCreneauTime(rdvSuiviInfo.dateHeure) }}</p>
+        </div>
+      </div>
+
+      <!-- Formulaire clôture de dossier -->
+      <div class="suivi-form-section cloture-section" *ngIf="suiviChoix === 'cloture' && !clotureConfirmee">
+        <div class="cloture-warning">
+          <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
+          <div class="warning-content">
+            <h4>Attention</h4>
+            <p>En clôturant le dossier :</p>
+            <ul>
+              <li>La consultation sera définitivement terminée</li>
+              <li>La prochaine consultation de ce patient sera considérée comme une <strong>première consultation</strong></li>
+              <li>Les questions prédéfinies "première consultation" seront chargées</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="suivi-actions">
+          <button type="button" class="btn-confirm-cloture" (click)="confirmerClotureDossier()" [disabled]="isSaving">
+            <lucide-icon name="folder-check" [size]="18"></lucide-icon>
+            {{ isSaving ? 'Clôture...' : 'Confirmer la clôture du dossier' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Clôture confirmée -->
+      <div class="suivi-success cloture" *ngIf="clotureConfirmee">
+        <lucide-icon name="folder-check" [size]="32"></lucide-icon>
+        <div class="success-content">
+          <h4>Dossier clôturé</h4>
+          <p>La prochaine consultation sera une première consultation.</p>
         </div>
       </div>
     </div>
-  </div>
+
+    </div>
 
   <!-- Footer -->
   <div class="wizard-footer" *ngIf="!isLoading && !error">
@@ -639,21 +1151,34 @@
     
     <div class="footer-right">
       <button type="button" class="btn btn-primary" (click)="nextEtape()" 
-              *ngIf="etapeActuelle !== 'validation'" [disabled]="!canGoNext() || isSaving">
+              *ngIf="etapeActuelle !== 'suivi'" [disabled]="!canGoNext() || isSaving">
         Suivant <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
       </button>
       
-      <ng-container *ngIf="etapeActuelle === 'validation'">
+      <ng-container *ngIf="etapeActuelle === 'suivi'">
         <button type="button" class="btn btn-secondary" (click)="sauvegarderBrouillon()" [disabled]="isSaving">
           <lucide-icon name="save" [size]="16"></lucide-icon> Sauvegarder
         </button>
-        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(false)" [disabled]="isSaving">
-          <lucide-icon name="check-circle" [size]="16"></lucide-icon> Clôturer
+        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(false)" [disabled]="isSaving || !isSuiviComplete()">
+          <lucide-icon name="check-circle-2" [size]="16"></lucide-icon> Clôturer
         </button>
-        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(true)" [disabled]="isSaving">
+        <button type="button" class="btn btn-primary" (click)="cloturerConsultation(true)" [disabled]="isSaving || !isSuiviComplete()">
           <lucide-icon name="printer" [size]="16"></lucide-icon> Clôturer & Imprimer
         </button>
       </ng-container>
     </div>
+  </div>
+</div>
+
+<!-- Panneau latéral Hospitalisation Multi-étapes -->
+<div class="side-panel-overlay" *ngIf="showHospitalisationPanel" (click)="onHospitalisationCancelled()">
+  <div class="side-panel left hospitalisation-panel" (click)="$event.stopPropagation()">
+    <app-hospitalisation-multi-etapes
+      *ngIf="hospitalisationPatientInfo"
+      [patient]="hospitalisationPatientInfo"
+      [idConsultation]="consultationId"
+      (completed)="onHospitalisationCompleted()"
+      (cancelled)="onHospitalisationCancelled()">
+    </app-hospitalisation-multi-etapes>
   </div>
 </div>

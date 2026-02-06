@@ -312,6 +312,7 @@ public class PatientController : BaseApiController
             // Récupérer le patient avec ses informations
             var utilisateur = await _context.Utilisateurs
                 .Include(u => u.Patient)
+                    .ThenInclude(p => p!.Assurance)
                 .FirstOrDefaultAsync(u => u.IdUser == userId.Value);
 
             if (utilisateur == null || utilisateur.Patient == null)
@@ -319,7 +320,7 @@ public class PatientController : BaseApiController
 
             var patient = utilisateur.Patient;
 
-            // Profil patient
+            // Profil patient complet avec tous les champs
             var patientProfile = new PatientProfileDto
             {
                 IdUser = utilisateur.IdUser,
@@ -329,10 +330,41 @@ public class PatientController : BaseApiController
                 Naissance = utilisateur.Naissance,
                 Sexe = utilisateur.Sexe,
                 Telephone = utilisateur.Telephone,
-                NumeroDossier = patient.NumeroDossier,
-                GroupeSanguin = patient.GroupeSanguin,
+                SituationMatrimoniale = utilisateur.SituationMatrimoniale,
                 Adresse = utilisateur.Adresse,
-                IsProfileComplete = IsProfileComplete(utilisateur)
+                Photo = utilisateur.Photo,
+                NumeroDossier = patient.NumeroDossier,
+                Ethnie = patient.Ethnie,
+                GroupeSanguin = patient.GroupeSanguin,
+                NbEnfants = patient.NbEnfants,
+                PersonneContact = patient.PersonneContact,
+                NumeroContact = patient.NumeroContact,
+                Profession = patient.Profession,
+                CreatedAt = utilisateur.CreatedAt,
+                IsProfileComplete = IsProfileComplete(utilisateur),
+                // Informations utilisateur étendues
+                Nationalite = utilisateur.Nationalite,
+                RegionOrigine = utilisateur.RegionOrigine,
+                // Informations médicales
+                MaladiesChroniques = patient.MaladiesChroniques,
+                AllergiesConnues = patient.AllergiesConnues,
+                AllergiesDetails = patient.AllergiesDetails,
+                AntecedentsFamiliaux = patient.AntecedentsFamiliaux,
+                AntecedentsFamiliauxDetails = patient.AntecedentsFamiliauxDetails,
+                OperationsChirurgicales = patient.OperationsChirurgicales,
+                OperationsDetails = patient.OperationsDetails,
+                // Habitudes de vie
+                ConsommationAlcool = patient.ConsommationAlcool,
+                FrequenceAlcool = patient.FrequenceAlcool,
+                Tabagisme = patient.Tabagisme,
+                ActivitePhysique = patient.ActivitePhysique,
+                // Assurance
+                AssuranceId = patient.AssuranceId,
+                NomAssurance = patient.Assurance?.Nom,
+                NumeroCarteAssurance = patient.NumeroCarteAssurance,
+                CouvertureAssurance = patient.CouvertureAssurance,
+                DateDebutValidite = patient.DateDebutValidite,
+                DateFinValidite = patient.DateFinValidite
             };
 
             // Antécédents médicaux (extraits des champs du patient)
@@ -408,7 +440,7 @@ public class PatientController : BaseApiController
                     Specialite = c.Medecin != null && c.Medecin.Specialite != null
                         ? c.Medecin.Specialite.NomSpecialite
                         : null,
-                    Statut = c.Statut ?? "termine"
+                    Statut = c.Statut ?? "terminee"
                 })
                 .ToListAsync();
 
@@ -442,6 +474,8 @@ public class PatientController : BaseApiController
             var examens = await _context.BulletinsExamen
                 .Include(be => be.Consultation).ThenInclude(c => c!.Medecin).ThenInclude(m => m!.Utilisateur)
                 .Include(be => be.Examen)
+                    .ThenInclude(e => e!.Specialite)
+                        .ThenInclude(s => s!.Categorie)
                 .Where(be => be.Consultation != null && be.Consultation.IdPatient == userId.Value)
                 .OrderByDescending(be => be.DateDemande)
                 .Take(15)
@@ -449,14 +483,18 @@ public class PatientController : BaseApiController
                 {
                     IdExamen = be.IdBulletinExamen,
                     DateExamen = be.DateDemande,
-                    TypeExamen = be.Examen != null ? be.Examen.TypeExamen ?? "autre" : "autre",
+                    Categorie = be.Examen != null && be.Examen.Specialite != null && be.Examen.Specialite.Categorie != null 
+                        ? be.Examen.Specialite.Categorie.Nom : "Biologie Medicale",
+                    Specialite = be.Examen != null && be.Examen.Specialite != null 
+                        ? be.Examen.Specialite.Nom : "",
                     NomExamen = be.Examen != null ? be.Examen.NomExamen : "Examen",
                     Resultat = null, // À implémenter quand les résultats seront disponibles
                     NomMedecin = be.Consultation != null && be.Consultation.Medecin != null && be.Consultation.Medecin.Utilisateur != null
                         ? $"Dr. {be.Consultation.Medecin.Utilisateur.Prenom} {be.Consultation.Medecin.Utilisateur.Nom}"
                         : "Médecin",
-                    Statut = "termine",
-                    Urgent = false
+                    Statut = "terminee",
+                    Urgent = false,
+                    Disponible = be.Examen != null ? be.Examen.Disponible : true
                 })
                 .ToListAsync();
 
@@ -471,7 +509,7 @@ public class PatientController : BaseApiController
                 .CountAsync(be => be.Consultation != null && be.Consultation.IdPatient == userId.Value);
 
             var derniereVisite = await _context.Consultations
-                .Where(c => c.IdPatient == userId.Value && c.Statut == "termine")
+                .Where(c => c.IdPatient == userId.Value && c.Statut == "terminee")
                 .OrderByDescending(c => c.DateHeure)
                 .Select(c => c.DateHeure)
                 .FirstOrDefaultAsync();

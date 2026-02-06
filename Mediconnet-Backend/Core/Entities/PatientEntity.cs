@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Mediconnet_Backend.Core.Entities;
 
 /// <summary>
@@ -66,6 +68,19 @@ public class Patient
 
     /// <summary>Date d'acceptation de la déclaration sur l'honneur</summary>
     public DateTime? DeclarationHonneurAt { get; set; }
+    
+    // ==================== DOSSIER MÉDICAL ====================
+    /// <summary>Indique si le dossier médical est clôturé (prochaine consultation = première consultation)</summary>
+    [Column("dossier_cloture")]
+    public bool DossierCloture { get; set; } = false;
+    
+    /// <summary>Date de clôture du dossier</summary>
+    [Column("date_cloture_dossier")]
+    public DateTime? DateClotureDossier { get; set; }
+    
+    /// <summary>ID du médecin ayant clôturé le dossier</summary>
+    [Column("id_medecin_cloture")]
+    public int? IdMedecinCloture { get; set; }
     
     // ==================== ASSURANCE ====================
     /// <summary>ID de l'assurance (nullable si patient non assuré)</summary>

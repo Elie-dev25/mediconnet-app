@@ -10,14 +10,14 @@ public class ConsultationQuestion
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("consultation_id")]
+    [Column("id_consultation")]
     public int ConsultationId { get; set; }
 
-    [Column("question_id")]
+    [Column("id_question")]
     public int QuestionId { get; set; }
 
-    [Column("ordre_affichage")]
-    public int OrdreAffichage { get; set; }
+    // Navigation vers les réponses
+    public virtual ICollection<Reponse>? Reponses { get; set; }
 
     [ForeignKey("ConsultationId")]
     public virtual Consultation? Consultation { get; set; }

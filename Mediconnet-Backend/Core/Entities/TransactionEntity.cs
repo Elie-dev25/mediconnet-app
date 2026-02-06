@@ -27,8 +27,10 @@ public class Transaction
 
     public int? IdPatient { get; set; }
 
-    [Required]
-    public int IdCaissier { get; set; }
+    /// <summary>
+    /// ID du caissier (null pour les paiements en ligne)
+    /// </summary>
+    public int? IdCaissier { get; set; }
 
     public int? IdSessionCaisse { get; set; }
 

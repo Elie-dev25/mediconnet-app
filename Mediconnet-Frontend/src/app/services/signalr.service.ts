@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, isDevMode } from '@angular/core';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
@@ -39,6 +39,7 @@ export class SignalRService implements OnDestroy {
   private factureEvents = new Subject<FactureEvent>();
   private refreshRequested = new Subject<number>();
   private vitalsEvents = new Subject<VitalsEvent>();
+  private newPendingAppointment = new Subject<any>();
 
   // Observables publics
   public connectionState$ = this.connectionState.asObservable();
@@ -47,6 +48,7 @@ export class SignalRService implements OnDestroy {
   public factureEvents$ = this.factureEvents.asObservable();
   public refreshRequested$ = this.refreshRequested.asObservable();
   public vitalsEvents$ = this.vitalsEvents.asObservable();
+  public onNewPendingAppointment$ = this.newPendingAppointment.asObservable();
 
   constructor(private authService: AuthService) {
     // Se connecter automatiquement si authentifié
@@ -73,9 +75,17 @@ export class SignalRService implements OnDestroy {
       return;
     }
 
-    // environment.apiUrl = http://localhost:8080/api
-    // Hub backend = http://localhost:8080/hubs/appointments
-    const hubUrl = `${environment.apiUrl.replace(/\/?api\/?$/, '')}/hubs/appointments`;
+    // Construire l'URL du hub SignalR
+    // En production avec URL relative (/api), utiliser l'origine du navigateur
+    // En développement, utiliser l'URL complète de l'API
+    let hubUrl: string;
+    if (environment.apiUrl.startsWith('/')) {
+      // URL relative - utiliser l'origine actuelle du navigateur
+      hubUrl = `${window.location.origin}/hubs/appointments`;
+    } else {
+      // URL absolue - extraire la base
+      hubUrl = `${environment.apiUrl.replace(/\/?api\/?$/, '')}/hubs/appointments`;
+    }
 
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
@@ -91,25 +101,25 @@ export class SignalRService implements OnDestroy {
     // Configurer les handlers de connexion
     this.hubConnection.onreconnecting(() => {
       this.connectionState.next('reconnecting');
-      console.log('SignalR: Reconnexion en cours...');
+      if (isDevMode()) console.log('SignalR: Reconnexion en cours...');
     });
 
     this.hubConnection.onreconnected(() => {
       this.connectionState.next('connected');
-      console.log('SignalR: Reconnecté');
+      if (isDevMode()) console.log('SignalR: Reconnecté');
     });
 
     this.hubConnection.onclose(() => {
       this.connectionState.next('disconnected');
-      console.log('SignalR: Déconnecté');
+      if (isDevMode()) console.log('SignalR: Déconnecté');
     });
 
     try {
       await this.hubConnection.start();
       this.connectionState.next('connected');
-      console.log('✅ SignalR: Connecté au hub des rendez-vous');
+      if (isDevMode()) console.log('✅ SignalR: Connecté au hub des rendez-vous');
     } catch (err) {
-      console.error('❌ SignalR: Erreur de connexion', err);
+      if (isDevMode()) console.error('❌ SignalR: Erreur de connexion', err);
       this.connectionState.next('error');
     }
   }
@@ -122,25 +132,25 @@ export class SignalRService implements OnDestroy {
 
     // Rendez-vous créé
     this.hubConnection.on('AppointmentCreated', (data: any) => {
-      console.log('📅 SignalR: Nouveau rendez-vous', data);
+      if (isDevMode()) console.log('📅 SignalR: Nouveau rendez-vous', data);
       this.appointmentEvents.next({ type: 'created', data });
     });
 
     // Rendez-vous modifié
     this.hubConnection.on('AppointmentUpdated', (data: any) => {
-      console.log('📝 SignalR: Rendez-vous modifié', data);
+      if (isDevMode()) console.log('📝 SignalR: Rendez-vous modifié', data);
       this.appointmentEvents.next({ type: 'updated', data });
     });
 
     // Rendez-vous annulé
     this.hubConnection.on('AppointmentCancelled', (data: any) => {
-      console.log('❌ SignalR: Rendez-vous annulé', data);
+      if (isDevMode()) console.log('❌ SignalR: Rendez-vous annulé', data);
       this.appointmentEvents.next({ type: 'cancelled', data });
     });
 
     // Créneau verrouillé
     this.hubConnection.on('SlotLocked', (data: { medecinId: number; dateHeure: string }) => {
-      console.log('🔒 SignalR: Créneau verrouillé', data);
+      if (isDevMode()) console.log('🔒 SignalR: Créneau verrouillé', data);
       this.slotEvents.next({ 
         type: 'locked', 
         medecinId: data.medecinId,
@@ -150,7 +160,7 @@ export class SignalRService implements OnDestroy {
 
     // Créneau libéré
     this.hubConnection.on('SlotUnlocked', (data: { medecinId: number; dateHeure: string }) => {
-      console.log('🔓 SignalR: Créneau libéré', data);
+      if (isDevMode()) console.log('🔓 SignalR: Créneau libéré', data);
       this.slotEvents.next({ 
         type: 'unlocked', 
         medecinId: data.medecinId,
@@ -160,7 +170,7 @@ export class SignalRService implements OnDestroy {
 
     // Créneaux mis à jour
     this.hubConnection.on('SlotsUpdated', (data: { medecinId: number; action: string }) => {
-      console.log('🔄 SignalR: Créneaux mis à jour', data);
+      if (isDevMode()) console.log('🔄 SignalR: Créneaux mis à jour', data);
       this.slotEvents.next({ 
         type: 'updated', 
         medecinId: data.medecinId,
@@ -170,32 +180,44 @@ export class SignalRService implements OnDestroy {
 
     // Demande de rafraîchissement
     this.hubConnection.on('SlotsRefreshRequested', (medecinId: number) => {
-      console.log('🔄 SignalR: Rafraîchissement demandé pour médecin', medecinId);
+      if (isDevMode()) console.log('🔄 SignalR: Rafraîchissement demandé pour médecin', medecinId);
       this.refreshRequested.next(medecinId);
     });
 
     // Facture créée (ex: consultation enregistrée)
     this.hubConnection.on('FactureCreated', (data: any) => {
-      console.log('🧾 SignalR: Facture créée', data);
+      if (isDevMode()) console.log('🧾 SignalR: Facture créée', data);
       this.factureEvents.next({ type: 'created', data });
     });
 
     // Facture payée
     this.hubConnection.on('FacturePaid', (data: any) => {
-      console.log('✅ SignalR: Facture payée', data);
+      if (isDevMode()) console.log('✅ SignalR: Facture payée', data);
       this.factureEvents.next({ type: 'paid', data });
     });
 
     // Paramètres infirmiers enregistrés
     this.hubConnection.on('VitalsRecorded', (data: any) => {
-      console.log('🩺 SignalR: Paramètres enregistrés', data);
+      if (isDevMode()) console.log('🩺 SignalR: Paramètres enregistrés', data);
       this.vitalsEvents.next({ type: 'recorded', data });
     });
 
     // Rafraîchissement file infirmier demandé
     this.hubConnection.on('NurseQueueRefresh', (data: any) => {
-      console.log('🔄 SignalR: Rafraîchissement file infirmier', data);
+      if (isDevMode()) console.log('🔄 SignalR: Rafraîchissement file infirmier', data);
       this.vitalsEvents.next({ type: 'nurse_refresh', data });
+    });
+
+    // Nouveau RDV en attente de validation (pour les médecins)
+    this.hubConnection.on('NewPendingAppointment', (data: any) => {
+      if (isDevMode()) console.log('🆕 SignalR: Nouveau RDV en attente', data);
+      this.newPendingAppointment.next(data);
+    });
+
+    // RDV en attente mis à jour (validé, refusé, etc.)
+    this.hubConnection.on('PendingAppointmentUpdated', (data: any) => {
+      if (isDevMode()) console.log('📝 SignalR: RDV en attente mis à jour', data);
+      this.appointmentEvents.next({ type: 'updated', data });
     });
   }
 

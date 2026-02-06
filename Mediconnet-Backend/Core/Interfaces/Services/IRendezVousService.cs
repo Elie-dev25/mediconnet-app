@@ -1,4 +1,5 @@
 using Mediconnet_Backend.DTOs.RendezVous;
+using AccueilDtos = Mediconnet_Backend.DTOs.Accueil;
 
 namespace Mediconnet_Backend.Core.Interfaces.Services;
 
@@ -46,6 +47,13 @@ public interface IRendezVousService
     /// </summary>
     Task<(bool Success, string Message)> AnnulerRendezVousAsync(
         AnnulerRendezVousRequest request, int patientId);
+
+    // ==================== SERVICES ====================
+
+    /// <summary>
+    /// Obtenir la liste des services hospitaliers
+    /// </summary>
+    Task<List<AccueilDtos.ServiceDto>> GetServicesAsync();
 
     // ==================== CRÉNEAUX ====================
 
@@ -111,4 +119,16 @@ public interface IRendezVousService
     /// Récupérer les RDV avec proposition de créneau pour un patient
     /// </summary>
     Task<List<RendezVousDto>> GetPropositionsPatientAsync(int patientId);
+
+    // ==================== PAIEMENT EN LIGNE ====================
+
+    /// <summary>
+    /// Obtenir les factures en attente de paiement pour un patient
+    /// </summary>
+    Task<List<FacturePatientDto>> GetFacturesPatientEnAttenteAsync(int patientId);
+
+    /// <summary>
+    /// Payer une facture en ligne (pour RDV pris en ligne)
+    /// </summary>
+    Task<PayerFactureEnLigneResponse> PayerFactureEnLigneAsync(int patientId, PayerFactureEnLigneRequest request);
 }

@@ -1,4 +1,5 @@
 @use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as mixins;
 @use '../../../shared/styles/common';
 
 // ============================================
@@ -531,6 +532,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    // Scroll invisible après 5 éléments (~400px)
+    @include mixins.scrollable-list(400px);
   }
 
   .visit-row {
@@ -606,6 +609,58 @@
       background: $success-light;
       color: $success-color;
     }
+
+    &.absent {
+      background: $error-light;
+      color: $error-color;
+    }
+  }
+
+  .visit-row.missed {
+    background: rgba($error-color, 0.05);
+    border-left: 3px solid $error-color;
+  }
+
+  .visit-actions-col {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .btn-reschedule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.85rem;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      background: darken($primary-color, 8%);
+      transform: translateY(-1px);
+    }
+
+    lucide-icon {
+      flex-shrink: 0;
+    }
+  }
+
+  .tab-icon {
+    margin-right: 0.25rem;
+    vertical-align: middle;
+  }
+
+  .empty-subtitle {
+    display: block;
+    font-size: 0.8rem;
+    color: $text-muted;
+    margin-top: 0.25rem;
   }
 
   .treatment-row {
@@ -734,6 +789,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    // Scroll invisible après 5 éléments (~300px)
+    @include mixins.scrollable-list(300px);
   }
 
   .file-row {

@@ -20,8 +20,18 @@ export * from './components/patient-search/patient-search.component';
 export * from './components/dossier-patient/dossier-patient.component';
 export * from './components/fiche-patient-panel/fiche-patient-panel.component';
 export * from './components/consultation-multi-etapes/consultation-multi-etapes.component';
+export * from './components/prescription-medicaments/prescription-medicaments.component';
+export * from './components/prescription-examens/prescription-examens.component';
+export * from './components/soins-complementaires/soins-complementaires.component';
+export * from './components/hospitalisation-multi-etapes/hospitalisation-multi-etapes.component';
 export * from './components/modal/modal.component';
 export * from './components/dossier-medical-view/dossier-medical-view.component';
+export * from './components/consultation-details-view/consultation-details-view.component';
+export * from './components/attribuer-lit-panel/attribuer-lit-panel.component';
+export * from './components/hospitalisation-details-panel/hospitalisation-details-panel.component';
+export * from './components/ordonnance-hospitalisation-panel/ordonnance-hospitalisation-panel.component';
+export * from './components/examen-hospitalisation-panel/examen-hospitalisation-panel.component';
+export * from './components/soin-hospitalisation-panel/soin-hospitalisation-panel.component';
 // NOTE: Composant voice-input non utilisé - la fonctionnalité vocale est intégrée directement dans consultation-multi-etapes
 // export * from './components/voice-input/voice-input.component';
 

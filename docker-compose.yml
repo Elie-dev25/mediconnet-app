@@ -46,8 +46,8 @@ services:
       - EmailSettings__EnableEmailConfirmation=true
       - EmailSettings__TokenExpirationHours=24
       - EmailSettings__DevMode=false
-      - AppSettings__FrontendUrl=http://localhost:4200
-      - AppSettings__ApiUrl=http://localhost:8080
+      - AppSettings__FrontendUrl=http://0.0.0.0:4200
+      - AppSettings__ApiUrl=http://0.0.0.0:8080
     depends_on:
       mediconnet-db:
         condition: service_healthy
@@ -55,7 +55,7 @@ services:
       - mediconnet-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

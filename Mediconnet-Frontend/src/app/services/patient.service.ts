@@ -24,6 +24,29 @@ export interface PatientProfile {
   createdAt?: string;
   isProfileComplete: boolean;
   declarationHonneurAcceptee?: boolean;
+  // Informations utilisateur étendues
+  nationalite?: string;
+  regionOrigine?: string;
+  // Informations médicales
+  maladiesChroniques?: string;
+  allergiesConnues?: boolean;
+  allergiesDetails?: string;
+  antecedentsFamiliaux?: boolean;
+  antecedentsFamiliauxDetails?: string;
+  operationsChirurgicales?: boolean;
+  operationsDetails?: string;
+  // Habitudes de vie
+  consommationAlcool?: boolean;
+  frequenceAlcool?: string;
+  tabagisme?: boolean;
+  activitePhysique?: boolean;
+  // Assurance
+  assuranceId?: number;
+  nomAssurance?: string;
+  numeroCarteAssurance?: string;
+  couvertureAssurance?: number;
+  dateDebutValidite?: string;
+  dateFinValidite?: string;
 }
 
 export interface VisiteDto {

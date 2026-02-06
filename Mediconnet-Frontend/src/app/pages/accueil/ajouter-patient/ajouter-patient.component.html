@@ -12,7 +12,7 @@
     <!-- Succès -->
     <div class="success-card" *ngIf="successResponse">
       <div class="success-icon">
-        <lucide-icon name="check-circle" [size]="64"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="64"></lucide-icon>
       </div>
       <h2>Patient créé avec succès</h2>
       
@@ -61,7 +61,7 @@
                [class.completed]="currentStep > step"
                (click)="step < currentStep ? currentStep = step : null">
             <div class="step-circle">
-              <lucide-icon *ngIf="currentStep > step" name="check" [size]="16"></lucide-icon>
+              <lucide-icon *ngIf="currentStep > step" name="check-circle-2" [size]="16"></lucide-icon>
               <span *ngIf="currentStep <= step">{{ step }}</span>
             </div>
             <span class="step-label">
@@ -488,7 +488,7 @@
                 *ngIf="currentStep === totalSteps"
                 [disabled]="isSubmitting">
           <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spin"></lucide-icon>
-          <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting" name="check-circle-2" [size]="18"></lucide-icon>
           {{ isSubmitting ? 'Création...' : 'Créer le patient' }}
         </button>
       </div>

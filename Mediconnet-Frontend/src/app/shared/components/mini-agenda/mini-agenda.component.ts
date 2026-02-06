@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { Subject, takeUntil } from 'rxjs';
@@ -29,6 +29,10 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
   
   selectedDate: Date = new Date();
   currentWeekStart: Date = this.getWeekStartStatic(new Date());
+  
+  // Mobile-specific: current day index for single-day view
+  currentMobileDayIndex = 0;
+  isMobileView = false;
 
   // Méthode statique pour initialiser currentWeekStart
   private getWeekStartStatic(date: Date): Date {
@@ -42,17 +46,153 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
 
   constructor(
     private medecinService: MedecinService,
-    private signalRService: SignalRService
+    private signalRService: SignalRService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.loadAgenda();
+    this.checkMobileView();
+    this.loadAgendaAndSetToday(); // Load and set today's index on init
     this.subscribeToUpdates();
+    
+    // Listen for window resize to toggle mobile/desktop view
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onResize.bind(this));
+    }
+  }
+  
+  // Load agenda and set mobile index to today
+  private loadAgendaAndSetToday(): void {
+    this.isLoading = true;
+    this.error = null;
+
+    const dateDebut = this.formatDate(this.currentWeekStart);
+    const dateFin = this.formatDate(this.addDays(this.currentWeekStart, this.nombreJours - 1));
+
+    this.medecinService.getAgenda(dateDebut, dateFin)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.jours = response.jours;
+          this.extractRdvFromAgenda();
+          this.isLoading = false;
+          
+          // Set mobile index to today if in current week
+          if (this.isMobileView) {
+            this.setTodayIndex();
+          }
+        },
+        error: (err) => {
+          console.error('Erreur chargement agenda:', err);
+          this.error = 'Impossible de charger l\'agenda';
+          this.isLoading = false;
+        }
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.onResize.bind(this));
+    }
+  }
+
+  private checkMobileView(): void {
+    if (typeof window !== 'undefined') {
+      this.isMobileView = window.innerWidth < 640;
+    }
+  }
+
+  private onResize(): void {
+    this.checkMobileView();
+  }
+
+  // Mobile navigation: go to previous day
+  previousDay(): void {
+    if (this.currentMobileDayIndex > 0) {
+      this.currentMobileDayIndex--;
+    } else {
+      // Go to previous week, set to last day after load
+      this.navigateWeekWithIndex(-7, this.nombreJours - 1);
+    }
+  }
+
+  // Mobile navigation: go to next day
+  nextDay(): void {
+    if (this.currentMobileDayIndex < this.jours.length - 1) {
+      this.currentMobileDayIndex++;
+    } else {
+      // Go to next week, set to first day after load
+      this.navigateWeekWithIndex(7, 0);
+    }
+  }
+  
+  // Navigate week and set specific day index after load
+  private navigateWeekWithIndex(daysOffset: number, targetIndex: number): void {
+    const newDate = new Date(this.currentWeekStart);
+    newDate.setDate(newDate.getDate() + daysOffset);
+    this.currentWeekStart = this.getWeekStart(newDate);
+    
+    this.isLoading = true;
+    this.error = null;
+
+    const dateDebut = this.formatDate(this.currentWeekStart);
+    const dateFin = this.formatDate(this.addDays(this.currentWeekStart, this.nombreJours - 1));
+
+    this.medecinService.getAgenda(dateDebut, dateFin)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.jours = response.jours;
+          this.extractRdvFromAgenda();
+          this.isLoading = false;
+          // Set the target index after data is loaded
+          this.currentMobileDayIndex = Math.min(targetIndex, this.jours.length - 1);
+        },
+        error: (err) => {
+          console.error('Erreur chargement agenda:', err);
+          this.error = 'Impossible de charger l\'agenda';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  // Get current day for mobile view
+  get currentMobileDay(): AgendaJourDto | null {
+    return this.jours[this.currentMobileDayIndex] || null;
+  }
+  
+  // Méthode pour sélectionner un jour via les indicateurs
+  selectDay(index: number): void {
+    if (index >= 0 && index < this.jours.length) {
+      this.currentMobileDayIndex = index;
+      this.cdr.detectChanges();
+    }
+  }
+
+  // Get full day name for mobile header
+  getFullDayName(date: string): string {
+    const parts = date.split('T')[0].split('-');
+    if (parts.length !== 3) return '---';
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    if (isNaN(d.getTime())) return '---';
+    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    return dayNames[d.getDay()];
+  }
+
+  // Get formatted date for mobile header (e.g., "5 février 2026")
+  getFormattedDate(date: string): string {
+    const parts = date.split('T')[0].split('-');
+    if (parts.length !== 3) return '---';
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    if (isNaN(d.getTime())) return '---';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Go to today on mobile
+  goToTodayMobile(): void {
+    this.goToToday();
   }
 
   private getWeekStart(date: Date): Date {
@@ -138,6 +278,7 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
     const newDate = new Date(this.currentWeekStart);
     newDate.setDate(newDate.getDate() - 7);
     this.currentWeekStart = this.getWeekStart(newDate);
+    // Keep same day index when navigating weeks (unless coming from next/prev day)
     this.loadAgenda();
   }
 
@@ -145,12 +286,20 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
     const newDate = new Date(this.currentWeekStart);
     newDate.setDate(newDate.getDate() + 7);
     this.currentWeekStart = this.getWeekStart(newDate);
+    // Keep same day index when navigating weeks (unless coming from next/prev day)
     this.loadAgenda();
   }
 
   goToToday(): void {
     this.currentWeekStart = this.getWeekStart(new Date());
-    this.loadAgenda();
+    this.loadAgendaAndSetToday();
+  }
+  
+  private setTodayIndex(): void {
+    const today = new Date();
+    const todayStr = this.formatDate(today);
+    const index = this.jours.findIndex(j => j.date === todayStr);
+    this.currentMobileDayIndex = index >= 0 ? index : 0;
   }
 
   isCurrentWeek(): boolean {
@@ -181,7 +330,7 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
 
   getSlotIcon(statut: string): string {
     switch (statut) {
-      case 'disponible': return 'check-circle';
+      case 'disponible': return 'check-circle-2';
       case 'occupe': return 'user';
       case 'indisponible': return 'x-circle';
       case 'passe': return 'clock';
@@ -197,11 +346,27 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
   }
 
   formatDayName(date: string): string {
-    return new Date(date).toLocaleDateString('fr-FR', { weekday: 'short' });
+    // Parse date string manually to avoid timezone issues
+    // Format expected: "yyyy-MM-dd" or ISO string
+    const parts = date.split('T')[0].split('-');
+    if (parts.length !== 3) {
+      return '---';
+    }
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    if (isNaN(d.getTime())) {
+      return '---';
+    }
+    const dayNames = ['DIM.', 'LUN.', 'MAR.', 'MER.', 'JEU.', 'VEN.', 'SAM.'];
+    return dayNames[d.getDay()];
   }
 
   formatDayNumber(date: string): string {
-    return new Date(date).getDate().toString();
+    // Parse date string manually to avoid timezone issues
+    const parts = date.split('T')[0].split('-');
+    if (parts.length !== 3) {
+      return '--';
+    }
+    return parseInt(parts[2]).toString();
   }
 
   isToday(date: string): boolean {

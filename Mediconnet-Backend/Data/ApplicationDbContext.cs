@@ -28,7 +28,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Caissier> Caissiers { get; set; }
     public DbSet<Accueil> Accueils { get; set; }
     public DbSet<Pharmacien> Pharmaciens { get; set; }
-    public DbSet<Biologiste> Biologistes { get; set; }
+    public DbSet<Laborantin> Laborantins { get; set; }
     public DbSet<Service> Services { get; set; }
     public DbSet<Specialite> Specialites { get; set; }
     
@@ -64,12 +64,19 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Ordonnance> Ordonnances { get; set; }
     public DbSet<PrescriptionMedicament> PrescriptionMedicaments { get; set; }
     public DbSet<BulletinExamen> BulletinsExamen { get; set; }
+    public DbSet<CategorieExamen> CategoriesExamens { get; set; }
+    public DbSet<SpecialiteExamen> SpecialitesExamens { get; set; }
     public DbSet<ExamenCatalogue> ExamensCatalogue { get; set; }
+    public DbSet<Laboratoire> Laboratoires { get; set; }
+    public DbSet<OrientationSpecialiste> OrientationsSpecialiste { get; set; }
 
     // Entités Hospitalisation
+    public DbSet<StandardChambre> StandardsChambres { get; set; }
     public DbSet<Chambre> Chambres { get; set; }
     public DbSet<Lit> Lits { get; set; }
     public DbSet<Hospitalisation> Hospitalisations { get; set; }
+    public DbSet<SoinHospitalisation> SoinsHospitalisation { get; set; }
+    public DbSet<ExecutionSoin> ExecutionsSoins { get; set; }
 
     // Entités Pharmacie/Stock
     public DbSet<Fournisseur> Fournisseurs { get; set; }
@@ -114,6 +121,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AutorisationDMP> AutorisationsDMP { get; set; }
     public DbSet<AccesDMP> AccesDMP { get; set; }
 
+    // Entités Permissions (RBAC)
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<UserPermission> UserPermissions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -141,6 +153,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.ProfileCompletedAt).HasColumnName("profile_completed_at");
             entity.Property(e => e.Nationalite).HasColumnName("nationalite").HasMaxLength(100);
             entity.Property(e => e.RegionOrigine).HasColumnName("region_origine").HasMaxLength(100);
+            entity.Property(e => e.MustChangePassword).HasColumnName("must_change_password").HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
@@ -213,7 +226,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DeclarationHonneurAt).HasColumnName("declaration_honneur_at");
             
             // Assurance (relation directe 1:N)
-            entity.Property(e => e.AssuranceId).HasColumnName("assurance_id");
+            entity.Property(e => e.AssuranceId).HasColumnName("id_assurance");
             entity.Property(e => e.NumeroCarteAssurance).HasColumnName("numero_carte_assurance").HasMaxLength(100);
             entity.Property(e => e.DateDebutValidite).HasColumnName("date_debut_validite");
             entity.Property(e => e.DateFinValidite).HasColumnName("date_fin_validite");
@@ -238,6 +251,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         });
 
         // Infirmier Configuration
+        // Note: Le Major est maintenant identifié via Service.IdMajor, pas via Infirmier.IsMajor/IdServiceMajor
         modelBuilder.Entity<Infirmier>(entity =>
         {
             entity.HasKey(e => e.IdUser);
@@ -245,6 +259,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.Matricule).HasColumnName("matricule").HasMaxLength(50);
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20).HasDefaultValue("actif");
+            entity.Property(e => e.IdService).HasColumnName("id_service");
+            entity.Property(e => e.DateNominationMajor).HasColumnName("date_nomination_major");
+            entity.Property(e => e.Accreditations).HasColumnName("accreditations").HasMaxLength(500);
+
+            // Relation vers le service de rattachement
+            entity.HasOne(e => e.Service)
+                .WithMany(s => s.Infirmiers)
+                .HasForeignKey(e => e.IdService)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Administrateur Configuration
@@ -289,20 +313,21 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne(e => e.Utilisateur).WithMany().HasForeignKey(e => e.IdUser);
         });
 
-        // Biologiste Configuration
-        modelBuilder.Entity<Biologiste>(entity =>
+        // Laborantin Configuration (remplace Biologiste)
+        modelBuilder.Entity<Laborantin>(entity =>
         {
-            entity.HasKey(e => e.IdBiologiste);
-            entity.ToTable("biologistes");
-            entity.Property(e => e.IdBiologiste).HasColumnName("id_biologiste").ValueGeneratedOnAdd();
+            entity.HasKey(e => e.IdUser);
+            entity.ToTable("laborantin");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.Matricule).HasColumnName("matricule").HasMaxLength(50);
             entity.Property(e => e.Specialisation).HasColumnName("specialisation").HasMaxLength(100);
+            entity.Property(e => e.IdLabo).HasColumnName("id_labo");
             entity.Property(e => e.DateEmbauche).HasColumnName("date_embauche");
             entity.Property(e => e.Actif).HasColumnName("actif");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             entity.HasOne(e => e.Utilisateur).WithMany().HasForeignKey(e => e.IdUser);
+            entity.HasOne(e => e.Laboratoire).WithMany().HasForeignKey(e => e.IdLabo);
         });
 
         // Service Configuration
@@ -376,7 +401,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Description).HasColumnName("description").IsRequired().HasMaxLength(255);
             entity.Property(e => e.Quantite).HasColumnName("quantite");
             entity.Property(e => e.PrixUnitaire).HasColumnName("prix_unitaire").HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Montant).HasColumnName("total_ligne").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Montant).HasColumnName("total_ligne").HasColumnType("decimal(10,2)")
+                .ValueGeneratedOnAddOrUpdate(); // Colonne générée automatiquement par MySQL
             entity.Property(e => e.Categorie).HasColumnName("type_service").HasMaxLength(50);
 
             // Ignorer la propriété Code qui n'existe pas dans facture_item
@@ -586,17 +612,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.ToTable("question");
 
-            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-            entity.Property(e => e.TexteQuestion).HasColumnName("texte_question").IsRequired();
-            entity.Property(e => e.TypeQuestion).HasColumnName("type_question").IsRequired().HasMaxLength(50);
-            entity.Property(e => e.EstPredefinie).HasColumnName("est_predefinie");
-            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-
-            entity.HasIndex(e => e.EstPredefinie).HasDatabaseName("IX_question_predefinie");
-            entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_question_created_at");
-
-            entity.HasOne(e => e.Createur).WithMany().HasForeignKey(e => e.CreatedBy);
+            entity.Property(e => e.Id).HasColumnName("id_question").ValueGeneratedOnAdd();
+            entity.Property(e => e.TexteQuestion).HasColumnName("texte").IsRequired();
+            entity.Property(e => e.TypeQuestion).HasColumnName("type").HasMaxLength(50);
+            entity.Property(e => e.Categorie).HasColumnName("categorie").HasMaxLength(100);
+            entity.Property(e => e.Ordre).HasColumnName("ordre");
+            entity.Property(e => e.Obligatoire).HasColumnName("obligatoire");
+            entity.Property(e => e.Actif).HasColumnName("actif");
         });
 
         modelBuilder.Entity<ConsultationQuestion>(entity =>
@@ -605,15 +627,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.ToTable("consultation_question");
 
             entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-            entity.Property(e => e.ConsultationId).HasColumnName("consultation_id").IsRequired();
-            entity.Property(e => e.QuestionId).HasColumnName("question_id").IsRequired();
-            entity.Property(e => e.OrdreAffichage).HasColumnName("ordre_affichage").IsRequired();
+            entity.Property(e => e.ConsultationId).HasColumnName("id_consultation").IsRequired();
+            entity.Property(e => e.QuestionId).HasColumnName("id_question").IsRequired();
 
             entity.HasIndex(e => new { e.ConsultationId, e.QuestionId })
                 .IsUnique()
                 .HasDatabaseName("UX_consultation_question");
-            entity.HasIndex(e => new { e.ConsultationId, e.OrdreAffichage })
-                .HasDatabaseName("IX_consultation_question_ordre");
             entity.HasIndex(e => e.QuestionId).HasDatabaseName("IX_consultation_question_question");
 
             entity.HasOne(e => e.Consultation)
@@ -623,6 +642,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne(e => e.Question)
                 .WithMany(q => q.ConsultationQuestions)
                 .HasForeignKey(e => e.QuestionId);
+
+            entity.HasMany(e => e.Reponses)
+                .WithOne(r => r.ConsultationQuestion)
+                .HasForeignKey(r => r.ConsultationQuestionId);
         });
 
         modelBuilder.Entity<Reponse>(entity =>
@@ -630,25 +653,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.ToTable("reponse");
 
-            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-            entity.Property(e => e.ConsultationId).HasColumnName("consultation_id").IsRequired();
-            entity.Property(e => e.QuestionId).HasColumnName("question_id").IsRequired();
-            entity.Property(e => e.ValeurReponse).HasColumnName("valeur_reponse");
-            entity.Property(e => e.RempliPar).HasColumnName("rempli_par").IsRequired().HasMaxLength(20);
-            entity.Property(e => e.DateSaisie).HasColumnName("date_saisie");
+            entity.Property(e => e.Id).HasColumnName("id_reponse").ValueGeneratedOnAdd();
+            entity.Property(e => e.ConsultationQuestionId).HasColumnName("id_consultation_question").IsRequired();
+            entity.Property(e => e.ValeurReponse).HasColumnName("valeur");
+            entity.Property(e => e.DateReponse).HasColumnName("date_reponse");
 
-            entity.HasIndex(e => new { e.ConsultationId, e.QuestionId })
-                .IsUnique()
-                .HasDatabaseName("UX_reponse_consultation_question");
-            entity.HasIndex(e => e.DateSaisie).HasDatabaseName("IX_reponse_date_saisie");
-
-            entity.HasOne(e => e.Consultation)
-                .WithMany(c => c.Reponses)
-                .HasForeignKey(e => e.ConsultationId);
-
-            entity.HasOne(e => e.Question)
-                .WithMany(q => q.Reponses)
-                .HasForeignKey(e => e.QuestionId);
+            entity.HasOne(e => e.ConsultationQuestion)
+                .WithMany(cq => cq.Reponses)
+                .HasForeignKey(e => e.ConsultationQuestionId);
         });
 
         // Consultation Configuration
@@ -787,32 +799,111 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DateDemande).HasColumnName("date_demande");
             entity.Property(e => e.IdLabo).HasColumnName("id_labo");
             entity.Property(e => e.IdConsultation).HasColumnName("id_consultation");
+            entity.Property(e => e.IdHospitalisation).HasColumnName("id_hospitalisation");
             entity.Property(e => e.Instructions).HasColumnName("instructions");
             entity.Property(e => e.IdExamen).HasColumnName("id_exam");
+            entity.Property(e => e.Urgence).HasColumnName("urgence");
 
             entity.HasOne(e => e.Consultation)
                 .WithMany(c => c.BulletinsExamen)
                 .HasForeignKey(e => e.IdConsultation);
+
+            entity.HasOne(e => e.Hospitalisation)
+                .WithMany()
+                .HasForeignKey(e => e.IdHospitalisation);
 
             entity.HasOne(e => e.Examen)
                 .WithMany()
                 .HasForeignKey(e => e.IdExamen);
         });
 
-        // ExamenCatalogue Configuration
+        // SoinHospitalisation Configuration
+        modelBuilder.Entity<SoinHospitalisation>(entity =>
+        {
+            entity.HasKey(e => e.IdSoin);
+            entity.ToTable("soin_hospitalisation");
+
+            entity.Property(e => e.IdSoin).HasColumnName("id_soin").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdHospitalisation).HasColumnName("id_hospitalisation");
+            entity.Property(e => e.TypeSoin).HasColumnName("type_soin");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Frequence).HasColumnName("frequence");
+            entity.Property(e => e.DureeJours).HasColumnName("duree_jours");
+            entity.Property(e => e.Moments).HasColumnName("moments");
+            entity.Property(e => e.Priorite).HasColumnName("priorite");
+            entity.Property(e => e.Instructions).HasColumnName("instructions");
+            entity.Property(e => e.Statut).HasColumnName("statut");
+            entity.Property(e => e.DatePrescription).HasColumnName("date_prescription");
+            entity.Property(e => e.DateDebut).HasColumnName("date_debut");
+            entity.Property(e => e.DateFinPrevue).HasColumnName("date_fin_prevue");
+            entity.Property(e => e.IdPrescripteur).HasColumnName("id_prescripteur");
+            entity.Property(e => e.NbExecutionsPrevues).HasColumnName("nb_executions_prevues");
+            entity.Property(e => e.NbExecutionsEffectuees).HasColumnName("nb_executions_effectuees");
+
+            entity.HasOne(e => e.Hospitalisation)
+                .WithMany(h => h.Soins)
+                .HasForeignKey(e => e.IdHospitalisation);
+
+            entity.HasOne(e => e.Prescripteur)
+                .WithMany()
+                .HasForeignKey(e => e.IdPrescripteur);
+        });
+
+        // ==================== HIÉRARCHIE EXAMENS (3 niveaux) ====================
+
+        // CategorieExamen Configuration (Niveau 1)
+        modelBuilder.Entity<CategorieExamen>(entity =>
+        {
+            entity.HasKey(e => e.IdCategorie);
+            entity.ToTable("categories_examens");
+
+            entity.Property(e => e.IdCategorie).HasColumnName("id_categorie").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nom).HasColumnName("nom");
+            entity.Property(e => e.Code).HasColumnName("code");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Icone).HasColumnName("icone");
+            entity.Property(e => e.OrdreAffichage).HasColumnName("ordre_affichage");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+
+            entity.HasMany(c => c.Specialites)
+                .WithOne(s => s.Categorie)
+                .HasForeignKey(s => s.IdCategorie);
+        });
+
+        // SpecialiteExamen Configuration (Niveau 2)
+        modelBuilder.Entity<SpecialiteExamen>(entity =>
+        {
+            entity.HasKey(e => e.IdSpecialite);
+            entity.ToTable("specialites_examens");
+
+            entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdCategorie).HasColumnName("id_categorie");
+            entity.Property(e => e.Nom).HasColumnName("nom");
+            entity.Property(e => e.Code).HasColumnName("code");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Icone).HasColumnName("icone");
+            entity.Property(e => e.OrdreAffichage).HasColumnName("ordre_affichage");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+
+            entity.HasMany(s => s.Examens)
+                .WithOne(e => e.Specialite)
+                .HasForeignKey(e => e.IdSpecialite);
+        });
+
+        // ExamenCatalogue Configuration (Niveau 3)
         modelBuilder.Entity<ExamenCatalogue>(entity =>
         {
             entity.HasKey(e => e.IdExamen);
             entity.ToTable("examens");
 
             entity.Property(e => e.IdExamen).HasColumnName("id_exam").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite");
             entity.Property(e => e.NomExamen).HasColumnName("nom_exam");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.PrixUnitaire).HasColumnName("prix_unitaire");
             entity.Property(e => e.DureeEstimeeMinutes).HasColumnName("duree_estimee_minutes");
             entity.Property(e => e.PreparationRequise).HasColumnName("preparation_requise");
-            entity.Property(e => e.TypeExamen).HasColumnName("type_examen");
-            entity.Property(e => e.Categorie).HasColumnName("categorie");
+            entity.Property(e => e.Disponible).HasColumnName("disponible");
             entity.Property(e => e.Actif).HasColumnName("actif");
         });
 
@@ -884,11 +975,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Motif).HasColumnName("motif");
             entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20);
             entity.Property(e => e.IdPatient).HasColumnName("id_patient").IsRequired();
-            entity.Property(e => e.IdLit).HasColumnName("id_lit").IsRequired();
+            entity.Property(e => e.IdLit).HasColumnName("id_lit"); // Nullable - pas de lit pour EN_ATTENTE
+            entity.Property(e => e.IdMedecin).HasColumnName("id_medecin"); // Nullable
+            entity.Property(e => e.IdService).HasColumnName("id_service"); // Nullable
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation"); // Nullable
+            entity.Property(e => e.Urgence).HasColumnName("urgence").HasMaxLength(20);
+            entity.Property(e => e.DiagnosticPrincipal).HasColumnName("diagnostic_principal");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
 
             entity.HasIndex(e => e.IdPatient).HasDatabaseName("IX_hospitalisation_patient");
             entity.HasIndex(e => e.IdLit).HasDatabaseName("IX_hospitalisation_lit");
             entity.HasIndex(e => e.Statut).HasDatabaseName("IX_hospitalisation_statut");
+            entity.HasIndex(e => e.IdService).HasDatabaseName("IX_hospitalisation_service");
 
             entity.HasOne(e => e.Patient)
                 .WithMany()
@@ -896,7 +994,87 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
             entity.HasOne(e => e.Lit)
                 .WithMany(l => l.Hospitalisations)
-                .HasForeignKey(e => e.IdLit);
+                .HasForeignKey(e => e.IdLit)
+                .IsRequired(false); // Relation optionnelle
+
+            entity.HasOne(e => e.Medecin)
+                .WithMany()
+                .HasForeignKey(e => e.IdMedecin)
+                .IsRequired(false); // Relation optionnelle
+
+            entity.HasOne(e => e.Service)
+                .WithMany()
+                .HasForeignKey(e => e.IdService)
+                .IsRequired(false); // Relation optionnelle
+
+            entity.HasOne(e => e.Consultation)
+                .WithMany()
+                .HasForeignKey(e => e.IdConsultation)
+                .IsRequired(false); // Relation optionnelle
+        });
+
+        // Permission Configuration (RBAC)
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(e => e.IdPermission);
+            entity.ToTable("permissions");
+
+            entity.Property(e => e.IdPermission).HasColumnName("id_permission").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Nom).HasColumnName("nom").HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.Module).HasColumnName("module").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Actif).HasColumnName("actif").HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.Code).IsUnique().HasDatabaseName("UK_permission_code");
+            entity.HasIndex(e => e.Module).HasDatabaseName("IX_permission_module");
+        });
+
+        // RolePermission Configuration
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(e => e.IdRolePermission);
+            entity.ToTable("role_permissions");
+
+            entity.Property(e => e.IdRolePermission).HasColumnName("id_role_permission").ValueGeneratedOnAdd();
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.IdPermission).HasColumnName("id_permission").IsRequired();
+            entity.Property(e => e.Actif).HasColumnName("actif").HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => new { e.Role, e.IdPermission }).IsUnique().HasDatabaseName("UK_role_permission");
+            entity.HasIndex(e => e.Role).HasDatabaseName("IX_role_permission_role");
+
+            entity.HasOne(e => e.Permission)
+                .WithMany(p => p.RolePermissions)
+                .HasForeignKey(e => e.IdPermission)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserPermission Configuration
+        modelBuilder.Entity<UserPermission>(entity =>
+        {
+            entity.HasKey(e => e.IdUserPermission);
+            entity.ToTable("user_permissions");
+
+            entity.Property(e => e.IdUserPermission).HasColumnName("id_user_permission").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdUser).HasColumnName("id_user").IsRequired();
+            entity.Property(e => e.IdPermission).HasColumnName("id_permission").IsRequired();
+            entity.Property(e => e.Granted).HasColumnName("granted").HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => new { e.IdUser, e.IdPermission }).IsUnique().HasDatabaseName("UK_user_permission");
+
+            entity.HasOne(e => e.Utilisateur)
+                .WithMany()
+                .HasForeignKey(e => e.IdUser)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Permission)
+                .WithMany()
+                .HasForeignKey(e => e.IdPermission)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -279,14 +279,24 @@ export class NotificationService implements OnDestroy {
   // ==================== HELPERS ====================
 
   private handleNewNotification(notification: Notification): void {
+    console.log('🔔 Nouvelle notification reçue:', notification);
+    
     const currentNotifications = this.notificationsSubject.value;
-    this.notificationsSubject.next([notification, ...currentNotifications]);
-    
-    // Jouer le son de notification selon la priorité
-    this.soundService.playNotificationSound(notification.priorite);
-    
-    // Afficher une notification système si disponible
-    this.showBrowserNotification(notification);
+    // Éviter les doublons
+    if (!currentNotifications.some(n => n.idNotification === notification.idNotification)) {
+      this.notificationsSubject.next([notification, ...currentNotifications]);
+      
+      // Mettre à jour le compteur de non-lues
+      if (!notification.lu) {
+        this.unreadCountSubject.next(this.unreadCountSubject.value + 1);
+      }
+      
+      // Jouer le son de notification selon la priorité
+      this.soundService.playNotificationSound(notification.priorite);
+      
+      // Afficher une notification système si disponible
+      this.showBrowserNotification(notification);
+    }
   }
 
   private updateNotificationReadStatus(id: number, lu: boolean): void {
@@ -332,18 +342,40 @@ export class NotificationService implements OnDestroy {
 
   /**
    * Calcule le temps écoulé depuis la création
+   * La date du backend est en UTC, on la convertit en local
    */
   getTempsEcoule(dateCreation: Date | string): string {
-    const date = new Date(dateCreation);
+    // Parser la date - le backend envoie en UTC
+    let date: Date;
+    if (typeof dateCreation === 'string') {
+      // Si la date ne contient pas de 'Z', c'est probablement UTC sans suffixe
+      if (!dateCreation.endsWith('Z') && !dateCreation.includes('+')) {
+        date = new Date(dateCreation + 'Z');
+      } else {
+        date = new Date(dateCreation);
+      }
+    } else {
+      date = new Date(dateCreation);
+    }
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    
+    // Protection contre les dates futures (décalage serveur)
+    if (diffMs < 0) return "À l'instant";
+    
+    const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "À l'instant";
+    if (diffSecs < 30) return "À l'instant";
+    if (diffMins < 1) return "Il y a quelques secondes";
+    if (diffMins === 1) return "Il y a 1 min";
     if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours === 1) return "Il y a 1h";
     if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays === 1) return "Hier";
     if (diffDays < 7) return `Il y a ${diffDays}j`;
     return date.toLocaleDateString('fr-FR');
   }
@@ -362,7 +394,7 @@ export class NotificationService implements OnDestroy {
       'systeme': 'settings',
       'message': 'message-circle',
       'rappel': 'bell',
-      'validation': 'check-circle'
+      'validation': 'check-circle-2'
     };
     return icons[type] || 'bell';
   }

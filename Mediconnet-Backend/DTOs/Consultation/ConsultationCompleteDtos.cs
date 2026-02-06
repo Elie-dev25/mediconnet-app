@@ -16,23 +16,42 @@ public class DossierPatientDto
     public string? Telephone { get; set; }
     public string? Email { get; set; }
     public string? Adresse { get; set; }
+    public string? Nationalite { get; set; }
+    public string? RegionOrigine { get; set; }
+    public string? SituationMatrimoniale { get; set; }
+    public string? Profession { get; set; }
+    public string? Ethnie { get; set; }
+    public int? NbEnfants { get; set; }
     
     // Informations médicales
     public string? GroupeSanguin { get; set; }
     public string? MaladiesChroniques { get; set; }
+    public bool? AllergiesConnues { get; set; }
     public string? AllergiesDetails { get; set; }
+    public bool? AntecedentsFamiliaux { get; set; }
     public string? AntecedentsFamiliauxDetails { get; set; }
+    public bool? OperationsChirurgicales { get; set; }
     public string? OperationsDetails { get; set; }
     
     // Habitudes de vie
     public bool? ConsommationAlcool { get; set; }
+    public string? FrequenceAlcool { get; set; }
     public bool? Tabagisme { get; set; }
     public bool? ActivitePhysique { get; set; }
+    
+    // Contact d'urgence
+    public string? PersonneContact { get; set; }
+    public string? NumeroContact { get; set; }
     
     // Assurance
     public string? NomAssurance { get; set; }
     public string? NumeroCarteAssurance { get; set; }
     public decimal? CouvertureAssurance { get; set; }
+    public DateTime? DateDebutValidite { get; set; }
+    public DateTime? DateFinValidite { get; set; }
+    
+    // Dates système
+    public DateTime? DateCreation { get; set; }
     
     // Historique
     public List<HistoriqueConsultationDto> Consultations { get; set; } = new();
@@ -62,7 +81,8 @@ public class HistoriqueOrdonnanceDto
 public class HistoriqueExamenDto
 {
     public int IdExamen { get; set; }
-    public string TypeExamen { get; set; } = "";
+    public string Categorie { get; set; } = "";
+    public string Specialite { get; set; } = "";
     public string NomExamen { get; set; } = "";
     public string Statut { get; set; } = "";
     public DateTime DatePrescription { get; set; }
@@ -84,9 +104,14 @@ public class ConsultationEnCoursDto
     public bool IsPremiereConsultation { get; set; }
     public int SpecialiteId { get; set; }
     
-    // Données de la consultation
+    // Données de la consultation (workflow mis à jour)
     public AnamneseDto? Anamnese { get; set; }
+    public ExamenCliniqueDto? ExamenClinique { get; set; }
     public DiagnosticDto? Diagnostic { get; set; }
+    public PlanTraitementDto? PlanTraitement { get; set; }
+    public ConclusionDto? Conclusion { get; set; }
+    
+    // Conservé pour compatibilité
     public PrescriptionsDto? Prescriptions { get; set; }
 }
 
@@ -125,13 +150,97 @@ public class ParametresVitauxDto
     public decimal? Glycemie { get; set; }
 }
 
-// Étape 2: Diagnostic
+// Étape 2: Examen Clinique (NOUVEAU)
+public class ExamenCliniqueDto
+{
+    // Constantes vitales (affichées si prises par infirmier, sinon saisies par médecin)
+    public ParametresVitauxDto? ParametresVitaux { get; set; }
+    public bool ParametresPrisParInfirmier { get; set; }
+    public string? InfirmierNom { get; set; }
+    public DateTime? DatePriseParametres { get; set; }
+    
+    // Examen physique
+    public string? Inspection { get; set; }
+    public string? Palpation { get; set; }
+    public string? Auscultation { get; set; }
+    public string? Percussion { get; set; }
+    public string? AutresObservations { get; set; }
+}
+
+// Étape 3: Diagnostic et Orientation
 public class DiagnosticDto
 {
     public string? ExamenClinique { get; set; }
     public string? DiagnosticPrincipal { get; set; }
     public string? DiagnosticsSecondaires { get; set; }
+    public string? HypothesesDiagnostiques { get; set; }
     public string? NotesCliniques { get; set; }
+    
+    // Récapitulatif patient (données du compte)
+    public RecapitulatifPatientDto? RecapitulatifPatient { get; set; }
+}
+
+// Récapitulatif des données patient pour l'étape diagnostic
+public class RecapitulatifPatientDto
+{
+    // Informations personnelles
+    public string? RegionOrigine { get; set; }
+    public string? SituationMatrimoniale { get; set; }
+    public string? Profession { get; set; }
+    public int? NbEnfants { get; set; }
+    public string? Ethnie { get; set; }
+    // Informations médicales
+    public string? GroupeSanguin { get; set; }
+    public string? MaladiesChroniques { get; set; }
+    public bool? AllergiesConnues { get; set; }
+    public string? AllergiesDetails { get; set; }
+    public bool? AntecedentsFamiliaux { get; set; }
+    public string? AntecedentsFamiliauxDetails { get; set; }
+    public bool? OperationsChirurgicales { get; set; }
+    public string? OperationsDetails { get; set; }
+    // Habitudes de vie
+    public bool? ConsommationAlcool { get; set; }
+    public string? FrequenceAlcool { get; set; }
+    public bool? Tabagisme { get; set; }
+    public bool? ActivitePhysique { get; set; }
+    // Diagnostics précédents
+    public List<DiagnosticPrecedentDto> DiagnosticsPrecedents { get; set; } = new();
+}
+
+// Diagnostic précédent pour l'historique
+public class DiagnosticPrecedentDto
+{
+    public DateTime Date { get; set; }
+    public string Diagnostic { get; set; } = string.Empty;
+    public string MedecinNom { get; set; } = string.Empty;
+    public string? MedecinPrenom { get; set; }
+    public string? Specialite { get; set; }
+}
+
+// Étape 4: Plan de Traitement (NOUVEAU)
+public class PlanTraitementDto
+{
+    public string? ExplicationDiagnostic { get; set; }
+    public string? OptionsTraitement { get; set; }
+    public OrdonnanceDto? Ordonnance { get; set; }
+    public List<ExamenPrescritDto> ExamensPrescrits { get; set; } = new();
+    // Orientation spécialiste
+    public string? OrientationSpecialiste { get; set; }
+    public string? MotifOrientation { get; set; }
+    public int? IdSpecialisteOriente { get; set; }
+}
+
+// Étape 5: Conclusion (NOUVEAU)
+public class ConclusionDto
+{
+    public string? ResumeConsultation { get; set; }
+    public string? QuestionsPatient { get; set; }
+    public string? ConsignesPatient { get; set; }
+    public string? Recommandations { get; set; }
+    // Planification suivi
+    public string? TypeSuivi { get; set; } // rdv, appel, aucun
+    public DateTime? DateSuiviPrevue { get; set; }
+    public string? NotesSuivi { get; set; }
 }
 
 // Étape 3: Prescriptions
@@ -153,10 +262,14 @@ public class OrdonnanceDto
 public class MedicamentDto
 {
     public int? IdPrescription { get; set; }
+    public int? IdMedicament { get; set; }
     public string NomMedicament { get; set; } = "";
     public string? Dosage { get; set; }
+    public string? Posologie { get; set; }
     public string? Frequence { get; set; }
     public string? Duree { get; set; }
+    public string? VoieAdministration { get; set; }
+    public string? FormePharmaceutique { get; set; }
     public string? Instructions { get; set; }
     public int? Quantite { get; set; }
 }
@@ -164,11 +277,25 @@ public class MedicamentDto
 public class ExamenPrescritDto
 {
     public int? IdExamen { get; set; }
-    public string TypeExamen { get; set; } = "";
+    public string Categorie { get; set; } = "";
+    public string Specialite { get; set; } = "";
     public string NomExamen { get; set; } = "";
     public string? Description { get; set; }
     public bool Urgence { get; set; }
     public string? Notes { get; set; }
+    public bool Disponible { get; set; } = true;
+    public int? IdLaboratoire { get; set; }
+    public string? NomLaboratoire { get; set; }
+}
+
+public class LaboratoireDto
+{
+    public int IdLabo { get; set; }
+    public string NomLabo { get; set; } = "";
+    public string? Contact { get; set; }
+    public string? Adresse { get; set; }
+    public string? Telephone { get; set; }
+    public string? Type { get; set; }
 }
 
 public class RecommandationDto
@@ -182,6 +309,61 @@ public class RecommandationDto
     public bool Urgence { get; set; }
 }
 
+public class OrientationSpecialisteDto
+{
+    public int? IdOrientation { get; set; }
+    public int IdConsultation { get; set; }
+    public int IdSpecialite { get; set; }
+    public string? NomSpecialite { get; set; }
+    public int? IdMedecinOriente { get; set; }
+    public string? NomMedecinOriente { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Urgence { get; set; } = false;
+    public string Statut { get; set; } = "en_attente";
+    public DateTime DateOrientation { get; set; }
+    public DateTime? DateRdvPropose { get; set; }
+    public string? Notes { get; set; }
+    public int? IdRdvCree { get; set; }
+}
+
+public class CreateOrientationRequest
+{
+    public int IdConsultation { get; set; }
+    public int IdSpecialite { get; set; }
+    public int? IdMedecinOriente { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Urgence { get; set; } = false;
+    public DateTime? DateRdvPropose { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class CreateOrientationManuelleRequest
+{
+    public int IdConsultation { get; set; }
+    public string SpecialiteManuelle { get; set; } = "";
+    public string? MedecinManuel { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Urgence { get; set; } = false;
+    public string? Notes { get; set; }
+}
+
+public class SpecialiteDto
+{
+    public int IdSpecialite { get; set; }
+    public string NomSpecialite { get; set; } = "";
+    public decimal CoutConsultation { get; set; }
+}
+
+public class MedecinSpecialisteDto
+{
+    public int IdUser { get; set; }
+    public string Nom { get; set; } = "";
+    public string Prenom { get; set; } = "";
+    public string NomComplet => $"Dr. {Prenom} {Nom}";
+    public int IdSpecialite { get; set; }
+    public string? NomSpecialite { get; set; }
+}
+
 // ==================== REQUESTS ====================
 
 public class SaveAnamneseRequest
@@ -190,10 +372,28 @@ public class SaveAnamneseRequest
     public AnamneseDto Anamnese { get; set; } = new();
 }
 
+public class SaveExamenCliniqueRequest
+{
+    public int IdConsultation { get; set; }
+    public ExamenCliniqueDto ExamenClinique { get; set; } = new();
+}
+
 public class SaveDiagnosticRequest
 {
     public int IdConsultation { get; set; }
     public DiagnosticDto Diagnostic { get; set; } = new();
+}
+
+public class SavePlanTraitementRequest
+{
+    public int IdConsultation { get; set; }
+    public PlanTraitementDto PlanTraitement { get; set; } = new();
+}
+
+public class SaveConclusionRequest
+{
+    public int IdConsultation { get; set; }
+    public ConclusionDto Conclusion { get; set; } = new();
 }
 
 public class SavePrescriptionsRequest
@@ -213,4 +413,38 @@ public class ConsultationRecapitulatifDto
 {
     public ConsultationEnCoursDto Consultation { get; set; } = new();
     public DossierPatientDto Patient { get; set; } = new();
+}
+
+// ==================== CONSULTATION DETAILS (pour affichage) ====================
+
+public class ConsultationDetailDto
+{
+    public int IdConsultation { get; set; }
+    public int IdPatient { get; set; }
+    public string PatientNom { get; set; } = "";
+    public string PatientPrenom { get; set; } = "";
+    public string? NumeroDossier { get; set; }
+    public string DateConsultation { get; set; } = "";
+    public int? Duree { get; set; }
+    public string? Motif { get; set; }
+    public string Statut { get; set; } = "a_faire";
+    public string? Anamnese { get; set; }
+    public string? NotesCliniques { get; set; }
+    public string? Diagnostic { get; set; }
+    public string? Conclusion { get; set; }
+    public string? Recommandations { get; set; }
+    public OrdonnanceDto? Ordonnance { get; set; }
+    public List<ExamenPrescritDetailDto> ExamensPrescrits { get; set; } = new();
+    public List<QuestionReponseDto> Questionnaire { get; set; } = new();
+}
+
+public class ExamenPrescritDetailDto
+{
+    public int? IdExamen { get; set; }
+    public string NomExamen { get; set; } = "";
+    public string Categorie { get; set; } = "";
+    public string Specialite { get; set; } = "";
+    public string? Instructions { get; set; }
+    public string? Statut { get; set; }
+    public bool Disponible { get; set; } = true;
 }

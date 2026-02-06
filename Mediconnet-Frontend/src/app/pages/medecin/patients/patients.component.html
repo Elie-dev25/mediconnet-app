@@ -2,7 +2,7 @@
   [sidebarTitle]="sidebarTitle" 
   [menuItems]="menuItems">
   
-  <div class="patients-page">
+  <div class="patients-page" [class.panel-open]="isHospitalisationPanelOpen">
     <!-- Header -->
     <header class="page-header">
       <div class="header-left">
@@ -19,8 +19,28 @@
       </div>
     </header>
 
-    <!-- Stats Cards -->
-    <section class="stats-grid" *ngIf="stats">
+    <!-- Sous-onglets -->
+    <div class="tabs-container">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'tous'"
+        (click)="switchTab('tous')">
+        <lucide-icon name="users" [size]="18"></lucide-icon>
+        Tous les patients
+        <span class="tab-badge" *ngIf="stats">{{ stats.totalPatients }}</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'hospitalises'"
+        (click)="switchTab('hospitalises')">
+        <lucide-icon name="bed-double" [size]="18"></lucide-icon>
+        Patients hospitalisés
+        <span class="tab-badge hospitalized" *ngIf="patientsHospitalises.length > 0">{{ patientsHospitalises.length }}</span>
+      </button>
+    </div>
+
+    <!-- Stats Cards (onglet tous) -->
+    <section class="stats-grid" *ngIf="stats && activeTab === 'tous'">
       <div class="stat-card">
         <div class="stat-icon total">
           <lucide-icon name="users" [size]="24"></lucide-icon>
@@ -56,13 +76,15 @@
         <lucide-icon name="search" [size]="20"></lucide-icon>
         <input 
           type="text" 
-          placeholder="Rechercher par nom, prénom, N° dossier ou téléphone..." 
+          [placeholder]="activeTab === 'tous' ? 'Rechercher par nom, prénom, N° dossier ou téléphone...' : 'Rechercher par nom, chambre ou lit...'" 
           [(ngModel)]="searchTerm"
           (keyup.enter)="onSearch()"
           (input)="onSearch()">
       </div>
     </div>
 
+    <!-- ==================== ONGLET TOUS LES PATIENTS ==================== -->
+    <ng-container *ngIf="activeTab === 'tous'">
     <!-- Liste des patients -->
     <section class="patients-list">
       <div *ngIf="isLoading" class="loading">
@@ -130,6 +152,9 @@
             <lucide-icon name="folder-open" [size]="16"></lucide-icon>
             Dossier
           </button>
+          <button class="btn-options" (click)="openPatientFiche(patient, $event)" title="Options patient">
+            <lucide-icon name="more-vertical" [size]="18"></lucide-icon>
+          </button>
         </div>
 
         <div class="patient-arrow">
@@ -137,13 +162,119 @@
         </div>
       </div>
     </section>
+    </ng-container>
+
+    <!-- ==================== ONGLET PATIENTS HOSPITALISÉS ==================== -->
+    <ng-container *ngIf="activeTab === 'hospitalises'">
+    <section class="hospitalized-table-section">
+      <div *ngIf="isLoadingHospitalises" class="loading">
+        <lucide-icon name="refresh-cw" [size]="24" class="spinning"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div *ngIf="!isLoadingHospitalises && filteredPatientsHospitalises.length === 0" class="empty-state">
+        <lucide-icon name="bed-double" [size]="48"></lucide-icon>
+        <p>Aucun patient hospitalisé</p>
+      </div>
+
+      <!-- Table Header -->
+      <div class="table-header" *ngIf="!isLoadingHospitalises && filteredPatientsHospitalises.length > 0">
+        <div class="th-cell th-id">ID</div>
+        <div class="th-cell th-patient">Patient</div>
+        <div class="th-cell th-chambre">Chambre / Lit</div>
+        <div class="th-cell th-statut">Statut</div>
+        <div class="th-cell th-contact">Contact</div>
+        <div class="th-cell th-date">Date d'entrée</div>
+        <div class="th-cell th-actions">Actions</div>
+      </div>
+
+      <!-- Table Rows -->
+      <div class="table-row" 
+           *ngFor="let patient of filteredPatientsHospitalises; let i = index; let odd = odd" 
+           [class.odd]="odd"
+           [class.en-attente]="patient.statut === 'EN_ATTENTE'"
+           (click)="openHospitalisationDetail(patient)">
+        
+        <!-- ID -->
+        <div class="td-cell td-id">
+          <span class="id-badge">{{ patient.idAdmission }}</span>
+        </div>
+
+        <!-- Patient Info -->
+        <div class="td-cell td-patient">
+          <div class="patient-avatar-circle" [class.attente]="patient.statut === 'EN_ATTENTE'">
+            <lucide-icon name="user" [size]="18"></lucide-icon>
+          </div>
+          <div class="patient-details">
+            <span class="patient-name">{{ patient.patientPrenom }} {{ patient.patientNom }}</span>
+            <span class="patient-dossier">{{ patient.numeroDossier || 'N/A' }}</span>
+          </div>
+        </div>
+
+        <!-- Chambre / Lit -->
+        <div class="td-cell td-chambre">
+          <ng-container *ngIf="patient.statut !== 'EN_ATTENTE'">
+            <span class="chambre-text">Ch. {{ patient.numeroChambre || '-' }}</span>
+            <span class="lit-text">Lit {{ patient.numeroLit || '-' }}</span>
+          </ng-container>
+          <span class="no-room" *ngIf="patient.statut === 'EN_ATTENTE'">Non assigné</span>
+        </div>
+
+        <!-- Statut -->
+        <div class="td-cell td-statut">
+          <span class="status-pill" [class]="getStatutClass(patient.statut)">
+            {{ getStatutLabel(patient.statut) }}
+          </span>
+        </div>
+
+        <!-- Contact -->
+        <div class="td-cell td-contact">
+          <div class="contact-line" *ngIf="patient.telephone">
+            <lucide-icon name="phone" [size]="12"></lucide-icon>
+            <span>{{ patient.telephone }}</span>
+          </div>
+          <span class="no-contact" *ngIf="!patient.telephone">-</span>
+        </div>
+
+        <!-- Date -->
+        <div class="td-cell td-date">
+          <span class="date-value">{{ formatDate(patient.dateEntree) }}</span>
+          <span class="duration-badge">{{ patient.dureeJours }}j</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="td-cell td-actions" (click)="$event.stopPropagation()">
+          <button class="action-btn soins" title="Soins" (click)="openHospitalisationDetail(patient)">
+            <lucide-icon name="heart-pulse" [size]="14"></lucide-icon>
+            Soins
+          </button>
+          <button class="action-btn dossier" title="Dossier" (click)="openHospitalisationDetail(patient)">
+            <lucide-icon name="folder-open" [size]="14"></lucide-icon>
+            Dossier
+          </button>
+          <button class="action-btn installer" *ngIf="patient.statut === 'EN_ATTENTE'" (click)="openAttribuerLitPanel(patient)" title="Installer">
+            <lucide-icon name="bed" [size]="14"></lucide-icon>
+          </button>
+          <button class="action-btn delete" *ngIf="patient.statut !== 'EN_ATTENTE'" title="Options">
+            <lucide-icon name="more-vertical" [size]="14"></lucide-icon>
+          </button>
+          <button class="action-btn expand" title="Détails">
+            <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+    </ng-container>
   </div>
 
-  <!-- Panneau Fiche Patient (composant partagé) -->
+  <!-- Panneau Fiche Patient (composant partagé) - onglet tous -->
   <app-fiche-patient-panel
     [patientId]="selectedPatientId"
     [isOpen]="isDetailOpen"
-    (close)="closeDetail()">
+    (close)="closeDetail()"
+    (hospitaliser)="openHospitalisationPanel($event)"
+    (prescrireExamen)="openExamenPanel($event)"
+    (faireOrdonnance)="openOrdonnancePanel($event)">
   </app-fiche-patient-panel>
 
   <!-- Modale Validation Code Email -->
@@ -171,7 +302,7 @@
         </div>
 
         <div class="code-input-section" *ngIf="codeSent">
-          <lucide-icon name="check-circle" [size]="48" class="success-icon"></lucide-icon>
+          <lucide-icon name="check-circle-2" [size]="48" class="success-icon"></lucide-icon>
           <p>Un code a été envoyé à <strong>{{ pendingPatient?.email || 'l\'email du patient' }}</strong></p>
           
           <div class="code-input-container">
@@ -196,12 +327,367 @@
               Renvoyer le code
             </button>
             <button class="btn btn-primary" (click)="verifyCode()" [disabled]="isVerifyingCode || validationCode.length !== 5">
-              <lucide-icon name="check" [size]="16" *ngIf="!isVerifyingCode"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16" *ngIf="!isVerifyingCode"></lucide-icon>
               <lucide-icon name="loader-2" [size]="16" class="spinning" *ngIf="isVerifyingCode"></lucide-icon>
               {{ isVerifyingCode ? 'Vérification...' : 'Valider' }}
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau Détails Hospitalisation -->
+  <div class="hospitalisation-panel-overlay" *ngIf="isHospitalisationPanelOpen" (click)="closeHospitalisationDetailPanel()">
+    <div class="hospitalisation-panel" (click)="$event.stopPropagation()">
+      <div class="panel-header">
+        <h2>
+          <lucide-icon name="bed-double" [size]="22"></lucide-icon>
+          Détails de l'hospitalisation
+        </h2>
+        <button class="close-btn" (click)="closeHospitalisationDetailPanel()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="panel-content" *ngIf="isLoadingHospitalisationDetail">
+        <div class="loading">
+          <lucide-icon name="loader-2" [size]="32" class="spinning"></lucide-icon>
+          <span>Chargement...</span>
+        </div>
+      </div>
+
+      <div class="panel-content" *ngIf="!isLoadingHospitalisationDetail && selectedHospitalisation">
+        <!-- Informations Patient -->
+        <section class="panel-section">
+          <div class="patient-header-panel">
+            <div class="avatar-large">
+              <lucide-icon name="user" [size]="32"></lucide-icon>
+            </div>
+            <div class="patient-identity">
+              <h3>{{ selectedHospitalisation.patientPrenom }} {{ selectedHospitalisation.patientNom }}</h3>
+              <span class="dossier" *ngIf="selectedHospitalisation.numeroDossier">
+                N° {{ selectedHospitalisation.numeroDossier }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-grid-panel">
+            <div class="info-item" *ngIf="selectedHospitalisation.dateNaissance">
+              <span class="info-label">Âge</span>
+              <span class="info-value">{{ getAge(selectedHospitalisation.dateNaissance) }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedHospitalisation.sexe">
+              <span class="info-label">Sexe</span>
+              <span class="info-value">{{ getSexeLabel(selectedHospitalisation.sexe) }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedHospitalisation.groupeSanguin">
+              <span class="info-label">Groupe sanguin</span>
+              <span class="info-value blood">{{ selectedHospitalisation.groupeSanguin }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedHospitalisation.telephone">
+              <span class="info-label">Téléphone</span>
+              <span class="info-value">{{ selectedHospitalisation.telephone }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Détails Hospitalisation -->
+        <section class="panel-section">
+          <h4>
+            <lucide-icon name="hospital" [size]="18"></lucide-icon>
+            Hospitalisation
+          </h4>
+          <div class="hospitalisation-details">
+            <div class="detail-row highlight">
+              <div class="detail-item">
+                <lucide-icon name="door-open" [size]="18"></lucide-icon>
+                <div>
+                  <span class="detail-label">Chambre</span>
+                  <span class="detail-value">{{ selectedHospitalisation.numeroChambre || '-' }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <lucide-icon name="bed" [size]="18"></lucide-icon>
+                <div>
+                  <span class="detail-label">Lit</span>
+                  <span class="detail-value">{{ selectedHospitalisation.numeroLit || '-' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-item">
+                <lucide-icon name="calendar" [size]="16"></lucide-icon>
+                <div>
+                  <span class="detail-label">Date d'entrée</span>
+                  <span class="detail-value">{{ formatDate(selectedHospitalisation.dateEntree) }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <lucide-icon name="clock" [size]="16"></lucide-icon>
+                <div>
+                  <span class="detail-label">Durée</span>
+                  <span class="detail-value">{{ selectedHospitalisation.dureeJours }} jour(s)</span>
+                </div>
+              </div>
+            </div>
+            <div class="detail-row" *ngIf="selectedHospitalisation.motif">
+              <div class="detail-item full">
+                <lucide-icon name="clipboard" [size]="16"></lucide-icon>
+                <div>
+                  <span class="detail-label">Motif</span>
+                  <span class="detail-value">{{ selectedHospitalisation.motif }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="status-badge-container">
+              <span class="status-badge" [class]="selectedHospitalisation.statut">
+                {{ selectedHospitalisation.statut === 'en_cours' ? 'En cours' : selectedHospitalisation.statut }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contact d'urgence -->
+        <section class="panel-section" *ngIf="selectedHospitalisation.personneContact">
+          <h4>
+            <lucide-icon name="phone-call" [size]="18"></lucide-icon>
+            Contact d'urgence
+          </h4>
+          <div class="emergency-contact-panel">
+            <span class="contact-name">{{ selectedHospitalisation.personneContact }}</span>
+            <span class="contact-phone" *ngIf="selectedHospitalisation.numeroContact">
+              <lucide-icon name="phone" [size]="14"></lucide-icon>
+              {{ selectedHospitalisation.numeroContact }}
+            </span>
+          </div>
+        </section>
+
+        <!-- Dernières consultations -->
+        <section class="panel-section" *ngIf="selectedHospitalisationConsultations.length > 0">
+          <h4>
+            <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+            Dernières consultations
+          </h4>
+          <div class="consultations-list-panel">
+            <div class="consultation-item-panel" *ngFor="let c of selectedHospitalisationConsultations">
+              <div class="consultation-date-panel">
+                <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                {{ formatDate(c.dateConsultation) }}
+              </div>
+              <span class="consultation-motif-panel">{{ c.motif || 'Consultation' }}</span>
+              <span class="consultation-diagnostic-panel" *ngIf="c.diagnostic">{{ c.diagnostic }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Actions médicales -->
+        <section class="panel-section actions-section">
+          <h4>
+            <lucide-icon name="activity" [size]="18"></lucide-icon>
+            Actions médicales
+          </h4>
+          <div class="actions-grid">
+            <button class="action-btn primary" (click)="programmerSoins()">
+              <lucide-icon name="syringe" [size]="20"></lucide-icon>
+              <span>Programmer des soins</span>
+            </button>
+            <button class="action-btn" disabled>
+              <lucide-icon name="pill" [size]="20"></lucide-icon>
+              <span>Prescrire médicament</span>
+            </button>
+            <button class="action-btn" disabled>
+              <lucide-icon name="flask-conical" [size]="20"></lucide-icon>
+              <span>Demander examen</span>
+            </button>
+            <button class="action-btn" disabled>
+              <lucide-icon name="file-text" [size]="20"></lucide-icon>
+              <span>Ajouter note</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau latéral Hospitalisation Multi-étapes -->
+  <div class="side-panel-overlay" *ngIf="showHospitalisationPanel" (click)="onHospitalisationCancelled()">
+    <div class="side-panel left hospitalisation-panel" (click)="$event.stopPropagation()">
+      <app-hospitalisation-multi-etapes
+        *ngIf="hospitalisationPatientInfo"
+        [patient]="hospitalisationPatientInfo"
+        (completed)="onHospitalisationCompleted()"
+        (cancelled)="onHospitalisationCancelled()">
+      </app-hospitalisation-multi-etapes>
+    </div>
+  </div>
+
+  <!-- Panneau latéral Examen Hospitalisation -->
+  <app-examen-hospitalisation-panel
+    [isOpen]="showExamenHospPanel"
+    [hospitalisationId]="examenHospitalisationId"
+    [patientNom]="examenPatientNom"
+    [patientPrenom]="examenPatientPrenom"
+    (close)="closeExamenHospPanel()"
+    (saved)="onExamenHospSaved()">
+  </app-examen-hospitalisation-panel>
+
+  <!-- Panneau latéral Ordonnance Hospitalisation -->
+  <app-ordonnance-hospitalisation-panel
+    [isOpen]="showOrdonnanceHospPanel"
+    [hospitalisationId]="ordonnanceHospitalisationId"
+    [patientNom]="ordonnancePatientNom"
+    [patientPrenom]="ordonnancePatientPrenom"
+    (close)="closeOrdonnanceHospPanel()"
+    (saved)="onOrdonnanceHospSaved()">
+  </app-ordonnance-hospitalisation-panel>
+
+  <!-- Panneau latéral Soin Hospitalisation -->
+  <app-soin-hospitalisation-panel
+    [isOpen]="showSoinHospPanel"
+    [hospitalisationId]="soinHospitalisationId"
+    [patientNom]="soinPatientNom"
+    [patientPrenom]="soinPatientPrenom"
+    (close)="closeSoinHospPanel()"
+    (saved)="onSoinHospSaved()">
+  </app-soin-hospitalisation-panel>
+
+  <!-- Panel Détails Hospitalisation (nouveau composant unifié) -->
+  <app-hospitalisation-details-panel
+    [isOpen]="showDetailsPanel"
+    [hospitalisationId]="selectedHospitalisationId"
+    [context]="'medecin'"
+    (close)="closeDetailsPanel()"
+    (openAttribuerLit)="onOpenAttribuerLitFromPanel($event)"
+    (addSoins)="openSoinPanelFromDetails($event)"
+    (addExamens)="openExamenPanelFromDetails($event)"
+    (addPrescriptions)="openOrdonnancePanelFromDetails($event)"
+    (finHospitalisation)="terminerHospitalisation($event)"
+  ></app-hospitalisation-details-panel>
+
+  <!-- Panel Attribution Lit -->
+  <app-attribuer-lit-panel
+    [isOpen]="showAttribuerLitPanel"
+    [hospitalisation]="selectedHospitalisationForLit"
+    [context]="'medecin'"
+    (close)="closeAttribuerLitPanel()"
+    (attributed)="onLitAttribue()">
+  </app-attribuer-lit-panel>
+
+  <!-- Modal Ajout de Soins -->
+  <div class="modal-overlay" *ngIf="showSoinsModal" (click)="closeSoinsModal()">
+    <div class="modal-content soin-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <lucide-icon name="heart-pulse" [size]="20"></lucide-icon>
+          Ajouter un soin
+        </h3>
+        <button class="btn-close" (click)="closeSoinsModal()">
+          <lucide-icon name="x" [size]="18"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Success State -->
+      <div class="modal-success" *ngIf="soinSuccess">
+        <lucide-icon name="check-circle-2" [size]="48"></lucide-icon>
+        <p>Soin ajouté avec succès !</p>
+      </div>
+
+      <!-- Form -->
+      <div class="modal-body" *ngIf="!soinSuccess">
+        <!-- Error -->
+        <div class="error-box" *ngIf="soinError">
+          <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+          {{ soinError }}
+        </div>
+
+        <!-- Type de soin -->
+        <div class="form-group">
+          <label>Type de soin</label>
+          <select [(ngModel)]="soinForm.typeSoin">
+            <option value="surveillance">Surveillance</option>
+            <option value="nursing">Soins infirmiers</option>
+            <option value="kinesitherapie">Kinésithérapie</option>
+            <option value="nutrition">Nutrition / Diététique</option>
+            <option value="hygiene">Hygiène / Confort</option>
+            <option value="psychologique">Soutien psychologique</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="required">Description du soin</label>
+          <textarea [(ngModel)]="soinForm.description" rows="3" 
+                    placeholder="Décrivez le soin à effectuer..."></textarea>
+        </div>
+
+        <!-- Fréquence + Durée -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fréquence</label>
+            <select [(ngModel)]="soinForm.frequence">
+              <option value="">Non spécifiée</option>
+              <option value="1x/jour">1x par jour</option>
+              <option value="2x/jour">2x par jour</option>
+              <option value="3x/jour">3x par jour</option>
+              <option value="4x/jour">4x par jour</option>
+              <option value="toutes_les_4h">Toutes les 4h</option>
+              <option value="toutes_les_6h">Toutes les 6h</option>
+              <option value="toutes_les_8h">Toutes les 8h</option>
+              <option value="au_besoin">Au besoin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Durée</label>
+            <select [(ngModel)]="soinForm.duree">
+              <option value="">Non spécifiée</option>
+              <option value="1_jour">1 jour</option>
+              <option value="3_jours">3 jours</option>
+              <option value="1_semaine">1 semaine</option>
+              <option value="2_semaines">2 semaines</option>
+              <option value="pendant_hospitalisation">Pendant l'hospitalisation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Priorité -->
+        <div class="form-group">
+          <label>Priorité</label>
+          <div class="priority-options">
+            <label class="priority-option" [class.selected]="soinForm.priorite === 'normale'">
+              <input type="radio" [(ngModel)]="soinForm.priorite" value="normale">
+              <span class="priority-badge normale">Normale</span>
+            </label>
+            <label class="priority-option" [class.selected]="soinForm.priorite === 'haute'">
+              <input type="radio" [(ngModel)]="soinForm.priorite" value="haute">
+              <span class="priority-badge haute">Haute</span>
+            </label>
+            <label class="priority-option" [class.selected]="soinForm.priorite === 'urgente'">
+              <input type="radio" [(ngModel)]="soinForm.priorite" value="urgente">
+              <span class="priority-badge urgente">Urgente</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="form-group">
+          <label>Instructions particulières</label>
+          <textarea [(ngModel)]="soinForm.instructions" rows="2" 
+                    placeholder="Instructions pour l'équipe soignante..."></textarea>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer" *ngIf="!soinSuccess">
+        <button class="btn btn-secondary" (click)="closeSoinsModal()" [disabled]="isAddingSoin">
+          Annuler
+        </button>
+        <button class="btn btn-primary" (click)="submitSoin()" [disabled]="isAddingSoin || !soinForm.description.trim()">
+          <lucide-icon name="loader-2" [size]="16" class="spinning" *ngIf="isAddingSoin"></lucide-icon>
+          <lucide-icon name="plus" [size]="16" *ngIf="!isAddingSoin"></lucide-icon>
+          {{ isAddingSoin ? 'Ajout...' : 'Ajouter le soin' }}
+        </button>
       </div>
     </div>
   </div>

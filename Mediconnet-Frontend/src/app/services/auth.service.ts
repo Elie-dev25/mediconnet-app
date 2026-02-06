@@ -4,6 +4,9 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { NotificationService } from './notification.service';
+import { NotificationSoundService } from './notification-sound.service';
+import { StatePreservationService } from '../core/services/state-preservation.service';
+import { IdleService } from '../core/services/idle.service';
 
 /**
  * Interface pour les données de connexion
@@ -37,6 +40,7 @@ export interface AuthResponse {
   email: string;
   telephone?: string;
   role: string;
+  titreAffiche?: string;
   message?: string;
 }
 
@@ -100,7 +104,10 @@ export class AuthService {
   constructor(
     private http: HttpClient, 
     private router: Router,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private soundService: NotificationSoundService,
+    private statePreservationService: StatePreservationService,
+    private idleService: IdleService
   ) {
     this.loadUserFromStorage();
   }
@@ -146,16 +153,43 @@ export class AuthService {
 
   /**
    * Déconnexion utilisateur
+   * @param preserveState Si true, sauvegarde l'état pour redirection après reconnexion (inactivité)
    */
-  logout(): void {
+  logout(preserveState: boolean = false): void {
+    // Arrêter la surveillance d'inactivité
+    this.idleService.stopWatching();
+    
     // Déconnecter SignalR des notifications
     this.notificationService.stopConnection();
+    
+    if (preserveState) {
+      // Déconnexion pour inactivité - sauvegarder le contexte
+      this.statePreservationService.saveBeforeIdleLogout();
+    } else {
+      // Déconnexion volontaire - nettoyer tout
+      this.statePreservationService.clearAllSessionData();
+    }
     
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.isAuthenticatedSubject.next(false);
     this.currentUserSubject.next(null);
-    this.router.navigate(['/']);
+    
+    if (preserveState) {
+      this.router.navigate(['/auth/login'], { 
+        queryParams: { sessionExpired: 'true' } 
+      });
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
+
+  /**
+   * Déconnexion pour inactivité (préserve l'état)
+   */
+  logoutDueToInactivity(): void {
+    console.warn('⏰ Déconnexion automatique pour inactivité');
+    this.logout(true);
   }
 
   /**
@@ -197,6 +231,7 @@ export class AuthService {
         email: response.email,
         telephone: response.telephone,
         role: response.role,
+        titreAffiche: response.titreAffiche,
         emailConfirmed: (response as any).emailConfirmed ?? true,
         profileCompleted: (response as any).profileCompleted ?? false,
         mustChangePassword: (response as any).mustChangePassword ?? false,
@@ -210,8 +245,41 @@ export class AuthService {
       
       // Initialiser la connexion SignalR pour les notifications
       this.notificationService.startConnection(response.token);
+      
+      // Initialiser l'audio après le login (interaction utilisateur = clic sur bouton login)
+      this.soundService.initAfterUserInteraction();
+      
+      // Démarrer la surveillance d'inactivité
+      this.startIdleWatching();
     }
     // Si pas de token (ex: email non confirmé), ne rien stocker
+  }
+
+  /**
+   * Démarre la surveillance d'inactivité
+   */
+  startIdleWatching(): void {
+    if (this.isAuthenticated()) {
+      this.idleService.configure({
+        idleTimeoutSeconds: 15 * 60, // 15 minutes
+        warningTimeoutSeconds: 60    // 1 minute d'avertissement
+      });
+      this.idleService.startWatching();
+    }
+  }
+
+  /**
+   * Vérifie s'il y a une URL de redirection après connexion
+   */
+  hasRedirectUrl(): boolean {
+    return !!this.statePreservationService.getRedirectUrl();
+  }
+
+  /**
+   * Redirige vers l'URL sauvegardée après connexion
+   */
+  redirectAfterLogin(): void {
+    this.statePreservationService.redirectAfterLogin();
   }
 
   /**
@@ -280,7 +348,29 @@ export class AuthService {
    * Vérifier la présence du token
    */
   private hasToken(): boolean {
-    return !!localStorage.getItem(this.TOKEN_KEY);
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token) return false;
+    
+    // Vérifier si le token n'est pas expiré
+    return !this.isTokenExpired(token);
+  }
+
+  /**
+   * Vérifier si un token JWT est expiré
+   */
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp;
+      if (!exp) return true;
+      
+      // exp est en secondes, Date.now() en millisecondes
+      const now = Date.now() / 1000;
+      return exp < now;
+    } catch (e) {
+      console.error('Erreur décodage token:', e);
+      return true;
+    }
   }
 
   /**
@@ -291,6 +381,13 @@ export class AuthService {
     const userJson = localStorage.getItem(this.USER_KEY);
     
     if (token && userJson) {
+      // Vérifier si le token est expiré
+      if (this.isTokenExpired(token)) {
+        console.warn('⚠️ Token expiré, déconnexion automatique...');
+        this.clearStorage();
+        return;
+      }
+      
       try {
         const user = JSON.parse(userJson);
         this.currentUserSubject.next(user);
@@ -299,6 +396,9 @@ export class AuthService {
         
         // Reconnecter SignalR pour les notifications
         this.notificationService.startConnection(token);
+        
+        // L'audio sera initialisé après la première interaction utilisateur
+        // (géré automatiquement par le NotificationSoundService)
       } catch (e) {
         console.error('Erreur parsing user:', e);
         this.clearStorage();

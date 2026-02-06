@@ -200,7 +200,7 @@
                   class="internal-btn-success"
                   [disabled]="declarationForm.invalid || isSubmitting">
             <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="18" class="spinner"></lucide-icon>
-            <lucide-icon *ngIf="!isSubmitting" name="check" [size]="18"></lucide-icon>
+            <lucide-icon *ngIf="!isSubmitting" name="check-circle-2" [size]="18"></lucide-icon>
             <span>{{ isSubmitting ? 'Validation...' : 'Valider et continuer' }}</span>
           </button>
         </div>

@@ -41,6 +41,39 @@ public class MedecinPatientDetailDto
     public string? NumeroContact { get; set; }
     public string? Profession { get; set; }
     
+    // Informations utilisateur supplémentaires
+    public string? Nationalite { get; set; }
+    public string? RegionOrigine { get; set; }
+    public string? SituationMatrimoniale { get; set; }
+    
+    // Informations médicales
+    public string? MaladiesChroniques { get; set; }
+    public bool? OperationsChirurgicales { get; set; }
+    public string? OperationsDetails { get; set; }
+    public bool? AllergiesConnues { get; set; }
+    public string? AllergiesDetails { get; set; }
+    public bool? AntecedentsFamiliaux { get; set; }
+    public string? AntecedentsFamiliauxDetails { get; set; }
+    
+    // Habitudes de vie
+    public bool? ConsommationAlcool { get; set; }
+    public string? FrequenceAlcool { get; set; }
+    public bool? Tabagisme { get; set; }
+    public bool? ActivitePhysique { get; set; }
+    
+    // Famille
+    public int? NbEnfants { get; set; }
+    
+    // Assurance
+    public string? AssuranceNom { get; set; }
+    public string? NumeroCarteAssurance { get; set; }
+    public DateTime? DateDebutValidite { get; set; }
+    public DateTime? DateFinValidite { get; set; }
+    public decimal? CouvertureAssurance { get; set; }
+    
+    // Dates système
+    public DateTime? DateCreation { get; set; }
+    
     // Historique
     public List<ConsultationHistoriqueDto> DernieresConsultations { get; set; } = new();
     public List<RendezVousHistoriqueDto> ProchainsRdv { get; set; } = new();

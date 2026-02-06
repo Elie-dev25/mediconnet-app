@@ -23,6 +23,7 @@ export class DashboardLayoutComponent implements OnInit {
 
   userName = '';
   userRole = '';
+  userRoleKey = ''; // Rôle technique pour la navigation
   sidebarMobileOpen = false;
 
   // Feature unavailable modal
@@ -40,13 +41,16 @@ export class DashboardLayoutComponent implements OnInit {
       this.userName = user.prenom && user.nom 
         ? `${user.prenom} ${user.nom}` 
         : (user.username || user.email || 'Utilisateur');
-      this.userRole = user.role || '';
+      // Utiliser le titre affiché si disponible (ex: "Major Pédiatrie"), sinon le rôle
+      this.userRole = user.titreAffiche || user.role || '';
+      // Garder le rôle technique pour la navigation
+      this.userRoleKey = user.role || '';
     }
   }
 
   // NOTE: La navigation vers le profil se fait maintenant via la page dédiée /patient/profile
   openProfileForm(): void {
-    this.router.navigate([`/${this.userRole}/profile`]);
+    this.router.navigate([`/${this.userRoleKey}/profile`]);
   }
 
   toggleMobileSidebar(): void {

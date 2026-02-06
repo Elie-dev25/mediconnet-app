@@ -28,6 +28,7 @@ export interface RendezVousDto {
 
 export interface RendezVousListDto {
   idRendezVous: number;
+  idConsultation?: number;
   dateHeure: string;
   duree: number;
   statut: string;
@@ -35,6 +36,7 @@ export interface RendezVousListDto {
   motif?: string;
   medecinNom: string;
   serviceNom?: string;
+  anamneseRemplie?: boolean;
 }
 
 export interface RendezVousStatsDto {
@@ -181,7 +183,7 @@ export class RendezVousService {
   // ==================== SERVICES ====================
 
   getServices(): Observable<ServiceDto[]> {
-    return this.http.get<ServiceDto[]>(`${environment.apiUrl}/consultation/services`);
+    return this.http.get<ServiceDto[]>(`${this.apiUrl}/services`);
   }
 
   // ==================== MÉDECINS ET CRÉNEAUX ====================

@@ -1,0 +1,190 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="closePanel()">
+  <div class="panel-sidebar" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <div class="header-icon">
+          <lucide-icon name="bed" [size]="20"></lucide-icon>
+        </div>
+        <div class="header-text">
+          <h2>Installation patient</h2>
+          <span class="header-subtitle">Attribution chambre & lit</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close" (click)="closePanel()">
+        <lucide-icon name="x" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content" *ngIf="hospitalisation">
+      <!-- Patient Info Compact -->
+      <div class="patient-card-compact">
+        <div class="patient-avatar-sm">
+          <lucide-icon name="user" [size]="18"></lucide-icon>
+        </div>
+        <div class="patient-details">
+          <span class="patient-name">{{ hospitalisation.patientPrenom }} {{ hospitalisation.patientNom }}</span>
+          <span class="patient-motif" *ngIf="hospitalisation.motif">{{ hospitalisation.motif }}</span>
+        </div>
+        <span class="urgence-badge-sm" [class]="getUrgenceClass(hospitalisation.urgence)" *ngIf="hospitalisation.urgence">
+          {{ hospitalisation.urgence | titlecase }}
+        </span>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" *ngIf="error">
+        <lucide-icon name="alert-circle" [size]="14"></lucide-icon>
+        {{ error }}
+      </div>
+
+      <!-- SOUS-SECTION 1: Standards -->
+      <div class="form-subsection">
+        <label class="subsection-label">
+          <lucide-icon name="building-2" [size]="16"></lucide-icon>
+          Standard
+        </label>
+
+        <!-- Loading Standards -->
+        <div class="loading-state-compact" *ngIf="isLoadingStandards">
+          <lucide-icon name="loader-2" [size]="16" class="spinner"></lucide-icon>
+          <span>Chargement...</span>
+        </div>
+
+        <!-- No Standards -->
+        <div class="empty-state-compact" *ngIf="!isLoadingStandards && standards.length === 0">
+          <lucide-icon name="alert-triangle" [size]="18"></lucide-icon>
+          <span>Aucun standard disponible</span>
+        </div>
+
+        <!-- Standards Grid - Toujours visible -->
+        <div class="standards-grid" *ngIf="!isLoadingStandards && standards.length > 0">
+          <div class="standard-card" 
+               *ngFor="let standard of standards" 
+               [class.selected]="selectedStandardId === standard.idStandard"
+               [class.unavailable]="standard.chambresDisponibles === 0"
+               (click)="onStandardSelected(standard.idStandard)">
+            <div class="standard-header">
+              <span class="standard-name">{{ standard.nom }}</span>
+              <span class="standard-badge" [class.empty]="standard.chambresDisponibles === 0">
+                {{ standard.chambresDisponibles }} dispo.
+              </span>
+            </div>
+            <div class="standard-price">
+              <lucide-icon name="banknote" [size]="14"></lucide-icon>
+              {{ standard.prixJournalier | number:'1.0-0' }} FCFA/jour
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOUS-SECTION 2: Chambre (Dropdown personnalisé) -->
+      <div class="form-subsection">
+        <label class="subsection-label">
+          <lucide-icon name="door-open" [size]="16"></lucide-icon>
+          Chambre
+        </label>
+
+        <!-- Dropdown personnalisé -->
+        <div class="custom-dropdown" [class.disabled]="!selectedStandardId" [class.open]="isChambreDropdownOpen">
+          <button type="button" class="dropdown-trigger" 
+                  [disabled]="!selectedStandardId || isLoadingChambres"
+                  (click)="toggleChambreDropdown()">
+            <div class="dropdown-value">
+              @if (!selectedStandardId) {
+                <span class="placeholder-text">Sélectionnez d'abord un standard</span>
+              } @else if (isLoadingChambres) {
+                <lucide-icon name="loader-2" [size]="14" class="spinner"></lucide-icon>
+                <span>Chargement...</span>
+              } @else if (chambres.length === 0) {
+                <span class="placeholder-text">Aucune chambre disponible</span>
+              } @else if (!selectedChambreId) {
+                <span class="placeholder-text">Sélectionnez une chambre</span>
+              } @else {
+                <span class="selected-chambre-text">Chambre {{ getSelectedChambre()?.numero }}</span>
+                @if (getSelectedChambre()?.localisation) {
+                  <span class="selected-chambre-badge">{{ getSelectedChambre()?.localisation }}</span>
+                }
+              }
+            </div>
+            <lucide-icon name="chevron-down" [size]="16" class="dropdown-icon" [class.rotated]="isChambreDropdownOpen"></lucide-icon>
+          </button>
+          
+          <div class="dropdown-menu" *ngIf="isChambreDropdownOpen && chambres.length > 0">
+            <div class="dropdown-item" 
+                 *ngFor="let chambre of chambres"
+                 [class.selected]="selectedChambreId === chambre.idChambre"
+                 (click)="selectChambre(chambre)">
+              <div class="chambre-main">
+                <lucide-icon name="door-open" [size]="16"></lucide-icon>
+                <span class="chambre-numero">Chambre {{ chambre.numero }}</span>
+              </div>
+              <div class="chambre-badges">
+                <span class="badge badge-location" *ngIf="chambre.localisation">
+                  <lucide-icon name="map-pin" [size]="10"></lucide-icon>
+                  {{ chambre.localisation }}
+                </span>
+                <span class="badge badge-lits">
+                  <lucide-icon name="bed" [size]="10"></lucide-icon>
+                  {{ chambre.litsDisponibles?.length || 0 }} lit(s)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOUS-SECTION 3: Lit (Menu déroulant) -->
+      <div class="form-subsection">
+        <label class="subsection-label">
+          <lucide-icon name="bed" [size]="16"></lucide-icon>
+          Lit
+        </label>
+
+        <div class="select-wrapper" [class.disabled]="!selectedChambreId">
+          <select class="form-select" 
+                  [disabled]="!selectedChambreId"
+                  [(ngModel)]="selectedLitId"
+                  (ngModelChange)="onLitSelected($event)">
+            <option [ngValue]="null">
+              {{ !selectedChambreId ? 'Sélectionnez d\'abord une chambre' : 
+                 litsDisponibles.length === 0 ? 'Aucun lit disponible' : 
+                 'Sélectionnez un lit' }}
+            </option>
+            <option *ngFor="let lit of litsDisponibles" [ngValue]="lit.idLit">
+              Lit {{ lit.numero }}
+            </option>
+          </select>
+          <lucide-icon name="chevron-down" [size]="16" class="select-icon"></lucide-icon>
+        </div>
+      </div>
+
+      <!-- Résumé Compact -->
+      <div class="selection-summary-compact" *ngIf="selectedLitId">
+        <div class="summary-icon">
+          <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+        </div>
+        <div class="summary-details">
+          <span class="summary-title">Prêt à installer</span>
+          <span class="summary-text">
+            {{ getSelectedStandard()?.nom }} • Chambre {{ getSelectedChambre()?.numero }} • Lit {{ getSelectedLit()?.numero }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" [class.ready]="selectedLitId">
+      <button type="button" class="btn btn-ghost" (click)="closePanel()">
+        Annuler
+      </button>
+      <button type="button" class="btn btn-primary" 
+              (click)="attribuerLit()" 
+              [disabled]="!selectedLitId || isAttribuant">
+        <lucide-icon name="check" [size]="16" *ngIf="!isAttribuant"></lucide-icon>
+        <lucide-icon name="loader-2" [size]="16" class="spinner" *ngIf="isAttribuant"></lucide-icon>
+        {{ isAttribuant ? 'Installation...' : 'Installer le patient' }}
+      </button>
+    </div>
+  </div>
+</div>

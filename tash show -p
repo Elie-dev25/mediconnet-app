@@ -1,0 +1,12 @@
+*   [33m877b543[m[33m ([m[1;35mrefs/stash[m[33m)[m On main: Sauvegarde avant reset
+[31m|[m[32m\[m  
+[31m|[m * [33m684f07d[m index on main: 6028c60 Service & cloche de notification
+[31m|[m[31m/[m  
+* [33m6028c60[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Service & cloche de notification
+* [33me706f73[m Mise a jour Fonctionnalités Métier
+* [33mb6f67b1[m Mise a jour Architecture
+* [33m8acce9b[m Ajout des Audits
+* [33maaf9220[m refactor: Improve backend encapsulation and separation
+* [33m1c4f0dc[m fix: Use hardcoded lowercase image names in deploy.yml
+* [33m29fe52c[m fix: Lowercase repository name in deploy.yml and simplify backend-ci tests
+* [33mbc3435e[m fix: Correct deploy.yml secrets check and backend null warnings

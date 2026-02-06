@@ -139,7 +139,7 @@
           {{ errorMessage }}
         </div>
         <div class="alert alert-success" *ngIf="successMessage">
-          <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+          <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
           {{ successMessage }}
         </div>
 
@@ -255,7 +255,7 @@
           <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
         </button>
         <button type="button" class="btn-success" (click)="submitForm()" *ngIf="currentStep === 4" [disabled]="isSubmitting">
-          <lucide-icon [name]="isSubmitting ? 'loader-2' : 'check'" [size]="18" [class.spin]="isSubmitting"></lucide-icon>
+          <lucide-icon [name]="isSubmitting ? 'loader-2' : 'check-circle-2'" [size]="18" [class.spin]="isSubmitting"></lucide-icon>
           {{ isSubmitting ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Créer l\'assurance') }}
         </button>
       </div>

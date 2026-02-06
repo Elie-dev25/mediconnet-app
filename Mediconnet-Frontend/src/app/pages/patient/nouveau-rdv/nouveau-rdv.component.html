@@ -27,8 +27,13 @@
         <span class="step-label">Date & Heure</span>
       </div>
       <div class="step-line" [class.active]="currentStep > 2"></div>
-      <div class="step" [class.active]="currentStep >= 3">
+      <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
         <span class="step-number">3</span>
+        <span class="step-label">Paiement</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 3"></div>
+      <div class="step" [class.active]="currentStep >= 4">
+        <span class="step-number">4</span>
         <span class="step-label">Confirmation</span>
       </div>
     </div>
@@ -53,31 +58,44 @@
             id="serviceFilter" 
             [ngModel]="selectedServiceId"
             (ngModelChange)="onServiceChange($event)">
-            <option [ngValue]="null">Tous les services</option>
+            <option [ngValue]="null" disabled>-- Sélectionnez un service --</option>
             <option *ngFor="let service of services" [ngValue]="service.idService">
               {{ service.nomService }}
             </option>
+            <option [ngValue]="0">Tous les services</option>
           </select>
         </div>
 
-        <div class="medecins-grid">
-          <div 
-            class="medecin-card" 
-            *ngFor="let medecin of filteredMedecins"
-            (click)="selectMedecin(medecin)">
-            <div class="medecin-avatar">
-              <lucide-icon name="user" [size]="24"></lucide-icon>
+        <!-- Conteneur principal avec hauteur minimale pour éviter le décalage -->
+        <div class="medecins-container">
+          <!-- Message d'invitation à sélectionner un service -->
+          <div class="select-service-prompt" *ngIf="selectedServiceId === null">
+            <div class="prompt-icon">
+              <lucide-icon name="building-2" [size]="48"></lucide-icon>
             </div>
-            <div class="medecin-info">
-              <span class="medecin-name">Dr. {{ medecin.prenom }} {{ medecin.nom }}</span>
-              <span class="medecin-service" *ngIf="medecin.serviceNom">{{ medecin.serviceNom }}</span>
-            </div>
-            <lucide-icon name="chevron-right" [size]="20" class="arrow-icon"></lucide-icon>
+            <h3>Sélectionnez un service</h3>
+            <p>Veuillez choisir un service médical dans la liste ci-dessus pour afficher les médecins disponibles.</p>
           </div>
-          
-          <div class="empty-state" *ngIf="filteredMedecins.length === 0 && services.length > 0">
-            <lucide-icon name="user-x" [size]="32"></lucide-icon>
-            <p>Aucun médecin disponible pour ce service</p>
+
+          <div class="medecins-grid" *ngIf="selectedServiceId !== null">
+            <div 
+              class="medecin-card" 
+              *ngFor="let medecin of filteredMedecins"
+              (click)="selectMedecin(medecin)">
+              <div class="medecin-avatar">
+                <lucide-icon name="user" [size]="24"></lucide-icon>
+              </div>
+              <div class="medecin-info">
+                <span class="medecin-name">Dr. {{ medecin.prenom }} {{ medecin.nom }}</span>
+                <span class="medecin-service" *ngIf="medecin.serviceNom">{{ medecin.serviceNom }}</span>
+              </div>
+              <lucide-icon name="chevron-right" [size]="20" class="arrow-icon"></lucide-icon>
+            </div>
+            
+            <div class="empty-state" *ngIf="filteredMedecins.length === 0 && services.length > 0">
+              <lucide-icon name="user-x" [size]="32"></lucide-icon>
+              <p>Aucun médecin disponible pour ce service</p>
+            </div>
           </div>
         </div>
       </div>
@@ -158,8 +176,91 @@
         </div>
       </div>
 
-      <!-- Step 3: Confirmation -->
+      <!-- Step 3: Paiement -->
       <div class="step-content" *ngIf="currentStep === 3">
+        <div class="step-header">
+          <h2>Paiement de la consultation</h2>
+          <p>Choisissez votre mode de paiement pour confirmer le rendez-vous</p>
+        </div>
+
+        <!-- Résumé du RDV -->
+        <div class="payment-summary">
+          <div class="summary-mini">
+            <span class="doctor-name">Dr. {{ selectedMedecin?.prenom }} {{ selectedMedecin?.nom }}</span>
+            <span class="rdv-date">{{ selectedCreneau ? formatDateTime(selectedCreneau.dateHeure) : '' }}</span>
+          </div>
+          <div class="price-tag">
+            <span class="price-label">Montant à payer</span>
+            <span class="price-value">{{ prixConsultation | number }} FCFA</span>
+          </div>
+        </div>
+
+        <!-- Modes de paiement -->
+        <div class="payment-methods">
+          <h4>Mode de paiement</h4>
+          <div class="payment-options">
+            <div 
+              class="payment-option" 
+              [class.selected]="modePaiement === 'especes'"
+              (click)="onModePaiementChange('especes')">
+              <lucide-icon name="banknote" [size]="24"></lucide-icon>
+              <span>Espèces</span>
+              <small>Paiement à l'accueil</small>
+            </div>
+            <div 
+              class="payment-option" 
+              [class.selected]="modePaiement === 'mobile_money'"
+              (click)="onModePaiementChange('mobile_money')">
+              <lucide-icon name="smartphone" [size]="24"></lucide-icon>
+              <span>Mobile Money</span>
+              <small>Orange, MTN, Moov</small>
+            </div>
+            <div 
+              class="payment-option" 
+              [class.selected]="modePaiement === 'carte'"
+              (click)="onModePaiementChange('carte')">
+              <lucide-icon name="credit-card" [size]="24"></lucide-icon>
+              <span>Carte bancaire</span>
+              <small>Visa, Mastercard</small>
+            </div>
+            <div 
+              class="payment-option" 
+              [class.selected]="modePaiement === 'assurance'"
+              (click)="onModePaiementChange('assurance')">
+              <lucide-icon name="shield-check" [size]="24"></lucide-icon>
+              <span>Assurance</span>
+              <small>Prise en charge</small>
+            </div>
+          </div>
+
+          <!-- Champ numéro mobile si Mobile Money -->
+          <div class="mobile-input" *ngIf="modePaiement === 'mobile_money'">
+            <label>Numéro de téléphone</label>
+            <input 
+              type="tel" 
+              [(ngModel)]="numeroMobile" 
+              placeholder="Ex: 07 XX XX XX XX"
+              maxlength="14">
+          </div>
+
+          <!-- Info assurance -->
+          <div class="assurance-info" *ngIf="modePaiement === 'assurance'">
+            <lucide-icon name="info" [size]="16"></lucide-icon>
+            <span>La prise en charge sera vérifiée lors de votre arrivée. Présentez votre carte d'assurance à l'accueil.</span>
+          </div>
+        </div>
+
+        <!-- Conditions -->
+        <div class="conditions-check">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="accepteConditions">
+            <span>J'accepte les conditions générales et la politique d'annulation (remboursement possible jusqu'à 24h avant le RDV)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 4: Confirmation -->
+      <div class="step-content" *ngIf="currentStep === 4">
         <div class="confirmation-summary">
           <h2>Récapitulatif</h2>
           <div class="summary-card">
@@ -178,6 +279,14 @@
             <div class="summary-row">
               <lucide-icon name="clock" [size]="18"></lucide-icon>
               <span>Durée: {{ selectedCreneau?.duree }} minutes</span>
+            </div>
+            <div class="summary-row">
+              <lucide-icon name="wallet" [size]="18"></lucide-icon>
+              <span>Paiement: {{ modePaiement === 'especes' ? 'Espèces (à l\'accueil)' : modePaiement === 'mobile_money' ? 'Mobile Money' : modePaiement === 'carte' ? 'Carte bancaire' : 'Assurance' }}</span>
+            </div>
+            <div class="summary-row price-row">
+              <lucide-icon name="banknote" [size]="18"></lucide-icon>
+              <span>Montant: <strong>{{ prixConsultation | number }} FCFA</strong></span>
             </div>
           </div>
         </div>
@@ -215,12 +324,22 @@
         <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
         {{ currentStep === 1 ? 'Annuler' : 'Retour' }}
       </button>
+      <!-- Bouton pour passer au paiement vers confirmation -->
       <button 
         class="btn-primary" 
         *ngIf="currentStep === 3"
+        [disabled]="!canProceedToConfirmation()"
+        (click)="proceedToConfirmation()">
+        <lucide-icon name="arrow-right" [size]="18"></lucide-icon>
+        Continuer
+      </button>
+      <!-- Bouton de confirmation finale -->
+      <button 
+        class="btn-primary" 
+        *ngIf="currentStep === 4"
         [disabled]="isSubmitting"
         (click)="submitRdv()">
-        <lucide-icon name="check" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
         <lucide-icon name="loader-2" [size]="18" class="spinning" *ngIf="isSubmitting"></lucide-icon>
         Confirmer le rendez-vous
       </button>
@@ -231,7 +350,7 @@
   <div class="modal-overlay confirmation-overlay" *ngIf="showConfirmationPopup" (click)="closeConfirmationPopup()">
     <div class="confirmation-popup" (click)="$event.stopPropagation()">
       <div class="confirmation-icon success">
-        <lucide-icon name="check" [size]="48"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="48"></lucide-icon>
       </div>
       <h2>Rendez-vous confirmé !</h2>
       <p class="confirmation-message">Votre rendez-vous a été enregistré avec succès.</p>
@@ -260,9 +379,225 @@
       </p>
       
       <button class="btn-primary btn-full" (click)="closeConfirmationPopup()">
-        <lucide-icon name="check" [size]="18"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
         Compris
       </button>
+    </div>
+  </div>
+
+  <!-- Overlay pour sidebar profil -->
+  <div class="sidebar-overlay" *ngIf="showProfileSidebar" (click)="closeProfileSidebar()"></div>
+
+  <!-- Sidebar de complétion de profil -->
+  <aside class="profile-sidebar" [class.open]="showProfileSidebar">
+    <div class="sidebar-header">
+      <h3>Compléter votre profil</h3>
+      <button class="btn-close" (click)="closeProfileSidebar()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="profile-alert">
+        <lucide-icon name="alert-triangle" [size]="20"></lucide-icon>
+        <p>Pour prendre un rendez-vous, veuillez compléter les informations manquantes de votre profil.</p>
+      </div>
+
+      <form [formGroup]="profileForm" class="profile-form">
+        <!-- Date de naissance -->
+        <div class="form-group" *ngIf="isFieldMissing('naissance')">
+          <label>{{ getFieldLabel('naissance') }} *</label>
+          <input type="date" formControlName="naissance" class="form-input"
+                 [class.is-error]="profileForm.get('naissance')?.invalid && profileForm.get('naissance')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('naissance')?.invalid && profileForm.get('naissance')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Sexe -->
+        <div class="form-group" *ngIf="isFieldMissing('sexe')">
+          <label>{{ getFieldLabel('sexe') }} *</label>
+          <select formControlName="sexe" class="form-input"
+                  [class.is-error]="profileForm.get('sexe')?.invalid && profileForm.get('sexe')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option value="M">Masculin</option>
+            <option value="F">Féminin</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('sexe')?.invalid && profileForm.get('sexe')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Téléphone -->
+        <div class="form-group" *ngIf="isFieldMissing('telephone')">
+          <label>{{ getFieldLabel('telephone') }} *</label>
+          <input type="tel" formControlName="telephone" class="form-input" placeholder="Ex: +237 6XX XXX XXX"
+                 [class.is-error]="profileForm.get('telephone')?.invalid && profileForm.get('telephone')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('telephone')?.invalid && profileForm.get('telephone')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Situation matrimoniale -->
+        <div class="form-group" *ngIf="isFieldMissing('situationMatrimoniale')">
+          <label>{{ getFieldLabel('situationMatrimoniale') }} *</label>
+          <select formControlName="situationMatrimoniale" class="form-input"
+                  [class.is-error]="profileForm.get('situationMatrimoniale')?.invalid && profileForm.get('situationMatrimoniale')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option *ngFor="let situation of situationsMatrimoniales" [value]="situation">{{ situation }}</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('situationMatrimoniale')?.invalid && profileForm.get('situationMatrimoniale')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Adresse -->
+        <div class="form-group" *ngIf="isFieldMissing('adresse')">
+          <label>{{ getFieldLabel('adresse') }} *</label>
+          <input type="text" formControlName="adresse" class="form-input" placeholder="Votre adresse"
+                 [class.is-error]="profileForm.get('adresse')?.invalid && profileForm.get('adresse')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('adresse')?.invalid && profileForm.get('adresse')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Groupe sanguin -->
+        <div class="form-group" *ngIf="isFieldMissing('groupeSanguin')">
+          <label>{{ getFieldLabel('groupeSanguin') }} *</label>
+          <select formControlName="groupeSanguin" class="form-input"
+                  [class.is-error]="profileForm.get('groupeSanguin')?.invalid && profileForm.get('groupeSanguin')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option *ngFor="let gs of groupesSanguins" [value]="gs">{{ gs }}</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('groupeSanguin')?.invalid && profileForm.get('groupeSanguin')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Profession -->
+        <div class="form-group" *ngIf="isFieldMissing('profession')">
+          <label>{{ getFieldLabel('profession') }} *</label>
+          <input type="text" formControlName="profession" class="form-input" placeholder="Votre profession"
+                 [class.is-error]="profileForm.get('profession')?.invalid && profileForm.get('profession')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('profession')?.invalid && profileForm.get('profession')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Personne à contacter -->
+        <div class="form-group" *ngIf="isFieldMissing('personneContact')">
+          <label>{{ getFieldLabel('personneContact') }} *</label>
+          <input type="text" formControlName="personneContact" class="form-input" placeholder="Nom de la personne"
+                 [class.is-error]="profileForm.get('personneContact')?.invalid && profileForm.get('personneContact')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('personneContact')?.invalid && profileForm.get('personneContact')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Numéro du contact -->
+        <div class="form-group" *ngIf="isFieldMissing('numeroContact')">
+          <label>{{ getFieldLabel('numeroContact') }} *</label>
+          <input type="tel" formControlName="numeroContact" class="form-input" placeholder="Numéro de téléphone"
+                 [class.is-error]="profileForm.get('numeroContact')?.invalid && profileForm.get('numeroContact')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('numeroContact')?.invalid && profileForm.get('numeroContact')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Nationalité -->
+        <div class="form-group" *ngIf="isFieldMissing('nationalite')">
+          <label>{{ getFieldLabel('nationalite') }} *</label>
+          <input type="text" formControlName="nationalite" class="form-input" placeholder="Ex: Camerounais"
+                 [class.is-error]="profileForm.get('nationalite')?.invalid && profileForm.get('nationalite')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('nationalite')?.invalid && profileForm.get('nationalite')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Région d'origine -->
+        <div class="form-group" *ngIf="isFieldMissing('regionOrigine')">
+          <label>{{ getFieldLabel('regionOrigine') }} *</label>
+          <select formControlName="regionOrigine" class="form-input"
+                  [class.is-error]="profileForm.get('regionOrigine')?.invalid && profileForm.get('regionOrigine')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option *ngFor="let region of regions" [value]="region">{{ region }}</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('regionOrigine')?.invalid && profileForm.get('regionOrigine')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Ethnie -->
+        <div class="form-group" *ngIf="isFieldMissing('ethnie')">
+          <label>{{ getFieldLabel('ethnie') }} *</label>
+          <select formControlName="ethnie" class="form-input"
+                  [class.is-error]="profileForm.get('ethnie')?.invalid && profileForm.get('ethnie')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option *ngFor="let eth of ethnies" [value]="eth">{{ eth }}</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('ethnie')?.invalid && profileForm.get('ethnie')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Nombre d'enfants -->
+        <div class="form-group" *ngIf="isFieldMissing('nbEnfants')">
+          <label>{{ getFieldLabel('nbEnfants') }} *</label>
+          <input type="number" formControlName="nbEnfants" class="form-input" placeholder="0" min="0"
+                 [class.is-error]="profileForm.get('nbEnfants')?.invalid && profileForm.get('nbEnfants')?.touched">
+          <span class="error-message" *ngIf="profileForm.get('nbEnfants')?.invalid && profileForm.get('nbEnfants')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Fréquence alcool -->
+        <div class="form-group" *ngIf="isFieldMissing('frequenceAlcool')">
+          <label>{{ getFieldLabel('frequenceAlcool') }} *</label>
+          <select formControlName="frequenceAlcool" class="form-input"
+                  [class.is-error]="profileForm.get('frequenceAlcool')?.invalid && profileForm.get('frequenceAlcool')?.touched">
+            <option value="">Sélectionnez...</option>
+            <option *ngFor="let freq of frequencesAlcool" [value]="freq">{{ freq }}</option>
+          </select>
+          <span class="error-message" *ngIf="profileForm.get('frequenceAlcool')?.invalid && profileForm.get('frequenceAlcool')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Détails allergies -->
+        <div class="form-group" *ngIf="isFieldMissing('allergiesDetails')">
+          <label>{{ getFieldLabel('allergiesDetails') }} *</label>
+          <textarea formControlName="allergiesDetails" class="form-input" placeholder="Décrivez vos allergies..." rows="3"
+                 [class.is-error]="profileForm.get('allergiesDetails')?.invalid && profileForm.get('allergiesDetails')?.touched"></textarea>
+          <span class="error-message" *ngIf="profileForm.get('allergiesDetails')?.invalid && profileForm.get('allergiesDetails')?.touched">
+            Ce champ est requis
+          </span>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div class="error-banner" *ngIf="profileUpdateError">
+          <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+          {{ profileUpdateError }}
+        </div>
+
+        <!-- Boutons -->
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeProfileSidebar()">
+            Annuler
+          </button>
+          <button type="button" class="btn-primary" (click)="submitProfileUpdate()" [disabled]="isUpdatingProfile">
+            <lucide-icon name="loader-2" [size]="16" *ngIf="isUpdatingProfile" class="spin"></lucide-icon>
+            {{ isUpdatingProfile ? 'Enregistrement...' : 'Enregistrer et continuer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Loading pendant vérification profil -->
+  <div class="loading-overlay" *ngIf="isCheckingProfile">
+    <div class="loading-content">
+      <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+      <p>Vérification de votre profil...</p>
     </div>
   </div>
 

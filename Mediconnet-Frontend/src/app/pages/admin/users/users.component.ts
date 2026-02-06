@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } 
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
-import { UserService, CreateUserRequest, UserDto, Specialite, ServiceDto } from '../../../services/user.service';
+import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto } from '../../../services/user.service';
 import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
 
 @Component({
@@ -40,6 +40,7 @@ export class UsersComponent implements OnInit {
   users: UserDto[] = [];
   specialites: Specialite[] = [];
   services: ServiceDto[] = [];
+  laboratoires: any[] = [];
   
   showCreateModal = false;
   showPassword = false;
@@ -51,16 +52,43 @@ export class UsersComponent implements OnInit {
   userForm!: FormGroup;
   searchQuery = '';
   selectedRole = '';
+  
+  // Onglet actif: 'personnel' ou 'patients'
+  activeTab: 'personnel' | 'patients' = 'personnel';
 
-  roles = [
-    { value: 'patient', label: 'Patient', icon: 'user' },
+  // Sidebar fiche utilisateur
+  showUserSidebar = false;
+  selectedUserDetails: UserDetailsDto | null = null;
+  isLoadingDetails = false;
+
+  // Sidebar nomination Major
+  showNominationSidebar = false;
+  selectedServiceForNomination: number | null = null;
+  isNominating = false;
+
+  // Actions en cours
+  isUpdatingStatut = false;
+
+  // Rôles du personnel (sans patient)
+  personnelRoles = [
     { value: 'medecin', label: 'Médecin', icon: 'stethoscope' },
     { value: 'infirmier', label: 'Infirmier', icon: 'syringe' },
     { value: 'administrateur', label: 'Administrateur', icon: 'shield' },
     { value: 'caissier', label: 'Caissier', icon: 'wallet' },
     { value: 'accueil', label: 'Accueil', icon: 'users' },
     { value: 'pharmacien', label: 'Pharmacien', icon: 'pill' },
-    { value: 'biologiste', label: 'Biologiste', icon: 'flask-conical' }
+    { value: 'laborantin', label: 'Laborantin', icon: 'flask-conical' }
+  ];
+
+  // Tous les rôles (pour le formulaire de création)
+  roles = [
+    { value: 'medecin', label: 'Médecin', icon: 'stethoscope' },
+    { value: 'infirmier', label: 'Infirmier', icon: 'syringe' },
+    { value: 'administrateur', label: 'Administrateur', icon: 'shield' },
+    { value: 'caissier', label: 'Caissier', icon: 'wallet' },
+    { value: 'accueil', label: 'Accueil', icon: 'users' },
+    { value: 'pharmacien', label: 'Pharmacien', icon: 'pill' },
+    { value: 'laborantin', label: 'Laborantin', icon: 'flask-conical' }
   ];
 
   constructor(
@@ -74,6 +102,7 @@ export class UsersComponent implements OnInit {
     this.loadUsers();
     this.loadSpecialites();
     this.loadServices();
+    this.loadLaboratoires();
   }
 
   private initForm(): void {
@@ -88,8 +117,11 @@ export class UsersComponent implements OnInit {
       idSpecialite: [null],
       idService: [null],
       numeroOrdre: [''],
-      // Champs specifiques infirmier
-      matricule: ['']
+      // Champs specifiques infirmier (idService aussi utilisé)
+      matricule: [''],
+      // Champs specifiques laborantin
+      idLabo: [null],
+      specialisation: ['']
     });
 
     // Ecouter les changements de role
@@ -101,31 +133,41 @@ export class UsersComponent implements OnInit {
   private updateValidators(role: string): void {
     const idSpecialite = this.userForm.get('idSpecialite');
     const idService = this.userForm.get('idService');
+    const idLabo = this.userForm.get('idLabo');
+    
+    // Reset all validators
+    idSpecialite?.clearValidators();
+    idService?.clearValidators();
+    idLabo?.clearValidators();
     
     if (role === 'medecin') {
       idSpecialite?.setValidators([Validators.required]);
       idService?.setValidators([Validators.required]);
-    } else {
-      idSpecialite?.clearValidators();
-      idService?.clearValidators();
+    } else if (role === 'infirmier') {
+      idService?.setValidators([Validators.required]);
+    } else if (role === 'laborantin') {
+      idLabo?.setValidators([Validators.required]);
     }
     
     idSpecialite?.updateValueAndValidity();
     idService?.updateValueAndValidity();
+    idLabo?.updateValueAndValidity();
   }
 
   loadUsers(): void {
     this.isLoading = true;
+    console.log('[UsersComponent] Loading users...');
     this.userService.getUsers().pipe(
       finalize(() => {
         this.isLoading = false;
       })
     ).subscribe({
       next: (users) => {
+        console.log('[UsersComponent] Users loaded:', users?.length, users);
         this.users = users;
       },
       error: (err) => {
-        console.error('Error loading users:', err);
+        console.error('[UsersComponent] Error loading users:', err);
       }
     });
   }
@@ -141,6 +183,13 @@ export class UsersComponent implements OnInit {
     this.userService.getServices().subscribe({
       next: (services) => this.services = services,
       error: (err) => console.error('Error loading services:', err)
+    });
+  }
+
+  loadLaboratoires(): void {
+    this.userService.getLaboratoires().subscribe({
+      next: (laboratoires) => this.laboratoires = laboratoires,
+      error: (err) => console.error('Error loading laboratoires:', err)
     });
   }
 
@@ -228,8 +277,39 @@ export class UsersComponent implements OnInit {
     return icons[role] || 'user';
   }
 
+  // Getter pour les rôles de filtre selon l'onglet actif
+  get filterRoles() {
+    return this.activeTab === 'personnel' ? this.personnelRoles : [];
+  }
+
+  // Getter pour le placeholder du filtre
+  get filterPlaceholder(): string {
+    return this.activeTab === 'personnel' ? 'Tout le personnel' : 'Tous les patients';
+  }
+
+  // Changer d'onglet
+  setActiveTab(tab: 'personnel' | 'patients'): void {
+    this.activeTab = tab;
+    this.selectedRole = ''; // Reset le filtre de rôle
+    this.searchQuery = ''; // Reset la recherche
+  }
+
+  // Compter les utilisateurs par catégorie
+  get personnelCount(): number {
+    return this.users.filter(u => u.role !== 'patient').length;
+  }
+
+  get patientsCount(): number {
+    return this.users.filter(u => u.role === 'patient').length;
+  }
+
   get filteredUsers(): UserDto[] {
     return this.users.filter(user => {
+      // Filtrer par onglet actif
+      const matchesTab = this.activeTab === 'personnel' 
+        ? user.role !== 'patient' 
+        : user.role === 'patient';
+      
       const matchesSearch = !this.searchQuery || 
         user.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         user.prenom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -237,12 +317,151 @@ export class UsersComponent implements OnInit {
       
       const matchesRole = !this.selectedRole || user.role === this.selectedRole;
       
-      return matchesSearch && matchesRole;
+      return matchesTab && matchesSearch && matchesRole;
     });
   }
 
   hasError(fieldName: string): boolean {
     const field = this.userForm.get(fieldName);
     return !!(field && field.invalid && field.touched);
+  }
+
+  // ==================== SIDEBAR FICHE UTILISATEUR ====================
+
+  openUserSidebar(user: UserDto): void {
+    this.showUserSidebar = true;
+    this.isLoadingDetails = true;
+    this.selectedUserDetails = null;
+
+    this.userService.getUserDetails(user.idUser).pipe(
+      finalize(() => this.isLoadingDetails = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.selectedUserDetails = response.data;
+        }
+      },
+      error: (err) => {
+        console.error('Error loading user details:', err);
+        this.selectedUserDetails = null;
+      }
+    });
+  }
+
+  closeUserSidebar(): void {
+    this.showUserSidebar = false;
+    this.selectedUserDetails = null;
+    this.showNominationSidebar = false;
+  }
+
+  // ==================== GESTION STATUT INFIRMIER ====================
+
+  updateInfirmierStatut(statut: string): void {
+    if (!this.selectedUserDetails || this.isUpdatingStatut) return;
+
+    this.isUpdatingStatut = true;
+    this.userService.updateInfirmierStatut(this.selectedUserDetails.idUser, statut).pipe(
+      finalize(() => this.isUpdatingStatut = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Recharger les détails
+          this.refreshUserDetails();
+          this.successMessage = response.message;
+          setTimeout(() => this.successMessage = null, 3000);
+        }
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut';
+        setTimeout(() => this.errorMessage = null, 3000);
+      }
+    });
+  }
+
+  // ==================== NOMINATION MAJOR ====================
+
+  openNominationSidebar(): void {
+    this.showNominationSidebar = true;
+    this.selectedServiceForNomination = null;
+  }
+
+  closeNominationSidebar(): void {
+    this.showNominationSidebar = false;
+    this.selectedServiceForNomination = null;
+  }
+
+  confirmNomination(): void {
+    if (!this.selectedUserDetails || !this.selectedServiceForNomination || this.isNominating) return;
+
+    this.isNominating = true;
+    this.userService.nommerInfirmierMajor(this.selectedUserDetails.idUser, this.selectedServiceForNomination).pipe(
+      finalize(() => this.isNominating = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.closeNominationSidebar();
+          this.refreshUserDetails();
+          this.loadUsers(); // Rafraîchir la liste
+          this.successMessage = response.message;
+          setTimeout(() => this.successMessage = null, 3000);
+        }
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la nomination';
+        setTimeout(() => this.errorMessage = null, 3000);
+      }
+    });
+  }
+
+  revoquerMajor(): void {
+    if (!this.selectedUserDetails || this.isNominating) return;
+
+    this.isNominating = true;
+    this.userService.revoquerInfirmierMajor(this.selectedUserDetails.idUser).pipe(
+      finalize(() => this.isNominating = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.refreshUserDetails();
+          this.loadUsers();
+          this.successMessage = response.message;
+          setTimeout(() => this.successMessage = null, 3000);
+        }
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la révocation';
+        setTimeout(() => this.errorMessage = null, 3000);
+      }
+    });
+  }
+
+  private refreshUserDetails(): void {
+    if (!this.selectedUserDetails) return;
+    
+    this.userService.getUserDetails(this.selectedUserDetails.idUser).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.selectedUserDetails = response.data;
+        }
+      }
+    });
+  }
+
+  getStatutClass(statut: string): string {
+    switch (statut) {
+      case 'actif': return 'statut-actif';
+      case 'bloque': return 'statut-bloque';
+      case 'suspendu': return 'statut-suspendu';
+      default: return '';
+    }
+  }
+
+  getStatutLabel(statut: string): string {
+    switch (statut) {
+      case 'actif': return 'Actif';
+      case 'bloque': return 'Bloqué';
+      case 'suspendu': return 'Suspendu';
+      default: return statut;
+    }
   }
 }

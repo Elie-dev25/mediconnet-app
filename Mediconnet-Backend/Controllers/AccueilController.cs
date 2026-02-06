@@ -543,8 +543,10 @@ public class AccueilController : BaseApiController
     {
         try
         {
-            var today = DateTime.Today;
-            var now = DateTime.Now;
+            // Utiliser l'heure locale de Yaoundé (UTC+1) pour le Cameroun
+            var cameroonTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time");
+            var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cameroonTimeZone);
+            var today = now.Date;
             
             // Récupérer le médecin avec sa spécialité
             var medecin = await _context.Medecins
@@ -643,6 +645,368 @@ public class AccueilController : BaseApiController
         {
             _logger.LogError($"Error getting doctor slots: {ex.Message}");
             return StatusCode(500, new { message = "Erreur lors de la récupération des créneaux" });
+        }
+    }
+
+    /// <summary>
+    /// Marquer un patient comme absent pour un RDV
+    /// </summary>
+    [HttpPost("rdv/{idRdv}/absent")]
+    public async Task<IActionResult> MarquerAbsent(int idRdv, [FromBody] MarquerAbsentRequest? request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var rdv = await _context.RendezVous
+                .Include(r => r.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
+                .FirstOrDefaultAsync(r => r.IdRendezVous == idRdv);
+
+            if (rdv == null)
+                return NotFound(new { message = "Rendez-vous non trouvé" });
+
+            if (rdv.Statut == "termine" || rdv.Statut == "annule")
+                return BadRequest(new { message = $"Impossible de marquer comme absent un RDV déjà {rdv.Statut}" });
+
+            var now = DateTime.UtcNow;
+            var ancienStatut = rdv.Statut;
+
+            // Mettre à jour le RDV
+            rdv.Statut = "absent";
+            rdv.DateModification = now;
+            rdv.Notes = string.IsNullOrEmpty(rdv.Notes)
+                ? $"Patient absent - Marqué par l'accueil le {now:dd/MM/yyyy à HH:mm}"
+                : $"{rdv.Notes}\n[Accueil] Patient absent - {now:dd/MM/yyyy HH:mm}";
+
+            if (!string.IsNullOrEmpty(request?.Motif))
+            {
+                rdv.Notes += $" - Motif: {request.Motif}";
+            }
+
+            // Mettre à jour la consultation associée si elle existe
+            var consultation = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.IdRendezVous == idRdv);
+
+            if (consultation != null && consultation.Statut == "planifie")
+            {
+                consultation.Statut = "annule";
+                consultation.UpdatedAt = now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"RDV #{idRdv} marqué comme absent par utilisateur #{userId}. Ancien statut: {ancienStatut}");
+
+            return Ok(new
+            {
+                success = true,
+                message = "Patient marqué comme absent",
+                rdvId = idRdv,
+                patientNom = $"{rdv.Patient?.Utilisateur?.Prenom} {rdv.Patient?.Utilisateur?.Nom}",
+                ancienStatut,
+                nouveauStatut = "absent"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur MarquerAbsent RDV #{idRdv}: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors du marquage de l'absence" });
+        }
+    }
+
+    /// <summary>
+    /// Obtenir la liste des RDV du jour avec leur statut
+    /// </summary>
+    [HttpGet("rdv/aujourd-hui")]
+    public async Task<IActionResult> GetRdvAujourdHui([FromQuery] string? statut = null)
+    {
+        try
+        {
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            var query = _context.RendezVous
+                .Include(r => r.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(r => r.Service)
+                .Where(r => r.DateHeure >= today && r.DateHeure < tomorrow);
+
+            if (!string.IsNullOrEmpty(statut))
+            {
+                query = query.Where(r => r.Statut == statut);
+            }
+
+            var rdvs = await query
+                .OrderBy(r => r.DateHeure)
+                .Select(r => new
+                {
+                    idRdv = r.IdRendezVous,
+                    dateHeure = r.DateHeure,
+                    duree = r.Duree,
+                    statut = r.Statut,
+                    typeRdv = r.TypeRdv,
+                    motif = r.Motif,
+                    patient = new
+                    {
+                        id = r.IdPatient,
+                        nom = r.Patient!.Utilisateur!.Nom,
+                        prenom = r.Patient.Utilisateur.Prenom,
+                        telephone = r.Patient.Utilisateur.Telephone,
+                        numeroDossier = r.Patient.NumeroDossier
+                    },
+                    medecin = new
+                    {
+                        id = r.IdMedecin,
+                        nom = r.Medecin!.Utilisateur!.Nom,
+                        prenom = r.Medecin.Utilisateur.Prenom
+                    },
+                    service = r.Service != null ? r.Service.NomService : null,
+                    estEnRetard = r.DateHeure.AddMinutes(r.Duree) < DateTime.UtcNow && 
+                                  (r.Statut == "planifie" || r.Statut == "confirme" || r.Statut == "en_attente")
+                })
+                .ToListAsync();
+
+            // Statistiques
+            var stats = new
+            {
+                total = rdvs.Count,
+                planifies = rdvs.Count(r => r.statut == "planifie"),
+                confirmes = rdvs.Count(r => r.statut == "confirme"),
+                enCours = rdvs.Count(r => r.statut == "en_cours"),
+                termines = rdvs.Count(r => r.statut == "termine"),
+                absents = rdvs.Count(r => r.statut == "absent"),
+                annules = rdvs.Count(r => r.statut == "annule"),
+                enRetard = rdvs.Count(r => r.estEnRetard)
+            };
+
+            return Ok(new { rdvs, stats });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetRdvAujourdHui: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la récupération des RDV" });
+        }
+    }
+
+    /// <summary>
+    /// Obtenir les RDV en retard (non traités après l'heure prévue)
+    /// </summary>
+    [HttpGet("rdv/en-retard")]
+    public async Task<IActionResult> GetRdvEnRetard()
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            var today = DateTime.Today;
+            var graceMinutes = 30; // Délai de grâce
+
+            var rdvsEnRetard = await _context.RendezVous
+                .Include(r => r.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(r => r.Service)
+                .Where(r => r.DateHeure >= today)
+                .Where(r => r.DateHeure.AddMinutes(r.Duree + graceMinutes) < now)
+                .Where(r => r.Statut == "planifie" || r.Statut == "confirme" || r.Statut == "en_attente")
+                .OrderBy(r => r.DateHeure)
+                .Select(r => new
+                {
+                    idRdv = r.IdRendezVous,
+                    dateHeure = r.DateHeure,
+                    retardMinutes = (int)(now - r.DateHeure.AddMinutes(r.Duree)).TotalMinutes,
+                    statut = r.Statut,
+                    patient = new
+                    {
+                        id = r.IdPatient,
+                        nom = r.Patient!.Utilisateur!.Nom,
+                        prenom = r.Patient.Utilisateur.Prenom,
+                        telephone = r.Patient.Utilisateur.Telephone
+                    },
+                    medecin = new
+                    {
+                        id = r.IdMedecin,
+                        nom = r.Medecin!.Utilisateur!.Nom
+                    },
+                    service = r.Service != null ? r.Service.NomService : null
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                count = rdvsEnRetard.Count,
+                rdvs = rdvsEnRetard,
+                message = rdvsEnRetard.Count > 0 
+                    ? $"{rdvsEnRetard.Count} RDV en retard nécessitent une action"
+                    : "Aucun RDV en retard"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetRdvEnRetard: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la récupération des RDV en retard" });
+        }
+    }
+
+    /// <summary>
+    /// Marquer plusieurs RDV comme absents en lot
+    /// </summary>
+    [HttpPost("rdv/marquer-absents-lot")]
+    public async Task<IActionResult> MarquerAbsentsEnLot([FromBody] MarquerAbsentsLotRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            if (request.IdsRdv == null || !request.IdsRdv.Any())
+                return BadRequest(new { message = "Aucun RDV spécifié" });
+
+            var now = DateTime.UtcNow;
+            var resultats = new List<object>();
+            var successCount = 0;
+            var errorCount = 0;
+
+            foreach (var idRdv in request.IdsRdv)
+            {
+                var rdv = await _context.RendezVous
+                    .FirstOrDefaultAsync(r => r.IdRendezVous == idRdv);
+
+                if (rdv == null)
+                {
+                    resultats.Add(new { idRdv, success = false, message = "RDV non trouvé" });
+                    errorCount++;
+                    continue;
+                }
+
+                if (rdv.Statut == "termine" || rdv.Statut == "annule" || rdv.Statut == "absent")
+                {
+                    resultats.Add(new { idRdv, success = false, message = $"RDV déjà {rdv.Statut}" });
+                    errorCount++;
+                    continue;
+                }
+
+                rdv.Statut = "absent";
+                rdv.DateModification = now;
+                rdv.Notes = string.IsNullOrEmpty(rdv.Notes)
+                    ? $"Patient absent - Marqué en lot le {now:dd/MM/yyyy à HH:mm}"
+                    : $"{rdv.Notes}\n[Lot] Patient absent - {now:dd/MM/yyyy HH:mm}";
+
+                // Mettre à jour la consultation associée
+                var consultation = await _context.Consultations
+                    .FirstOrDefaultAsync(c => c.IdRendezVous == idRdv);
+
+                if (consultation != null && consultation.Statut == "planifie")
+                {
+                    consultation.Statut = "annule";
+                    consultation.UpdatedAt = now;
+                }
+
+                resultats.Add(new { idRdv, success = true, message = "Marqué comme absent" });
+                successCount++;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Marquage en lot: {successCount} RDV marqués absents, {errorCount} erreurs par utilisateur #{userId}");
+
+            return Ok(new
+            {
+                success = true,
+                message = $"{successCount} RDV marqués comme absents",
+                successCount,
+                errorCount,
+                resultats
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur MarquerAbsentsEnLot: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors du marquage en lot" });
+        }
+    }
+
+    /// <summary>
+    /// Obtenir les statistiques d'absences
+    /// </summary>
+    [HttpGet("stats/absences")]
+    public async Task<IActionResult> GetStatsAbsences([FromQuery] DateTime? dateDebut, [FromQuery] DateTime? dateFin)
+    {
+        try
+        {
+            var debut = dateDebut ?? DateTime.Today.AddDays(-30);
+            var fin = dateFin ?? DateTime.Today.AddDays(1);
+
+            var absences = await _context.RendezVous
+                .Include(r => r.Service)
+                .Where(r => r.DateHeure >= debut && r.DateHeure < fin)
+                .Where(r => r.Statut == "absent")
+                .ToListAsync();
+
+            var totalRdv = await _context.RendezVous
+                .CountAsync(r => r.DateHeure >= debut && r.DateHeure < fin && r.Statut != "annule");
+
+            var tauxAbsence = totalRdv > 0 ? (double)absences.Count / totalRdv * 100 : 0;
+
+            var parService = absences
+                .GroupBy(r => r.Service?.NomService ?? "Non assigné")
+                .Select(g => new { service = g.Key, count = g.Count() })
+                .OrderByDescending(x => x.count)
+                .ToList();
+
+            var parJour = absences
+                .GroupBy(r => r.DateHeure.Date)
+                .Select(g => new { date = g.Key.ToString("yyyy-MM-dd"), count = g.Count() })
+                .OrderBy(x => x.date)
+                .ToList();
+
+            // Patients avec le plus d'absences
+            var patientsFrequents = await _context.RendezVous
+                .Include(r => r.Patient).ThenInclude(p => p!.Utilisateur)
+                .Where(r => r.DateHeure >= debut && r.DateHeure < fin)
+                .Where(r => r.Statut == "absent")
+                .GroupBy(r => r.IdPatient)
+                .Select(g => new
+                {
+                    patientId = g.Key,
+                    count = g.Count()
+                })
+                .Where(x => x.count >= 2)
+                .OrderByDescending(x => x.count)
+                .Take(10)
+                .ToListAsync();
+
+            var patientsAvecNoms = new List<object>();
+            foreach (var p in patientsFrequents)
+            {
+                var patient = await _context.Patients
+                    .Include(pat => pat.Utilisateur)
+                    .FirstOrDefaultAsync(pat => pat.IdUser == p.patientId);
+
+                patientsAvecNoms.Add(new
+                {
+                    patientId = p.patientId,
+                    nom = patient?.Utilisateur?.Nom,
+                    prenom = patient?.Utilisateur?.Prenom,
+                    absences = p.count
+                });
+            }
+
+            return Ok(new
+            {
+                periode = new { debut = debut.ToString("yyyy-MM-dd"), fin = fin.ToString("yyyy-MM-dd") },
+                totalAbsences = absences.Count,
+                totalRdv,
+                tauxAbsence = Math.Round(tauxAbsence, 2),
+                parService,
+                parJour,
+                patientsFrequents = patientsAvecNoms
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetStatsAbsences: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la récupération des statistiques" });
         }
     }
 

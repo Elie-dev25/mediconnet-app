@@ -17,7 +17,8 @@
       [dossier]="dossierData"
       [isLoading]="isLoading"
       [error]="error"
-      (retry)="loadDossierMedical()">
+      (retry)="loadDossierMedical()"
+      (viewConsultation)="onViewConsultation($event)">
     </app-dossier-medical-view>
   </div>
 </app-dashboard-layout>

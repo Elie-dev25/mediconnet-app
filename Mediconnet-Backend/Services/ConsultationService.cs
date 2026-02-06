@@ -1,5 +1,7 @@
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
+using Mediconnet_Backend.Core.Enums;
+using Mediconnet_Backend.Core.Constants;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Accueil;
 using Mediconnet_Backend.Helpers;
@@ -72,13 +74,13 @@ public class ConsultationService : IConsultationService
 
             var now = DateTime.UtcNow;
 
-            // Règle métier: un paiement de consultation est valable 2 semaines
+            // Règle métier: un paiement de consultation est valable pendant BusinessRules.PaymentValidityDays jours
             // tant que le patient reste dans le même service et voit un médecin de la même spécialité.
-            var paymentValidSince = now.AddDays(-14);
+            var paymentValidSince = now.AddDays(-BusinessRules.PaymentValidityDays);
             var factureValide = await _context.Factures
                 .Where(f => f.IdPatient == request.IdPatient)
-                .Where(f => f.TypeFacture == "consultation")
-                .Where(f => f.Statut == "payee")
+                .Where(f => f.TypeFacture == FactureTypes.Consultation)
+                .Where(f => f.Statut == FactureStatuts.Payee)
                 .Where(f => f.DatePaiement.HasValue && f.DatePaiement.Value >= paymentValidSince)
                 .Where(f => f.IdService == medecin.IdService)
                 .Where(f => f.IdSpecialite == medecin.IdSpecialite)
@@ -88,6 +90,13 @@ public class ConsultationService : IConsultationService
             // Utiliser l'heure du créneau sélectionné ou maintenant par défaut
             var dateHeureRdv = request.DateHeureCreneau ?? now;
 
+            // Déterminer le statut du RDV:
+            // - "confirme" si paiement valide existe déjà (factureValide != null)
+            // - "en_attente" sinon (sera confirmé après paiement à la caisse)
+            var statutRdv = factureValide != null 
+                ? RendezVousStatut.Confirme.ToDbString() 
+                : RendezVousStatut.EnAttente.ToDbString();
+
             // Créer un RDV pour cette consultation (requis pour la file d'attente infirmier)
             var rendezVous = new RendezVous
             {
@@ -95,10 +104,10 @@ public class ConsultationService : IConsultationService
                 IdMedecin = request.IdMedecin,
                 IdService = medecin.IdService,
                 DateHeure = dateHeureRdv,
-                Duree = 30,
-                Statut = "confirme",
+                Duree = BusinessRules.DefaultConsultationDurationMinutes,
+                Statut = statutRdv,
                 Motif = request.Motif,
-                TypeRdv = "consultation",
+                TypeRdv = RendezVousTypes.Consultation,
                 DateCreation = now
             };
 
@@ -113,8 +122,8 @@ public class ConsultationService : IConsultationService
                 IdRendezVous = rendezVous.IdRendezVous,
                 Motif = request.Motif,
                 DateHeure = now,
-                Statut = "planifie",
-                TypeConsultation = "normale"
+                Statut = ConsultationStatut.Planifie.ToDbString(),
+                TypeConsultation = ConsultationTypes.Normale
             };
 
             _context.Consultations.Add(consultation);
@@ -152,17 +161,17 @@ public class ConsultationService : IConsultationService
                 MontantTotal = factureValide != null ? 0 : request.PrixConsultation,
                 MontantPaye = 0,
                 MontantRestant = factureValide != null ? 0 : montantPatient,
-                Statut = factureValide != null ? "payee" : "en_attente",
-                TypeFacture = "consultation",
+                Statut = factureValide != null ? FactureStatuts.Payee : FactureStatuts.EnAttente,
+                TypeFacture = FactureTypes.Consultation,
                 DateCreation = now,
-                DateEcheance = factureValide != null ? null : now.AddDays(1),
+                DateEcheance = factureValide != null ? null : now.AddDays(BusinessRules.FactureConsultationEcheanceDays),
                 CouvertureAssurance = estAssure,
                 IdAssurance = estAssure ? patient.AssuranceId : null,
                 TauxCouverture = estAssure ? tauxCouverture : null,
                 MontantAssurance = estAssure ? montantAssurance : null,
                 DatePaiement = factureValide?.DatePaiement,
                 Notes = factureValide != null
-                    ? $"Paiement consultation déjà valable jusqu'au {factureValide.DatePaiement!.Value.AddDays(14):yyyy-MM-dd}. Facture de référence: {factureValide.NumeroFacture}"
+                    ? $"Paiement consultation déjà valable jusqu'au {factureValide.DatePaiement!.Value.AddDays(BusinessRules.PaymentValidityDays):yyyy-MM-dd}. Facture de référence: {factureValide.NumeroFacture}"
                     : null
             };
 
@@ -414,6 +423,8 @@ public class ConsultationService : IConsultationService
                 var rdvAujourdhui = rdvMedecin.Count(r => r.Statut == "confirme" || r.Statut == "planifie");
 
                 // Déterminer le statut
+                // Un médecin est "occupé" UNIQUEMENT s'il a une consultation en_cours (bouton "Commencer" cliqué)
+                // Mais il reste TOUJOURS sélectionnable pour les RDV (seul le créneau actuel est indisponible)
                 string statut = "disponible";
                 bool estDisponible = hasSlotDisponibleToday;
                 string? raisonIndisponibilite = null;
@@ -422,28 +433,24 @@ public class ConsultationService : IConsultationService
                 if (!hasSlotDisponibleToday)
                 {
                     statut = "absent";
+                    estDisponible = false;
                     raisonIndisponibilite = creneauxJour.MessageIndisponibilite ?? "Aucun créneau disponible aujourd'hui";
                 }
-
-                if (patientsEnConsultation > 0)
+                else if (patientsEnConsultation > 0)
                 {
+                    // Médecin en consultation active (a cliqué sur "Commencer la consultation")
+                    // Il est marqué "occupé" mais RESTE SÉLECTIONNABLE pour les créneaux suivants
                     statut = "occupe";
-                    estDisponible = false;
+                    estDisponible = true; // Reste sélectionnable pour les RDV sur d'autres créneaux
                     raisonIndisponibilite = "En consultation";
-                    // Estimation: 20 minutes par patient en attente + 10 minutes restantes pour le patient actuel
+                    // Estimation: 10 minutes restantes pour le patient actuel + 20 minutes par patient en attente
                     tempsAttenteEstime = 10 + (patientsEnAttente * 20);
-                }
-                else if (patientsEnAttente > 3)
-                {
-                    statut = "occupe";
-                    estDisponible = hasSlotDisponibleToday; // Disponible mais chargé (seulement si un créneau est réellement libre)
-                    raisonIndisponibilite = $"{patientsEnAttente} patients en attente";
-                    tempsAttenteEstime = patientsEnAttente * 20;
                 }
                 else if (patientsEnAttente > 0)
                 {
+                    // Médecin disponible avec des patients en attente
                     statut = "disponible";
-                    estDisponible = hasSlotDisponibleToday;
+                    estDisponible = true;
                     tempsAttenteEstime = patientsEnAttente * 20;
                 }
 

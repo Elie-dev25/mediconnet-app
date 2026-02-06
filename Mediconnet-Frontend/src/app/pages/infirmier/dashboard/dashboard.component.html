@@ -54,9 +54,61 @@
           </div>
 
           <div class="queue-actions">
-            <button class="btn btn-primary btn-strong" type="button" (click)="openParamForm(item)">
+            <button class="btn btn-primary btn-strong" type="button" (click)="goToPriseParametres(item)">
               <lucide-icon name="activity" [size]="18"></lucide-icon>
               Paramètres
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Hospitalisations en attente (Major uniquement) -->
+    <div class="queue-section hospitalisations-section" *ngIf="isMajor">
+      <div class="queue-header">
+        <h2>
+          <lucide-icon name="bed" [size]="20"></lucide-icon>
+          Hospitalisations en attente d'installation
+          <span class="count-badge" *ngIf="hospitalisationsEnAttente.length > 0">{{ hospitalisationsEnAttente.length }}</span>
+        </h2>
+        <button class="icon-btn" type="button" (click)="loadHospitalisationsEnAttente()" aria-label="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="alert alert-error" *ngIf="errorHospitalisations">
+        {{ errorHospitalisations }}
+      </div>
+
+      <div class="queue-loading" *ngIf="isLoadingHospitalisations">
+        Chargement...
+      </div>
+
+      <div class="queue-empty" *ngIf="!isLoadingHospitalisations && hospitalisationsEnAttente.length === 0">
+        Aucune hospitalisation en attente d'installation.
+      </div>
+
+      <div class="hospitalisations-list" *ngIf="!isLoadingHospitalisations && hospitalisationsEnAttente.length > 0">
+        <div class="hospitalisation-card" *ngFor="let h of hospitalisationsEnAttente" [class]="getUrgenceClass(h.urgence)">
+          <div class="hosp-main">
+            <div class="hosp-patient">
+              <div class="patient-avatar">
+                <lucide-icon name="user" [size]="18"></lucide-icon>
+              </div>
+              <div class="patient-details">
+                <strong>{{ h.patient?.prenom }} {{ h.patient?.nom }}</strong>
+                <span class="hosp-motif" *ngIf="h.motif">{{ h.motif }}</span>
+              </div>
+            </div>
+            <div class="hosp-badges">
+              <span class="badge badge-urgence" [class]="'badge-' + h.urgence">{{ h.urgence | titlecase }}</span>
+              <span class="badge badge-date">{{ formatDateTime(h.dateEntree) }}</span>
+            </div>
+          </div>
+          <div class="hosp-actions">
+            <button class="btn btn-primary" type="button" (click)="openAttribuerLitPanel(h)">
+              <lucide-icon name="bed" [size]="16"></lucide-icon>
+              Installer le patient
             </button>
           </div>
         </div>
@@ -89,22 +141,12 @@
     </div>
   </div>
 
-  <!-- Modal Paramètres avec composant unifié -->
-  <app-modal
-    [isOpen]="showParamForm && !!selectedItem"
-    title="Paramètres vitaux"
-    icon="activity"
-    size="lg"
-    (closed)="closeParamForm()">
-    <app-parametres-form
-      *ngIf="selectedItem"
-      [consultationId]="selectedItem.idConsultation"
-      [patientNom]="selectedItem.patientPrenom + ' ' + selectedItem.patientNom"
-      [mode]="'create'"
-      [compact]="false"
-      (saved)="onParametresSaved()"
-      (cancelled)="closeParamForm()">
-    </app-parametres-form>
-  </app-modal>
+  <!-- Panel Attribution Lit -->
+  <app-attribuer-lit-panel
+    [isOpen]="showAttribuerLitPanel"
+    [hospitalisation]="selectedHospitalisation"
+    (close)="closeAttribuerLitPanel()"
+    (attributed)="onLitAttribue()">
+  </app-attribuer-lit-panel>
 
 </app-dashboard-layout>

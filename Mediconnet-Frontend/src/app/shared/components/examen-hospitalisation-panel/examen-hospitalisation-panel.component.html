@@ -1,0 +1,67 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <lucide-icon name="microscope" [size]="22"></lucide-icon>
+        <div>
+          <h2>Prescrire des examens</h2>
+          <span class="patient-name" *ngIf="patientPrenom || patientNom">{{ patientPrenom }} {{ patientNom }}</span>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content">
+      <!-- Success Message -->
+      <div class="success-message" *ngIf="success">
+        <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+        <h3>Examens prescrits</h3>
+        <p>Les examens ont été ajoutés avec succès.</p>
+      </div>
+
+      <!-- Form -->
+      <div class="form-container" *ngIf="!success">
+        <!-- Error -->
+        <div class="error-message" *ngIf="error">
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Composant examens réutilisé -->
+        <app-prescription-examens
+          [examens]="examens"
+          (examensChange)="onExamensChange($event)">
+        </app-prescription-examens>
+
+        <!-- Notes générales -->
+        <div class="form-section">
+          <h4>
+            <lucide-icon name="file-text" [size]="16"></lucide-icon>
+            Notes complémentaires
+          </h4>
+          <textarea 
+            [(ngModel)]="notes" 
+            rows="3" 
+            placeholder="Notes ou instructions pour le laboratoire...">
+          </textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" *ngIf="!success">
+      <button class="btn btn-outline" (click)="onClose()" [disabled]="isSubmitting">
+        Annuler
+      </button>
+      <button class="btn btn-primary" (click)="submit()" [disabled]="!canSubmit">
+        <lucide-icon name="loader-2" [size]="16" class="spinner" *ngIf="isSubmitting"></lucide-icon>
+        <lucide-icon name="send" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+        {{ isSubmitting ? 'Envoi...' : 'Prescrire les examens' }}
+      </button>
+    </div>
+  </div>
+</div>

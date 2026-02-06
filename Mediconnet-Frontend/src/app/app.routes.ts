@@ -33,6 +33,13 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   
+  // Page de notifications (accessible à tous les utilisateurs connectés)
+  { 
+    path: 'notifications', 
+    loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent),
+    canActivate: [authGuard]
+  },
+  
   // @deprecated - Complétion de profil (redirige vers inscription car le profil est maintenant complété lors de l'inscription)
   { 
     path: 'complete-profile', 
@@ -62,6 +69,10 @@ export const routes: Routes = [
       { 
         path: 'dossier', 
         loadComponent: () => import('./pages/patient/dossier-medical/dossier-medical.component').then(m => m.DossierMedicalComponent)
+      },
+      { 
+        path: 'consultation/:id', 
+        loadComponent: () => import('./pages/patient/consultation-details/consultation-details.component').then(m => m.PatientConsultationDetailsComponent)
       }
     ]
   },
@@ -94,6 +105,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/medecin/consultation-workflow/consultation-workflow.component').then(m => m.ConsultationWorkflowComponent)
       },
       { 
+        path: 'consultation-details/:id', 
+        loadComponent: () => import('./pages/medecin/consultation-details/consultation-details.component').then(m => m.ConsultationDetailsComponent)
+      },
+      { 
         path: 'patients', 
         loadComponent: () => import('./pages/medecin/patients/patients.component').then(m => m.MedecinPatientsComponent)
       },
@@ -115,13 +130,14 @@ export const routes: Routes = [
         path: 'patients', 
         loadComponent: () => import('./pages/infirmier/patients/patients.component').then(m => m.InfirmierPatientsComponent)
       },
-      { 
-        path: 'parametres', 
-        loadComponent: () => import('./pages/infirmier/parametres/parametres.component').then(m => m.InfirmierParametresComponent)
-      },
       {
         path: 'prise-parametres/:patientId',
         loadComponent: () => import('./pages/infirmier/prise-parametres/prise-parametres.component').then(m => m.PriseParametresComponent)
+      },
+      { 
+        path: 'parametres', 
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       }
     ]
   },
@@ -194,15 +210,15 @@ export const routes: Routes = [
     ]
   },
   
-  // Routes Biologiste (protegees)
+  // Routes Laborantin (protegees)
   { 
-    path: 'biologiste', 
-    canActivate: [authGuard, roleGuard(['biologiste'])],
+    path: 'laborantin', 
+    canActivate: [authGuard, roleGuard(['laborantin'])],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { 
         path: 'dashboard', 
-        loadComponent: () => import('./pages/biologiste/dashboard/dashboard.component').then(m => m.BiologisteDashboardComponent)
+        loadComponent: () => import('./pages/laborantin/dashboard/dashboard.component').then(m => m.LaborantinDashboardComponent)
       }
     ]
   },

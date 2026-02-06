@@ -70,6 +70,74 @@ public class Consultation
     [Column("conclusion")]
     public string? Conclusion { get; set; }
 
+    /// <summary>Recommandations du médecin</summary>
+    [Column("recommandations")]
+    public string? Recommandations { get; set; }
+
+    // ==================== EXAMEN CLINIQUE (Étape 2) ====================
+    
+    /// <summary>Observations visuelles: aspect général, peau, muqueuses</summary>
+    [Column("examen_inspection")]
+    public string? ExamenInspection { get; set; }
+    
+    /// <summary>Résultats de la palpation: abdomen, ganglions, etc.</summary>
+    [Column("examen_palpation")]
+    public string? ExamenPalpation { get; set; }
+    
+    /// <summary>Auscultation: coeur, poumons, abdomen</summary>
+    [Column("examen_auscultation")]
+    public string? ExamenAuscultation { get; set; }
+    
+    /// <summary>Percussion: thorax, abdomen</summary>
+    [Column("examen_percussion")]
+    public string? ExamenPercussion { get; set; }
+    
+    /// <summary>Autres observations cliniques</summary>
+    [Column("examen_autres")]
+    public string? ExamenAutres { get; set; }
+
+    // ==================== DIAGNOSTIC ET ORIENTATION (Étape 3) ====================
+    
+    /// <summary>Diagnostics différentiels ou associés</summary>
+    [Column("diagnostics_secondaires")]
+    public string? DiagnosticsSecondaires { get; set; }
+    
+    /// <summary>Hypothèses à confirmer par examens</summary>
+    [Column("hypotheses_diagnostiques")]
+    public string? HypothesesDiagnostiques { get; set; }
+
+    // ==================== PLAN DE TRAITEMENT (Étape 4) ====================
+    
+    /// <summary>Explication du diagnostic au patient</summary>
+    [Column("explication_diagnostic")]
+    public string? ExplicationDiagnostic { get; set; }
+    
+    /// <summary>Options de traitement proposées</summary>
+    [Column("options_traitement")]
+    public string? OptionsTraitement { get; set; }
+    
+    /// <summary>Spécialiste vers lequel orienter le patient</summary>
+    [Column("orientation_specialiste")]
+    public string? OrientationSpecialiste { get; set; }
+    
+    /// <summary>Motif de l'orientation vers un spécialiste</summary>
+    [Column("motif_orientation")]
+    public string? MotifOrientation { get; set; }
+
+    // ==================== CONCLUSION (Étape 5) ====================
+    
+    /// <summary>Résumé des points importants</summary>
+    [Column("resume_consultation")]
+    public string? ResumeConsultation { get; set; }
+    
+    /// <summary>Questions du patient et réponses</summary>
+    [Column("questions_patient")]
+    public string? QuestionsPatient { get; set; }
+    
+    /// <summary>Consignes données au patient</summary>
+    [Column("consignes_patient")]
+    public string? ConsignesPatient { get; set; }
+
     // Navigation properties
     [ForeignKey("IdMedecin")]
     public virtual Medecin? Medecin { get; set; }
@@ -85,9 +153,69 @@ public class Consultation
 
     public virtual ICollection<ConsultationQuestion>? ConsultationQuestions { get; set; }
 
-    public virtual ICollection<Reponse>? Reponses { get; set; }
-
     public virtual Ordonnance? Ordonnance { get; set; }
 
     public virtual ICollection<BulletinExamen>? BulletinsExamen { get; set; }
+
+    public virtual ICollection<OrientationSpecialiste>? OrientationsSpecialiste { get; set; }
+}
+
+/// <summary>
+/// Entité OrientationSpecialiste - Représente une orientation vers un spécialiste
+/// </summary>
+[Table("orientation_specialiste")]
+public class OrientationSpecialiste
+{
+    [Key]
+    [Column("id_orientation")]
+    public int IdOrientation { get; set; }
+
+    [Column("id_consultation")]
+    public int IdConsultation { get; set; }
+
+    [Column("id_specialite")]
+    public int? IdSpecialite { get; set; }
+
+    [Column("specialite_manuelle")]
+    public string? SpecialiteManuelle { get; set; }
+
+    [Column("id_medecin_oriente")]
+    public int? IdMedecinOriente { get; set; }
+
+    [Column("medecin_manuel")]
+    public string? MedecinManuel { get; set; }
+
+    [Column("motif")]
+    public string Motif { get; set; } = string.Empty;
+
+    [Column("urgence")]
+    public bool Urgence { get; set; } = false;
+
+    [Column("statut")]
+    public string Statut { get; set; } = "en_attente";
+
+    [Column("date_orientation")]
+    public DateTime DateOrientation { get; set; } = DateTime.Now;
+
+    [Column("date_rdv_propose")]
+    public DateTime? DateRdvPropose { get; set; }
+
+    [Column("notes")]
+    public string? Notes { get; set; }
+
+    [Column("id_rdv_cree")]
+    public int? IdRdvCree { get; set; }
+
+    // Navigation properties
+    [ForeignKey("IdConsultation")]
+    public virtual Consultation? Consultation { get; set; }
+
+    [ForeignKey("IdSpecialite")]
+    public virtual Specialite? Specialite { get; set; }
+
+    [ForeignKey("IdMedecinOriente")]
+    public virtual Medecin? MedecinOriente { get; set; }
+
+    [ForeignKey("IdRdvCree")]
+    public virtual RendezVous? RendezVousCree { get; set; }
 }

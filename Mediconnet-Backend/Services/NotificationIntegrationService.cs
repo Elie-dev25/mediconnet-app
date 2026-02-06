@@ -37,7 +37,8 @@ public class NotificationIntegrationService
             Titre = "Nouveau rendez-vous",
             Message = $"Nouveau RDV avec {patientNom} le {dateRdv:dd/MM/yyyy à HH:mm}",
             Lien = "/medecin/agenda",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
 
         // Notification au patient
@@ -45,23 +46,39 @@ public class NotificationIntegrationService
         {
             IdUser = patientId,
             Type = NotificationType.RendezVous,
-            Titre = "Rendez-vous confirmé",
-            Message = $"Votre rendez-vous est confirmé pour le {dateRdv:dd/MM/yyyy à HH:mm}",
+            Titre = "Rendez-vous créé",
+            Message = $"Votre demande de RDV pour le {dateRdv:dd/MM/yyyy à HH:mm} a été envoyée",
             Lien = "/patient/rendez-vous",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 
-    public async Task NotifyRendezVousCancelledAsync(int medecinId, int patientId, string raison, DateTime dateRdv)
+    public async Task NotifyRendezVousConfirmedAsync(int patientId, string medecinNom, DateTime dateRdv)
     {
         await _notificationService.CreateAsync(new CreateNotificationRequest
         {
             IdUser = patientId,
-            Type = NotificationType.RendezVous,
-            Titre = "Rendez-vous annulé",
-            Message = $"Votre RDV du {dateRdv:dd/MM/yyyy} a été annulé. Raison: {raison}",
+            Type = NotificationType.Validation,
+            Titre = "Rendez-vous confirmé",
+            Message = $"Votre RDV avec Dr. {medecinNom} le {dateRdv:dd/MM/yyyy à HH:mm} a été confirmé",
             Lien = "/patient/rendez-vous",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
+        });
+    }
+
+    public async Task NotifyRendezVousCancelledAsync(int patientId, string medecinNom, string raison, DateTime dateRdv)
+    {
+        await _notificationService.CreateAsync(new CreateNotificationRequest
+        {
+            IdUser = patientId,
+            Type = NotificationType.Annulation,
+            Titre = "Rendez-vous annulé",
+            Message = $"Votre RDV avec Dr. {medecinNom} du {dateRdv:dd/MM/yyyy à HH:mm} a été annulé. Raison: {raison}",
+            Lien = "/patient/rendez-vous",
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
     }
 
@@ -74,7 +91,8 @@ public class NotificationIntegrationService
             Titre = "Rappel de rendez-vous",
             Message = $"N'oubliez pas votre RDV avec Dr. {medecinNom} demain à {dateRdv:HH:mm}",
             Lien = "/patient/rendez-vous",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
     }
 
@@ -89,7 +107,8 @@ public class NotificationIntegrationService
             Titre = "Consultation terminée",
             Message = $"Votre consultation avec Dr. {medecinNom} est terminée. Consultez votre dossier médical.",
             Lien = "/patient/dossier-medical",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 
@@ -102,7 +121,8 @@ public class NotificationIntegrationService
             Titre = "Patient prêt",
             Message = $"Les paramètres de {patientNom} sont enregistrés. Patient prêt pour la consultation.",
             Lien = $"/medecin/consultations/{consultationId}",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
     }
 
@@ -117,7 +137,8 @@ public class NotificationIntegrationService
             Titre = "Nouvelle facture",
             Message = $"Facture {numeroFacture} de {montant:N0} FCFA à régler",
             Lien = "/patient/factures",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 
@@ -130,7 +151,8 @@ public class NotificationIntegrationService
             Titre = "Paiement reçu",
             Message = $"Merci ! Votre paiement pour la facture {numeroFacture} a été enregistré.",
             Lien = "/patient/factures",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 
@@ -143,7 +165,8 @@ public class NotificationIntegrationService
             Titre = "Échéance de paiement",
             Message = $"Rappel: échéance de {montant:N0} FCFA le {dateEcheance:dd/MM/yyyy}",
             Lien = "/patient/factures",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
     }
 
@@ -165,7 +188,8 @@ public class NotificationIntegrationService
                 Titre = "Stock bas",
                 Message = $"⚠️ {nomMedicament}: stock actuel ({stockActuel}) sous le seuil ({seuilStock})",
                 Lien = "/pharmacie/stock",
-                Priorite = NotificationPriority.Haute
+                Priorite = NotificationPriority.Haute,
+                SendRealTime = true
             });
         }
     }
@@ -186,7 +210,8 @@ public class NotificationIntegrationService
                 Titre = "Rupture de stock",
                 Message = $"🚨 URGENT: {nomMedicament} est en rupture de stock !",
                 Lien = "/pharmacie/stock",
-                Priorite = NotificationPriority.Urgente
+                Priorite = NotificationPriority.Urgente,
+                SendRealTime = true
             });
         }
     }
@@ -207,7 +232,8 @@ public class NotificationIntegrationService
                 Titre = "Médicament périmé",
                 Message = $"⛔ {nomMedicament} est périmé depuis le {datePeremption:dd/MM/yyyy}",
                 Lien = "/pharmacie/stock",
-                Priorite = NotificationPriority.Urgente
+                Priorite = NotificationPriority.Urgente,
+                SendRealTime = true
             });
         }
     }
@@ -225,7 +251,8 @@ public class NotificationIntegrationService
             Titre = "Nouvelle admission",
             Message = message,
             Lien = "/hospitalisation",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
 
         if (infirmierId > 0)
@@ -237,7 +264,8 @@ public class NotificationIntegrationService
                 Titre = "Nouvelle admission",
                 Message = message,
                 Lien = "/infirmier/patients",
-                Priorite = NotificationPriority.Haute
+                Priorite = NotificationPriority.Haute,
+                SendRealTime = true
             });
         }
     }
@@ -251,7 +279,8 @@ public class NotificationIntegrationService
             Titre = "Transfert de patient",
             Message = $"{patientNom} transféré de {ancienLit} vers {nouveauLit}",
             Lien = "/hospitalisation",
-            Priorite = NotificationPriority.Haute
+            Priorite = NotificationPriority.Haute,
+            SendRealTime = true
         });
     }
 
@@ -265,7 +294,8 @@ public class NotificationIntegrationService
             Type = NotificationType.AlerteMedicale,
             Titre = $"Alerte médicale - {typeAlerte}",
             Message = $"Patient {patientNom}: {message}",
-            Priorite = NotificationPriority.Urgente
+            Priorite = NotificationPriority.Urgente,
+            SendRealTime = true
         });
     }
 
@@ -280,7 +310,8 @@ public class NotificationIntegrationService
             Titre = "Ordonnance à renouveler",
             Message = $"L'ordonnance {codeOrdonnance} de {patientNom} arrive à expiration",
             Lien = "/medecin/ordonnances",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 
@@ -302,7 +333,8 @@ public class NotificationIntegrationService
                 Titre = "Nouveau compte",
                 Message = $"Nouvel utilisateur inscrit: {nomComplet} ({role})",
                 Lien = "/admin/users",
-                Priorite = NotificationPriority.Basse
+                Priorite = NotificationPriority.Basse,
+                SendRealTime = true
             });
         }
     }
@@ -316,7 +348,8 @@ public class NotificationIntegrationService
             Titre = $"Bienvenue {prenom} !",
             Message = "Votre compte MediConnect est actif. Complétez votre profil pour commencer.",
             Lien = "/profil",
-            Priorite = NotificationPriority.Normale
+            Priorite = NotificationPriority.Normale,
+            SendRealTime = true
         });
     }
 }

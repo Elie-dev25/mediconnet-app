@@ -1,6 +1,7 @@
 using Mediconnet_Backend.Core.CQRS.Queries;
 using Mediconnet_Backend.Core.CQRS.Queries.Dashboard;
 using Mediconnet_Backend.Core.Interfaces.Repositories;
+using Mediconnet_Backend.Infrastructure.BackgroundJobs;
 using Mediconnet_Backend.Infrastructure.BackgroundJobs.Jobs;
 using Mediconnet_Backend.Infrastructure.Caching;
 using Mediconnet_Backend.Infrastructure.CQRS.Queries.Dashboard;
@@ -56,6 +57,11 @@ public static class InfrastructureExtensions
     {
         services.AddScoped<ReminderJob>();
         services.AddScoped<CleanupJob>();
+        services.AddScoped<ExpiredAppointmentJob>();
+        services.AddScoped<MissedCareJob>();
+        
+        // Service hébergé pour exécuter les jobs périodiquement
+        services.AddHostedService<BackgroundJobHostedService>();
         
         return services;
     }

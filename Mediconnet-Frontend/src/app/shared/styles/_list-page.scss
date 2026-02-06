@@ -1,0 +1,562 @@
+// ============================================
+// Styles partagés pour les pages de liste avec onglets
+// Utilisé par: consultations, rendez-vous, etc.
+// ============================================
+
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// Variables couleurs communes
+$list-page-primary: #3b82f6;
+$list-page-success: #10b981;
+$list-page-warning: #f59e0b;
+$list-page-danger: #ef4444;
+$list-page-purple: #7c3aed;
+
+// ==================== PAGE CONTAINER ====================
+.list-page {
+  @include page-container;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+// ==================== HEADER COMPACT ====================
+.list-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  .header-left h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+
+    lucide-icon { color: $list-page-primary; }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.list-page-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  lucide-icon { color: #9ca3af; }
+  
+  input {
+    border: none;
+    outline: none;
+    font-size: 0.8rem;
+    width: 140px;
+    &::placeholder { color: #9ca3af; }
+  }
+}
+
+.list-page-btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: $list-page-primary;
+  }
+}
+
+// ==================== STATS ROW COMPACT ====================
+.list-page-stats {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.list-page-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+
+  lucide-icon { opacity: 0.8; }
+  
+  .value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  .label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+
+  &--primary { 
+    lucide-icon { color: $list-page-primary; }
+    border-left: 3px solid $list-page-primary;
+  }
+  &--purple { 
+    lucide-icon { color: $list-page-purple; }
+    border-left: 3px solid $list-page-purple;
+  }
+  &--warning { 
+    lucide-icon { color: $list-page-warning; }
+    border-left: 3px solid $list-page-warning;
+  }
+  &--success { 
+    lucide-icon { color: $list-page-success; }
+    border-left: 3px solid $list-page-success;
+  }
+  &--danger { 
+    lucide-icon { color: $list-page-danger; }
+    border-left: 3px solid $list-page-danger;
+  }
+}
+
+// ==================== LOADING ====================
+.list-page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+// ==================== TABS CONTAINER ====================
+.list-page-tabs-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.list-page-tabs-nav {
+  display: flex;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.25rem;
+  gap: 0.25rem;
+}
+
+.list-page-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  lucide-icon { opacity: 0.7; }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.5);
+    color: #374151;
+  }
+
+  &.active {
+    background: white;
+    color: $list-page-primary;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    lucide-icon { opacity: 1; color: $list-page-primary; }
+  }
+
+  &--danger {
+    color: $list-page-danger;
+    &.active {
+      color: $list-page-danger;
+      lucide-icon { color: $list-page-danger; }
+    }
+    &.active .list-page-tab-count {
+      background: $list-page-danger;
+    }
+  }
+}
+
+.list-page-tab-count {
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+
+  .active & {
+    background: $list-page-primary;
+    color: white;
+  }
+}
+
+.list-page-tab-content {
+  padding: 0.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+
+  // Scrollbar invisible mais fonctionnelle
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+.list-page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #9ca3af;
+
+  lucide-icon { opacity: 0.3; margin-bottom: 0.5rem; }
+  p { margin: 0; font-size: 0.875rem; }
+  .empty-subtitle { font-size: 0.8rem; margin-top: 0.25rem; }
+}
+
+// ==================== TABLE ====================
+.list-page-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.list-page-table-header {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+
+  span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  @media (max-width: 768px) { display: none; }
+}
+
+.list-page-table-row {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  align-items: center;
+  border-radius: 8px;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  &--missed {
+    background: rgba($list-page-danger, 0.03);
+    border-left: 3px solid $list-page-danger;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #fafafa;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+  }
+}
+
+// ==================== COLUMNS ====================
+.list-page-col-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+
+  .time-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: $list-page-primary;
+  }
+
+  .time-duration {
+    font-size: 0.65rem;
+    color: #9ca3af;
+  }
+
+  .time-date {
+    font-size: 0.65rem;
+    color: #6b7280;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.list-page-col-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, $list-page-primary 0%, darken($list-page-primary, 10%) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    .user-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1f2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-meta {
+      font-size: 0.65rem;
+      color: #9ca3af;
+    }
+  }
+}
+
+.list-page-col-info {
+  .info-text {
+    font-size: 0.8rem;
+    color: #4b5563;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .info-sub {
+    font-size: 0.7rem;
+    color: #9ca3af;
+  }
+}
+
+.list-page-col-status {
+  display: flex;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.list-page-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  &--pending {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  &--confirmed {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  &--progress {
+    background: #ede9fe;
+    color: #7c3aed;
+  }
+
+  &--completed {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  &--cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &--absent {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+}
+
+.list-page-col-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.list-page-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  text-decoration: none;
+
+  &--view {
+    background: rgba($list-page-primary, 0.1);
+    color: $list-page-primary;
+    &:hover { background: $list-page-primary; color: white; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &--primary {
+    background: rgba($list-page-primary, 0.1);
+    color: $list-page-primary;
+    &:hover { background: $list-page-primary; color: white; }
+  }
+
+  &--success {
+    background: rgba($list-page-success, 0.1);
+    color: $list-page-success;
+    &:hover { background: $list-page-success; color: white; }
+  }
+
+  &--danger {
+    background: rgba($list-page-danger, 0.1);
+    color: $list-page-danger;
+    &:hover { background: $list-page-danger; color: white; }
+  }
+
+  &--secondary {
+    background: #f3f4f6;
+    color: #6b7280;
+    &:hover { background: #e5e7eb; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &--reschedule {
+    width: auto;
+    padding: 0.35rem 0.6rem;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: $list-page-primary;
+    color: white;
+    &:hover { background: darken($list-page-primary, 8%); }
+  }
+}
+
+// ==================== DATE NAV ====================
+.list-page-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  
+  .date-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    &:hover { background: #f3f4f6; }
+  }
+}
+
+.list-page-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  &:hover { background: #f3f4f6; color: $list-page-primary; }
+}
+
+// ==================== ANIMATIONS ====================
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

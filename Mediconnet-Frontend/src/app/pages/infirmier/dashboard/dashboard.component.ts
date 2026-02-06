@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { InfirmierQueueItem, InfirmierService } from '../../../services/infirmier.service';
@@ -10,11 +10,12 @@ import {
   WelcomeBannerComponent,
   StatsGridComponent,
   StatItem,
-  ModalComponent,
   LucideAngularModule,
   ALL_ICONS_PROVIDER,
-  ParametresFormComponent
+  AttribuerLitPanelComponent,
+  HospitalisationEnAttenteInfo
 } from '../../../shared';
+import { HospitalisationService } from '../../../services/hospitalisation.service';
 import { INFIRMIER_MENU_ITEMS, INFIRMIER_SIDEBAR_TITLE } from '../shared';
 
 @Component({
@@ -27,8 +28,7 @@ import { INFIRMIER_MENU_ITEMS, INFIRMIER_SIDEBAR_TITLE } from '../shared';
     DashboardLayoutComponent,
     WelcomeBannerComponent,
     StatsGridComponent,
-    ParametresFormComponent,
-    ModalComponent
+    AttribuerLitPanelComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './dashboard.component.html',
@@ -55,13 +55,22 @@ export class InfirmierDashboardComponent implements OnInit, OnDestroy {
   queue: InfirmierQueueItem[] = [];
   errorQueue: string | null = null;
 
-  showParamForm = false;
-  selectedItem: InfirmierQueueItem | null = null;
+  // Hospitalisations en attente (Major)
+  isMajor = false;
+  hospitalisationsEnAttente: any[] = [];
+  isLoadingHospitalisations = false;
+  errorHospitalisations: string | null = null;
+
+  // Panel attribution lit
+  showAttribuerLitPanel = false;
+  selectedHospitalisation: HospitalisationEnAttenteInfo | null = null;
 
   constructor(
     private authService: AuthService,
     private infirmierService: InfirmierService,
-    private signalRService: SignalRService
+    private hospitalisationService: HospitalisationService,
+    private signalRService: SignalRService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -71,6 +80,7 @@ export class InfirmierDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.loadQueue();
+    this.loadHospitalisationsEnAttente();
 
     this.signalRService.vitalsEvents$
       .pipe(takeUntil(this.destroy$))
@@ -104,18 +114,78 @@ export class InfirmierDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  openParamForm(item: InfirmierQueueItem): void {
-    this.selectedItem = item;
-    this.showParamForm = true;
+  goToPriseParametres(item: InfirmierQueueItem): void {
+    this.router.navigate(['/infirmier/prise-parametres', item.idPatient]);
   }
 
-  closeParamForm(): void {
-    this.showParamForm = false;
-    this.selectedItem = null;
+  // ==================== HOSPITALISATIONS EN ATTENTE ====================
+
+  loadHospitalisationsEnAttente(): void {
+    this.isLoadingHospitalisations = true;
+    this.errorHospitalisations = null;
+
+    this.hospitalisationService.getPatientsHospitalises().subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.isMajor = response.isMajor || false;
+          // Filtrer uniquement les hospitalisations en attente de lit
+          this.hospitalisationsEnAttente = (response.data || []).filter(
+            (h: any) => h.statut === 'EN_ATTENTE'
+          );
+          // Mettre à jour les stats
+          this.stats = this.stats.map(s =>
+            s.label === 'Hospitalisés' ? { ...s, value: this.hospitalisationsEnAttente.length } : s
+          );
+        }
+        this.isLoadingHospitalisations = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement hospitalisations:', err);
+        this.errorHospitalisations = 'Impossible de charger les hospitalisations';
+        this.isLoadingHospitalisations = false;
+      }
+    });
   }
 
-  onParametresSaved(): void {
-    this.closeParamForm();
-    this.loadQueue();
+  openAttribuerLitPanel(hospitalisation: any): void {
+    this.selectedHospitalisation = {
+      idAdmission: hospitalisation.idAdmission,
+      patientNom: hospitalisation.patient?.nom || hospitalisation.patientNom || '',
+      patientPrenom: hospitalisation.patient?.prenom || hospitalisation.patientPrenom || '',
+      motif: hospitalisation.motif,
+      urgence: hospitalisation.urgence,
+      dateEntree: hospitalisation.dateEntree
+    };
+    this.showAttribuerLitPanel = true;
+  }
+
+  closeAttribuerLitPanel(): void {
+    this.showAttribuerLitPanel = false;
+    this.selectedHospitalisation = null;
+  }
+
+  onLitAttribue(): void {
+    this.closeAttribuerLitPanel();
+    this.loadHospitalisationsEnAttente();
+  }
+
+  getUrgenceClass(urgence?: string): string {
+    switch (urgence?.toLowerCase()) {
+      case 'haute': return 'urgence-haute';
+      case 'moyenne': return 'urgence-moyenne';
+      default: return 'urgence-normale';
+    }
+  }
+
+  formatDateTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }

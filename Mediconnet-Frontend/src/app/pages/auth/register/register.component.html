@@ -38,7 +38,7 @@
             [class.completed]="step.id < currentStep"
             (click)="goToStep(step.id)">
             <div class="step-circle">
-              <lucide-icon *ngIf="step.id < currentStep" name="check" [size]="12"></lucide-icon>
+              <lucide-icon *ngIf="step.id < currentStep" name="check-circle-2" [size]="12"></lucide-icon>
               <span *ngIf="step.id >= currentStep">{{ step.id }}</span>
             </div>
             <span class="step-title">{{ step.title }}</span>
@@ -179,6 +179,20 @@
             <input type="text" formControlName="adresse" placeholder="Adresse complète" class="form-input">
           </div>
         </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="baby" [size]="18" class="input-icon"></lucide-icon>
+            <input type="number" formControlName="nbEnfants" placeholder="Nombre d'enfants" class="form-input" min="0" max="20">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrapper">
+            <lucide-icon name="users" [size]="18" class="input-icon"></lucide-icon>
+            <input type="text" formControlName="ethnie" placeholder="Ethnie (optionnel)" class="form-input">
+          </div>
+        </div>
       </form>
 
       <!-- Step 3: Health -->
@@ -211,8 +225,14 @@
             <span class="toggle-switch"></span>
             <span>Allergies connues</span>
           </label>
-          <input *ngIf="healthForm.get('allergiesConnues')?.value" type="text" 
-                 formControlName="allergiesDetails" placeholder="Précisez vos allergies..." class="form-input conditional-input">
+          <div *ngIf="healthForm.get('allergiesConnues')?.value" class="conditional-field">
+            <input type="text" formControlName="allergiesDetails" placeholder="Précisez vos allergies... *" 
+                   class="form-input conditional-input"
+                   [class.is-error]="healthForm.get('allergiesDetails')?.invalid && healthForm.get('allergiesDetails')?.touched">
+            <span *ngIf="healthForm.get('allergiesDetails')?.invalid && healthForm.get('allergiesDetails')?.touched" class="error-message">
+              Veuillez préciser vos allergies
+            </span>
+          </div>
         </div>
 
         <div class="form-group toggle-group">
@@ -221,8 +241,14 @@
             <span class="toggle-switch"></span>
             <span>Opérations chirurgicales</span>
           </label>
-          <input *ngIf="healthForm.get('operationsChirurgicales')?.value" type="text" 
-                 formControlName="operationsDetails" placeholder="Précisez les opérations..." class="form-input conditional-input">
+          <div *ngIf="healthForm.get('operationsChirurgicales')?.value" class="conditional-field">
+            <input type="text" formControlName="operationsDetails" placeholder="Précisez les opérations... *" 
+                   class="form-input conditional-input"
+                   [class.is-error]="healthForm.get('operationsDetails')?.invalid && healthForm.get('operationsDetails')?.touched">
+            <span *ngIf="healthForm.get('operationsDetails')?.invalid && healthForm.get('operationsDetails')?.touched" class="error-message">
+              Veuillez préciser les opérations
+            </span>
+          </div>
         </div>
 
         <div class="form-group toggle-group">
@@ -231,13 +257,71 @@
             <span class="toggle-switch"></span>
             <span>Antécédents familiaux</span>
           </label>
-          <input *ngIf="healthForm.get('antecedentsFamiliaux')?.value" type="text" 
-                 formControlName="antecedentsFamiliauxDetails" placeholder="Précisez les antécédents..." class="form-input conditional-input">
+          <div *ngIf="healthForm.get('antecedentsFamiliaux')?.value" class="conditional-field">
+            <input type="text" formControlName="antecedentsFamiliauxDetails" placeholder="Précisez les antécédents... *" 
+                   class="form-input conditional-input"
+                   [class.is-error]="healthForm.get('antecedentsFamiliauxDetails')?.invalid && healthForm.get('antecedentsFamiliauxDetails')?.touched">
+            <span *ngIf="healthForm.get('antecedentsFamiliauxDetails')?.invalid && healthForm.get('antecedentsFamiliauxDetails')?.touched" class="error-message">
+              Veuillez préciser les antécédents
+            </span>
+          </div>
         </div>
       </form>
 
-      <!-- Step 4: Emergency Contact -->
-      <form *ngIf="currentStep === 4" [formGroup]="emergencyForm" class="step-form" @slideIn>
+      <!-- Step 4: Habitudes de vie -->
+      <form *ngIf="currentStep === 4" [formGroup]="lifestyleForm" class="step-form" @slideIn>
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <lucide-icon name="wine" [size]="18" class="toggle-icon"></lucide-icon>
+            <input type="checkbox" formControlName="consommationAlcool">
+            <span class="toggle-switch"></span>
+            <span>Consommation d'alcool</span>
+          </label>
+          <div *ngIf="lifestyleForm.get('consommationAlcool')?.value" class="conditional-field">
+            <select formControlName="frequenceAlcool" class="form-input"
+                    [class.is-error]="lifestyleForm.get('frequenceAlcool')?.invalid && lifestyleForm.get('frequenceAlcool')?.touched">
+              <option value="">Fréquence de consommation... *</option>
+              <option *ngFor="let freq of frequencesAlcool" [value]="freq">{{ freq }}</option>
+            </select>
+            <span *ngIf="lifestyleForm.get('frequenceAlcool')?.invalid && lifestyleForm.get('frequenceAlcool')?.touched" class="error-message">
+              Veuillez préciser la fréquence de consommation
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <lucide-icon name="cigarette" [size]="18" class="toggle-icon"></lucide-icon>
+            <input type="checkbox" formControlName="tabagisme">
+            <span class="toggle-switch"></span>
+            <span>Tabagisme (fumeur)</span>
+          </label>
+          <div *ngIf="lifestyleForm.get('tabagisme')?.value" class="conditional-field">
+            <select formControlName="frequenceTabac" class="form-input"
+                    [class.is-error]="lifestyleForm.get('frequenceTabac')?.invalid && lifestyleForm.get('frequenceTabac')?.touched">
+              <option value="">Fréquence de consommation... *</option>
+              <option value="Occasionnellement">Occasionnellement</option>
+              <option value="Régulièrement">Régulièrement</option>
+              <option value="Quotidiennement">Quotidiennement</option>
+            </select>
+            <span *ngIf="lifestyleForm.get('frequenceTabac')?.invalid && lifestyleForm.get('frequenceTabac')?.touched" class="error-message">
+              Veuillez préciser la fréquence de consommation
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <lucide-icon name="activity" [size]="18" class="toggle-icon"></lucide-icon>
+            <input type="checkbox" formControlName="activitePhysique">
+            <span class="toggle-switch"></span>
+            <span>Activité physique régulière</span>
+          </label>
+        </div>
+      </form>
+
+      <!-- Step 5: Finalisation -->
+      <form *ngIf="currentStep === 5" [formGroup]="finalizationForm" class="step-form" @slideIn>
         <div class="section-label">
           <lucide-icon name="phone-call" [size]="16"></lucide-icon>
           <span>Contact d'urgence</span>
@@ -248,17 +332,17 @@
             <div class="input-wrapper">
               <lucide-icon name="user" [size]="18" class="input-icon"></lucide-icon>
               <input type="text" formControlName="personneContact" placeholder="Nom du contact *" class="form-input"
-                     [class.is-error]="hasError(emergencyForm, 'personneContact')">
+                     [class.is-error]="hasError(finalizationForm, 'personneContact')">
             </div>
-            <span *ngIf="hasError(emergencyForm, 'personneContact')" class="error-text">{{ getErrorMessage(emergencyForm, 'personneContact') }}</span>
+            <span *ngIf="hasError(finalizationForm, 'personneContact')" class="error-text">{{ getErrorMessage(finalizationForm, 'personneContact') }}</span>
           </div>
           <div class="form-group">
             <div class="input-wrapper">
               <lucide-icon name="phone" [size]="18" class="input-icon"></lucide-icon>
               <input type="tel" formControlName="numeroContact" placeholder="Téléphone *" class="form-input"
-                     [class.is-error]="hasError(emergencyForm, 'numeroContact')">
+                     [class.is-error]="hasError(finalizationForm, 'numeroContact')">
             </div>
-            <span *ngIf="hasError(emergencyForm, 'numeroContact')" class="error-text">{{ getErrorMessage(emergencyForm, 'numeroContact') }}</span>
+            <span *ngIf="hasError(finalizationForm, 'numeroContact')" class="error-text">{{ getErrorMessage(finalizationForm, 'numeroContact') }}</span>
           </div>
         </div>
 
@@ -267,13 +351,26 @@
             <lucide-icon name="shield-check" [size]="16"></lucide-icon>
             <span>Déclaration sur l'honneur</span>
           </div>
-          <p class="declaration-text">Je déclare sur l'honneur que les informations fournies sont exactes et complètes.</p>
-          <label class="checkbox-declaration" [class.checked]="emergencyForm.get('declarationAcceptee')?.value">
+          <div class="declaration-content">
+            <p class="declaration-text">
+              Je soussigné(e), déclare sur l'honneur que toutes les informations fournies dans ce formulaire sont exactes, complètes et sincères.
+            </p>
+            <p class="declaration-text">
+              Je m'engage à informer l'établissement de santé de toute modification de ma situation personnelle, médicale ou administrative.
+            </p>
+            <p class="declaration-text">
+              Je reconnais avoir été informé(e) que toute fausse déclaration peut entraîner des conséquences sur ma prise en charge médicale et engage ma responsabilité.
+            </p>
+            <p class="declaration-text">
+              J'autorise l'établissement à utiliser mes données personnelles conformément à la réglementation en vigueur sur la protection des données de santé.
+            </p>
+          </div>
+          <label class="checkbox-declaration" [class.checked]="finalizationForm.get('declarationAcceptee')?.value">
             <input type="checkbox" formControlName="declarationAcceptee">
             <div class="check-box">
-              <lucide-icon name="check" [size]="12"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="12"></lucide-icon>
             </div>
-            <span>J'accepte et je confirme *</span>
+            <span>J'ai lu et j'accepte cette déclaration sur l'honneur *</span>
           </label>
         </div>
       </form>

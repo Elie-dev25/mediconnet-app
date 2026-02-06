@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, isDevMode } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 export interface SpeechRecognitionEvent {
@@ -56,25 +56,25 @@ export class SpeechRecognitionService {
 
     this.recognition.onstart = () => {
       this.ngZone.run(() => {
-        console.log('[VoiceRecognition] Started - Language:', this.currentLanguage);
+        if (isDevMode()) console.log('[VoiceRecognition] Started - Language:', this.currentLanguage);
         this.isListening$.next(true);
       });
     };
 
     this.recognition.onend = () => {
       this.ngZone.run(() => {
-        console.log('[VoiceRecognition] Ended - shouldContinue:', this.shouldContinue);
+        if (isDevMode()) console.log('[VoiceRecognition] Ended - shouldContinue:', this.shouldContinue);
         
         // Redémarrer automatiquement si l'utilisateur n'a pas arrêté manuellement
         if (this.shouldContinue) {
           this.clearRestartTimeout();
           this.restartTimeout = setTimeout(() => {
             if (this.shouldContinue) {
-              console.log('[VoiceRecognition] Auto-restarting...');
+              if (isDevMode()) console.log('[VoiceRecognition] Auto-restarting...');
               try {
                 this.recognition.start();
               } catch (e) {
-                console.error('[VoiceRecognition] Restart failed:', e);
+                if (isDevMode()) console.error('[VoiceRecognition] Restart failed:', e);
                 this.shouldContinue = false;
                 this.isListening$.next(false);
               }
@@ -96,7 +96,7 @@ export class SpeechRecognitionService {
         const isFinal = result.isFinal;
         const confidence = result[0].confidence || 0;
 
-        console.log('[VoiceRecognition] Result:', { transcript, isFinal, confidence });
+        if (isDevMode()) console.log('[VoiceRecognition] Result:', { transcript, isFinal, confidence });
 
         this.transcript$.next({
           transcript,
@@ -109,7 +109,7 @@ export class SpeechRecognitionService {
 
     this.recognition.onerror = (event: any) => {
       this.ngZone.run(() => {
-        console.error('[VoiceRecognition] Error:', event.error);
+        if (isDevMode()) console.error('[VoiceRecognition] Error:', event.error);
         let errorMessage = 'Erreur de reconnaissance vocale';
         let shouldStop = true;
         
@@ -146,11 +146,11 @@ export class SpeechRecognitionService {
     };
 
     this.recognition.onspeechstart = () => {
-      console.log('[VoiceRecognition] Speech detected');
+      if (isDevMode()) console.log('[VoiceRecognition] Speech detected');
     };
 
     this.recognition.onspeechend = () => {
-      console.log('[VoiceRecognition] Speech ended');
+      if (isDevMode()) console.log('[VoiceRecognition] Speech ended');
     };
   }
 

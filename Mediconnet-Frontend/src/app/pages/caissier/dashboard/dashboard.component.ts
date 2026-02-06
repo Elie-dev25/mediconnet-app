@@ -342,6 +342,16 @@ export class CaissierDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const formData = this.paiementForm.value;
+    const montantRecu = formData.montantRecu || 0;
+    const montantAPayer = formData.montant || 0;
+
+    // Validation: le montant reçu doit être >= montant à payer
+    if (montantRecu < montantAPayer) {
+      this.paiementError = 'Montant insuffisant';
+      return;
+    }
+
     this.isSubmitting = true;
     this.paiementError = '';
     this.paiementSuccess = '';
@@ -349,7 +359,6 @@ export class CaissierDashboardComponent implements OnInit, OnDestroy {
     // Pour simplifier, on traite la première facture sélectionnée
     // Dans une version plus complète, on pourrait gérer les paiements multiples
     const idFacture = this.selectedFactures[0];
-    const formData = this.paiementForm.value;
 
     this.caisseService.creerTransaction({
       idFacture,

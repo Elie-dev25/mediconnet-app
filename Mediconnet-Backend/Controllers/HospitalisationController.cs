@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Mediconnet_Backend.Services;
+using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Hospitalisation;
 using System.Security.Claims;
 
@@ -65,6 +65,8 @@ public class HospitalisationController : ControllerBase
     public async Task<ActionResult<List<HospitalisationDto>>> GetHospitalisations(
         [FromQuery] string? statut,
         [FromQuery] int? idPatient,
+        [FromQuery] int? idMedecin,
+        [FromQuery] int? idService,
         [FromQuery] DateTime? dateDebut,
         [FromQuery] DateTime? dateFin)
     {
@@ -74,6 +76,8 @@ public class HospitalisationController : ControllerBase
             {
                 Statut = statut,
                 IdPatient = idPatient,
+                IdMedecin = idMedecin,
+                IdService = idService,
                 DateDebut = dateDebut,
                 DateFin = dateFin
             };
@@ -124,6 +128,42 @@ public class HospitalisationController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur lors de la récupération des hospitalisations du patient {IdPatient}", idPatient);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Récupérer les hospitalisations ordonnées par le médecin connecté
+    /// </summary>
+    [HttpGet("mes-hospitalisations")]
+    [Authorize(Roles = "medecin")]
+    public async Task<ActionResult<List<HospitalisationDto>>> GetMesHospitalisations(
+        [FromQuery] string? statut = null)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int medecinId))
+            {
+                return Unauthorized(new { message = "Utilisateur non authentifié" });
+            }
+
+            var filtre = new FiltreHospitalisationRequest
+            {
+                IdMedecin = medecinId,
+                Statut = statut
+            };
+
+            var result = await _hospitalisationService.GetHospitalisationsAsync(filtre);
+            return Ok(new { 
+                success = true, 
+                data = result, 
+                count = result.Count 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des hospitalisations du médecin");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

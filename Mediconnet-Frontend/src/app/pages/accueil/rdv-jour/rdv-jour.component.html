@@ -130,11 +130,11 @@
               *ngIf="!rdv.patientArrive && rdv.statut === 'planifie'"
               (click)="marquerArrivee(rdv)"
               title="Marquer l'arrivee">
-              <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
               Arrivee
             </button>
             <span class="deja-arrive" *ngIf="rdv.patientArrive">
-              <lucide-icon name="check" [size]="16"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
               Arrive
             </span>
           </div>

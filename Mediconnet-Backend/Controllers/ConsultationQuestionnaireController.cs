@@ -43,33 +43,20 @@ public class ConsultationQuestionnaireController : BaseApiController
                 .AsNoTracking()
                 .Where(cq => cq.ConsultationId == consultationId)
                 .Include(cq => cq.Question)
-                .OrderBy(cq => cq.OrdreAffichage)
+                .Include(cq => cq.Reponses)
+                .OrderBy(cq => cq.Question!.Ordre)
                 .Select(cq => new ConsultationQuestionDto
                 {
                     QuestionId = cq.QuestionId,
-                    OrdreAffichage = cq.OrdreAffichage,
+                    ConsultationQuestionId = cq.Id,
+                    OrdreAffichage = cq.Question!.Ordre,
                     TexteQuestion = cq.Question!.TexteQuestion,
                     TypeQuestion = cq.Question.TypeQuestion,
-                    EstPredefinie = cq.Question.EstPredefinie
+                    EstPredefinie = cq.Question.Actif,
+                    ValeurReponse = cq.Reponses != null && cq.Reponses.Any() ? cq.Reponses.First().ValeurReponse : null,
+                    DateSaisie = cq.Reponses != null && cq.Reponses.Any() ? cq.Reponses.First().DateReponse : null
                 })
                 .ToListAsync();
-
-            var reponses = await _context.Reponses
-                .AsNoTracking()
-                .Where(r => r.ConsultationId == consultationId)
-                .ToListAsync();
-
-            var byQuestionId = reponses.ToDictionary(r => r.QuestionId, r => r);
-
-            foreach (var item in items)
-            {
-                if (byQuestionId.TryGetValue(item.QuestionId, out var rep))
-                {
-                    item.ValeurReponse = rep.ValeurReponse;
-                    item.RempliPar = rep.RempliPar;
-                    item.DateSaisie = rep.DateSaisie;
-                }
-            }
 
             return Ok(new { success = true, data = items });
         }
@@ -97,8 +84,6 @@ public class ConsultationQuestionnaireController : BaseApiController
             if (!CanAccessConsultation(consultation, userId.Value))
                 return Forbid();
 
-            var rempliPar = IsMedecin() ? "medecin" : (IsPatient() ? "patient" : "medecin");
-
             await EnsurePredefinedQuestionsLoadedAsync(consultationId);
 
             if (request.Reponses == null || request.Reponses.Count == 0)
@@ -106,39 +91,36 @@ public class ConsultationQuestionnaireController : BaseApiController
 
             var questionIds = request.Reponses.Select(r => r.QuestionId).Distinct().ToList();
 
-            var allowedQuestionIds = await _context.ConsultationQuestions
-                .AsNoTracking()
-                .Where(cq => cq.ConsultationId == consultationId)
-                .Select(cq => cq.QuestionId)
+            // Récupérer les ConsultationQuestion correspondantes
+            var consultationQuestions = await _context.ConsultationQuestions
+                .Where(cq => cq.ConsultationId == consultationId && questionIds.Contains(cq.QuestionId))
+                .Include(cq => cq.Reponses)
                 .ToListAsync();
 
-            var invalid = questionIds.Except(allowedQuestionIds).ToList();
+            var cqByQuestionId = consultationQuestions.ToDictionary(cq => cq.QuestionId, cq => cq);
+
+            var invalid = questionIds.Except(cqByQuestionId.Keys).ToList();
             if (invalid.Count > 0)
                 return BadRequest(new { success = false, message = "Certaines questions ne sont pas liées à la consultation", invalidQuestionIds = invalid });
 
-            var existing = await _context.Reponses
-                .Where(r => r.ConsultationId == consultationId && questionIds.Contains(r.QuestionId))
-                .ToListAsync();
-
-            var existingByQ = existing.ToDictionary(r => r.QuestionId, r => r);
-
             foreach (var r in request.Reponses)
             {
-                if (existingByQ.TryGetValue(r.QuestionId, out var rep))
+                if (!cqByQuestionId.TryGetValue(r.QuestionId, out var cq))
+                    continue;
+
+                var existingReponse = cq.Reponses?.FirstOrDefault();
+                if (existingReponse != null)
                 {
-                    rep.ValeurReponse = r.ValeurReponse;
-                    rep.RempliPar = rempliPar;
-                    rep.DateSaisie = DateTime.UtcNow;
+                    existingReponse.ValeurReponse = r.ValeurReponse;
+                    existingReponse.DateReponse = DateTime.UtcNow;
                 }
                 else
                 {
                     _context.Reponses.Add(new Reponse
                     {
-                        ConsultationId = consultationId,
-                        QuestionId = r.QuestionId,
+                        ConsultationQuestionId = cq.Id,
                         ValeurReponse = r.ValeurReponse,
-                        RempliPar = rempliPar,
-                        DateSaisie = DateTime.UtcNow
+                        DateReponse = DateTime.UtcNow
                     });
                 }
             }
@@ -178,18 +160,16 @@ public class ConsultationQuestionnaireController : BaseApiController
 
             await EnsurePredefinedQuestionsLoadedAsync(consultationId);
 
-            var maxOrder = await _context.ConsultationQuestions
-                .Where(cq => cq.ConsultationId == consultationId)
-                .Select(cq => (int?)cq.OrdreAffichage)
+            var maxOrder = await _context.Questions
+                .Select(q => (int?)q.Ordre)
                 .MaxAsync() ?? 0;
 
             var question = new Question
             {
                 TexteQuestion = request.TexteQuestion.Trim(),
                 TypeQuestion = string.IsNullOrWhiteSpace(request.TypeQuestion) ? "texte" : request.TypeQuestion.Trim(),
-                EstPredefinie = false,
-                CreatedBy = userId.Value,
-                CreatedAt = DateTime.UtcNow
+                Ordre = maxOrder + 1,
+                Actif = true
             };
 
             _context.Questions.Add(question);
@@ -198,8 +178,7 @@ public class ConsultationQuestionnaireController : BaseApiController
             _context.ConsultationQuestions.Add(new ConsultationQuestion
             {
                 ConsultationId = consultationId,
-                QuestionId = question.Id,
-                OrdreAffichage = maxOrder + 1
+                QuestionId = question.Id
             });
 
             await _context.SaveChangesAsync();
@@ -210,10 +189,11 @@ public class ConsultationQuestionnaireController : BaseApiController
                 data = new ConsultationQuestionDto
                 {
                     QuestionId = question.Id,
-                    OrdreAffichage = maxOrder + 1,
+                    ConsultationQuestionId = 0,
+                    OrdreAffichage = question.Ordre,
                     TexteQuestion = question.TexteQuestion,
                     TypeQuestion = question.TypeQuestion,
-                    EstPredefinie = question.EstPredefinie
+                    EstPredefinie = false
                 }
             });
         }
@@ -241,8 +221,6 @@ public class ConsultationQuestionnaireController : BaseApiController
             if (!CanAccessConsultation(consultation, userId.Value))
                 return Forbid();
 
-            var rempliPar = IsMedecin() ? "medecin" : (IsPatient() ? "patient" : "medecin");
-
             foreach (var item in request.Reponses ?? new List<SaveReponseAvecQuestionItem>())
             {
                 if (string.IsNullOrWhiteSpace(item.TexteQuestion))
@@ -266,13 +244,13 @@ public class ConsultationQuestionnaireController : BaseApiController
                 if (question == null)
                 {
                     // Créer la question
+                    var maxOrder = await _context.Questions.Select(q => (int?)q.Ordre).MaxAsync() ?? 0;
                     question = new Question
                     {
                         TexteQuestion = item.TexteQuestion.Trim(),
                         TypeQuestion = item.TypeQuestion ?? "texte",
-                        EstPredefinie = false,
-                        CreatedBy = userId.Value,
-                        CreatedAt = DateTime.UtcNow
+                        Ordre = maxOrder + 1,
+                        Actif = true
                     };
                     _context.Questions.Add(question);
                     await _context.SaveChangesAsync();
@@ -280,43 +258,35 @@ public class ConsultationQuestionnaireController : BaseApiController
 
                 // S'assurer que la question est liée à la consultation
                 var consultationQuestion = await _context.ConsultationQuestions
+                    .Include(cq => cq.Reponses)
                     .FirstOrDefaultAsync(cq => cq.ConsultationId == consultationId && cq.QuestionId == question.Id);
 
                 if (consultationQuestion == null)
                 {
-                    var maxOrder = await _context.ConsultationQuestions
-                        .Where(cq => cq.ConsultationId == consultationId)
-                        .Select(cq => (int?)cq.OrdreAffichage)
-                        .MaxAsync() ?? 0;
-
-                    _context.ConsultationQuestions.Add(new ConsultationQuestion
+                    consultationQuestion = new ConsultationQuestion
                     {
                         ConsultationId = consultationId,
-                        QuestionId = question.Id,
-                        OrdreAffichage = maxOrder + 1
-                    });
+                        QuestionId = question.Id
+                    };
+                    _context.ConsultationQuestions.Add(consultationQuestion);
                     await _context.SaveChangesAsync();
                 }
 
-                // Upsert la réponse
-                var reponse = await _context.Reponses
-                    .FirstOrDefaultAsync(r => r.ConsultationId == consultationId && r.QuestionId == question.Id);
+                // Upsert la réponse via ConsultationQuestion
+                var reponse = consultationQuestion.Reponses?.FirstOrDefault();
 
                 if (reponse != null)
                 {
                     reponse.ValeurReponse = item.ValeurReponse;
-                    reponse.RempliPar = rempliPar;
-                    reponse.DateSaisie = DateTime.UtcNow;
+                    reponse.DateReponse = DateTime.UtcNow;
                 }
                 else
                 {
                     _context.Reponses.Add(new Reponse
                     {
-                        ConsultationId = consultationId,
-                        QuestionId = question.Id,
+                        ConsultationQuestionId = consultationQuestion.Id,
                         ValeurReponse = item.ValeurReponse,
-                        RempliPar = rempliPar,
-                        DateSaisie = DateTime.UtcNow
+                        DateReponse = DateTime.UtcNow
                     });
                 }
             }
@@ -341,10 +311,11 @@ public class ConsultationQuestionnaireController : BaseApiController
 
     private async Task EnsurePredefinedQuestionsLoadedAsync(int consultationId)
     {
+        // Charger les questions actives (prédéfinies)
         var predefinedIds = await _context.Questions
             .AsNoTracking()
-            .Where(q => q.EstPredefinie)
-            .OrderBy(q => q.Id)
+            .Where(q => q.Actif)
+            .OrderBy(q => q.Ordre)
             .Select(q => q.Id)
             .ToListAsync();
 
@@ -356,7 +327,6 @@ public class ConsultationQuestionnaireController : BaseApiController
             .ToListAsync();
 
         var existingIds = existing.Select(e => e.QuestionId).ToHashSet();
-        var maxOrder = existing.Count == 0 ? 0 : existing.Max(e => e.OrdreAffichage);
 
         var missing = predefinedIds.Where(id => !existingIds.Contains(id)).ToList();
         if (missing.Count == 0)
@@ -364,12 +334,10 @@ public class ConsultationQuestionnaireController : BaseApiController
 
         foreach (var qId in missing)
         {
-            maxOrder++;
             _context.ConsultationQuestions.Add(new ConsultationQuestion
             {
                 ConsultationId = consultationId,
-                QuestionId = qId,
-                OrdreAffichage = maxOrder
+                QuestionId = qId
             });
         }
 

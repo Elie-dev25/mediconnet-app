@@ -24,8 +24,8 @@ public enum UserRole
     /// <summary>Pharmacien - Gestion des prescriptions et médicaments</summary>
     Pharmacist = 6,
     
-    /// <summary>Biologiste - Gestion des analyses et résultats de laboratoire</summary>
-    Biologist = 7,
+    /// <summary>Laborantin - Gestion des analyses et résultats de laboratoire</summary>
+    Laborantin = 7,
     
     /// <summary>Réceptionniste/Accueil - Gestion des enregistrements patients</summary>
     Receptionist = 8,

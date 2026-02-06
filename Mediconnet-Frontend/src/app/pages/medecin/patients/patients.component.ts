@@ -2,14 +2,33 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DashboardLayoutComponent, FichePatientPanelComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
+import { 
+  DashboardLayoutComponent, 
+  FichePatientPanelComponent, 
+  LucideAngularModule, 
+  ALL_ICONS_PROVIDER, 
+  HospitalisationMultiEtapesComponent, 
+  HospitalisationPatientInfo, 
+  AttribuerLitPanelComponent, 
+  HospitalisationEnAttenteInfo, 
+  HospitalisationDetailsPanelComponent,
+  OrdonnanceHospitalisationPanelComponent,
+  ExamenHospitalisationPanelComponent,
+  SoinHospitalisationPanelComponent
+} from '../../../shared';
+import { AuthService } from '../../../services/auth.service';
 import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
 import { 
   MedecinDataService, 
   MedecinPatientDto, 
-  MedecinPatientStatsDto 
+  MedecinPatientStatsDto,
+  PatientHospitaliseDto,
+  HospitalisationDetailDto,
+  ConsultationHospitalisationDto
 } from '../../../services/medecin-data.service';
 import { DossierAccessService } from '../../../services/dossier-access.service';
+
+type TabType = 'tous' | 'hospitalises';
 
 @Component({
   selector: 'app-medecin-patients',
@@ -19,7 +38,13 @@ import { DossierAccessService } from '../../../services/dossier-access.service';
     FormsModule,
     LucideAngularModule,
     DashboardLayoutComponent,
-    FichePatientPanelComponent
+    FichePatientPanelComponent,
+    HospitalisationMultiEtapesComponent,
+    AttribuerLitPanelComponent,
+    HospitalisationDetailsPanelComponent,
+    OrdonnanceHospitalisationPanelComponent,
+    ExamenHospitalisationPanelComponent,
+    SoinHospitalisationPanelComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './patients.component.html',
@@ -30,18 +55,32 @@ export class MedecinPatientsComponent implements OnInit {
   menuItems = MEDECIN_MENU_ITEMS;
   sidebarTitle = MEDECIN_SIDEBAR_TITLE;
 
+  // Onglets
+  activeTab: TabType = 'tous';
+
   // État
   isLoading = true;
+  isLoadingHospitalises = false;
   searchTerm = '';
 
-  // Données
+  // Données - Tous les patients
   patients: MedecinPatientDto[] = [];
   filteredPatients: MedecinPatientDto[] = [];
   stats: MedecinPatientStatsDto | null = null;
 
-  // Détail patient
+  // Données - Patients hospitalisés
+  patientsHospitalises: PatientHospitaliseDto[] = [];
+  filteredPatientsHospitalises: PatientHospitaliseDto[] = [];
+
+  // Détail patient (onglet tous)
   selectedPatientId: number | null = null;
   isDetailOpen = false;
+
+  // Détail hospitalisation (onglet hospitalisés)
+  selectedHospitalisation: HospitalisationDetailDto | null = null;
+  selectedHospitalisationConsultations: ConsultationHospitalisationDto[] = [];
+  isHospitalisationPanelOpen = false;
+  isLoadingHospitalisationDetail = false;
 
   // Validation code email pour accès dossier
   showCodeModal = false;
@@ -52,9 +91,55 @@ export class MedecinPatientsComponent implements OnInit {
   isSendingCode = false;
   isVerifyingCode = false;
 
+  // Panneau latéral Hospitalisation (nouveau composant multi-étapes)
+  showHospitalisationPanel = false;
+  hospitalisationPatientInfo: HospitalisationPatientInfo | null = null;
+
+  // Panneau latéral Examen Hospitalisation
+  showExamenHospPanel = false;
+  examenHospitalisationId: number | null = null;
+  examenPatientNom = '';
+  examenPatientPrenom = '';
+
+  // Panneau latéral Ordonnance Hospitalisation
+  showOrdonnanceHospPanel = false;
+  ordonnanceHospitalisationId: number | null = null;
+  ordonnancePatientNom = '';
+  ordonnancePatientPrenom = '';
+
+  // Panneau latéral Soin Hospitalisation
+  showSoinHospPanel = false;
+  soinHospitalisationId: number | null = null;
+  soinPatientNom = '';
+  soinPatientPrenom = '';
+
+  // Panneau attribution lit (Major)
+  isMajor = false;
+  showAttribuerLitPanel = false;
+  selectedHospitalisationForLit: HospitalisationEnAttenteInfo | null = null;
+
+  // Panel de détails d'hospitalisation (nouveau composant unifié)
+  showDetailsPanel = false;
+  selectedHospitalisationId: number | null = null;
+
+  // Modal ajout de soins
+  showSoinsModal = false;
+  soinForm = {
+    typeSoin: 'surveillance',
+    description: '',
+    frequence: '',
+    duree: '',
+    priorite: 'normale',
+    instructions: ''
+  };
+  isAddingSoin = false;
+  soinError: string | null = null;
+  soinSuccess = false;
+
   constructor(
     private medecinDataService: MedecinDataService,
     private dossierAccessService: DossierAccessService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -62,6 +147,18 @@ export class MedecinPatientsComponent implements OnInit {
     this.loadStats();
     this.loadPatients();
   }
+
+  // ==================== ONGLETS ====================
+
+  switchTab(tab: TabType): void {
+    this.activeTab = tab;
+    this.searchTerm = '';
+    if (tab === 'hospitalises' && this.patientsHospitalises.length === 0) {
+      this.loadPatientsHospitalises();
+    }
+  }
+
+  // ==================== TOUS LES PATIENTS ====================
 
   loadStats(): void {
     this.medecinDataService.getPatientStats().subscribe({
@@ -73,9 +170,9 @@ export class MedecinPatientsComponent implements OnInit {
   loadPatients(): void {
     this.isLoading = true;
     this.medecinDataService.getPatients(this.searchTerm || undefined).subscribe({
-      next: (patients) => {
-        this.patients = patients;
-        this.filteredPatients = patients;
+      next: (response) => {
+        this.patients = response.data;
+        this.filteredPatients = response.data;
         this.isLoading = false;
       },
       error: (err) => {
@@ -86,9 +183,162 @@ export class MedecinPatientsComponent implements OnInit {
   }
 
   onSearch(): void {
-    if (this.searchTerm.length >= 2 || this.searchTerm.length === 0) {
-      this.loadPatients();
+    if (this.activeTab === 'tous') {
+      if (this.searchTerm.length >= 2 || this.searchTerm.length === 0) {
+        this.loadPatients();
+      }
+    } else {
+      this.filterPatientsHospitalises();
     }
+  }
+
+  // ==================== PATIENTS HOSPITALISÉS ====================
+
+  loadPatientsHospitalises(): void {
+    this.isLoadingHospitalises = true;
+    this.medecinDataService.getPatientsHospitalises().subscribe({
+      next: (response) => {
+        this.patientsHospitalises = response.data;
+        this.filteredPatientsHospitalises = response.data;
+        this.isLoadingHospitalises = false;
+      },
+      error: (err) => {
+        console.error('Erreur patients hospitalisés:', err);
+        this.isLoadingHospitalises = false;
+      }
+    });
+  }
+
+  filterPatientsHospitalises(): void {
+    if (!this.searchTerm) {
+      this.filteredPatientsHospitalises = this.patientsHospitalises;
+      return;
+    }
+    const term = this.searchTerm.toLowerCase();
+    this.filteredPatientsHospitalises = this.patientsHospitalises.filter(p =>
+      p.patientNom?.toLowerCase().includes(term) ||
+      p.patientPrenom?.toLowerCase().includes(term) ||
+      p.numeroDossier?.toLowerCase().includes(term) ||
+      p.numeroChambre?.toLowerCase().includes(term) ||
+      p.numeroLit?.toLowerCase().includes(term)
+    );
+  }
+
+  openHospitalisationDetail(patient: PatientHospitaliseDto): void {
+    // Utiliser le nouveau composant unifié
+    this.selectedHospitalisationId = patient.idAdmission;
+    this.showDetailsPanel = true;
+  }
+
+  closeHospitalisationDetailPanel(): void {
+    this.isHospitalisationPanelOpen = false;
+    this.selectedHospitalisation = null;
+    this.selectedHospitalisationConsultations = [];
+  }
+
+  // Méthodes pour le nouveau panel de détails
+  closeDetailsPanel(): void {
+    this.showDetailsPanel = false;
+    this.selectedHospitalisationId = null;
+  }
+
+  onOpenAttribuerLitFromPanel(hospitalisation: any): void {
+    this.closeDetailsPanel();
+    // Convertir au format attendu par le panel d'attribution de lit
+    const hospitalisationForLit = {
+      idAdmission: hospitalisation.idAdmission,
+      patientNom: hospitalisation.patient?.nom || '',
+      patientPrenom: hospitalisation.patient?.prenom || '',
+      motif: hospitalisation.motif || '',
+      urgence: hospitalisation.urgence || 'normale',
+      dateEntree: hospitalisation.dateEntree
+    };
+    this.selectedHospitalisationForLit = hospitalisationForLit;
+    this.showAttribuerLitPanel = true;
+  }
+
+  openExamenPanelFromDetails(hospitalisation: any): void {
+    this.closeDetailsPanel();
+    this.openExamenHospPanel(hospitalisation);
+  }
+
+  openOrdonnancePanelFromDetails(hospitalisation: any): void {
+    this.closeDetailsPanel();
+    this.openOrdonnanceHospPanel(hospitalisation);
+  }
+
+  terminerHospitalisation(hospitalisation: any): void {
+    // TODO: Implémenter la terminaison d'hospitalisation
+    console.log('Terminer hospitalisation pour:', hospitalisation.idAdmission);
+    this.closeDetailsPanel();
+  }
+
+  programmerSoins(): void {
+    if (!this.selectedHospitalisation) return;
+    this.showSoinsModal = true;
+    this.soinError = null;
+    this.soinSuccess = false;
+    this.resetSoinForm();
+  }
+
+  resetSoinForm(): void {
+    this.soinForm = {
+      typeSoin: 'surveillance',
+      description: '',
+      frequence: '',
+      duree: '',
+      priorite: 'normale',
+      instructions: ''
+    };
+  }
+
+  closeSoinsModal(): void {
+    this.showSoinsModal = false;
+    this.soinError = null;
+    this.soinSuccess = false;
+    this.resetSoinForm();
+  }
+
+  submitSoin(): void {
+    if (!this.selectedHospitalisation || !this.soinForm.description.trim()) {
+      this.soinError = 'Veuillez remplir la description du soin';
+      return;
+    }
+
+    this.isAddingSoin = true;
+    this.soinError = null;
+
+    this.medecinDataService.ajouterSoin(this.selectedHospitalisation.idAdmission, {
+      typeSoin: this.soinForm.typeSoin,
+      description: this.soinForm.description,
+      frequence: this.soinForm.frequence || undefined,
+      duree: this.soinForm.duree || undefined,
+      priorite: this.soinForm.priorite,
+      instructions: this.soinForm.instructions || undefined
+    }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.soinSuccess = true;
+          setTimeout(() => {
+            this.closeSoinsModal();
+            // Rafraîchir les détails de l'hospitalisation en forçant un rechargement
+            if (this.selectedHospitalisationId) {
+              const id = this.selectedHospitalisationId;
+              this.selectedHospitalisationId = null;
+              setTimeout(() => this.selectedHospitalisationId = id, 50);
+            }
+          }, 1500);
+        } else {
+          this.soinError = response.message || 'Erreur lors de l\'ajout du soin';
+        }
+        this.isAddingSoin = false;
+      },
+      error: (err) => {
+        console.error('Erreur ajout soin:', err);
+        this.soinError = err.error?.message || 'Erreur lors de l\'ajout du soin';
+        this.isAddingSoin = false;
+      }
+    });
   }
 
   openPatientDetail(patient: MedecinPatientDto): void {
@@ -156,7 +406,11 @@ export class MedecinPatientsComponent implements OnInit {
 
   refresh(): void {
     this.loadStats();
-    this.loadPatients();
+    if (this.activeTab === 'tous') {
+      this.loadPatients();
+    } else {
+      this.loadPatientsHospitalises();
+    }
   }
 
   // ==================== ACCÈS DOSSIER PATIENT ====================
@@ -225,5 +479,194 @@ export class MedecinPatientsComponent implements OnInit {
         this.isVerifyingCode = false;
       }
     });
+  }
+
+  // ==================== OUVRIR FICHE PATIENT ====================
+
+  openPatientFiche(patient: MedecinPatientDto, event: Event): void {
+    event.stopPropagation();
+    this.selectedPatientId = patient.idPatient;
+    this.isDetailOpen = true;
+  }
+
+  // ==================== PANNEAU HOSPITALISATION (multi-étapes) ====================
+
+  openHospitalisationPanel(patientId: number): void {
+    const patient = this.patients.find(p => p.idPatient === patientId);
+    if (patient) {
+      this.hospitalisationPatientInfo = {
+        idPatient: patient.idPatient,
+        nom: patient.nom,
+        prenom: patient.prenom,
+        numeroDossier: patient.numeroDossier
+      };
+      this.showHospitalisationPanel = true;
+      this.isDetailOpen = false;
+    }
+  }
+
+  closeHospitalisationPanel(): void {
+    this.showHospitalisationPanel = false;
+    this.hospitalisationPatientInfo = null;
+  }
+
+  onHospitalisationCompleted(): void {
+    this.closeHospitalisationPanel();
+    this.loadPatientsHospitalises();
+  }
+
+  onHospitalisationCancelled(): void {
+    this.closeHospitalisationPanel();
+  }
+
+  // ==================== PANNEAU EXAMEN HOSPITALISATION ====================
+
+  openExamenHospPanel(hospitalisation: any): void {
+    this.examenHospitalisationId = hospitalisation.idAdmission;
+    this.examenPatientNom = hospitalisation.patient?.nom || '';
+    this.examenPatientPrenom = hospitalisation.patient?.prenom || '';
+    this.showExamenHospPanel = true;
+    this.showDetailsPanel = false;
+  }
+
+  closeExamenHospPanel(): void {
+    this.showExamenHospPanel = false;
+    this.examenHospitalisationId = null;
+    this.examenPatientNom = '';
+    this.examenPatientPrenom = '';
+  }
+
+  onExamenHospSaved(): void {
+    this.closeExamenHospPanel();
+    // Rafraîchir les détails si le panneau était ouvert
+    if (this.selectedHospitalisationId) {
+      const id = this.selectedHospitalisationId;
+      this.selectedHospitalisationId = null;
+      setTimeout(() => {
+        this.selectedHospitalisationId = id;
+        this.showDetailsPanel = true;
+      }, 50);
+    }
+  }
+
+  // ==================== PANNEAU ORDONNANCE HOSPITALISATION ====================
+
+  openOrdonnanceHospPanel(hospitalisation: any): void {
+    this.ordonnanceHospitalisationId = hospitalisation.idAdmission;
+    this.ordonnancePatientNom = hospitalisation.patient?.nom || '';
+    this.ordonnancePatientPrenom = hospitalisation.patient?.prenom || '';
+    this.showOrdonnanceHospPanel = true;
+    this.showDetailsPanel = false;
+  }
+
+  closeOrdonnanceHospPanel(): void {
+    this.showOrdonnanceHospPanel = false;
+    this.ordonnanceHospitalisationId = null;
+    this.ordonnancePatientNom = '';
+    this.ordonnancePatientPrenom = '';
+  }
+
+  onOrdonnanceHospSaved(): void {
+    this.closeOrdonnanceHospPanel();
+    // Rafraîchir les détails si le panneau était ouvert
+    if (this.selectedHospitalisationId) {
+      const id = this.selectedHospitalisationId;
+      this.selectedHospitalisationId = null;
+      setTimeout(() => {
+        this.selectedHospitalisationId = id;
+        this.showDetailsPanel = true;
+      }, 50);
+    }
+  }
+
+  // ==================== PANNEAU SOIN HOSPITALISATION ====================
+
+  openSoinHospPanel(hospitalisation: any): void {
+    this.soinHospitalisationId = hospitalisation.idAdmission;
+    this.soinPatientNom = hospitalisation.patient?.nom || '';
+    this.soinPatientPrenom = hospitalisation.patient?.prenom || '';
+    this.showSoinHospPanel = true;
+    this.showDetailsPanel = false;
+  }
+
+  closeSoinHospPanel(): void {
+    this.showSoinHospPanel = false;
+    this.soinHospitalisationId = null;
+    this.soinPatientNom = '';
+    this.soinPatientPrenom = '';
+  }
+
+  onSoinHospSaved(): void {
+    this.closeSoinHospPanel();
+    // Rafraîchir les détails si le panneau était ouvert
+    if (this.selectedHospitalisationId) {
+      const id = this.selectedHospitalisationId;
+      this.selectedHospitalisationId = null;
+      setTimeout(() => {
+        this.selectedHospitalisationId = id;
+        this.showDetailsPanel = true;
+      }, 50);
+    }
+  }
+
+  openSoinPanelFromDetails(hospitalisation: any): void {
+    this.closeDetailsPanel();
+    this.openSoinHospPanel(hospitalisation);
+  }
+
+  // ==================== PANNEAU EXAMEN/ORDONNANCE (FICHE PATIENT) ====================
+  // Ces méthodes sont appelées depuis app-fiche-patient-panel (contexte consultation, pas hospitalisation)
+
+  openExamenPanel(patientId: number): void {
+    // Pour l'instant, afficher un message - fonctionnalité à implémenter via consultation
+    console.log('Prescrire examen pour patient:', patientId);
+    // TODO: Ouvrir le panneau de prescription d'examen dans le contexte consultation
+  }
+
+  openOrdonnancePanel(patientId: number): void {
+    // Pour l'instant, afficher un message - fonctionnalité à implémenter via consultation
+    console.log('Faire ordonnance pour patient:', patientId);
+    // TODO: Ouvrir le panneau d'ordonnance dans le contexte consultation
+  }
+
+  // ==================== PANNEAU ATTRIBUTION LIT (MAJOR) ====================
+
+  openAttribuerLitPanel(patient: PatientHospitaliseDto): void {
+    this.selectedHospitalisationForLit = {
+      idAdmission: patient.idAdmission,
+      patientNom: patient.patientNom,
+      patientPrenom: patient.patientPrenom,
+      motif: patient.motif,
+      dateEntree: patient.dateEntree
+    };
+    this.showAttribuerLitPanel = true;
+  }
+
+  closeAttribuerLitPanel(): void {
+    this.showAttribuerLitPanel = false;
+    this.selectedHospitalisationForLit = null;
+  }
+
+  onLitAttribue(): void {
+    this.closeAttribuerLitPanel();
+    this.loadPatientsHospitalises();
+  }
+
+  getStatutLabel(statut: string): string {
+    switch (statut) {
+      case 'EN_ATTENTE': return 'En attente';
+      case 'EN_COURS': return 'En cours';
+      case 'TERMINE': return 'Terminé';
+      default: return statut;
+    }
+  }
+
+  getStatutClass(statut: string): string {
+    switch (statut) {
+      case 'EN_ATTENTE': return 'statut-attente';
+      case 'EN_COURS': return 'statut-en-cours';
+      case 'TERMINE': return 'statut-termine';
+      default: return '';
+    }
   }
 }

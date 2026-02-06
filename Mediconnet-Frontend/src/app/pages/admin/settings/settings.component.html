@@ -40,74 +40,89 @@
       
       <!-- ONGLET CHAMBRES -->
       <div class="tab-panel" *ngIf="activeTab === 'chambres'">
-        <!-- Stats Cards -->
-        <div class="stats-grid" *ngIf="stats">
-          <div class="stat-card">
-            <div class="stat-icon chambres">
-              <lucide-icon name="building-2" [size]="24"></lucide-icon>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ stats.totalChambres }}</span>
-              <span class="stat-label">Chambres</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon lits">
-              <lucide-icon name="bed" [size]="24"></lucide-icon>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ stats.totalLits }}</span>
-              <span class="stat-label">Lits au total</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon libres">
-              <lucide-icon name="check-circle" [size]="24"></lucide-icon>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ stats.litsLibres }}</span>
-              <span class="stat-label">Lits libres</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon occupes">
-              <lucide-icon name="user" [size]="24"></lucide-icon>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ stats.litsOccupes }}</span>
-              <span class="stat-label">Lits occupés</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions Bar -->
-        <div class="actions-bar">
-          <button class="btn btn-primary" (click)="openChambreModal()">
-            <lucide-icon name="plus" [size]="18"></lucide-icon>
-            Nouvelle chambre
+        
+        <!-- Sous-navigation Chambres/Standards -->
+        <div class="sub-tabs">
+          <button class="sub-tab" [class.active]="chambreSubTab === 'chambres'" (click)="setChambreSubTab('chambres')">
+            <lucide-icon name="bed" [size]="16"></lucide-icon>
+            Chambres & Lits
           </button>
-          <button class="btn btn-secondary" (click)="loadChambres()" [disabled]="isLoading">
-            <lucide-icon name="refresh-cw" [size]="18" [class.spinning]="isLoading"></lucide-icon>
-            Actualiser
+          <button class="sub-tab" [class.active]="chambreSubTab === 'standards'" (click)="setChambreSubTab('standards')">
+            <lucide-icon name="star" [size]="16"></lucide-icon>
+            Standards de chambre
           </button>
         </div>
 
-        <!-- Loading -->
-        <div class="loading-state" *ngIf="isLoading && chambres.length === 0">
-          <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
-          <p>Chargement des chambres...</p>
-        </div>
+        <!-- SOUS-SECTION CHAMBRES -->
+        <div class="sub-panel" *ngIf="chambreSubTab === 'chambres'">
+          <!-- Stats Cards -->
+          <div class="stats-grid" *ngIf="stats">
+            <div class="stat-card">
+              <div class="stat-icon chambres">
+                <lucide-icon name="building-2" [size]="24"></lucide-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.totalChambres }}</span>
+                <span class="stat-label">Chambres</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon lits">
+                <lucide-icon name="bed" [size]="24"></lucide-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.totalLits }}</span>
+                <span class="stat-label">Lits au total</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon libres">
+                <lucide-icon name="check-circle-2" [size]="24"></lucide-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.litsLibres }}</span>
+                <span class="stat-label">Lits libres</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon occupes">
+                <lucide-icon name="user" [size]="24"></lucide-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.litsOccupes }}</span>
+                <span class="stat-label">Lits occupés</span>
+              </div>
+            </div>
+          </div>
 
-        <!-- Empty State -->
-        <div class="empty-state" *ngIf="!isLoading && chambres.length === 0">
-          <lucide-icon name="bed" [size]="48"></lucide-icon>
-          <h3>Aucune chambre</h3>
-          <p>Commencez par créer une chambre pour gérer les lits.</p>
-          <button class="btn btn-primary" (click)="openChambreModal()">
-            <lucide-icon name="plus" [size]="18"></lucide-icon>
-            Créer une chambre
-          </button>
-        </div>
+          <!-- Actions Bar -->
+          <div class="actions-bar">
+            <button class="btn btn-primary" (click)="openChambreModal()">
+              <lucide-icon name="plus" [size]="18"></lucide-icon>
+              Nouvelle chambre
+            </button>
+            <button class="btn btn-secondary" (click)="loadChambres()" [disabled]="isLoading">
+              <lucide-icon name="refresh-cw" [size]="18" [class.spinning]="isLoading"></lucide-icon>
+              Actualiser
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div class="loading-state" *ngIf="isLoading && chambres.length === 0">
+            <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+            <p>Chargement des chambres...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="!isLoading && chambres.length === 0">
+            <lucide-icon name="bed" [size]="48"></lucide-icon>
+            <h3>Aucune chambre</h3>
+            <p>Commencez par créer une chambre pour gérer les lits.</p>
+            <button class="btn btn-primary" (click)="openChambreModal()">
+              <lucide-icon name="plus" [size]="18"></lucide-icon>
+              Créer une chambre
+            </button>
+          </div>
 
         <!-- Chambres List -->
         <div class="chambres-list" *ngIf="chambres.length > 0">
@@ -139,7 +154,7 @@
               </div>
               <div class="chambre-actions">
                 <button class="btn-icon" (click)="openLitModal(chambre); $event.stopPropagation()" title="Ajouter un lit">
-                  <lucide-icon name="plus-circle" [size]="18"></lucide-icon>
+                  <lucide-icon name="circle-plus" [size]="18"></lucide-icon>
                 </button>
                 <button class="btn-icon" (click)="openChambreModal(chambre); $event.stopPropagation()" title="Modifier">
                   <lucide-icon name="edit" [size]="18"></lucide-icon>
@@ -194,7 +209,99 @@
             </div>
           </div>
         </div>
-      </div>
+        </div><!-- Fin sous-section chambres -->
+
+        <!-- SOUS-SECTION STANDARDS DE CHAMBRE -->
+        <div class="sub-panel" *ngIf="chambreSubTab === 'standards'">
+          <!-- Actions Bar -->
+          <div class="actions-bar">
+            <button class="btn btn-primary" (click)="openStandardModal()">
+              <lucide-icon name="plus" [size]="18"></lucide-icon>
+              Nouveau standard
+            </button>
+            <button class="btn btn-secondary" (click)="loadStandards()" [disabled]="isLoadingStandards">
+              <lucide-icon name="refresh-cw" [size]="18" [class.spinning]="isLoadingStandards"></lucide-icon>
+              Actualiser
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div class="loading-state" *ngIf="isLoadingStandards && standards.length === 0">
+            <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+            <p>Chargement des standards...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="!isLoadingStandards && standards.length === 0">
+            <lucide-icon name="star" [size]="48"></lucide-icon>
+            <h3>Aucun standard de chambre</h3>
+            <p>Créez des standards pour définir les types de chambres (Classique, VIP, etc.)</p>
+            <button class="btn btn-primary" (click)="openStandardModal()">
+              <lucide-icon name="plus" [size]="18"></lucide-icon>
+              Créer un standard
+            </button>
+          </div>
+
+          <!-- Standards List -->
+          <div class="standards-grid" *ngIf="standards.length > 0">
+            <div class="standard-card" *ngFor="let standard of standards" [class.inactive]="!standard.actif">
+              <div class="standard-header">
+                <div class="standard-title">
+                  <lucide-icon name="star" [size]="20"></lucide-icon>
+                  <h4>{{ standard.nom }}</h4>
+                </div>
+                <span class="badge" [class.status-actif]="standard.actif" [class.status-inactif]="!standard.actif">
+                  {{ standard.actif ? 'Actif' : 'Inactif' }}
+                </span>
+              </div>
+              
+              <div class="standard-price">
+                <span class="price-value">{{ standard.prixJournalier | number:'1.0-0' }}</span>
+                <span class="price-unit">FCFA / jour</span>
+              </div>
+
+              <p class="standard-description" *ngIf="standard.description">{{ standard.description }}</p>
+
+              <div class="standard-location" *ngIf="standard.localisation">
+                <lucide-icon name="map-pin" [size]="14"></lucide-icon>
+                {{ standard.localisation }}
+              </div>
+
+              <div class="standard-privileges" *ngIf="standard.privileges.length > 0">
+                <span class="privilege-tag" *ngFor="let privilege of standard.privileges">
+                  <lucide-icon name="check-circle-2" [size]="12"></lucide-icon>
+                  {{ privilege }}
+                </span>
+              </div>
+
+              <div class="standard-stats">
+                <span class="stat-item">
+                  <lucide-icon name="building-2" [size]="14"></lucide-icon>
+                  {{ standard.nombreChambres }} chambre(s)
+                </span>
+                <span class="stat-item available">
+                  <lucide-icon name="check-circle-2" [size]="14"></lucide-icon>
+                  {{ standard.chambresDisponibles }} disponible(s)
+                </span>
+              </div>
+
+              <div class="standard-actions">
+                <button class="btn-icon" (click)="toggleStandardActif(standard)" [title]="standard.actif ? 'Désactiver' : 'Activer'">
+                  <lucide-icon [name]="standard.actif ? 'toggle-right' : 'toggle-left'" [size]="18"></lucide-icon>
+                </button>
+                <button class="btn-icon" (click)="openStandardModal(standard)" title="Modifier">
+                  <lucide-icon name="edit" [size]="18"></lucide-icon>
+                </button>
+                <button class="btn-icon danger" (click)="confirmDeleteStandard(standard)" 
+                        title="Supprimer" [disabled]="standard.nombreChambres > 0">
+                  <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div><!-- Fin sous-section standards -->
+
+      </div><!-- Fin onglet chambres -->
 
       <!-- ONGLET LABORATOIRES -->
       <div class="tab-panel" *ngIf="activeTab === 'laboratoires'">
@@ -204,15 +311,15 @@
           <p>Cette fonctionnalité sera disponible prochainement.</p>
           <div class="placeholder-features">
             <div class="feature">
-              <lucide-icon name="check" [size]="16"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
               Ajouter des laboratoires partenaires
             </div>
             <div class="feature">
-              <lucide-icon name="check" [size]="16"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
               Gérer les informations de contact
             </div>
             <div class="feature">
-              <lucide-icon name="check" [size]="16"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
               Configurer les types d'examens disponibles
             </div>
           </div>
@@ -234,7 +341,7 @@
           </div>
           <div class="stat-card">
             <div class="stat-icon success">
-              <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+              <lucide-icon name="check-circle-2" [size]="24"></lucide-icon>
             </div>
             <div class="stat-info">
               <span class="stat-value">{{ auditStats.totalSuccess }}</span>
@@ -337,7 +444,7 @@
                 <td class="details-cell" [title]="log.details || ''">{{ log.details | slice:0:50 }}{{ log.details && log.details.length > 50 ? '...' : '' }}</td>
                 <td class="ip-cell">{{ log.ipAddress || '-' }}</td>
                 <td>
-                  <lucide-icon *ngIf="log.success" name="check-circle" [size]="18" class="status-success"></lucide-icon>
+                  <lucide-icon *ngIf="log.success" name="check-circle-2" [size]="18" class="status-success"></lucide-icon>
                   <lucide-icon *ngIf="!log.success" name="x-circle" [size]="18" class="status-error"></lucide-icon>
                 </td>
               </tr>
@@ -364,6 +471,65 @@
       </div>
     </div>
 
+    <!-- Modal Standard -->
+    <div class="modal-overlay" *ngIf="showStandardModal" (click)="closeStandardModal()">
+      <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingStandard ? 'Modifier le standard' : 'Nouveau standard de chambre' }}</h3>
+          <button class="btn-close" (click)="closeStandardModal()">
+            <lucide-icon name="x" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nom du standard *</label>
+              <input type="text" [(ngModel)]="standardForm.nom" placeholder="Ex: Classique, VIP, Suite...">
+            </div>
+            <div class="form-group">
+              <label>Prix journalier (FCFA) *</label>
+              <input type="number" [(ngModel)]="standardForm.prixJournalier" min="0" step="100" placeholder="Ex: 5000">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="standardForm.description" rows="2" placeholder="Description du standard..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Localisation</label>
+            <input type="text" [(ngModel)]="standardForm.localisation" placeholder="Ex: Bâtiment A, Étage 2...">
+          </div>
+          <div class="form-group">
+            <label>Privilèges</label>
+            <div class="privileges-input">
+              <input type="text" [(ngModel)]="newPrivilege" placeholder="Ex: WiFi, Climatisation..." 
+                     (keyup.enter)="addPrivilege()">
+              <button class="btn btn-sm btn-primary" (click)="addPrivilege()" [disabled]="!newPrivilege.trim()">
+                <lucide-icon name="plus" [size]="14"></lucide-icon>
+                Ajouter
+              </button>
+            </div>
+            <div class="privileges-list" *ngIf="standardForm.privileges.length > 0">
+              <span class="privilege-tag" *ngFor="let privilege of standardForm.privileges; let i = index">
+                {{ privilege }}
+                <button class="btn-remove" (click)="removePrivilege(i)">
+                  <lucide-icon name="x" [size]="12"></lucide-icon>
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeStandardModal()">Annuler</button>
+          <button class="btn btn-primary" (click)="saveStandard()" 
+                  [disabled]="!standardForm.nom.trim() || standardForm.prixJournalier <= 0 || isLoadingStandards">
+            <lucide-icon name="save" [size]="16"></lucide-icon>
+            {{ editingStandard ? 'Enregistrer' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Chambre -->
     <div class="modal-overlay" *ngIf="showChambreModal" (click)="closeChambreModal()">
       <div class="modal" (click)="$event.stopPropagation()">
@@ -377,6 +543,15 @@
           <div class="form-group">
             <label>Numéro de chambre *</label>
             <input type="text" [(ngModel)]="chambreForm.numero" placeholder="Ex: 101, A12...">
+          </div>
+          <div class="form-group">
+            <label>Standard de chambre</label>
+            <select [(ngModel)]="chambreForm.idStandard">
+              <option [ngValue]="undefined">-- Aucun standard --</option>
+              <option *ngFor="let std of standardsForSelect" [ngValue]="std.idStandard">
+                {{ std.nom }} – {{ std.prixJournalier | number:'1.0-0' }} FCFA/jour
+              </option>
+            </select>
           </div>
           <div class="form-row">
             <div class="form-group">

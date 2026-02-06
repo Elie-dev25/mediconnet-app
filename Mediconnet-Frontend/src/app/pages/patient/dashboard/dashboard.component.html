@@ -54,12 +54,12 @@
       <section class="visites-section">
         <div class="section-header">
           <h2>
-            <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+            <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
             Visites passées ({{ visitesPassees.length }})
           </h2>
         </div>
         
-        <div class="visites-list" *ngIf="!isLoading">
+        <div class="visites-list scrollable-list" *ngIf="!isLoading">
           <div class="visite-card past" *ngFor="let visite of visitesPassees">
             <div class="visite-date">
               <span class="day">{{ formatDate(visite.dateHeure) }}</span>

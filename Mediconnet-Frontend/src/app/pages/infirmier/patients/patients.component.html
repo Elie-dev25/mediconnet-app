@@ -7,33 +7,48 @@
       subtitle="Rechercher et consulter les dossiers patients">
     </app-welcome-banner>
 
-    <!-- Search Section -->
-    <section class="search-section">
-      <div class="section-header">
-        <h2>
-          <lucide-icon name="search" [size]="20"></lucide-icon>
-          Rechercher un patient
-        </h2>
-        <button class="icon-btn" type="button" (click)="loadRecentPatients()" title="Actualiser">
-          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
-        </button>
-      </div>
-      
-      <div class="search-wrapper">
-        <app-patient-search 
-          [showRecentOnLoad]="false"
-          (patientSelected)="onPatientSelected($event)">
-        </app-patient-search>
-      </div>
+    <!-- Onglets -->
+    <div class="tabs-container">
+      <button class="tab-btn" [class.active]="activeTab === 'tous'" (click)="setActiveTab('tous')">
+        <lucide-icon name="users" [size]="18"></lucide-icon>
+        Tous les patients
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'hospitalises'" (click)="setActiveTab('hospitalises')">
+        <lucide-icon name="bed" [size]="18"></lucide-icon>
+        Patients hospitalisés
+        <span class="tab-badge" *ngIf="enAttenteLitCount > 0">{{ enAttenteLitCount }}</span>
+      </button>
+    </div>
 
-      <div class="search-info" *ngIf="searchPerformed && !isLoading">
-        <lucide-icon name="info" [size]="16"></lucide-icon>
-        <span>{{ filteredPatients.length }} résultat(s) trouvé(s)</span>
-      </div>
-    </section>
+    <!-- TAB: Tous les patients -->
+    <div class="tab-content" *ngIf="activeTab === 'tous'">
+      <!-- Search Section -->
+      <section class="search-section">
+        <div class="section-header">
+          <h2>
+            <lucide-icon name="search" [size]="20"></lucide-icon>
+            Rechercher un patient
+          </h2>
+          <button class="icon-btn" type="button" (click)="loadRecentPatients()" title="Actualiser">
+            <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+          </button>
+        </div>
+        
+        <div class="search-wrapper">
+          <app-patient-search 
+            [showRecentOnLoad]="false"
+            (patientSelected)="onPatientSelected($event)">
+          </app-patient-search>
+        </div>
 
-    <!-- Patients Section -->
-    <section class="patients-section">
+        <div class="search-info" *ngIf="searchPerformed && !isLoading">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          <span>{{ filteredPatients.length }} résultat(s) trouvé(s)</span>
+        </div>
+      </section>
+
+      <!-- Patients Section -->
+      <section class="patients-section">
       <div class="section-header">
         <h2>
           <lucide-icon name="users" [size]="20"></lucide-icon>
@@ -117,5 +132,152 @@
         </div>
       </div>
     </section>
+    </div>
+
+    <!-- TAB: Patients hospitalisés -->
+    <div class="tab-content" *ngIf="activeTab === 'hospitalises'">
+      <section class="hospitalisations-section">
+        <div class="section-header">
+          <h2>
+            <lucide-icon name="bed" [size]="20"></lucide-icon>
+            Patients hospitalisés
+          </h2>
+          <div class="header-actions">
+            <span class="badge badge-warning" *ngIf="enAttenteLitCount > 0">
+              {{ enAttenteLitCount }} en attente d'installation
+            </span>
+            <span class="badge badge-success" *ngIf="enCoursCount > 0">
+              {{ enCoursCount }} hospitalisé(s)
+            </span>
+            <button class="icon-btn" type="button" (click)="loadHospitalisations()" title="Actualiser">
+              <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <lucide-icon name="search" [size]="18" class="search-icon"></lucide-icon>
+            <input 
+              type="text" 
+              class="search-input"
+              placeholder="Rechercher par nom, prénom ou numéro de dossier..."
+              [(ngModel)]="hospitalisationSearchTerm"
+              (input)="onHospitalisationSearch()"
+            />
+            <button 
+              class="clear-btn" 
+              *ngIf="hospitalisationSearchTerm" 
+              (click)="clearHospitalisationSearch()"
+              type="button"
+            >
+              <lucide-icon name="x" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-state" *ngIf="isLoadingHospitalisations">
+          <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+          <span>Chargement des hospitalisations...</span>
+        </div>
+
+        <!-- Error -->
+        <div class="error-state" *ngIf="hospitalisationsError && !isLoadingHospitalisations">
+          <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+          <span>{{ hospitalisationsError }}</span>
+          <button class="btn btn-primary btn-sm" (click)="loadHospitalisations()">
+            <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+            Réessayer
+          </button>
+        </div>
+
+        <!-- Empty -->
+        <div class="empty-state" *ngIf="!isLoadingHospitalisations && !hospitalisationsError && filteredHospitalisations.length === 0">
+          <lucide-icon name="bed" [size]="48"></lucide-icon>
+          <h3>Aucune hospitalisation trouvée</h3>
+          <p *ngIf="!hospitalisationSearchTerm">Il n'y a actuellement aucun patient hospitalisé dans votre service.</p>
+          <p *ngIf="hospitalisationSearchTerm">Aucun résultat pour "{{ hospitalisationSearchTerm }}"</p>
+        </div>
+
+        <!-- Liste des hospitalisations avec scroll invisible si > 5 éléments -->
+        <div class="hospitalisations-list" 
+             [class.scrollable]="filteredHospitalisations.length > 5"
+             *ngIf="!isLoadingHospitalisations && !hospitalisationsError && filteredHospitalisations.length > 0">
+          <div class="hospitalisation-card" *ngFor="let h of filteredHospitalisations" 
+               [class.en-attente]="h.statut === 'EN_ATTENTE'"
+               [class.urgence-critique]="h.urgence === 'critique'"
+               [class.urgence-urgente]="h.urgence === 'urgente'"
+               (click)="openDetailsPanel(h)">
+            <div class="card-content">
+              <div class="card-left">
+                <div class="patient-avatar">
+                  <lucide-icon name="user" [size]="20"></lucide-icon>
+                </div>
+              </div>
+              <div class="card-main">
+                <div class="card-top">
+                  <div class="patient-details">
+                    <span class="patient-name">{{ h.patient.prenom }} {{ h.patient.nom }}</span>
+                    <span class="patient-dossier" *ngIf="h.patient.numeroDossier">{{ h.patient.numeroDossier }}</span>
+                  </div>
+                  <div class="badges">
+                    <span class="badge" [class.badge-warning]="h.statut === 'EN_ATTENTE'" 
+                          [class.badge-success]="h.statut === 'EN_COURS'">
+                      {{ getStatutLabel(h.statut) }}
+                    </span>
+                    <span class="badge" [ngClass]="'badge-' + h.urgence">
+                      {{ h.urgence | titlecase }}
+                    </span>
+                  </div>
+                </div>
+                <div class="card-info" *ngIf="h.medecin?.nom || h.dateEntree || h.motif || h.lit">
+                  <span class="info-item" *ngIf="h.medecin?.nom">
+                    <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                    Dr {{ h.medecin.prenom }} {{ h.medecin.nom }}
+                  </span>
+                  <span class="info-item" *ngIf="h.dateEntree">
+                    <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                    {{ formatDateTime(h.dateEntree) }}
+                  </span>
+                  <span class="info-item" *ngIf="h.motif">
+                    <lucide-icon name="file-text" [size]="14"></lucide-icon>
+                    {{ h.motif }}
+                  </span>
+                  <span class="info-item" *ngIf="h.lit?.chambre">
+                    <lucide-icon name="bed" [size]="14"></lucide-icon>
+                    Chambre {{ h.lit?.chambre }} - Lit {{ h.lit?.numero }}
+                  </span>
+                </div>
+              </div>
+              <div class="card-actions" *ngIf="isMajor && h.statut === 'EN_ATTENTE'">
+                <button class="btn btn-primary btn-sm" (click)="openAttribuerLitModal(h); $event.stopPropagation()">
+                  <lucide-icon name="bed" [size]="16"></lucide-icon>
+                  Attribuer un lit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Panel Détails Hospitalisation -->
+    <app-hospitalisation-details-panel
+      [isOpen]="showDetailsPanel"
+      [hospitalisationId]="selectedHospitalisationId"
+      [context]="'infirmier'"
+      (close)="closeDetailsPanel()"
+      (openAttribuerLit)="onOpenAttribuerLitFromPanel($event)"
+    ></app-hospitalisation-details-panel>
+
+    <!-- Panel Attribution Lit (composant partagé) -->
+    <app-attribuer-lit-panel
+      [isOpen]="showAttribuerLitModal"
+      [hospitalisation]="selectedHospitalisationInfo"
+      (close)="closeAttribuerLitModal()"
+      (attributed)="onLitAttributed()"
+    ></app-attribuer-lit-panel>
   </div>
 </app-dashboard-layout>

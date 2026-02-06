@@ -1,0 +1,55 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <lucide-icon name="heart-pulse" [size]="22"></lucide-icon>
+        <div>
+          <h2>Ajouter des soins</h2>
+          <span class="patient-name" *ngIf="patientPrenom || patientNom">{{ patientPrenom }} {{ patientNom }}</span>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content">
+      <!-- Success Message -->
+      <div class="success-message" *ngIf="success">
+        <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+        <h3>Soins ajoutés</h3>
+        <p>Les soins ont été prescrits avec succès.</p>
+      </div>
+
+      <!-- Form -->
+      <div class="form-container" *ngIf="!success">
+        <!-- Error -->
+        <div class="error-message" *ngIf="error">
+          <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Composant soins réutilisé -->
+        <app-soins-complementaires
+          #soinsComp
+          [soins]="soins"
+          (soinsChange)="onSoinsChange($event)">
+        </app-soins-complementaires>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" *ngIf="!success">
+      <button class="btn btn-outline" (click)="onClose()" [disabled]="isSubmitting">
+        Annuler
+      </button>
+      <button class="btn btn-primary" (click)="submit()" [disabled]="!canSubmit">
+        <lucide-icon name="loader-2" [size]="16" class="spinner" *ngIf="isSubmitting"></lucide-icon>
+        <lucide-icon name="save" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+        {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer les soins' }}
+      </button>
+    </div>
+  </div>
+</div>

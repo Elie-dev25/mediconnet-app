@@ -23,7 +23,7 @@
         
         <!-- Success message after resend -->
         <div *ngIf="resendSuccess" class="success-alert">
-          <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+          <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
           <span>Un nouvel email de confirmation a été envoyé !</span>
         </div>
         
@@ -51,6 +51,18 @@
       <h2 class="form-title">Connexion</h2>
       <p class="form-subtitle">Bienvenue sur MediConnect</p>
 
+      <!-- Session Expired Message -->
+      <div *ngIf="sessionExpired" class="session-expired-alert">
+        <lucide-icon name="clock" [size]="18"></lucide-icon>
+        <div class="session-expired-content">
+          <span class="session-expired-title">Session expirée</span>
+          <span class="session-expired-text">
+            Votre session a expiré pour inactivité.
+            <span *ngIf="hasRedirectUrl">Reconnectez-vous pour reprendre là où vous étiez.</span>
+          </span>
+        </div>
+      </div>
+
       <!-- Error Message -->
       <div *ngIf="errorMessage" class="error-alert">
         <lucide-icon name="alert-circle" [size]="18" class="error-icon"></lucide-icon>
@@ -58,7 +70,7 @@
       </div>
 
       <!-- Login Form -->
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
       
       <!-- Identifier Field (Email or Phone) -->
       <div class="form-group">
@@ -70,7 +82,9 @@
             placeholder="Email ou numéro de téléphone"
             class="form-input"
             [class.is-error]="hasError('identifier')"
-            autocomplete="username"
+            autocomplete="off"
+            data-lpignore="true"
+            data-form-type="other"
             required/>
         </div>
         <span *ngIf="hasError('identifier')" class="error-text">
@@ -88,7 +102,9 @@
             placeholder="Mot de passe"
             class="form-input"
             [class.is-error]="hasError('password')"
-            autocomplete="current-password"
+            autocomplete="new-password"
+            data-lpignore="true"
+            data-form-type="other"
             required/>
           <button
             type="button"

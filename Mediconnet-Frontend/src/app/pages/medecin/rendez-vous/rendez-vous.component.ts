@@ -25,13 +25,14 @@ export class MedecinRendezVousComponent implements OnInit {
 
   // État
   isLoading = true;
-  activeFilter: 'jour' | 'semaine' | 'tous' = 'jour';
+  activeFilter: 'jour' | 'semaine' | 'tous' | 'manques' = 'jour';
   statutFilter = '';
   searchTerm = '';
 
   // Données
   rendezVous: RdvPlanningDto[] = [];
   filteredRdv: RdvPlanningDto[] = [];
+  missedRdvs: RdvPlanningDto[] = [];
 
   // Date actuelle
   currentDate = new Date();
@@ -79,9 +80,37 @@ export class MedecinRendezVousComponent implements OnInit {
     }
   }
 
-  setActiveFilter(filter: 'jour' | 'semaine' | 'tous'): void {
+  setActiveFilter(filter: 'jour' | 'semaine' | 'tous' | 'manques'): void {
     this.activeFilter = filter;
-    this.loadData();
+    if (filter === 'manques') {
+      this.loadMissedRdvs();
+    } else {
+      this.loadData();
+    }
+  }
+
+  loadMissedRdvs(): void {
+    this.isLoading = true;
+    // Charger les RDV des 30 derniers jours avec statut absent
+    const dateDebut = new Date();
+    dateDebut.setDate(dateDebut.getDate() - 30);
+    
+    this.planningService.getMedecinRdvList(
+      this.toLocalDateString(dateDebut),
+      undefined,
+      'absent'
+    ).subscribe({
+      next: (rdvs) => {
+        this.missedRdvs = rdvs;
+        this.rendezVous = rdvs;
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur:', err);
+        this.isLoading = false;
+      }
+    });
   }
 
   applyFilters(): void {
@@ -216,15 +245,32 @@ export class MedecinRendezVousComponent implements OnInit {
     return classes[statut] || '';
   }
 
+  getStatutBadgeClass(statut: string): string {
+    const classes: { [key: string]: string } = {
+      'planifie': 'list-page-status-badge--pending',
+      'confirme': 'list-page-status-badge--confirmed',
+      'en_cours': 'list-page-status-badge--progress',
+      'termine': 'list-page-status-badge--completed',
+      'annule': 'list-page-status-badge--cancelled',
+      'absent': 'list-page-status-badge--absent'
+    };
+    return classes[statut] || '';
+  }
+
   refresh(): void {
     this.loadData();
   }
 
-  get rdvCount(): { total: number; confirmes: number; enAttente: number } {
+  get rdvCount(): { total: number; confirmes: number; enAttente: number; absents: number } {
     return {
       total: this.rendezVous.length,
       confirmes: this.rendezVous.filter(r => r.statut === 'confirme' || r.statut === 'termine').length,
-      enAttente: this.rendezVous.filter(r => r.statut === 'planifie').length
+      enAttente: this.rendezVous.filter(r => r.statut === 'planifie').length,
+      absents: this.activeFilter === 'manques' ? this.missedRdvs.length : this.rendezVous.filter(r => r.statut === 'absent').length
     };
+  }
+
+  get missedCount(): number {
+    return this.missedRdvs.length;
   }
 }

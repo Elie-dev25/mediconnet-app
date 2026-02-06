@@ -1,0 +1,230 @@
+<div class="consultation-details-view">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="goBack()">
+        <lucide-icon name="arrow-left" [size]="20"></lucide-icon>
+      </button>
+      <div class="header-title">
+        <h1>
+          <lucide-icon name="file-text" [size]="28"></lucide-icon>
+          {{ mode === 'patient' ? 'Détails de ma consultation' : 'Détails de la consultation' }}
+        </h1>
+        <p class="subtitle" *ngIf="consultation">
+          {{ formatDate(consultation.dateConsultation) }} à {{ formatTime(consultation.dateConsultation) }}
+        </p>
+      </div>
+    </div>
+    <div class="header-actions" *ngIf="consultation">
+      <button class="btn-secondary" (click)="printConsultation()">
+        <lucide-icon name="printer" [size]="18"></lucide-icon>
+        Imprimer
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <lucide-icon name="refresh-cw" [size]="32" class="spinning"></lucide-icon>
+    <p>Chargement des détails...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error-state">
+    <lucide-icon name="alert-circle" [size]="48"></lucide-icon>
+    <p>{{ error }}</p>
+    <button class="btn-primary" (click)="goBack()">Retour</button>
+  </div>
+
+  <!-- Content -->
+  <div class="details-content" *ngIf="!isLoading && !error && consultation">
+    
+    <!-- Patient Info Card (mode médecin uniquement) -->
+    <section class="info-card patient-card" *ngIf="mode === 'medecin'">
+      <div class="card-header">
+        <lucide-icon name="user" [size]="20"></lucide-icon>
+        <h2>Patient</h2>
+      </div>
+      <div class="card-body">
+        <div class="patient-info">
+          <div class="patient-avatar">
+            <lucide-icon name="user" [size]="32"></lucide-icon>
+          </div>
+          <div class="patient-details">
+            <span class="patient-name">{{ consultation.patientPrenom }} {{ consultation.patientNom }}</span>
+            <span class="patient-dossier" *ngIf="consultation.numeroDossier">
+              <lucide-icon name="folder" [size]="14"></lucide-icon>
+              Dossier: {{ consultation.numeroDossier }}
+            </span>
+          </div>
+        </div>
+        <div class="consultation-status">
+          <span class="status-badge" [ngClass]="getStatutClass(consultation.statut)">
+            {{ getStatutLabel(consultation.statut) }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Consultation Info -->
+    <section class="info-card">
+      <div class="card-header">
+        <lucide-icon name="calendar" [size]="20"></lucide-icon>
+        <h2>Informations générales</h2>
+        <span class="status-badge" [ngClass]="getStatutClass(consultation.statut)" *ngIf="mode === 'patient'">
+          {{ getStatutLabel(consultation.statut) }}
+        </span>
+      </div>
+      <div class="card-body info-grid">
+        <div class="info-item">
+          <span class="info-label">Date</span>
+          <span class="info-value">{{ formatDate(consultation.dateConsultation) }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Heure</span>
+          <span class="info-value">{{ formatTime(consultation.dateConsultation) }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Durée</span>
+          <span class="info-value">{{ consultation.duree || 30 }} minutes</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Motif</span>
+          <span class="info-value">{{ consultation.motif || 'Non spécifié' }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anamnèse -->
+    <section class="info-card" *ngIf="consultation.anamnese">
+      <div class="card-header">
+        <lucide-icon name="clipboard-list" [size]="20"></lucide-icon>
+        <h2>Anamnèse</h2>
+      </div>
+      <div class="card-body">
+        <div class="text-content">{{ consultation.anamnese }}</div>
+      </div>
+    </section>
+
+    <!-- Notes cliniques -->
+    <section class="info-card" *ngIf="consultation.notesCliniques">
+      <div class="card-header">
+        <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
+        <h2>Notes cliniques</h2>
+      </div>
+      <div class="card-body">
+        <div class="text-content">{{ consultation.notesCliniques }}</div>
+      </div>
+    </section>
+
+    <!-- Diagnostic -->
+    <section class="info-card" *ngIf="consultation.diagnostic">
+      <div class="card-header">
+        <lucide-icon name="activity" [size]="20"></lucide-icon>
+        <h2>Diagnostic</h2>
+      </div>
+      <div class="card-body">
+        <div class="diagnostic-content">
+          <p class="diagnostic-text">{{ consultation.diagnostic }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Conclusion -->
+    <section class="info-card" *ngIf="consultation.conclusion">
+      <div class="card-header">
+        <lucide-icon name="check-circle-2" [size]="20"></lucide-icon>
+        <h2>Conclusion</h2>
+      </div>
+      <div class="card-body">
+        <div class="text-content">{{ consultation.conclusion }}</div>
+      </div>
+    </section>
+
+    <!-- Prescriptions - Médicaments -->
+    <section class="info-card" *ngIf="consultation.ordonnance && consultation.ordonnance.medicaments && consultation.ordonnance.medicaments.length > 0">
+      <div class="card-header">
+        <lucide-icon name="pill" [size]="20"></lucide-icon>
+        <h2>Ordonnance - Médicaments</h2>
+      </div>
+      <div class="card-body">
+        <div class="prescriptions-list">
+          <div class="prescription-item" *ngFor="let med of consultation.ordonnance.medicaments">
+            <div class="prescription-name">
+              <lucide-icon name="pill" [size]="16"></lucide-icon>
+              <strong>{{ med.nomMedicament }}</strong>
+            </div>
+            <div class="prescription-details">
+              <span *ngIf="med.dosage">Dosage: {{ med.dosage }}</span>
+              <span *ngIf="med.frequence">Fréquence: {{ med.frequence }}</span>
+              <span *ngIf="med.duree">Durée: {{ med.duree }}</span>
+              <span *ngIf="med.quantite">Quantité: {{ med.quantite }}</span>
+            </div>
+            <div class="prescription-instructions" *ngIf="med.instructions">
+              <lucide-icon name="info" [size]="14"></lucide-icon>
+              {{ med.instructions }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prescriptions - Examens -->
+    <section class="info-card" *ngIf="consultation.examensPrescrits && consultation.examensPrescrits.length > 0">
+      <div class="card-header">
+        <lucide-icon name="flask-conical" [size]="20"></lucide-icon>
+        <h2>Examens prescrits</h2>
+      </div>
+      <div class="card-body">
+        <div class="examens-list">
+          <div class="examen-item" *ngFor="let exam of consultation.examensPrescrits">
+            <div class="examen-name">
+              <lucide-icon name="test-tube" [size]="16"></lucide-icon>
+              <strong>{{ exam.nomExamen }}</strong>
+            </div>
+            <div class="examen-details" *ngIf="exam.instructions">{{ exam.instructions }}</div>
+            <div class="examen-status" *ngIf="exam.statut">
+              <span class="status-badge" [ngClass]="exam.statut === 'termine' ? 'status-completed' : 'status-pending'">
+                {{ exam.statut === 'termine' ? 'Terminé' : 'En attente' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recommandations -->
+    <section class="info-card" *ngIf="consultation.recommandations">
+      <div class="card-header">
+        <lucide-icon name="lightbulb" [size]="20"></lucide-icon>
+        <h2>Recommandations</h2>
+      </div>
+      <div class="card-body">
+        <div class="text-content">{{ consultation.recommandations }}</div>
+      </div>
+    </section>
+
+    <!-- Questionnaire médical -->
+    <section class="info-card" *ngIf="consultation.questionnaire && consultation.questionnaire.length > 0">
+      <div class="card-header">
+        <lucide-icon name="help-circle" [size]="20"></lucide-icon>
+        <h2>Questionnaire médical</h2>
+      </div>
+      <div class="card-body">
+        <div class="questionnaire-list">
+          <div class="question-item" *ngFor="let q of consultation.questionnaire">
+            <div class="question-text">
+              <lucide-icon name="help-circle" [size]="14"></lucide-icon>
+              {{ q.question }}
+            </div>
+            <div class="answer-text">
+              <lucide-icon name="message-square" [size]="14"></lucide-icon>
+              {{ q.reponse || 'Non répondu' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>

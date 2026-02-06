@@ -81,6 +81,8 @@ public static class NotificationType
     public const string Message = "message";
     public const string Rappel = "rappel";
     public const string Validation = "validation";
+    public const string Annulation = "annulation";
+    public const string Report = "report";
 }
 
 /// <summary>

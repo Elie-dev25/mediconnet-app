@@ -21,7 +21,9 @@ const icons = {
   ArrowLeft, ArrowRight, Mail, Lock, Eye, EyeOff, User, UserPlus,
   LogIn, LogOut, AlertCircle, Loader2, ShieldCheck, Menu, X,
   Home, Calendar, CalendarPlus, Pill, FlaskConical, Receipt,
-  FolderOpen, UserCog, LayoutDashboard, HeartPulse, Settings
+  FolderOpen, UserCog, LayoutDashboard, HeartPulse, Settings,
+  // Alias kebab-case pour compatibilité avec les templates
+  'shield-check': ShieldCheck
 };
 
 export const appConfig: ApplicationConfig = {

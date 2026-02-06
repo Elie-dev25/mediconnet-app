@@ -1,50 +1,161 @@
 // Styles spécifiques au dashboard médecin
 @use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as *;
 
 .dashboard-content {
   max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  
+  @include sm-down {
+    padding: 0;
+  }
 }
 
-.queue-loading {
-  padding: 1rem;
-  color: $text-secondary;
-  font-size: 0.95rem;
+// ==================== LAYOUT GRID ====================
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+
+  @include md-up {
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  @include lg-up {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  @include xl-up {
+    grid-template-columns: 2fr 1fr;
+  }
 }
 
-.queue-error {
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  background: rgba(220, 38, 38, 0.06);
-  color: #b91c1c;
-  border-radius: 10px;
-  font-size: 0.9rem;
-}
-
-.queue-list {
+.left-column,
+.actions-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  min-width: 0;
+  
+  @include md-up {
+    gap: 1.25rem;
+  }
+  
+  @include lg-up {
+    gap: 1.5rem;
+  }
+}
+
+// ==================== SECTION CARD ====================
+.section-card {
+  @include section-card;
+  padding: 1rem;
+  
+  @include md-up {
+    padding: 1.25rem;
+  }
+}
+
+.section-header {
+  @include flex-between;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  
+  @include md-up {
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    
+    @include md-up {
+      font-size: 1rem;
+    }
+  }
+
+  .view-all {
+    color: $primary-color;
+    font-size: 0.75rem;
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+    
+    @include md-up {
+      font-size: 0.8125rem;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// ==================== FILE D'ATTENTE ====================
+.queue-list {
+  @include modern-list-container(300px);
+  
+  @include md-up {
+    max-height: 350px;
+  }
+  
+  @include lg-up {
+    max-height: 400px;
+  }
 }
 
 .queue-item {
+  @include modern-list-card;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
+  padding: 0.875rem 1rem;
 
-  @media (max-width: 640px) {
-    flex-wrap: wrap;
+  @include sm-down {
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  @include md-up {
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  &-pending {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef9e6 100%);
+    border-color: #fde68a;
   }
 }
 
 .queue-time {
-  min-width: 54px;
+  min-width: 50px;
   font-weight: 700;
-  color: $text-dark;
+  font-size: 0.875rem;
+  color: $primary-color;
+  flex-shrink: 0;
+  
+  @include sm-down {
+    font-size: 0.8125rem;
+  }
+  
+  @include md-up {
+    min-width: 60px;
+    font-size: 0.9375rem;
+  }
 }
 
 .queue-info {
@@ -54,41 +165,305 @@
 
 .queue-patient {
   font-weight: 600;
-  color: $text-dark;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #1f2937;
+  font-size: 0.875rem;
+  @include text-truncate;
+  
+  @include md-up {
+    font-size: 0.9375rem;
+  }
 }
 
 .queue-origin {
   margin-top: 0.125rem;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: $text-secondary;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  
+  @include md-up {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  lucide-icon {
+    color: $success-color;
+  }
+
+  &.origin-pending {
+    color: $warning-color;
+
+    lucide-icon {
+      color: $warning-color;
+    }
+  }
 }
 
 .queue-actions {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+
+  @include sm-down {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+  }
 }
 
-// Bouton d'action harmonisé
+.queue-loading {
+  @include loading-state;
+  padding: 1rem;
+  
+  @include md-up {
+    padding: 1.5rem;
+  }
+}
+
+.queue-error {
+  padding: 0.75rem;
+  background: $error-light;
+  color: $error-color;
+  border-radius: 8px;
+  border: 1px solid rgba($error-color, 0.2);
+  font-size: 0.8125rem;
+  
+  @include md-up {
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+  }
+}
+
+.empty-state {
+  @include empty-state;
+  padding: 2rem 1rem;
+  
+  @include md-up {
+    padding: 3rem 1.5rem;
+  }
+  
+  lucide-icon {
+    width: 32px;
+    height: 32px;
+    
+    @include md-up {
+      width: 40px;
+      height: 40px;
+    }
+  }
+  
+  p {
+    font-size: 0.875rem;
+    
+    @include md-up {
+      font-size: 0.9375rem;
+    }
+  }
+}
+
+// ==================== RDV EN ATTENTE ====================
+.pending-section {
+  .section-header h2 {
+    lucide-icon {
+      color: $warning-color;
+    }
+  }
+
+  .badge {
+    background: linear-gradient(135deg, $warning-color 0%, darken($warning-color, 10%) 100%);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.125rem 0.4rem;
+    border-radius: 20px;
+    
+    @include md-up {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+    }
+  }
+}
+
+.pending-list-compact {
+  @include modern-list-container(250px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  
+  @include md-up {
+    max-height: 300px;
+    gap: 0.5rem;
+  }
+  
+  @include lg-up {
+    max-height: 350px;
+  }
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef9e6 100%);
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  
+  @include sm-down {
+    flex-wrap: wrap;
+  }
+  
+  @include md-up {
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  &:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+  }
+}
+
+.pending-datetime {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 55px;
+  flex-shrink: 0;
+  
+  @include md-up {
+    min-width: 70px;
+  }
+}
+
+.pending-date {
+  font-size: 0.625rem;
+  color: #92400e;
+  white-space: nowrap;
+  
+  @include md-up {
+    font-size: 0.6875rem;
+  }
+}
+
+.pending-time {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #d97706;
+  
+  @include md-up {
+    font-size: 0.8125rem;
+  }
+}
+
+.pending-patient {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #1f2937;
+  cursor: pointer;
+  @include text-truncate;
+  
+  @include sm-down {
+    flex-basis: calc(100% - 120px);
+  }
+  
+  @include md-up {
+    font-size: 0.875rem;
+  }
+
+  &:hover {
+    color: $primary-color;
+  }
+}
+
+.pending-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  
+  @include sm-down {
+    margin-left: auto;
+  }
+}
+
+.btn-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  
+  @include md-up {
+    width: 28px;
+    height: 28px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-mini-success {
+  background: #d1fae5;
+  color: #059669;
+
+  &:hover:not(:disabled) {
+    background: #10b981;
+    color: white;
+  }
+}
+
+.btn-mini-warning {
+  background: #fef3c7;
+  color: #d97706;
+
+  &:hover:not(:disabled) {
+    background: #f59e0b;
+    color: white;
+  }
+}
+
+.btn-mini-danger {
+  background: #fee2e2;
+  color: #dc2626;
+
+  &:hover:not(:disabled) {
+    background: #ef4444;
+    color: white;
+  }
+}
+
+// ==================== BOUTONS ====================
 .btn-action {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-
-  lucide-icon {
-    flex-shrink: 0;
+  white-space: nowrap;
+  
+  @include md-up {
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 10px;
   }
 
   &:disabled {
@@ -96,7 +471,7 @@
     cursor: not-allowed;
   }
 
-  @media (max-width: 640px) {
+  @include sm-down {
     width: 100%;
     justify-content: center;
   }
@@ -116,8 +491,7 @@
 .btn-action-secondary {
   background: white;
   color: $primary-color;
-  border: 1px solid $border-light;
-  box-shadow: $shadow-sm;
+  border: 1px solid #e2e8f0;
 
   &:hover:not(:disabled) {
     background: #f8fafc;
@@ -125,158 +499,176 @@
   }
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  z-index: 50;
-}
+.btn-action-success {
+  background: linear-gradient(135deg, $success-color 0%, darken($success-color, 10%) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba($success-color, 0.25);
 
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow: auto;
-  background: white;
-  border-radius: 16px;
-  padding: 1rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-}
-
-// Section card
-.section-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-
-  h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: $text-dark;
-    margin: 0;
-  }
-
-  .view-all {
-    color: $primary-color;
-    font-size: 0.875rem;
-    text-decoration: none;
-    font-weight: 500;
-
-    &:hover {
-      text-decoration: underline;
-    }
+  &:hover:not(:disabled) {
+    box-shadow: 0 6px 16px rgba($success-color, 0.35);
+    transform: translateY(-1px);
   }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  color: $text-secondary;
+.btn-action-warning {
+  background: linear-gradient(135deg, $warning-color 0%, darken($warning-color, 10%) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba($warning-color, 0.25);
 
-  lucide-icon {
-    opacity: 0.3;
-    margin-bottom: 1rem;
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.95rem;
+  &:hover:not(:disabled) {
+    box-shadow: 0 6px 16px rgba($warning-color, 0.35);
+    transform: translateY(-1px);
   }
 }
 
-// Dashboard Grid - Layout 2 colonnes
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+.btn-action-danger {
+  background: linear-gradient(135deg, $error-color 0%, darken($error-color, 10%) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba($error-color, 0.25);
 
-  @media (min-width: 1024px) {
-    grid-template-columns: 2fr 1fr;
+  &:hover:not(:disabled) {
+    box-shadow: 0 6px 16px rgba($error-color, 0.35);
+    transform: translateY(-1px);
   }
 }
 
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  min-width: 0;
+// Boutons icône
+.btn-icon {
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
-.agenda-section {
-  min-width: 0;
+.btn-icon-success {
+  background: $success-light;
+  color: $success-color;
+
+  &:hover:not(:disabled) {
+    background: $success-color;
+    color: white;
+  }
 }
 
-.actions-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.btn-icon-warning {
+  background: $warning-light;
+  color: $warning-color;
+
+  &:hover:not(:disabled) {
+    background: $warning-color;
+    color: white;
+  }
 }
 
-// Quick actions
+.btn-icon-danger {
+  background: $error-light;
+  color: $error-color;
+
+  &:hover:not(:disabled) {
+    background: $error-color;
+    color: white;
+  }
+}
+
+.btn-icon-info {
+  background: $info-light;
+  color: $info-color;
+
+  &:hover:not(:disabled) {
+    background: $info-color;
+    color: white;
+  }
+}
+
+// ==================== QUICK ACTIONS ====================
 .quick-actions {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  @include section-card;
+  padding: 1rem;
+  
+  @include md-up {
+    padding: 1.25rem;
+  }
 
   h2 {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: $text-dark;
-    margin: 0 0 1rem;
+    margin: 0 0 0.75rem;
+    
+    @include md-up {
+      font-size: 1rem;
+      margin: 0 0 1rem;
+    }
   }
 }
 
 .actions-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 0.5rem;
+  
+  @include sm-down {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include md-up {
+    gap: 0.75rem;
+  }
+  
+  @include lg-up {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .action-card {
-  background: #f8fafc;
+  background: white;
   border-radius: 10px;
-  padding: 1rem;
+  padding: 0.75rem 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #f1f5f9;
   text-decoration: none;
+  
+  @include md-up {
+    border-radius: 12px;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
 
   .action-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    
+    @include md-up {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+    }
+    
+    lucide-icon {
+      width: 18px;
+      height: 18px;
+      
+      @include md-up {
+        width: 24px;
+        height: 24px;
+      }
+    }
 
     &.planning {
       background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
@@ -301,314 +693,238 @@
 
   span {
     font-weight: 500;
-    font-size: 0.8rem;
-    color: $text-dark;
+    font-size: 0.7rem;
+    color: #374151;
     line-height: 1.2;
+    
+    @include md-up {
+      font-size: 0.8125rem;
+      line-height: 1.3;
+    }
   }
 
-  &:hover {
-    background: white;
+  &:hover:not(.disabled) {
     border-color: $primary-color;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba($primary-color, 0.1);
   }
 
   &.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
-
-    .action-icon {
-      background: #f1f5f9;
-      color: #94a3b8;
-    }
-  }
-}
-
-// Modal styles for larger modals
-.modal-large {
-  max-width: 95vw;
-  width: auto;
-  
-  .modal-content {
-    max-width: none;
-    width: auto;
-  }
-}
-
-// ==================== RDV EN ATTENTE ====================
-
-.pending-section {
-  .section-header h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-    
-    lucide-icon {
-      color: #f59e0b;
-    }
-  }
-  
-  .badge {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.15rem 0.4rem;
-    border-radius: 20px;
-    min-width: 20px;
-    text-align: center;
-  }
-}
-
-// Format compact - une ligne par RDV
-.pending-list-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.pending-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 1px solid #fde68a;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-  }
-}
-
-.pending-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.pending-name {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: $text-dark;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pending-datetime {
-  font-size: 0.75rem;
-  color: $text-secondary;
-  white-space: nowrap;
-}
-
-.pending-btns {
-  display: flex;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-}
 
-.btn-icon-success {
-  background: #dcfce7;
-  color: #16a34a;
-  
-  &:hover:not(:disabled) {
-    background: #22c55e;
-    color: white;
-  }
-}
-
-.btn-icon-warning {
-  background: #fef3c7;
-  color: #d97706;
-  
-  &:hover:not(:disabled) {
-    background: #f59e0b;
-    color: white;
-  }
-}
-
-.btn-icon-danger {
-  background: #fee2e2;
-  color: #dc2626;
-  
-  &:hover:not(:disabled) {
-    background: #ef4444;
-    color: white;
-  }
-}
-
-// File d'attente - styles pour RDV en attente d'arrivée
-.queue-item-pending {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-  border-color: #fde68a !important;
-}
-
-.queue-origin {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  
-  lucide-icon {
-    color: #16a34a;
-  }
-  
-  &.origin-pending {
-    color: #d97706;
-    
-    lucide-icon {
-      color: #d97706;
+    .action-icon {
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
     }
   }
 }
 
-.btn-action-success {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  color: white;
+// ==================== MODAL ====================
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  @include flex-center;
+  padding: 0.75rem;
   
-  &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
-    transform: translateY(-1px);
+  @include md-up {
+    padding: 1rem;
   }
 }
 
-.btn-action-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+.modal-content {
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  @include custom-scrollbar;
   
-  &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
-    transform: translateY(-1px);
+  @include md-up {
+    max-height: 90vh;
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+
+  &.modal-large {
+    max-width: 100%;
+    
+    @include md-up {
+      max-width: 900px;
+    }
   }
 }
-
-.btn-action-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  
-  &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
-    transform: translateY(-1px);
-  }
-}
-
-// ==================== MODAL FORMS ====================
 
 .modal-form {
-  padding: 0.5rem;
+  padding: 0.125rem;
+  
+  @include md-up {
+    padding: 0.25rem;
+  }
 }
 
 .modal-info {
   color: $text-dark;
-  margin-bottom: 1rem;
-  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+  font-size: 0.875rem;
   
+  @include md-up {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    font-size: 1rem;
+  }
+
   strong {
     color: $primary-color;
   }
 }
 
 .modal-info-current {
-  background: #f1f5f9;
-  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  padding: 0.75rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
   color: $text-secondary;
+  border: 1px solid #f1f5f9;
   
+  @include md-up {
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+
   strong {
     color: $text-dark;
   }
 }
 
 .modal-warning {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  color: #92400e;
-  padding: 0.75rem 1rem;
+  background: $warning-light;
+  border: 1px solid rgba($warning-color, 0.3);
+  color: darken($warning-color, 20%);
+  padding: 0.75rem;
   border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  margin-bottom: 0.75rem;
+  
+  @include md-up {
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
 }
 
-.form-group {
-  margin-bottom: 1rem;
+.modal-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
   
+  @include sm-up {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+  
+  .btn {
+    @include sm-down {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// ==================== FORMULAIRES ====================
+.form-group {
+  margin-bottom: 0.75rem;
+  
+  @include md-up {
+    margin-bottom: 1rem;
+  }
+
   label {
     display: block;
     font-weight: 500;
     color: $text-dark;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    
+    @include md-up {
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
   }
-  
+
   .form-control {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    font-size: 0.95rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
     
+    @include md-up {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+    }
+
     &:focus {
       outline: none;
       border-color: $primary-color;
       box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
     }
   }
-  
+
   textarea.form-control {
     resize: vertical;
-    min-height: 80px;
+    min-height: 70px;
+    
+    @include md-up {
+      min-height: 80px;
+    }
   }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   
+  @include md-up {
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    border-radius: 10px;
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -616,68 +932,260 @@
 }
 
 .btn-secondary {
-  background: #f1f5f9;
+  background: #f8fafc;
   color: $text-dark;
   border: 1px solid #e2e8f0;
-  
+
   &:hover:not(:disabled) {
-    background: #e2e8f0;
+    background: #f1f5f9;
   }
 }
 
 .btn-primary {
   background: linear-gradient(135deg, $primary-color 0%, $primary-dark 100%);
   color: white;
-  
+
   &:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgba($primary-color, 0.35);
   }
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, $error-color 0%, darken($error-color, 10%) 100%);
   color: white;
-  
+
   &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    box-shadow: 0 4px 12px rgba($error-color, 0.35);
   }
 }
 
 // ==================== PANNEAU DOSSIER PATIENT ====================
 .dossier-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
   backdrop-filter: blur(2px);
+  z-index: 1000;
 }
 
 .dossier-panel {
   position: fixed;
   top: 0;
-  left: -450px;
-  width: 450px;
+  left: -100vw;
+  width: 100vw;
   height: 100vh;
   background: white;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
   z-index: 1001;
   transition: left 0.3s ease;
   overflow-y: auto;
+  @include custom-scrollbar;
 
   &.open {
     left: 0;
   }
+  
+  @include sm-up {
+    width: 400px;
+    left: -400px;
+  }
+
+  @include md-up {
+    width: 450px;
+    left: -450px;
+  }
 }
 
-.btn-icon-info {
-  background: #e0f2fe;
-  color: #0284c7;
-  
-  &:hover:not(:disabled) {
-    background: #0ea5e9;
-    color: white;
+// ==================== MODAL SUGGESTION CRÉNEAUX ====================
+.suggerer-modal {
+  .creneaux-loading {
+    @include loading-state;
+    padding: 1rem;
+    
+    @include md-up {
+      padding: 1.5rem;
+    }
   }
+
+  .creneaux-legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+    
+    @include md-up {
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+    }
+
+    .legende-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      color: #4b5563;
+      
+      @include md-up {
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        
+        @include md-up {
+          width: 12px;
+          height: 12px;
+          border-radius: 4px;
+        }
+      }
+
+      &.disponible .dot { background: $success-color; }
+      &.occupe .dot { background: $error-color; }
+      &.passe .dot { background: #9ca3af; }
+    }
+  }
+
+  .creneaux-grid-statut {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.375rem;
+    margin-bottom: 0.75rem;
+    
+    @include md-up {
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .creneau-btn-statut {
+    padding: 0.375rem 0.25rem;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    
+    @include md-up {
+      padding: 0.5rem 0.25rem;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+    }
+
+    &.creneau-disponible {
+      background: $success-light;
+      color: darken($success-color, 20%);
+      border-color: $success-color;
+
+      &:hover {
+        background: $success-color;
+        color: white;
+      }
+
+      &.selected {
+        background: $success-color;
+        color: white;
+        box-shadow: 0 0 0 3px rgba($success-color, 0.3);
+      }
+    }
+
+    &.creneau-occupe {
+      background: $error-light;
+      color: darken($error-color, 10%);
+      border-color: $error-color;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    &.creneau-passe {
+      background: #f3f4f6;
+      color: #9ca3af;
+      border-color: #d1d5db;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  .no-creneaux {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: $warning-light;
+    border-radius: 8px;
+    color: darken($warning-color, 20%);
+    margin-bottom: 0.75rem;
+    
+    @include md-up {
+      gap: 0.75rem;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    lucide-icon {
+      color: $warning-color;
+      flex-shrink: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8125rem;
+      
+      @include md-up {
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  .selected-creneau-info {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.75rem;
+    background: $success-light;
+    border: 1px solid rgba($success-color, 0.3);
+    border-radius: 8px;
+    color: darken($success-color, 20%);
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+    
+    @include md-up {
+      gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+
+    lucide-icon {
+      color: $success-color;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// ==================== ANIMATIONS ====================
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
 }

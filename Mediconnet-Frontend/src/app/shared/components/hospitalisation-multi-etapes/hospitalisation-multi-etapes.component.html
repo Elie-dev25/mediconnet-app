@@ -1,0 +1,225 @@
+<div class="hospitalisation-multi-etapes" [class.success-state]="success">
+  <!-- Header avec progression -->
+  <div class="panel-header">
+    <div class="header-title">
+      <lucide-icon name="bed" [size]="24"></lucide-icon>
+      <h2>Ordonnance d'hospitalisation</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="cancel()" *ngIf="!success">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper" *ngIf="!success">
+    <div class="step" *ngFor="let etape of etapes; let i = index"
+         [class.active]="isEtapeActive(etape.key)"
+         [class.completed]="isEtapeCompleted(etape.key)"
+         (click)="goToEtape(etape.key)">
+      <div class="step-indicator">
+        <lucide-icon [name]="isEtapeCompleted(etape.key) ? 'check' : etape.icon" [size]="16"></lucide-icon>
+      </div>
+      <span class="step-label">{{ etape.label }}</span>
+    </div>
+  </div>
+
+  <!-- Patient Info -->
+  <div class="patient-info" *ngIf="!success">
+    <lucide-icon name="user" [size]="18"></lucide-icon>
+    <div class="patient-details">
+      <strong>{{ patient.prenom }} {{ patient.nom }}</strong>
+      <span *ngIf="patient.numeroDossier" class="dossier-num">N° {{ patient.numeroDossier }}</span>
+    </div>
+  </div>
+
+  <!-- Workflow Info -->
+  <div class="workflow-info" *ngIf="!success">
+    <lucide-icon name="info" [size]="16"></lucide-icon>
+    <span>Renseignez les détails médicaux. Le Major du service attribuera le lit.</span>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" *ngIf="error">
+    <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+    {{ error }}
+  </div>
+
+  <!-- Success State -->
+  <div class="success-content" *ngIf="success">
+    <lucide-icon name="check-circle-2" [size]="64" class="success-icon"></lucide-icon>
+    <h3>Hospitalisation ordonnée avec succès !</h3>
+    <p>Le patient {{ patient.prenom }} {{ patient.nom }} a été ajouté à la liste des hospitalisations en attente.</p>
+    <p class="info-text">Le Major du service sera notifié pour attribuer un lit.</p>
+  </div>
+
+  <!-- Contenu des étapes -->
+  <div class="etapes-content" *ngIf="!success">
+    
+    <!-- ÉTAPE 1: HOSPITALISATION -->
+    <div class="etape-panel" *ngIf="etapeActuelle === 'hospitalisation'">
+      <h3 class="etape-title">
+        <lucide-icon name="bed" [size]="18"></lucide-icon>
+        Informations d'hospitalisation
+      </h3>
+
+      <!-- Motif -->
+      <div class="form-group">
+        <label class="required">
+          <lucide-icon name="clipboard" [size]="14"></lucide-icon>
+          Motif d'hospitalisation
+        </label>
+        <textarea [(ngModel)]="motif" rows="3" 
+                  placeholder="Décrivez le motif de l'hospitalisation..."></textarea>
+      </div>
+
+      <!-- Urgence + Date sortie -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>
+            <lucide-icon name="alert-triangle" [size]="14"></lucide-icon>
+            Niveau d'urgence
+          </label>
+          <select [(ngModel)]="urgence">
+            <option value="normale">Normale</option>
+            <option value="urgente">Urgente</option>
+            <option value="critique">Critique</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>
+            <lucide-icon name="calendar" [size]="14"></lucide-icon>
+            Date de sortie prévue
+          </label>
+          <input type="date" [(ngModel)]="dateSortiePrevue" [min]="getMinDateSortie()">
+        </div>
+      </div>
+
+      <!-- Diagnostic -->
+      <div class="form-group">
+        <label>
+          <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+          Diagnostic principal
+        </label>
+        <textarea [(ngModel)]="diagnosticPrincipal" rows="2" 
+                  placeholder="Diagnostic justifiant l'hospitalisation..."></textarea>
+      </div>
+
+      <!-- Soins complémentaires -->
+      <div class="section-soins">
+        <app-soins-complementaires 
+          [soins]="soinsComplementaires"
+          (soinsChange)="onSoinsChange($event)">
+        </app-soins-complementaires>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label>
+          <lucide-icon name="file-text" [size]="14"></lucide-icon>
+          Notes complémentaires
+        </label>
+        <textarea [(ngModel)]="notes" rows="2" 
+                  placeholder="Instructions particulières pour l'équipe soignante..."></textarea>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 2: EXAMENS -->
+    <div class="etape-panel" *ngIf="etapeActuelle === 'examens'">
+      <h3 class="etape-title">
+        <lucide-icon name="test-tube" [size]="18"></lucide-icon>
+        Prescription d'examens
+      </h3>
+      <p class="etape-description">Prescrivez les examens nécessaires pendant l'hospitalisation</p>
+      
+      <!-- Examens déjà prescrits lors de la consultation -->
+      <div class="prescriptions-existantes" *ngIf="examensConsultation.length > 0">
+        <div class="prescriptions-header">
+          <lucide-icon name="clipboard-list" [size]="16"></lucide-icon>
+          <span>Examens prescrits lors de la consultation</span>
+        </div>
+        <div class="prescriptions-list">
+          <div class="prescription-item" *ngFor="let exam of examensConsultation">
+            <div class="prescription-info">
+              <span class="prescription-name">{{ exam.nomExamen }}</span>
+              <span class="prescription-type">{{ exam.categorie || exam.specialite || exam.typeExamen }}</span>
+            </div>
+            <span class="badge" [class.urgente]="exam.urgence">
+              {{ exam.urgence ? 'Urgent' : 'Normal' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <app-prescription-examens
+        [examens]="examens"
+        (examensChange)="onExamensChange($event)">
+      </app-prescription-examens>
+    </div>
+
+    <!-- ÉTAPE 3: MÉDICAMENTS -->
+    <div class="etape-panel" *ngIf="etapeActuelle === 'medicaments'">
+      <h3 class="etape-title">
+        <lucide-icon name="pill" [size]="18"></lucide-icon>
+        Prescription de médicaments
+      </h3>
+      <p class="etape-description">Prescrivez les médicaments pour le traitement hospitalier</p>
+      
+      <!-- Médicaments déjà prescrits lors de la consultation -->
+      <div class="prescriptions-existantes" *ngIf="medicamentsConsultation.length > 0">
+        <div class="prescriptions-header">
+          <lucide-icon name="clipboard-list" [size]="16"></lucide-icon>
+          <span>Médicaments prescrits lors de la consultation</span>
+        </div>
+        <div class="prescriptions-list">
+          <div class="prescription-item" *ngFor="let med of medicamentsConsultation">
+            <div class="prescription-info">
+              <span class="prescription-name">{{ med.nomMedicament }}</span>
+              <span class="prescription-details" *ngIf="med.dosage || med.posologie">
+                {{ med.dosage }} {{ med.posologie ? '- ' + med.posologie : '' }}
+              </span>
+            </div>
+            <span class="prescription-duree" *ngIf="med.duree">{{ med.duree }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <app-prescription-medicaments
+        [medicaments]="medicaments"
+        (medicamentsChange)="onMedicamentsChange($event)">
+      </app-prescription-medicaments>
+    </div>
+  </div>
+
+  <!-- Footer avec navigation -->
+  <div class="panel-footer" *ngIf="!success">
+    <button type="button" class="btn btn-secondary" (click)="cancel()">
+      Annuler
+    </button>
+    
+    <div class="navigation-buttons">
+      <button type="button" class="btn btn-outline" 
+              (click)="previousStep()" 
+              *ngIf="!isFirstStep">
+        <lucide-icon name="arrow-left" [size]="16"></lucide-icon>
+        Précédent
+      </button>
+      
+      <button type="button" class="btn btn-primary" 
+              (click)="nextStep()" 
+              *ngIf="!isLastStep"
+              [disabled]="!canProceed">
+        Suivant
+        <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
+      </button>
+      
+      <button type="button" class="btn btn-success" 
+              (click)="submit()" 
+              *ngIf="isLastStep"
+              [disabled]="!canProceed || isSubmitting">
+        <lucide-icon name="loader-2" [size]="16" class="spinning" *ngIf="isSubmitting"></lucide-icon>
+        <lucide-icon name="check-circle-2" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+        {{ isSubmitting ? 'En cours...' : 'Valider l\'hospitalisation' }}
+      </button>
+    </div>
+  </div>
+</div>

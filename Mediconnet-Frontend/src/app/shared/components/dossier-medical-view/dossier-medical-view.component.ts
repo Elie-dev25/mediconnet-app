@@ -4,7 +4,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { ConsultationCompleteService, ConsultationEnCoursDto } from '../../../services/consultation-complete.service';
 
 export type ViewMode = 'patient' | 'medecin';
-export type TabType = 'resume' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents';
+export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents';
 
 export interface DossierPatientInfo {
   idUser?: number;
@@ -15,6 +15,38 @@ export interface DossierPatientInfo {
   naissance?: string;
   sexe?: string;
   age?: number;
+  // Informations personnelles
+  telephone?: string;
+  email?: string;
+  adresse?: string;
+  nationalite?: string;
+  regionOrigine?: string;
+  situationMatrimoniale?: string;
+  profession?: string;
+  ethnie?: string;
+  nbEnfants?: number;
+  // Informations médicales
+  maladiesChroniques?: string;
+  allergiesConnues?: boolean;
+  allergiesDetails?: string;
+  antecedentsFamiliaux?: boolean;
+  antecedentsFamiliauxDetails?: string;
+  operationsChirurgicales?: boolean;
+  operationsDetails?: string;
+  // Habitudes de vie
+  consommationAlcool?: boolean;
+  frequenceAlcool?: string;
+  tabagisme?: boolean;
+  activitePhysique?: boolean;
+  // Contact d'urgence
+  personneContact?: string;
+  numeroContact?: string;
+  // Assurance
+  nomAssurance?: string;
+  numeroCarteAssurance?: string;
+  couvertureAssurance?: number;
+  dateDebutValidite?: string;
+  dateFinValidite?: string;
 }
 
 export interface DossierStats {
@@ -109,6 +141,7 @@ export class DossierMedicalViewComponent {
 
   @Output() retry = new EventEmitter<void>();
   @Output() startConsultation = new EventEmitter<void>();
+  @Output() viewConsultation = new EventEmitter<number>();
 
   activeTab: TabType = 'resume';
 
@@ -275,26 +308,10 @@ export class DossierMedicalViewComponent {
     }
   }
 
-  // Afficher les détails d'une consultation
+  // Afficher les détails d'une consultation - émet un événement pour navigation
   viewConsultationDetails(consultation: ConsultationItem): void {
     if (!consultation.idConsultation) return;
-
-    this.showConsultationModal = true;
-    this.isLoadingConsultation = true;
-    this.consultationError = null;
-    this.selectedConsultation = null;
-
-    this.consultationService.getConsultation(consultation.idConsultation).subscribe({
-      next: (data: ConsultationEnCoursDto) => {
-        this.selectedConsultation = data;
-        this.isLoadingConsultation = false;
-      },
-      error: (err: any) => {
-        console.error('Erreur chargement consultation:', err);
-        this.consultationError = 'Impossible de charger les détails';
-        this.isLoadingConsultation = false;
-      }
-    });
+    this.viewConsultation.emit(consultation.idConsultation);
   }
 
   closeConsultationModal(): void {
