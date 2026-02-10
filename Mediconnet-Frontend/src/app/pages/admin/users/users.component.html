@@ -85,7 +85,7 @@
                 {{ getRoleLabel(user.role) }}
               </span>
             </td>
-            <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+            <td>{{ user.createdAt ? (user.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
             <td class="actions">
               <button class="btn-icon" title="Voir la fiche" (click)="openUserSidebar(user)">
                 <lucide-icon name="eye" [size]="16"></lucide-icon>
@@ -374,11 +374,11 @@
           </div>
           <div class="info-item">
             <label>Date de création</label>
-            <span>{{ selectedUserDetails.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span>{{ selectedUserDetails.createdAt ? (selectedUserDetails.createdAt | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
           </div>
           <div class="info-item" *ngIf="selectedUserDetails.updatedAt">
             <label>Dernière mise à jour</label>
-            <span>{{ selectedUserDetails.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span>{{ selectedUserDetails.updatedAt ? (selectedUserDetails.updatedAt | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
           </div>
         </div>
       </div>
@@ -404,7 +404,7 @@
             </div>
             <div class="info-item" *ngIf="selectedUserDetails.infirmier.dateNominationMajor">
               <label>Date de nomination</label>
-              <span>{{ selectedUserDetails.infirmier.dateNominationMajor | date:'dd/MM/yyyy' }}</span>
+              <span>{{ selectedUserDetails.infirmier.dateNominationMajor ? (selectedUserDetails.infirmier.dateNominationMajor | date:'dd/MM/yyyy') : '-' }}</span>
             </div>
             <div class="info-item full-width" *ngIf="selectedUserDetails.infirmier.accreditations">
               <label>Accréditations</label>

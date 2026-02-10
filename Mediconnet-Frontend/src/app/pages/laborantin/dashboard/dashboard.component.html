@@ -18,34 +18,34 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon analyses">
-          <lucide-icon name="flask-conical" [size]="24"></lucide-icon>
+          <lucide-icon name="clock" [size]="24"></lucide-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ stats.analysesEnCours }}</span>
-          <span class="stat-label">Analyses en cours</span>
+          <span class="stat-value">{{ stats.examensEnAttente }}</span>
+          <span class="stat-label">Examens en attente</span>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon resultats">
-          <lucide-icon name="file-check" [size]="24"></lucide-icon>
+          <lucide-icon name="flask-conical" [size]="24"></lucide-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ stats.resultatsAValider }}</span>
-          <span class="stat-label">Résultats à valider</span>
+          <span class="stat-value">{{ stats.examensEnCours }}</span>
+          <span class="stat-label">En cours</span>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon examens">
-          <lucide-icon name="microscope" [size]="24"></lucide-icon>
+          <lucide-icon name="check-circle" [size]="24"></lucide-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ stats.examensJour }}</span>
-          <span class="stat-label">Examens aujourd'hui</span>
+          <span class="stat-value">{{ stats.examensTerminesAujourdhui }}</span>
+          <span class="stat-label">Terminés aujourd'hui</span>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card urgences-card" [class.has-urgences]="stats.urgences > 0">
         <div class="stat-icon urgences">
-          <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+          <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
         </div>
         <div class="stat-info">
           <span class="stat-value">{{ stats.urgences }}</span>
@@ -56,50 +56,105 @@
 
     <!-- Content Sections -->
     <div class="content-grid">
-      <!-- Analyses en cours -->
-      <div class="content-card">
+      <!-- Examens en attente -->
+      <div class="content-card examens-card">
         <div class="card-header">
-          <h3><lucide-icon name="flask-conical" [size]="20"></lucide-icon> Analyses en cours</h3>
+          <h3><lucide-icon name="clipboard-list" [size]="20"></lucide-icon> Examens en attente</h3>
+          <a routerLink="/laborantin/examens" class="view-all-link">
+            Voir tout <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
+          </a>
         </div>
         <div class="card-body">
-          <div class="empty-state" *ngIf="!isLoading && analysesRecentes.length === 0">
-            <lucide-icon name="inbox" [size]="48"></lucide-icon>
-            <p>Aucune analyse en cours</p>
-          </div>
-          <div class="loading-state" *ngIf="isLoading">
+          <div class="loading-state" *ngIf="isLoadingExamens">
             <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
             <p>Chargement...</p>
+          </div>
+          
+          <div class="empty-state" *ngIf="!isLoadingExamens && examensEnAttente.length === 0">
+            <lucide-icon name="inbox" [size]="48"></lucide-icon>
+            <p>Aucun examen en attente</p>
+          </div>
+
+          <div class="examens-list" *ngIf="!isLoadingExamens && examensEnAttente.length > 0">
+            <div class="examen-item" *ngFor="let examen of examensEnAttente" 
+                 [class.urgent]="examen.urgence">
+              <div class="examen-header">
+                <div class="examen-type">
+                  <span class="urgence-badge" *ngIf="examen.urgence">
+                    <lucide-icon name="alert-triangle" [size]="12"></lucide-icon> URGENT
+                  </span>
+                  <span class="examen-name">{{ examen.nomExamen || 'Examen' }}</span>
+                </div>
+                <span class="examen-status" [ngClass]="getStatutClass(examen.statut)">
+                  {{ getStatutLabel(examen.statut) }}
+                </span>
+              </div>
+              <div class="examen-details">
+                <div class="detail-item">
+                  <lucide-icon name="user" [size]="14"></lucide-icon>
+                  <span>{{ formatPatientName(examen) }}</span>
+                </div>
+                <div class="detail-item" *ngIf="examen.patientNumeroDossier">
+                  <lucide-icon name="folder" [size]="14"></lucide-icon>
+                  <span>{{ examen.patientNumeroDossier }}</span>
+                </div>
+                <div class="detail-item">
+                  <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                  <span>{{ formatMedecinName(examen) }}</span>
+                </div>
+                <div class="detail-item" *ngIf="examen.dateDemande">
+                  <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                  <span>{{ examen.dateDemande | date:'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
+              <div class="examen-actions">
+                <button class="btn-action btn-details" routerLink="/laborantin/examens" 
+                        [queryParams]="{id: examen.idBulletinExamen}">
+                  <lucide-icon name="eye" [size]="16"></lucide-icon>
+                  Détails
+                </button>
+                <button class="btn-action btn-result" routerLink="/laborantin/examens"
+                        [queryParams]="{id: examen.idBulletinExamen, action: 'resultat'}">
+                  <lucide-icon name="file-plus" [size]="16"></lucide-icon>
+                  Résultat
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Fonctionnalités à venir -->
-      <div class="content-card">
+      <!-- Raccourcis rapides -->
+      <div class="content-card shortcuts-card">
         <div class="card-header">
-          <h3><lucide-icon name="sparkles" [size]="20"></lucide-icon> Fonctionnalités à venir</h3>
+          <h3><lucide-icon name="zap" [size]="20"></lucide-icon> Accès rapides</h3>
         </div>
         <div class="card-body">
-          <div class="feature-list">
-            <div class="feature-item">
-              <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-              <span>Gestion des analyses de laboratoire</span>
-            </div>
-            <div class="feature-item">
-              <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-              <span>Validation des résultats</span>
-            </div>
-            <div class="feature-item">
-              <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-              <span>Suivi des prélèvements</span>
-            </div>
-            <div class="feature-item">
-              <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-              <span>Gestion des urgences</span>
-            </div>
-            <div class="feature-item">
-              <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-              <span>Historique des examens</span>
-            </div>
+          <div class="shortcuts-grid">
+            <a routerLink="/laborantin/examens" [queryParams]="{statut: 'prescrit'}" class="shortcut-item">
+              <div class="shortcut-icon pending">
+                <lucide-icon name="clock" [size]="24"></lucide-icon>
+              </div>
+              <span>En attente</span>
+            </a>
+            <a routerLink="/laborantin/examens" [queryParams]="{statut: 'en_cours'}" class="shortcut-item">
+              <div class="shortcut-icon progress">
+                <lucide-icon name="flask-conical" [size]="24"></lucide-icon>
+              </div>
+              <span>En cours</span>
+            </a>
+            <a routerLink="/laborantin/examens" [queryParams]="{urgence: true}" class="shortcut-item">
+              <div class="shortcut-icon urgent">
+                <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
+              </div>
+              <span>Urgences</span>
+            </a>
+            <a routerLink="/laborantin/examens" [queryParams]="{statut: 'termine'}" class="shortcut-item">
+              <div class="shortcut-icon done">
+                <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+              </div>
+              <span>Terminés</span>
+            </a>
           </div>
         </div>
       </div>

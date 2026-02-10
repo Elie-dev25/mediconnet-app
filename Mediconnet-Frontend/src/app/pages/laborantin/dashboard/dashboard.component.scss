@@ -273,6 +273,280 @@
   }
 }
 
+// Urgences card highlight
+.stat-card.urgences-card.has-urgences {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  
+  .stat-icon.urgences {
+    background: #dc2626;
+    color: white;
+  }
+}
+
+// Card header with link
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .view-all-link {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #1d4ed8;
+    }
+  }
+}
+
+// Examens List
+.examens-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  
+  @media (min-width: 768px) {
+    gap: 1rem;
+    max-height: 500px;
+  }
+}
+
+.examen-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.875rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+  
+  @media (min-width: 768px) {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  
+  &:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  &.urgent {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff 100%);
+    border-color: #fecaca;
+    
+    &:hover {
+      border-color: #f87171;
+    }
+  }
+  
+  .examen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+    
+    .examen-type {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      
+      .urgence-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #dc2626;
+        background: #fee2e2;
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        width: fit-content;
+      }
+      
+      .examen-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.9rem;
+        
+        @media (min-width: 768px) {
+          font-size: 1rem;
+        }
+      }
+    }
+    
+    .examen-status {
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+      
+      &.status-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      &.status-progress {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      &.status-done {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      &.status-cancelled {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+    }
+  }
+  
+  .examen-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+    
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: #64748b;
+      
+      @media (min-width: 768px) {
+        font-size: 0.8rem;
+      }
+      
+      lucide-icon {
+        flex-shrink: 0;
+        color: #94a3b8;
+      }
+    }
+  }
+  
+  .examen-actions {
+    display: flex;
+    gap: 0.5rem;
+    
+    .btn-action {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.75rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      
+      @media (min-width: 768px) {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
+      
+      &.btn-details {
+        background: #f1f5f9;
+        color: #475569;
+        
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+      
+      &.btn-result {
+        background: #2563eb;
+        color: white;
+        
+        &:hover {
+          background: #1d4ed8;
+        }
+      }
+    }
+  }
+}
+
+// Shortcuts Grid
+.shortcuts-card {
+  .card-body {
+    min-height: auto;
+  }
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  
+  @media (min-width: 768px) {
+    gap: 1rem;
+  }
+}
+
+.shortcut-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  
+  &:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    transform: translateY(-2px);
+  }
+  
+  .shortcut-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    &.pending {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    
+    &.progress {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+    
+    &.urgent {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    &.done {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+  }
+  
+  span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #475569;
+  }
+}
+
 // Responsive - Additional mobile optimizations
 @media (max-width: 479px) {
   .dashboard-container {
@@ -300,6 +574,31 @@
       .stat-label {
         font-size: 0.65rem;
       }
+    }
+  }
+  
+  .examen-item {
+    padding: 0.75rem;
+    
+    .examen-actions {
+      flex-direction: column;
+      
+      .btn-action {
+        justify-content: center;
+      }
+    }
+  }
+  
+  .shortcut-item {
+    padding: 0.75rem;
+    
+    .shortcut-icon {
+      width: 40px;
+      height: 40px;
+    }
+    
+    span {
+      font-size: 0.7rem;
     }
   }
 }

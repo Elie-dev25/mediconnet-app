@@ -36,6 +36,7 @@ export interface SoinDetail {
 
 export interface ExamenDetail {
   idExamen: number;
+  idBulletinExamen?: number;
   typeExamen: string;
   description?: string;
   datePrescription: string;
@@ -96,11 +97,12 @@ export interface HospitalisationDetails {
 }
 
 import { SoinExecutionsPopupComponent } from '../soin-executions-popup/soin-executions-popup.component';
+import { ResultatExamenSidebarComponent } from '../resultat-examen-sidebar/resultat-examen-sidebar.component';
 
 @Component({
   selector: 'app-hospitalisation-details-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SoinExecutionsPopupComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, SoinExecutionsPopupComponent, ResultatExamenSidebarComponent],
   templateUrl: './hospitalisation-details-panel.component.html',
   styleUrls: ['./hospitalisation-details-panel.component.scss']
 })
@@ -134,6 +136,10 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
   enregistrementSuccess = false;
   enregistrementError: string | null = null;
   enregistrementResult: { moment?: string; heureExecution?: string; executant?: string; nbExecutionsRestantes?: number } | null = null;
+
+  // Sidebar résultat examen
+  showResultatSidebar = false;
+  selectedExamenId: number | null = null;
 
   private apiUrl = environment.apiUrl;
 
@@ -236,7 +242,8 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
   }
 
   get canAttribuerLit(): boolean {
-    return this.isMajor && this.hospitalisation?.statut === 'EN_ATTENTE';
+    const statut = this.hospitalisation?.statut?.toLowerCase();
+    return this.isMajor && (statut === 'en_attente' || this.hospitalisation?.statut === 'EN_ATTENTE');
   }
 
   formatDate(dateStr?: string): string {
@@ -258,19 +265,21 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
   }
 
   getStatutLabel(statut: string): string {
-    switch (statut) {
-      case 'EN_ATTENTE': return 'En attente de lit';
-      case 'EN_COURS': return 'Hospitalisé';
-      case 'TERMINE': return 'Terminé';
+    const s = statut?.toLowerCase();
+    switch (s) {
+      case 'en_attente': return 'En attente de lit';
+      case 'en_cours': return 'Hospitalisé';
+      case 'termine': return 'Terminé';
       default: return statut;
     }
   }
 
   getStatutClass(statut: string): string {
-    switch (statut) {
-      case 'EN_ATTENTE': return 'status-warning';
-      case 'EN_COURS': return 'status-success';
-      case 'TERMINE': return 'status-neutral';
+    const s = statut?.toLowerCase();
+    switch (s) {
+      case 'en_attente': return 'status-warning';
+      case 'en_cours': return 'status-success';
+      case 'termine': return 'status-neutral';
       default: return '';
     }
   }
@@ -450,5 +459,19 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
       case 'nuit': return 'de nuit';
       default: return moment;
     }
+  }
+
+  // Méthodes pour la sidebar résultat examen
+  openResultatExamen(examen: ExamenDetail): void {
+    const id = examen.idBulletinExamen || examen.idExamen;
+    if (id) {
+      this.selectedExamenId = id;
+      this.showResultatSidebar = true;
+    }
+  }
+
+  closeResultatSidebar(): void {
+    this.showResultatSidebar = false;
+    this.selectedExamenId = null;
   }
 }

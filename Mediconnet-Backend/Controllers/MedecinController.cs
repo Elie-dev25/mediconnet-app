@@ -967,15 +967,16 @@ public class MedecinController : BaseApiController
                 .Select(b => new
                 {
                     idExamen = b.IdBulletinExamen,
-                    typeExamen = b.Examen != null ? b.Examen.NomExamen : "Examen",
-                    description = b.Instructions,
+                    idBulletinExamen = b.IdBulletinExamen,
+                    typeExamen = b.Examen != null ? (b.Examen.Specialite != null ? b.Examen.Specialite.Nom : "Examen") : "Examen",
+                    description = b.Examen != null ? b.Examen.NomExamen : (b.Instructions ?? "Examen prescrit"),
                     datePrescription = b.DateDemande,
                     statut = b.Statut ?? "prescrit",
                     urgence = b.Urgence,
                     laboratoire = b.Laboratoire != null ? b.Laboratoire.NomLabo : null,
                     resultat = b.ResultatTexte,
                     dateResultat = b.DateResultat,
-                    hasResultat = b.ResultatTexte != null || b.ResultatFichier != null
+                    hasResultat = b.DateResultat != null || !string.IsNullOrEmpty(b.ResultatTexte)
                 })
                 .ToListAsync();
 

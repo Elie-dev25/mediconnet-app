@@ -40,9 +40,12 @@
           </span>
         </div>
       </div>
-      <button *ngIf="showStartConsultation && consultationId" class="btn-start-consultation" (click)="onStartConsultation()">
-        <lucide-icon name="stethoscope" [size]="20"></lucide-icon>
-        Commencer la consultation
+      <button *ngIf="showStartConsultation && consultationId" 
+              class="btn-start-consultation" 
+              [class.resume]="isConsultationEnPause || isConsultationEnCours"
+              (click)="onStartConsultation()">
+        <lucide-icon [name]="consultationButtonIcon" [size]="20"></lucide-icon>
+        {{ consultationButtonLabel }}
       </button>
     </div>
 
@@ -439,6 +442,13 @@
                 <lucide-icon name="alert-circle" [size]="14"></lucide-icon>
                 Urgent
               </span>
+              <button 
+                class="btn-consulter" 
+                *ngIf="e.statut === 'termine'"
+                (click)="openResultatExamen(e.idExamen)">
+                <lucide-icon name="eye" [size]="14"></lucide-icon>
+                Consulter
+              </button>
             </div>
           </div>
         </div>
@@ -498,3 +508,9 @@
   </ng-container>
 </div>
 
+<!-- Sidebar Résultat Examen -->
+<app-resultat-examen-sidebar
+  [isOpen]="showResultatSidebar"
+  [idBulletinExamen]="selectedExamenId"
+  (close)="closeResultatSidebar()">
+</app-resultat-examen-sidebar>

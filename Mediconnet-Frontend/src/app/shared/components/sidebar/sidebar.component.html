@@ -15,6 +15,7 @@
           <!-- Item avec navigation normale -->
           <a *ngIf="!item.action && isImplemented(item)"
              [routerLink]="item.route" 
+             [queryParams]="item.queryParams"
              routerLinkActive="active"
              [routerLinkActiveOptions]="{exact: item.route.endsWith('dashboard')}"
              class="menu-link">

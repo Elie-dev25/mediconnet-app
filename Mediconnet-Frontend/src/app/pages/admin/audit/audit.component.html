@@ -1,0 +1,250 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="audit-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Journal d'audit et traçabilité des actions">
+    </app-welcome-banner>
+
+    <!-- Stats Section -->
+    <section class="stats-section" *ngIf="stats">
+      <div class="stats-cards">
+        <div class="stat-card">
+          <div class="stat-icon total">
+            <lucide-icon name="activity" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ stats.totalLogs }}</span>
+            <span class="stat-text">Total actions (7j)</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon success">
+            <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ stats.totalSuccess }}</span>
+            <span class="stat-text">Réussies</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon error">
+            <lucide-icon name="x-circle" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ stats.totalFailures }}</span>
+            <span class="stat-text">Échecs</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <lucide-icon name="shield-alert" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ stats.authFailures }}</span>
+            <span class="stat-text">Échecs auth</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon sensitive">
+            <lucide-icon name="eye" [size]="24"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ stats.sensitiveAccess }}</span>
+            <span class="stat-text">Accès sensibles</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters Section -->
+    <section class="filters-section">
+      <h2>
+        <lucide-icon name="filter" [size]="20"></lucide-icon>
+        Filtres
+      </h2>
+      
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Action</label>
+          <select [(ngModel)]="filterAction" class="filter-input">
+            <option value="">Toutes les actions</option>
+            <option *ngFor="let action of availableActions" [value]="action">
+              {{ formatAction(action) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Ressource</label>
+          <select [(ngModel)]="filterResource" class="filter-input">
+            <option value="">Toutes les ressources</option>
+            <option *ngFor="let resource of availableResources" [value]="resource">
+              {{ resource }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="filterSuccess" class="filter-input">
+            <option value="">Tous</option>
+            <option value="true">Réussi</option>
+            <option value="false">Échec</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Date début</label>
+          <input type="date" [(ngModel)]="filterDateFrom" class="filter-input">
+        </div>
+
+        <div class="filter-group">
+          <label>Date fin</label>
+          <input type="date" [(ngModel)]="filterDateTo" class="filter-input">
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-apply" (click)="applyFilters()">
+            <lucide-icon name="search" [size]="16"></lucide-icon>
+            Appliquer
+          </button>
+          <button class="btn-reset" (click)="resetFilters()">
+            <lucide-icon name="x" [size]="16"></lucide-icon>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Logs Table -->
+    <section class="logs-section">
+      <div class="section-header">
+        <h2>
+          <lucide-icon name="scroll-text" [size]="20"></lucide-icon>
+          Journal d'audit
+          <span class="count-badge">{{ totalCount }} entrées</span>
+        </h2>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Chargement des logs...</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container" *ngIf="!isLoading && logs.length > 0">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Date/Heure</th>
+              <th>Utilisateur</th>
+              <th>Action</th>
+              <th>Ressource</th>
+              <th>Détails</th>
+              <th>IP</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of logs" [class.row-error]="!log.success">
+              <td class="cell-date">
+                <span class="date-value">{{ formatDate(log.createdAt) }}</span>
+              </td>
+              <td class="cell-user">
+                <div class="user-info">
+                  <lucide-icon name="user" [size]="14"></lucide-icon>
+                  <span>{{ log.userName || 'ID: ' + log.userId }}</span>
+                </div>
+              </td>
+              <td class="cell-action">
+                <div class="action-info">
+                  <lucide-icon [name]="getActionIcon(log.action)" [size]="14"></lucide-icon>
+                  <span class="action-badge" [ngClass]="getActionBadgeClass(log.action, log.success)">
+                    {{ formatAction(log.action) }}
+                  </span>
+                </div>
+              </td>
+              <td class="cell-resource">
+                <span class="resource-type">{{ log.resourceType }}</span>
+                <span class="resource-id" *ngIf="log.resourceId">#{{ log.resourceId }}</span>
+              </td>
+              <td class="cell-details">
+                <span class="details-text" [title]="log.details || ''">
+                  {{ log.details ? (log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details) : '-' }}
+                </span>
+              </td>
+              <td class="cell-ip">
+                <code>{{ log.ipAddress || '-' }}</code>
+              </td>
+              <td class="cell-status">
+                <span class="status-badge" [ngClass]="log.success ? 'status-success' : 'status-error'">
+                  <lucide-icon [name]="log.success ? 'check' : 'x'" [size]="12"></lucide-icon>
+                  {{ log.success ? 'OK' : 'Échec' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading && logs.length === 0">
+        <lucide-icon name="file-search" [size]="48"></lucide-icon>
+        <h3>Aucun log trouvé</h3>
+        <p>Modifiez vos filtres pour voir d'autres résultats.</p>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button 
+          class="page-btn" 
+          (click)="goToPage(1)" 
+          [disabled]="currentPage === 1">
+          <lucide-icon name="chevrons-left" [size]="16"></lucide-icon>
+        </button>
+        <button 
+          class="page-btn" 
+          (click)="goToPage(currentPage - 1)" 
+          [disabled]="currentPage === 1">
+          <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+        </button>
+
+        <button 
+          *ngFor="let page of visiblePages"
+          class="page-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+
+        <button 
+          class="page-btn" 
+          (click)="goToPage(currentPage + 1)" 
+          [disabled]="currentPage === totalPages">
+          <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+        </button>
+        <button 
+          class="page-btn" 
+          (click)="goToPage(totalPages)" 
+          [disabled]="currentPage === totalPages">
+          <lucide-icon name="chevrons-right" [size]="16"></lucide-icon>
+        </button>
+
+        <span class="page-info">
+          Page {{ currentPage }} sur {{ totalPages }}
+        </span>
+      </div>
+    </section>
+  </div>
+
+</app-dashboard-layout>

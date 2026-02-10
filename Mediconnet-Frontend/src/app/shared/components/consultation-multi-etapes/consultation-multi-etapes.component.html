@@ -1149,6 +1149,13 @@
       Annuler
     </button>
     
+    <!-- Bouton Pause -->
+    <button type="button" class="btn btn-warning btn-pause" (click)="pauserConsultation()" 
+            [disabled]="isSaving || isPausing" title="Mettre en pause et sauvegarder">
+      <lucide-icon [name]="isPausing ? 'loader-2' : 'pause'" [size]="16" [class.spin]="isPausing"></lucide-icon>
+      <span class="pause-label">Pause</span>
+    </button>
+    
     <div class="footer-right">
       <button type="button" class="btn btn-primary" (click)="nextEtape()" 
               *ngIf="etapeActuelle !== 'suivi'" [disabled]="!canGoNext() || isSaving">

@@ -48,9 +48,9 @@ export class FirstLoginComponent implements OnInit {
     // Ce composant est uniquement pour les patients créés à l'accueil
     // (profileCompleted = true, mustChangePassword = true)
     if (user.profileCompleted !== true || user.mustChangePassword !== true) {
-      // Si c'est un patient auto-inscrit, rediriger vers complete-profile
+      // Si c'est un patient auto-inscrit, rediriger vers register
       if (user.profileCompleted !== true) {
-        this.router.navigate(['/complete-profile']);
+        this.router.navigate(['/register']);
       } else {
         // Sinon, rediriger vers le dashboard
         this.router.navigate(['/patient/dashboard']);

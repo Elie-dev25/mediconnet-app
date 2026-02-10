@@ -34,7 +34,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=mediconnet-db;Port=3306;Database=mediconnect;User=app;Password=app;
+      - ConnectionStrings__DefaultConnection=Server=mediconnet-db;Port=3306;Database=mediconnect;User=app;Password=app;OldGuids=true;
       - Jwt__Secret=your-super-secret-key-minimum-32-characters-long-!!!
       - Jwt__Issuer=MediConnect
       - Jwt__Audience=MediConnectUsers
@@ -48,6 +48,10 @@ services:
       - EmailSettings__DevMode=false
       - AppSettings__FrontendUrl=http://0.0.0.0:4200
       - AppSettings__ApiUrl=http://0.0.0.0:8080
+      - DocumentStorage__RootPath=/storage/mediConnect
+      - DocumentStorage__MaxFileSizeBytes=52428800
+    volumes:
+      - ./storage:/storage/mediConnect
     depends_on:
       mediconnet-db:
         condition: service_healthy
@@ -104,3 +108,4 @@ networks:
 
 volumes:
   mysql_data:
+  document_storage:

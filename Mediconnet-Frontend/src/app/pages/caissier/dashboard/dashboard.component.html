@@ -139,7 +139,7 @@
                         <div class="invoice-patient">{{ facture.patientNom }}</div>
                         <div class="invoice-meta">
                           <span class="dossier">{{ facture.numeroDossier || 'N/A' }}</span>
-                          <span class="date">{{ facture.dateCreation | date:'dd/MM HH:mm' }}</span>
+                          <span class="date">{{ facture.dateCreation ? (facture.dateCreation | date:'dd/MM HH:mm') : '-' }}</span>
                         </div>
                       </div>
                       <div class="invoice-right">
@@ -189,7 +189,7 @@
                         <input type="checkbox" [checked]="isFactureSelected(facture.idFacture)">
                         <div class="invoice-info">
                           <span class="invoice-num">{{ facture.numeroFacture }}</span>
-                          <span class="invoice-date">{{ facture.dateCreation | date:'dd/MM/yyyy' }}</span>
+                          <span class="invoice-date">{{ facture.dateCreation ? (facture.dateCreation | date:'dd/MM/yyyy') : '-' }}</span>
                         </div>
                         <span class="invoice-amount">{{ formatMontant(facture.montantRestant) }}</span>
                       </div>
@@ -319,7 +319,7 @@
                   <tbody>
                     @for (trans of transactionsJour.slice(0, 10); track trans.idTransaction) {
                       <tr>
-                        <td>{{ trans.dateTransaction | date:'HH:mm' }}</td>
+                        <td>{{ trans.dateTransaction ? (trans.dateTransaction | date:'HH:mm') : '-' }}</td>
                         <td class="mono">{{ trans.numeroTransaction }}</td>
                         <td>{{ trans.patientNom }}</td>
                         <td>{{ getModePaiementLabel(trans.modePaiement) }}</td>
@@ -352,7 +352,7 @@
               <div class="session-info">
                 <div class="session-row">
                   <span>Ouverture</span>
-                  <span>{{ sessionActive.dateOuverture | date:'HH:mm' }}</span>
+                  <span>{{ sessionActive.dateOuverture ? (sessionActive.dateOuverture | date:'HH:mm') : '-' }}</span>
                 </div>
                 <div class="session-row">
                   <span>Fond de caisse</span>

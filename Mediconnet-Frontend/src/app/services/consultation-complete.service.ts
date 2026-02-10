@@ -589,4 +589,36 @@ export class ConsultationCompleteService {
   deleteOrientation(idOrientation: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/orientations/${idOrientation}`);
   }
+
+  // ==================== GESTION DU STATUT ====================
+
+  /**
+   * Annuler une consultation
+   */
+  annulerConsultation(idConsultation: number, motif: string): Observable<{ message: string; idConsultation: number; motif: string }> {
+    return this.http.post<{ message: string; idConsultation: number; motif: string }>(
+      `${this.apiUrl}/${idConsultation}/annuler`,
+      { motif }
+    );
+  }
+
+  /**
+   * Mettre une consultation en pause
+   */
+  pauseConsultation(idConsultation: number): Observable<{ message: string; idConsultation: number }> {
+    return this.http.post<{ message: string; idConsultation: number }>(
+      `${this.apiUrl}/${idConsultation}/pause`,
+      {}
+    );
+  }
+
+  /**
+   * Reprendre une consultation en pause
+   */
+  reprendreConsultation(idConsultation: number): Observable<{ message: string; idConsultation: number }> {
+    return this.http.post<{ message: string; idConsultation: number }>(
+      `${this.apiUrl}/${idConsultation}/reprendre`,
+      {}
+    );
+  }
 }

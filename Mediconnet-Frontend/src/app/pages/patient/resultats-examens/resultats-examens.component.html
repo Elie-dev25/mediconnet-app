@@ -1,0 +1,106 @@
+<app-dashboard-layout [menuItems]="menuItems" role="patient">
+  <div class="resultats-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1>
+          <lucide-icon name="file-text" [size]="28"></lucide-icon>
+          Mes Résultats d'Examens
+        </h1>
+        <p class="subtitle">Consultez et téléchargez vos résultats d'examens médicaux</p>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="48" class="spinner"></lucide-icon>
+      <p>Chargement de vos résultats...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-state" *ngIf="errorMessage && !isLoading">
+      <lucide-icon name="alert-circle" [size]="48"></lucide-icon>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="loadResultats()">Réessayer</button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading && !errorMessage && examens.length === 0">
+      <lucide-icon name="file-x" [size]="64"></lucide-icon>
+      <h3>Aucun résultat disponible</h3>
+      <p>Vos résultats d'examens apparaîtront ici une fois disponibles.</p>
+    </div>
+
+    <!-- Results List -->
+    <div class="resultats-container" *ngIf="!isLoading && !errorMessage && examens.length > 0">
+      <div class="resultats-count">
+        <span>{{ totalCount }} résultat(s) disponible(s)</span>
+      </div>
+
+      <div class="resultats-list">
+        <div class="resultat-card" *ngFor="let examen of examens" (click)="openResultat(examen)">
+          <div class="card-icon">
+            <lucide-icon name="flask-conical" [size]="24"></lucide-icon>
+          </div>
+          <div class="card-content">
+            <h3>{{ examen.nomExamen }}</h3>
+            <div class="card-meta">
+              <span class="meta-item" *ngIf="examen.specialite">
+                <lucide-icon name="tag" [size]="14"></lucide-icon>
+                {{ examen.specialite }}
+              </span>
+              <span class="meta-item" *ngIf="examen.nomLabo">
+                <lucide-icon name="building-2" [size]="14"></lucide-icon>
+                {{ examen.nomLabo }}
+              </span>
+              <span class="meta-item">
+                <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                {{ formatDate(examen.dateResultat) }}
+              </span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <span class="has-documents" *ngIf="examen.hasDocuments">
+              <lucide-icon name="paperclip" [size]="16"></lucide-icon>
+              Documents
+            </span>
+            <button class="btn-consulter">
+              <lucide-icon name="eye" [size]="16"></lucide-icon>
+              Consulter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button 
+          class="page-btn" 
+          [disabled]="currentPage === 1"
+          (click)="goToPage(currentPage - 1)">
+          <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+        </button>
+        <button 
+          *ngFor="let page of pages"
+          class="page-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        <button 
+          class="page-btn" 
+          [disabled]="currentPage === totalPages"
+          (click)="goToPage(currentPage + 1)">
+          <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>
+
+<!-- Sidebar Résultat -->
+<app-resultat-examen-sidebar
+  [isOpen]="showResultatSidebar"
+  [idBulletinExamen]="selectedExamenId"
+  (close)="closeResultatSidebar()">
+</app-resultat-examen-sidebar>

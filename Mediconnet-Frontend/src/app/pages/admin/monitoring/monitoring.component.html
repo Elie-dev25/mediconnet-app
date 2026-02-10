@@ -1,0 +1,224 @@
+<app-dashboard-layout 
+  [sidebarTitle]="sidebarTitle" 
+  [menuItems]="menuItems">
+  
+  <div class="monitoring-content">
+    <!-- Welcome Banner -->
+    <app-welcome-banner
+      [userName]="userName"
+      [userRole]="userRole"
+      subtitle="Surveillance du système et gestion des alertes">
+    </app-welcome-banner>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="monitoring-grid">
+      <!-- Section: État du Stockage -->
+      <section class="storage-section">
+        <h2>
+          <lucide-icon name="hard-drive" [size]="20"></lucide-icon>
+          État du Stockage
+        </h2>
+        
+        <div class="storage-cards" *ngIf="storageHealth">
+          <div class="storage-card" [ngClass]="getStorageStatusClass()">
+            <div class="storage-header">
+              <span class="storage-label">Espace Disque</span>
+              <span class="storage-status">{{ getStorageStatusLabel() }}</span>
+            </div>
+            <div class="storage-progress">
+              <div class="progress-bar" [style.width.%]="storageHealth.diskUsagePercent"></div>
+            </div>
+            <div class="storage-details">
+              <span>{{ storageHealth.diskUsagePercent | number:'1.0-0' }}% utilisé</span>
+              <span>{{ formatSize(storageHealth.diskFreeGb) }} libre / {{ formatSize(storageHealth.diskTotalGb) }}</span>
+            </div>
+          </div>
+
+          <div class="storage-card">
+            <div class="storage-header">
+              <span class="storage-label">Documents</span>
+              <lucide-icon name="file-text" [size]="18"></lucide-icon>
+            </div>
+            <div class="storage-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ storageHealth.totalDocuments }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value text-success">{{ storageHealth.documentsActifs }}</span>
+                <span class="stat-label">Actifs</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value text-warning">{{ storageHealth.documentsArchives }}</span>
+                <span class="stat-label">Archivés</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value text-error">{{ storageHealth.documentsQuarantaine }}</span>
+                <span class="stat-label">Quarantaine</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="storage-card">
+            <div class="storage-header">
+              <span class="storage-label">Intégrité</span>
+              <lucide-icon name="shield-check" [size]="18"></lucide-icon>
+            </div>
+            <div class="integrity-status" [ngClass]="'integrity-' + storageHealth.integrityStatus">
+              <lucide-icon 
+                [name]="storageHealth.integrityStatus === 'ok' ? 'check-circle' : 'alert-triangle'" 
+                [size]="32">
+              </lucide-icon>
+              <span>{{ storageHealth.integrityStatus === 'ok' ? 'Tous les fichiers sont intègres' : 'Problèmes détectés' }}</span>
+            </div>
+            <div class="last-check" *ngIf="storageHealth.lastVerificationDate">
+              Dernière vérification: {{ formatDate(storageHealth.lastVerificationDate) }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Statistiques Alertes -->
+      <section class="stats-section" *ngIf="stats">
+        <h2>
+          <lucide-icon name="bar-chart-3" [size]="20"></lucide-icon>
+          Statistiques
+        </h2>
+        
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-icon info">
+              <lucide-icon name="bell" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-content">
+              <span class="stat-number">{{ stats.totalAlertes }}</span>
+              <span class="stat-text">Total alertes</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-content">
+              <span class="stat-number">{{ stats.alertesActives }}</span>
+              <span class="stat-text">Actives</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon error">
+              <lucide-icon name="alert-octagon" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-content">
+              <span class="stat-number">{{ stats.alertesCritiques }}</span>
+              <span class="stat-text">Critiques</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+            </div>
+            <div class="stat-content">
+              <span class="stat-number">{{ stats.alertesAcquittees }}</span>
+              <span class="stat-text">Acquittées</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Alertes Actives -->
+      <section class="alertes-section">
+        <div class="section-header">
+          <h2>
+            <lucide-icon name="bell-ring" [size]="20"></lucide-icon>
+            Alertes Actives
+            <span class="badge badge-error" *ngIf="alertesCritiques > 0">{{ alertesCritiques }}</span>
+          </h2>
+          
+          <div class="filters">
+            <select [(ngModel)]="filterType" class="filter-select">
+              <option value="">Tous les types</option>
+              <option value="storage_health">Santé stockage</option>
+              <option value="disk_space">Espace disque</option>
+              <option value="corruption">Corruption</option>
+              <option value="access_denied">Accès refusé</option>
+              <option value="suspicious_activity">Activité suspecte</option>
+              <option value="backup_failed">Échec sauvegarde</option>
+              <option value="system_error">Erreur système</option>
+            </select>
+
+            <select [(ngModel)]="filterSeverite" class="filter-select">
+              <option value="">Toutes sévérités</option>
+              <option value="info">Information</option>
+              <option value="warning">Avertissement</option>
+              <option value="critical">Critique</option>
+              <option value="emergency">Urgence</option>
+            </select>
+
+            <button class="btn-refresh" (click)="loadData()">
+              <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+              Actualiser
+            </button>
+          </div>
+        </div>
+
+        <div class="alertes-list" *ngIf="filteredAlertes.length > 0">
+          <div 
+            class="alerte-card" 
+            *ngFor="let alerte of filteredAlertes"
+            [ngClass]="'alerte-' + alerte.severite">
+            
+            <div class="alerte-icon">
+              <lucide-icon [name]="getIcon(alerte.typeAlerte)" [size]="24"></lucide-icon>
+            </div>
+            
+            <div class="alerte-content">
+              <div class="alerte-header">
+                <span class="alerte-type">{{ getTypeLabel(alerte.typeAlerte) }}</span>
+                <span class="alerte-badge" [ngClass]="getSeveriteClass(alerte.severite)">
+                  {{ getSeveriteLabel(alerte.severite) }}
+                </span>
+              </div>
+              <p class="alerte-message">{{ alerte.message }}</p>
+              <div class="alerte-meta">
+                <span class="alerte-source">
+                  <lucide-icon name="server" [size]="12"></lucide-icon>
+                  {{ alerte.source }}
+                </span>
+                <span class="alerte-date">
+                  <lucide-icon name="clock" [size]="12"></lucide-icon>
+                  {{ formatDate(alerte.createdAt) }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="alerte-actions">
+              <button 
+                class="btn-acquitter" 
+                (click)="acquitterAlerte(alerte)"
+                [disabled]="isAcquitting"
+                title="Acquitter cette alerte">
+                <lucide-icon name="check" [size]="16"></lucide-icon>
+                Acquitter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="filteredAlertes.length === 0">
+          <lucide-icon name="check-circle-2" [size]="48"></lucide-icon>
+          <h3>Aucune alerte active</h3>
+          <p>Le système fonctionne normalement.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+</app-dashboard-layout>

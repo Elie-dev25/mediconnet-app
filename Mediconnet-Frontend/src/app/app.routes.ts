@@ -164,6 +164,14 @@ export const routes: Routes = [
       { 
         path: 'settings', 
         loadComponent: () => import('./pages/admin/settings/settings.component').then(m => m.AdminSettingsComponent)
+      },
+      { 
+        path: 'monitoring', 
+        loadComponent: () => import('./pages/admin/monitoring/monitoring.component').then(m => m.MonitoringComponent)
+      },
+      { 
+        path: 'audit', 
+        loadComponent: () => import('./pages/admin/audit/audit.component').then(m => m.AuditComponent)
       }
     ]
   },
@@ -219,6 +227,10 @@ export const routes: Routes = [
       { 
         path: 'dashboard', 
         loadComponent: () => import('./pages/laborantin/dashboard/dashboard.component').then(m => m.LaborantinDashboardComponent)
+      },
+      { 
+        path: 'examens', 
+        loadComponent: () => import('./pages/laborantin/examens/examens.component').then(m => m.LaborantinExamensComponent)
       }
     ]
   },

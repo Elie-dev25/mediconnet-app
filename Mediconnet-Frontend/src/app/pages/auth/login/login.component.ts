@@ -181,8 +181,9 @@ export class LoginComponent implements OnInit, OnDestroy {
           }
           
           // FLUX PATIENT AUTO-INSCRIT: profileCompleted=false
+          // Redirige vers register car complete-profile est obsolète
           if (user?.role === 'patient' && !response.profileCompleted) {
-            this.router.navigate(['/complete-profile']);
+            this.router.navigate(['/register']);
             return;
           }
           

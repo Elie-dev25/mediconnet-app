@@ -9,8 +9,8 @@ export const ADMIN_MENU_ITEMS: MenuItem[] = [
   { icon: 'users', label: 'Utilisateurs', route: '/admin/users', implemented: true },
   { icon: 'building-2', label: 'Services', route: '/admin/services', implemented: true },
   { icon: 'shield-check', label: 'Assurances', route: '/admin/assurances', implemented: true },
-  { icon: 'bar-chart-3', label: 'Statistiques', route: '/admin/stats', implemented: false },
-  { icon: 'shield', label: 'Sécurité', route: '/admin/security', implemented: false },
+  { icon: 'activity', label: 'Monitoring', route: '/admin/monitoring', implemented: true },
+  { icon: 'scroll-text', label: 'Audit', route: '/admin/audit', implemented: true },
   { icon: 'settings', label: 'Paramètres', route: '/admin/settings', implemented: true }
 ];
 

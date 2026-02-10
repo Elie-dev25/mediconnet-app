@@ -470,13 +470,16 @@ public class PatientController : BaseApiController
                 })
                 .ToListAsync();
 
-            // Examens du patient
+            // Examens du patient (consultations ET hospitalisations)
             var examens = await _context.BulletinsExamen
                 .Include(be => be.Consultation).ThenInclude(c => c!.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(be => be.Hospitalisation).ThenInclude(h => h!.Medecin).ThenInclude(m => m!.Utilisateur)
                 .Include(be => be.Examen)
                     .ThenInclude(e => e!.Specialite)
                         .ThenInclude(s => s!.Categorie)
-                .Where(be => be.Consultation != null && be.Consultation.IdPatient == userId.Value)
+                .Where(be => 
+                    (be.Consultation != null && be.Consultation.IdPatient == userId.Value) ||
+                    (be.Hospitalisation != null && be.Hospitalisation.IdPatient == userId.Value))
                 .OrderByDescending(be => be.DateDemande)
                 .Take(15)
                 .Select(be => new ExamenDto
@@ -488,12 +491,14 @@ public class PatientController : BaseApiController
                     Specialite = be.Examen != null && be.Examen.Specialite != null 
                         ? be.Examen.Specialite.Nom : "",
                     NomExamen = be.Examen != null ? be.Examen.NomExamen : "Examen",
-                    Resultat = null, // À implémenter quand les résultats seront disponibles
+                    Resultat = be.ResultatTexte,
                     NomMedecin = be.Consultation != null && be.Consultation.Medecin != null && be.Consultation.Medecin.Utilisateur != null
                         ? $"Dr. {be.Consultation.Medecin.Utilisateur.Prenom} {be.Consultation.Medecin.Utilisateur.Nom}"
-                        : "Médecin",
-                    Statut = "terminee",
-                    Urgent = false,
+                        : (be.Hospitalisation != null && be.Hospitalisation.Medecin != null && be.Hospitalisation.Medecin.Utilisateur != null
+                            ? $"Dr. {be.Hospitalisation.Medecin.Utilisateur.Prenom} {be.Hospitalisation.Medecin.Utilisateur.Nom}"
+                            : "Médecin"),
+                    Statut = be.Statut ?? "prescrit",
+                    Urgent = be.Urgence,
                     Disponible = be.Examen != null ? be.Examen.Disponible : true
                 })
                 .ToListAsync();
@@ -506,7 +511,9 @@ public class PatientController : BaseApiController
                 .CountAsync(o => o.Consultation != null && o.Consultation.IdPatient == userId.Value);
             
             var totalExamens = await _context.BulletinsExamen
-                .CountAsync(be => be.Consultation != null && be.Consultation.IdPatient == userId.Value);
+                .CountAsync(be => 
+                    (be.Consultation != null && be.Consultation.IdPatient == userId.Value) ||
+                    (be.Hospitalisation != null && be.Hospitalisation.IdPatient == userId.Value));
 
             var derniereVisite = await _context.Consultations
                 .Where(c => c.IdPatient == userId.Value && c.Statut == "terminee")

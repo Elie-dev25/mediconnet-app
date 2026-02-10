@@ -529,6 +529,27 @@ $info-color: #3b82f6;
   }
 }
 
+.btn-consulter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  margin-top: 0.75rem;
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #0c6a82 0%, #0782a0 100%);
+    transform: translateY(-1px);
+  }
+}
+
 // ==================== SOINS CARDS ====================
 .soin-card {
   background: white;

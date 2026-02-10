@@ -2,132 +2,49 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { ConsultationCompleteService, ConsultationEnCoursDto } from '../../../services/consultation-complete.service';
+import { ResultatExamenSidebarComponent } from '../resultat-examen-sidebar/resultat-examen-sidebar.component';
 
-export type ViewMode = 'patient' | 'medecin';
-export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents';
+// Re-export des types depuis le fichier centralisé pour la rétrocompatibilité
+export type {
+  ViewMode,
+  TabType,
+  DossierPatientInfo,
+  DossierStats,
+  ConsultationItem,
+  OrdonnanceItem,
+  MedicamentItem,
+  ExamenItem,
+  AntecedentItem,
+  AllergieItem,
+  DossierMedicalData
+} from '../../../models/dossier-medical.models';
 
-export interface DossierPatientInfo {
-  idUser?: number;
-  nom: string;
-  prenom: string;
-  numeroDossier?: string;
-  groupeSanguin?: string;
-  naissance?: string;
-  sexe?: string;
-  age?: number;
-  // Informations personnelles
-  telephone?: string;
-  email?: string;
-  adresse?: string;
-  nationalite?: string;
-  regionOrigine?: string;
-  situationMatrimoniale?: string;
-  profession?: string;
-  ethnie?: string;
-  nbEnfants?: number;
-  // Informations médicales
-  maladiesChroniques?: string;
-  allergiesConnues?: boolean;
-  allergiesDetails?: string;
-  antecedentsFamiliaux?: boolean;
-  antecedentsFamiliauxDetails?: string;
-  operationsChirurgicales?: boolean;
-  operationsDetails?: string;
-  // Habitudes de vie
-  consommationAlcool?: boolean;
-  frequenceAlcool?: string;
-  tabagisme?: boolean;
-  activitePhysique?: boolean;
-  // Contact d'urgence
-  personneContact?: string;
-  numeroContact?: string;
-  // Assurance
-  nomAssurance?: string;
-  numeroCarteAssurance?: string;
-  couvertureAssurance?: number;
-  dateDebutValidite?: string;
-  dateFinValidite?: string;
-}
+// Re-export des fonctions
+export {
+  getStatutLabel,
+  getStatutClass,
+  isStatutTermine
+} from '../../../models/dossier-medical.models';
 
-export interface DossierStats {
-  totalConsultations: number;
-  totalOrdonnances: number;
-  totalExamens: number;
-  derniereVisite?: string;
-}
+import type {
+  ViewMode,
+  TabType,
+  DossierMedicalData,
+  ConsultationItem,
+  OrdonnanceItem,
+  MedicamentItem,
+  ExamenItem
+} from '../../../models/dossier-medical.models';
 
-export interface ConsultationItem {
-  idConsultation?: number;
-  dateConsultation?: string;
-  dateHeure?: string;
-  motif: string;
-  diagnosticPrincipal?: string;
-  diagnostic?: string;
-  nomMedecin?: string;
-  medecinNom?: string;
-  specialite?: string;
-  statut: string;
-}
-
-export interface OrdonnanceItem {
-  idOrdonnance: number;
-  dateOrdonnance?: string;
-  dateCreation?: string;
-  nomMedecin?: string;
-  statut?: string;
-  medicaments: MedicamentItem[];
-}
-
-export interface MedicamentItem {
-  nom?: string;
-  nomMedicament?: string;
-  dosage?: string;
-  frequence?: string;
-  duree?: string;
-  instructions?: string;
-}
-
-export interface ExamenItem {
-  idExamen: number;
-  dateExamen?: string;
-  datePrescription?: string;
-  typeExamen: string;
-  nomExamen: string;
-  resultat?: string;
-  resultats?: string;
-  nomMedecin?: string;
-  statut: string;
-  urgent?: boolean;
-}
-
-export interface AntecedentItem {
-  type: string;
-  description: string;
-  dateDebut?: string;
-  actif: boolean;
-}
-
-export interface AllergieItem {
-  type: string;
-  allergene: string;
-  severite: string;
-  reaction?: string;
-}
-
-export interface DossierMedicalData {
-  patient: DossierPatientInfo;
-  stats?: DossierStats;
-  consultations: ConsultationItem[];
-  ordonnances: OrdonnanceItem[];
-  examens: ExamenItem[];
-  antecedents: AntecedentItem[];
-  allergies: AllergieItem[];
-}
+import {
+  getStatutLabel as getStatutLabelFn,
+  getStatutClass as getStatutClassFn
+} from '../../../models/dossier-medical.models';
 
 @Component({
   selector: 'app-dossier-medical-view',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideAngularModule, ResultatExamenSidebarComponent],
   templateUrl: './dossier-medical-view.component.html',
   styleUrl: './dossier-medical-view.component.scss'
 })
@@ -138,10 +55,31 @@ export class DossierMedicalViewComponent {
   @Input() error: string | null = null;
   @Input() showStartConsultation = false;
   @Input() consultationId: number | null = null;
+  @Input() consultationStatut: string | null = null;
 
   @Output() retry = new EventEmitter<void>();
   @Output() startConsultation = new EventEmitter<void>();
   @Output() viewConsultation = new EventEmitter<number>();
+
+  // Helpers pour le bouton de consultation
+  get isConsultationEnPause(): boolean {
+    return this.consultationStatut === 'en_pause';
+  }
+
+  get isConsultationEnCours(): boolean {
+    return this.consultationStatut === 'en_cours';
+  }
+
+  get consultationButtonLabel(): string {
+    if (this.isConsultationEnPause) return 'Continuer la consultation';
+    if (this.isConsultationEnCours) return 'Reprendre la consultation';
+    return 'Commencer la consultation';
+  }
+
+  get consultationButtonIcon(): string {
+    if (this.isConsultationEnPause || this.isConsultationEnCours) return 'play';
+    return 'stethoscope';
+  }
 
   activeTab: TabType = 'resume';
 
@@ -150,6 +88,10 @@ export class DossierMedicalViewComponent {
   selectedConsultation: ConsultationEnCoursDto | null = null;
   isLoadingConsultation = false;
   consultationError: string | null = null;
+
+  // Sidebar résultat examen
+  showResultatSidebar = false;
+  selectedExamenId: number | null = null;
 
   constructor(private consultationService: ConsultationCompleteService) {}
 
@@ -318,5 +260,16 @@ export class DossierMedicalViewComponent {
     this.showConsultationModal = false;
     this.selectedConsultation = null;
     this.consultationError = null;
+  }
+
+  // Ouvrir la sidebar pour consulter un résultat d'examen
+  openResultatExamen(idExamen: number): void {
+    this.selectedExamenId = idExamen;
+    this.showResultatSidebar = true;
+  }
+
+  closeResultatSidebar(): void {
+    this.showResultatSidebar = false;
+    this.selectedExamenId = null;
   }
 }

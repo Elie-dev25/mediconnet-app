@@ -23,6 +23,26 @@ public class Consultation
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>Date et heure de début effectif de la consultation</summary>
+    [Column("date_debut_effective")]
+    public DateTime? DateDebutEffective { get; set; }
+
+    /// <summary>Date et heure de fin de la consultation</summary>
+    [Column("date_fin")]
+    public DateTime? DateFin { get; set; }
+
+    /// <summary>Durée réelle de la consultation en minutes</summary>
+    [Column("duree_minutes")]
+    public int? DureeMinutes { get; set; }
+
+    /// <summary>Motif d'annulation si la consultation est annulée</summary>
+    [Column("motif_annulation")]
+    public string? MotifAnnulation { get; set; }
+
+    /// <summary>Date d'annulation</summary>
+    [Column("date_annulation")]
+    public DateTime? DateAnnulation { get; set; }
+
     /// <summary>Motif de la consultation</summary>
     [Column("motif")]
     public string? Motif { get; set; }
@@ -138,6 +158,12 @@ public class Consultation
     [Column("consignes_patient")]
     public string? ConsignesPatient { get; set; }
 
+    // ==================== PROGRESSION CONSULTATION ====================
+    
+    /// <summary>Étape actuelle de la consultation (pour reprise après pause)</summary>
+    [Column("etape_actuelle")]
+    public string? EtapeActuelle { get; set; }
+
     // Navigation properties
     [ForeignKey("IdMedecin")]
     public virtual Medecin? Medecin { get; set; }
@@ -152,6 +178,8 @@ public class Consultation
     public virtual Parametre? Parametre { get; set; }
 
     public virtual ICollection<ConsultationQuestion>? ConsultationQuestions { get; set; }
+
+    public virtual ICollection<QuestionLibre>? QuestionsLibres { get; set; }
 
     public virtual Ordonnance? Ordonnance { get; set; }
 

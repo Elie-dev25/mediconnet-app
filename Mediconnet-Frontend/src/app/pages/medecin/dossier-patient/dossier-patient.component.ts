@@ -32,6 +32,7 @@ export class MedecinDossierPatientComponent implements OnInit {
 
   patientId: number = 0;
   consultationId: number | null = null;
+  consultationStatut: string | null = null;
   
   dossier: DossierPatientDto | null = null;
   dossierData: DossierMedicalData | null = null;
@@ -53,6 +54,7 @@ export class MedecinDossierPatientComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['consultationId']) {
         this.consultationId = +params['consultationId'];
+        this.loadConsultationStatut();
       }
     });
   }
@@ -184,6 +186,19 @@ export class MedecinDossierPatientComponent implements OnInit {
     };
   }
 
+  loadConsultationStatut(): void {
+    if (!this.consultationId) return;
+    
+    this.consultationService.getConsultation(this.consultationId).subscribe({
+      next: (consultation) => {
+        this.consultationStatut = consultation.statut || null;
+      },
+      error: (err) => {
+        console.error('Erreur chargement statut consultation:', err);
+      }
+    });
+  }
+
   goBack(): void {
     this.router.navigate(['/medecin/dashboard']);
   }
@@ -194,8 +209,25 @@ export class MedecinDossierPatientComponent implements OnInit {
       return;
     }
 
-    // Naviguer vers la page de consultation complète
-    this.router.navigate(['/medecin/consultation', this.consultationId]);
+    // Si la consultation est en pause, la reprendre ; sinon, la démarrer
+    const action$ = this.consultationStatut === 'en_pause'
+      ? this.consultationService.reprendreConsultation(this.consultationId)
+      : this.consultationService.demarrerConsultation(this.consultationId);
+
+    action$.subscribe({
+      next: () => {
+        this.router.navigate(['/medecin/consultation', this.consultationId]);
+      },
+      error: (err) => {
+        console.error('Erreur démarrage/reprise consultation:', err);
+        // Si erreur de transition (déjà en cours), naviguer quand même
+        if (err.status === 400) {
+          this.router.navigate(['/medecin/consultation', this.consultationId]);
+        } else {
+          alert('Erreur lors du démarrage de la consultation');
+        }
+      }
+    });
   }
 
   getPatientFullName(): string {

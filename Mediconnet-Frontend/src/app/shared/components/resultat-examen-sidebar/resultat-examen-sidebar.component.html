@@ -1,0 +1,179 @@
+<!-- Overlay -->
+<div class="sidebar-overlay" *ngIf="isOpen" (click)="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar-container" [class.open]="isOpen">
+  <div class="sidebar-content">
+    <!-- Header -->
+    <div class="sidebar-header">
+      <h2>
+        <lucide-icon name="file-text" [size]="24"></lucide-icon>
+        Résultat d'examen
+      </h2>
+      <button class="close-btn" (click)="closeSidebar()">
+        <lucide-icon name="x" [size]="24"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+      <p>Chargement du résultat...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-state" *ngIf="errorMessage && !isLoading">
+      <lucide-icon name="alert-circle" [size]="48"></lucide-icon>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-secondary" (click)="loadResultat()">Réessayer</button>
+    </div>
+
+    <!-- Content -->
+    <div class="sidebar-body" *ngIf="resultat && !isLoading && !errorMessage">
+      <!-- Examen Info -->
+      <div class="info-section">
+        <h3>
+          <lucide-icon name="microscope" [size]="18"></lucide-icon>
+          Informations de l'examen
+        </h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Examen</span>
+            <span class="value">{{ resultat.nomExamen }}</span>
+          </div>
+          <div class="info-item" *ngIf="resultat.specialite">
+            <span class="label">Spécialité</span>
+            <span class="value">{{ resultat.specialite }}</span>
+          </div>
+          <div class="info-item" *ngIf="resultat.categorie">
+            <span class="label">Catégorie</span>
+            <span class="value">{{ resultat.categorie }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Date de demande</span>
+            <span class="value">{{ formatDate(resultat.dateDemande) }}</span>
+          </div>
+          <div class="info-item" *ngIf="resultat.dateResultat">
+            <span class="label">Date du résultat</span>
+            <span class="value">{{ formatDate(resultat.dateResultat) }}</span>
+          </div>
+          <div class="info-item" *ngIf="resultat.urgence">
+            <span class="label">Priorité</span>
+            <span class="value urgence">
+              <lucide-icon name="alert-triangle" [size]="14"></lucide-icon>
+              Urgent
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Info -->
+      <div class="info-section" *ngIf="resultat.patient">
+        <h3>
+          <lucide-icon name="user" [size]="18"></lucide-icon>
+          Patient
+        </h3>
+        <div class="info-grid">
+          <div class="info-item full-width">
+            <span class="label">Nom</span>
+            <span class="value">{{ formatPatientName() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Médecin Info -->
+      <div class="info-section" *ngIf="resultat.medecin">
+        <h3>
+          <lucide-icon name="stethoscope" [size]="18"></lucide-icon>
+          Médecin prescripteur
+        </h3>
+        <div class="info-grid">
+          <div class="info-item full-width">
+            <span class="label">Nom</span>
+            <span class="value">{{ formatMedecinName() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Laboratoire Info -->
+      <div class="info-section" *ngIf="resultat.laboratoire">
+        <h3>
+          <lucide-icon name="building-2" [size]="18"></lucide-icon>
+          Laboratoire
+        </h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Nom</span>
+            <span class="value">{{ resultat.laboratoire.nomLabo }}</span>
+          </div>
+          <div class="info-item" *ngIf="resultat.laboratoire.telephone">
+            <span class="label">Téléphone</span>
+            <span class="value">{{ resultat.laboratoire.telephone }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Résultat -->
+      <div class="info-section resultat-section" *ngIf="resultat.resultatTexte">
+        <h3>
+          <lucide-icon name="clipboard-check" [size]="18"></lucide-icon>
+          Résultat
+        </h3>
+        <div class="resultat-content">
+          <p>{{ resultat.resultatTexte }}</p>
+        </div>
+        <div class="commentaire" *ngIf="resultat.commentaireLabo">
+          <strong>Commentaire du laboratoire :</strong>
+          <p>{{ resultat.commentaireLabo }}</p>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="info-section documents-section" *ngIf="resultat.documents && resultat.documents.length > 0">
+        <h3>
+          <lucide-icon name="paperclip" [size]="18"></lucide-icon>
+          Documents joints ({{ resultat.documents.length }})
+        </h3>
+        <div class="documents-list">
+          <div class="document-item" *ngFor="let doc of resultat.documents">
+            <div class="document-info">
+              <lucide-icon [name]="getFileIcon(doc.mimeType)" [size]="24" class="file-icon"></lucide-icon>
+              <div class="document-details">
+                <span class="document-name">{{ doc.nomFichier }}</span>
+                <span class="document-meta">{{ formatFileSize(doc.tailleOctets) }} • {{ formatDate(doc.dateUpload) }}</span>
+              </div>
+            </div>
+            <div class="document-actions">
+              <button 
+                class="btn-icon" 
+                title="Visualiser"
+                (click)="viewDocument(doc)"
+                *ngIf="canViewInBrowser(doc.mimeType)">
+                <lucide-icon name="eye" [size]="18"></lucide-icon>
+              </button>
+              <button 
+                class="btn-icon" 
+                title="Télécharger"
+                (click)="downloadDocument(doc)"
+                [disabled]="downloadingUuid === doc.uuid">
+                <lucide-icon 
+                  [name]="downloadingUuid === doc.uuid ? 'loader-2' : 'download'" 
+                  [size]="18"
+                  [class.spinner]="downloadingUuid === doc.uuid">
+                </lucide-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Documents -->
+      <div class="info-section no-documents" *ngIf="!resultat.documents || resultat.documents.length === 0">
+        <div class="empty-documents">
+          <lucide-icon name="file-x" [size]="32"></lucide-icon>
+          <p>Aucun document joint</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

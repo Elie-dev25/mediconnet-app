@@ -6,6 +6,7 @@ using Mediconnet_Backend.Core.Entities.Medical;
 using Mediconnet_Backend.Core.Entities.GestionLits;
 using Mediconnet_Backend.Core.Entities.Prescription;
 using Mediconnet_Backend.Core.Entities.DMP;
+using Mediconnet_Backend.Core.Entities.Documents;
 
 namespace Mediconnet_Backend.Data;
 
@@ -125,6 +126,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<UserPermission> UserPermissions { get; set; }
+
+    // Entités Documents Médicaux (stockage UUID)
+    public DbSet<DocumentMedical> DocumentsMedicaux { get; set; }
+    public DbSet<AuditAccesDocument> AuditAccesDocuments { get; set; }
+    public DbSet<VerificationIntegrite> VerificationsIntegrite { get; set; }
+    public DbSet<AlerteSysteme> AlertesSysteme { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1075,6 +1082,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .WithMany()
                 .HasForeignKey(e => e.IdPermission)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // DocumentMedical Configuration - Force UUID as string to avoid Guid conversion
+        modelBuilder.Entity<DocumentMedical>(entity =>
+        {
+            // Force Uuid to be treated as string, not Guid
+            entity.Property(e => e.Uuid)
+                .HasConversion<string>();
         });
     }
 }

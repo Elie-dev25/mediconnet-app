@@ -691,9 +691,28 @@ public class InfirmierController : BaseApiController
                 })
                 .ToListAsync();
 
-            // Récupérer les examens prescrits (utiliser BulletinExamen)
-            // TODO: Implémenter la liaison correcte avec les consultations
-            var examens = new List<object>();
+            // Récupérer les examens prescrits (BulletinExamen liés à l'hospitalisation)
+            var examens = await _context.BulletinsExamen
+                .Include(b => b.Examen)
+                    .ThenInclude(e => e!.Specialite)
+                .Include(b => b.Laboratoire)
+                .Where(b => b.IdHospitalisation == idAdmission)
+                .OrderByDescending(b => b.DateDemande)
+                .Select(b => new
+                {
+                    idExamen = b.IdBulletinExamen,
+                    idBulletinExamen = b.IdBulletinExamen,
+                    typeExamen = b.Examen != null ? (b.Examen.Specialite != null ? b.Examen.Specialite.Nom : "Examen") : "Examen",
+                    description = b.Examen != null ? b.Examen.NomExamen : "Examen prescrit",
+                    datePrescription = b.DateDemande,
+                    statut = b.Statut ?? "prescrit",
+                    urgence = b.Urgence,
+                    laboratoire = b.Laboratoire != null ? b.Laboratoire.NomLabo : null,
+                    resultat = b.ResultatTexte,
+                    dateResultat = b.DateResultat,
+                    hasResultat = b.DateResultat != null || !string.IsNullOrEmpty(b.ResultatTexte)
+                })
+                .ToListAsync();
 
             // Récupérer les prescriptions médicamenteuses
             // TODO: Implémenter la liaison correcte avec les ordonnances

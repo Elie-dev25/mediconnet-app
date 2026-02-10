@@ -6,6 +6,8 @@ using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Enums;
 using Mediconnet_Backend.Core.Constants;
+using Mediconnet_Backend.Core.Interfaces.Services;
+using Mediconnet_Backend.Core.Services;
 using Mediconnet_Backend.DTOs.Consultation;
 
 namespace Mediconnet_Backend.Controllers;
@@ -16,11 +18,19 @@ public class ConsultationCompleteController : BaseApiController
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ConsultationCompleteController> _logger;
+    private readonly INotificationService _notificationService;
+    private readonly IConsultationAuditService _auditService;
 
-    public ConsultationCompleteController(ApplicationDbContext context, ILogger<ConsultationCompleteController> logger)
+    public ConsultationCompleteController(
+        ApplicationDbContext context, 
+        ILogger<ConsultationCompleteController> logger,
+        INotificationService notificationService,
+        IConsultationAuditService auditService)
     {
         _context = context;
         _logger = logger;
+        _notificationService = notificationService;
+        _auditService = auditService;
     }
 
     [HttpGet("dossier-patient/{idPatient}")]
@@ -88,12 +98,16 @@ public class ConsultationCompleteController : BaseApiController
                 })
                 .ToListAsync();
 
+            // Examens du patient (consultations ET hospitalisations)
             var examens = await _context.BulletinsExamen
                 .Include(e => e.Examen)
                     .ThenInclude(ex => ex!.Specialite)
                         .ThenInclude(s => s!.Categorie)
                 .Include(e => e.Consultation)
-                .Where(e => e.Consultation != null && e.Consultation.IdPatient == idPatient)
+                .Include(e => e.Hospitalisation)
+                .Where(e => 
+                    (e.Consultation != null && e.Consultation.IdPatient == idPatient) ||
+                    (e.Hospitalisation != null && e.Hospitalisation.IdPatient == idPatient))
                 .OrderByDescending(e => e.DateDemande)
                 .Take(20)
                 .Select(e => new HistoriqueExamenDto
@@ -104,8 +118,9 @@ public class ConsultationCompleteController : BaseApiController
                     Specialite = e.Examen != null && e.Examen.Specialite != null 
                         ? e.Examen.Specialite.Nom : "",
                     NomExamen = e.Examen != null ? e.Examen.NomExamen : "",
-                    Statut = "prescrit",
-                    DatePrescription = e.DateDemande
+                    Statut = e.Statut ?? "prescrit",
+                    DatePrescription = e.DateDemande,
+                    Resultats = e.ResultatTexte
                 })
                 .ToListAsync();
 
@@ -181,11 +196,27 @@ public class ConsultationCompleteController : BaseApiController
             if (consultation == null)
                 return NotFound(new { message = "Consultation non trouvée" });
 
-            consultation.Statut = ConsultationStatut.EnCours.ToDbString();
+            // Valider la transition de statut
+            var nouveauStatut = ConsultationStatut.EnCours.ToDbString();
+            if (!Core.Services.StatutTransitionValidator.IsConsultationTransitionValid(consultation.Statut, nouveauStatut))
+            {
+                return BadRequest(new { 
+                    message = Core.Services.StatutTransitionValidator.GetTransitionErrorMessage("consultation", consultation.Statut, nouveauStatut)
+                });
+            }
+
+            var ancienStatut = consultation.Statut;
+            consultation.Statut = nouveauStatut;
+            consultation.DateDebutEffective = DateTime.UtcNow;
             consultation.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Consultation démarrée", idConsultation });
+            // Audit trail
+            await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut);
+
+            _logger.LogInformation($"Consultation {idConsultation} démarrée par médecin {medecinId}");
+
+            return Ok(new { message = "Consultation démarrée", idConsultation, dateDebut = consultation.DateDebutEffective });
         }
         catch (Exception ex)
         {
@@ -346,6 +377,7 @@ public class ConsultationCompleteController : BaseApiController
                 Statut = consultation.Statut,
                 IsPremiereConsultation = isPremiereConsultation,
                 SpecialiteId = medecin?.IdSpecialite ?? 0,
+                EtapeActuelle = consultation.EtapeActuelle,
                 // Étape 1: Anamnèse
                 // Note: HistoireMaladie ne doit pas être pré-rempli avec les réponses du questionnaire patient
                 // Le champ consultation.Anamnese contient les réponses formatées du patient (format "- Question: Réponse")
@@ -970,7 +1002,40 @@ public class ConsultationCompleteController : BaseApiController
             if (consultation == null)
                 return NotFound(new { message = "Consultation non trouvée" });
 
-            consultation.Statut = ConsultationStatut.Terminee.ToDbString();
+            // Validation des champs obligatoires avant clôture
+            var erreurs = new List<string>();
+            if (string.IsNullOrWhiteSpace(consultation.Motif))
+                erreurs.Add("Le motif de consultation est obligatoire");
+            if (string.IsNullOrWhiteSpace(consultation.Diagnostic))
+                erreurs.Add("Le diagnostic est obligatoire pour valider la consultation");
+            
+            if (erreurs.Count > 0)
+            {
+                return BadRequest(new { 
+                    message = "Impossible de valider la consultation : champs obligatoires manquants",
+                    erreurs = erreurs
+                });
+            }
+
+            // Valider la transition de statut
+            var nouveauStatut = ConsultationStatut.Terminee.ToDbString();
+            if (!Core.Services.StatutTransitionValidator.IsConsultationTransitionValid(consultation.Statut, nouveauStatut))
+            {
+                return BadRequest(new { 
+                    message = Core.Services.StatutTransitionValidator.GetTransitionErrorMessage("consultation", consultation.Statut, nouveauStatut)
+                });
+            }
+
+            // Calculer la durée réelle de la consultation
+            var dateFin = DateTime.UtcNow;
+            consultation.DateFin = dateFin;
+            if (consultation.DateDebutEffective.HasValue)
+            {
+                consultation.DureeMinutes = (int)(dateFin - consultation.DateDebutEffective.Value).TotalMinutes;
+            }
+
+            var ancienStatut = consultation.Statut;
+            consultation.Statut = nouveauStatut;
             consultation.Conclusion = request.Conclusion;
             consultation.UpdatedAt = DateTime.UtcNow;
 
@@ -996,15 +1061,223 @@ public class ConsultationCompleteController : BaseApiController
 
             await _context.SaveChangesAsync();
 
+            // Envoyer une notification au patient
+            try
+            {
+                var medecinNom = await _context.Medecins
+                    .Where(m => m.IdUser == medecinId.Value)
+                    .Include(m => m.Utilisateur)
+                    .Select(m => m.Utilisateur != null ? $"Dr. {m.Utilisateur.Prenom} {m.Utilisateur.Nom}" : "Votre médecin")
+                    .FirstOrDefaultAsync() ?? "Votre médecin";
+
+                await _notificationService.CreateAsync(new CreateNotificationRequest
+                {
+                    IdUser = consultation.IdPatient,
+                    Type = "consultation_terminee",
+                    Titre = "Consultation terminée",
+                    Message = $"Votre consultation avec {medecinNom} est terminée. Vous pouvez consulter le compte-rendu dans votre dossier médical.",
+                    Lien = $"/patient/consultations/{idConsultation}",
+                    Icone = "stethoscope",
+                    Priorite = "normale",
+                    SendRealTime = true
+                });
+            }
+            catch (Exception notifEx)
+            {
+                _logger.LogWarning($"Erreur envoi notification patient: {notifEx.Message}");
+            }
+
+            // Audit trail
+            await _auditService.LogAsync(new ConsultationAuditEntry
+            {
+                IdConsultation = idConsultation,
+                IdUtilisateur = medecinId.Value,
+                TypeAction = ConsultationAuditActions.Validation,
+                ChampModifie = "statut",
+                AncienneValeur = ancienStatut,
+                NouvelleValeur = nouveauStatut,
+                Description = $"Consultation validée. Durée: {consultation.DureeMinutes} minutes"
+            });
+
+            _logger.LogInformation($"Consultation {idConsultation} validée. Durée: {consultation.DureeMinutes} minutes");
+
             return Ok(new { 
                 message = "Consultation validée", 
                 idConsultation,
+                dureeMinutes = consultation.DureeMinutes,
                 imprimer = request.Imprimer 
             });
         }
         catch (Exception ex)
         {
             _logger.LogError($"Erreur ValiderConsultation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Annuler une consultation
+    /// </summary>
+    [HttpPost("{idConsultation}/annuler")]
+    public async Task<IActionResult> AnnulerConsultation(int idConsultation, [FromBody] AnnulerConsultationRequest request)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var consultation = await _context.Consultations
+                .Include(c => c.Patient)
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            // Valider la transition de statut
+            var nouveauStatut = ConsultationStatut.Annulee.ToDbString();
+            if (!Core.Services.StatutTransitionValidator.IsConsultationTransitionValid(consultation.Statut, nouveauStatut))
+            {
+                return BadRequest(new { 
+                    message = Core.Services.StatutTransitionValidator.GetTransitionErrorMessage("consultation", consultation.Statut, nouveauStatut)
+                });
+            }
+
+            // Vérifier que le motif est fourni
+            if (string.IsNullOrWhiteSpace(request.Motif))
+            {
+                return BadRequest(new { message = "Le motif d'annulation est obligatoire" });
+            }
+
+            var ancienStatut = consultation.Statut;
+            consultation.Statut = nouveauStatut;
+            consultation.MotifAnnulation = request.Motif;
+            consultation.DateAnnulation = DateTime.UtcNow;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            // Annuler le RDV associé si existant
+            if (consultation.IdRendezVous.HasValue)
+            {
+                var rdv = await _context.RendezVous
+                    .FirstOrDefaultAsync(r => r.IdRendezVous == consultation.IdRendezVous.Value);
+                if (rdv != null)
+                {
+                    rdv.Statut = RendezVousStatut.Annule.ToDbString();
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Audit trail
+            await _auditService.LogAsync(new ConsultationAuditEntry
+            {
+                IdConsultation = idConsultation,
+                IdUtilisateur = medecinId.Value,
+                TypeAction = ConsultationAuditActions.Annulation,
+                ChampModifie = "statut",
+                AncienneValeur = ancienStatut,
+                NouvelleValeur = nouveauStatut,
+                Description = $"Consultation annulée. Motif: {request.Motif}"
+            });
+
+            _logger.LogInformation($"Consultation {idConsultation} annulée par médecin {medecinId}. Motif: {request.Motif}");
+
+            return Ok(new { 
+                message = "Consultation annulée", 
+                idConsultation,
+                motif = request.Motif
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur AnnulerConsultation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Mettre une consultation en pause
+    /// </summary>
+    [HttpPost("{idConsultation}/pause")]
+    public async Task<IActionResult> PauseConsultation(int idConsultation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var consultation = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            // Seule une consultation en cours peut être mise en pause
+            var ancienStatut = consultation.Statut;
+            if (ancienStatut != ConsultationStatut.EnCours.ToDbString())
+            {
+                return BadRequest(new { message = "Seule une consultation en cours peut être mise en pause" });
+            }
+
+            var nouveauStatut = ConsultationStatut.EnPause.ToDbString();
+            consultation.Statut = nouveauStatut;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Audit trail
+            await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut, "Consultation mise en pause");
+
+            _logger.LogInformation($"Consultation {idConsultation} mise en pause par médecin {medecinId}");
+
+            return Ok(new { message = "Consultation mise en pause", idConsultation });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur PauseConsultation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Reprendre une consultation en pause
+    /// </summary>
+    [HttpPost("{idConsultation}/reprendre")]
+    public async Task<IActionResult> ReprendreConsultation(int idConsultation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var consultation = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            // Seule une consultation en pause peut être reprise
+            var ancienStatut = consultation.Statut;
+            if (ancienStatut != ConsultationStatut.EnPause.ToDbString())
+            {
+                return BadRequest(new { message = "Seule une consultation en pause peut être reprise" });
+            }
+
+            var nouveauStatut = ConsultationStatut.EnCours.ToDbString();
+            consultation.Statut = nouveauStatut;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Audit trail
+            await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut, "Consultation reprise");
+
+            _logger.LogInformation($"Consultation {idConsultation} reprise par médecin {medecinId}");
+
+            return Ok(new { message = "Consultation reprise", idConsultation });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur ReprendreConsultation: {ex.Message}");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

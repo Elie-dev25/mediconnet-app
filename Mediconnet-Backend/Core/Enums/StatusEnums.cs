@@ -9,6 +9,8 @@ public enum ConsultationStatut
     Planifie,
     /// <summary>Consultation en cours avec le médecin</summary>
     EnCours,
+    /// <summary>Consultation mise en pause temporairement</summary>
+    EnPause,
     /// <summary>Consultation terminée</summary>
     Terminee,
     /// <summary>Consultation annulée</summary>
@@ -112,6 +114,7 @@ public static class StatusEnumExtensions
     {
         ConsultationStatut.Planifie => "planifie",
         ConsultationStatut.EnCours => "en_cours",
+        ConsultationStatut.EnPause => "en_pause",
         ConsultationStatut.Terminee => "terminee",
         ConsultationStatut.Annulee => "annulee",
         _ => "planifie"
@@ -121,6 +124,7 @@ public static class StatusEnumExtensions
     {
         "planifie" => ConsultationStatut.Planifie,
         "en_cours" => ConsultationStatut.EnCours,
+        "en_pause" => ConsultationStatut.EnPause,
         "terminee" or "termine" => ConsultationStatut.Terminee,
         "annulee" or "annule" => ConsultationStatut.Annulee,
         _ => ConsultationStatut.Planifie
@@ -128,17 +132,17 @@ public static class StatusEnumExtensions
 
     public static string ToDbString(this HospitalisationStatut statut) => statut switch
     {
-        HospitalisationStatut.EnAttente => "EN_ATTENTE",
-        HospitalisationStatut.EnCours => "EN_COURS",
-        HospitalisationStatut.Termine => "TERMINE",
-        _ => "EN_ATTENTE"
+        HospitalisationStatut.EnAttente => "en_attente",
+        HospitalisationStatut.EnCours => "en_cours",
+        HospitalisationStatut.Termine => "termine",
+        _ => "en_attente"
     };
 
-    public static HospitalisationStatut ToHospitalisationStatut(this string? statut) => statut?.ToUpper() switch
+    public static HospitalisationStatut ToHospitalisationStatut(this string? statut) => statut?.ToLower() switch
     {
-        "EN_ATTENTE" or "EN_ATTENTE_LIT" => HospitalisationStatut.EnAttente,
-        "EN_COURS" or "ACTIF" => HospitalisationStatut.EnCours,
-        "TERMINE" or "TERMINEE" => HospitalisationStatut.Termine,
+        "en_attente" or "en_attente_lit" or "EN_ATTENTE" or "EN_ATTENTE_LIT" => HospitalisationStatut.EnAttente,
+        "en_cours" or "actif" or "EN_COURS" or "ACTIF" => HospitalisationStatut.EnCours,
+        "termine" or "terminee" or "TERMINE" or "TERMINEE" => HospitalisationStatut.Termine,
         _ => HospitalisationStatut.EnAttente
     };
 
@@ -184,7 +188,7 @@ public static class StatusEnumExtensions
     {
         ExamenStatut.Prescrit => "prescrit",
         ExamenStatut.EnCours => "en_cours",
-        ExamenStatut.Realise => "realise",
+        ExamenStatut.Realise => "termine",
         ExamenStatut.Annule => "annule",
         _ => "prescrit"
     };
@@ -193,7 +197,7 @@ public static class StatusEnumExtensions
     {
         "prescrit" => ExamenStatut.Prescrit,
         "en_cours" => ExamenStatut.EnCours,
-        "realise" => ExamenStatut.Realise,
+        "termine" or "realise" => ExamenStatut.Realise,
         "annule" or "annulee" => ExamenStatut.Annule,
         _ => ExamenStatut.Prescrit
     };

@@ -35,6 +35,9 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
     provider.GetRequiredService<ApplicationDbContext>()
 );
 
+// Add HttpContextAccessor for services that need HTTP context
+builder.Services.AddHttpContextAccessor();
+
 // Add Authentication Services
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -98,6 +101,11 @@ builder.Services.AddScoped<IMedecinHelperService, MedecinHelperService>();
 
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
+
+// Add Document Storage Service
+builder.Services.Configure<DocumentStorageSettings>(
+    builder.Configuration.GetSection(DocumentStorageSettings.SectionName));
+builder.Services.AddScoped<IDocumentStorageService, DocumentStorageService>();
 
 // ==================== INFRASTRUCTURE SERVICES ====================
 // Repository Pattern & Unit of Work
@@ -182,7 +190,9 @@ builder.Services
             ValidateAudience = true,
             ValidAudience = builder.Configuration["Jwt:Audience"] ?? "MediConnectUsers",
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+            NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
         };
 
         // Support JWT pour SignalR (WebSocket): token transmis via query string ?access_token=

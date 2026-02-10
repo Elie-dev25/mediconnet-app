@@ -10,7 +10,6 @@ export const PATIENT_MENU_ITEMS: MenuItem[] = [
   { icon: 'calendar', label: 'Rendez-vous', route: '/patient/rendez-vous', implemented: true },
   { icon: 'folder-open', label: 'Dossier médical', route: '/patient/dossier', implemented: true },
   { icon: 'pill', label: 'Ordonnances', route: '/patient/ordonnances', implemented: false },
-  { icon: 'flask-conical', label: 'Examens', route: '/patient/examens', implemented: false },
   { icon: 'receipt', label: 'Factures', route: '/patient/factures', implemented: false }
 ];
 

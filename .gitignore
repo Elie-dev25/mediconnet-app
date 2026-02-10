@@ -1,3 +1,7 @@
 ﻿.vs/
 node_modules/
 *.log
+
+# Storage des documents médicaux (bind mount)
+storage/
+!storage/.gitkeep

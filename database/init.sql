@@ -4,13 +4,13 @@
 -- =====================================================
 -- VALEURS DE STATUTS NORMALISÉES
 -- =====================================================
--- Consultation: planifie, pret_consultation, en_cours, terminee, annulee
+-- Consultation: planifie, en_cours, en_pause, terminee, annulee
 -- Hospitalisation: en_attente_lit, en_cours, terminee, annulee
 -- RendezVous: en_attente, confirme, planifie, en_cours, termine, annule, absent
 -- Soin: prescrit, en_cours, termine, annule
 -- Facture: en_attente, payee, annulee, partielle
 -- Lit: libre, occupe, maintenance, reserve
--- Examen: en_attente, en_cours, termine, annule
+-- Examen: prescrit, en_cours, termine, annule
 -- =====================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -395,9 +395,14 @@ CREATE TABLE `consultation` (
   `id_consultation` INT NOT NULL AUTO_INCREMENT,
   `date_heure` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `date_debut_effective` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date et heure de début effectif de la consultation',
+  `date_fin` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date et heure de fin de la consultation',
+  `duree_minutes` INT DEFAULT NULL COMMENT 'Durée réelle de la consultation en minutes',
+  `motif_annulation` TEXT DEFAULT NULL COMMENT 'Motif d annulation si la consultation est annulée',
+  `date_annulation` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date et heure d annulation',
   `motif` TEXT DEFAULT NULL,
   `diagnostic` TEXT DEFAULT NULL,
-  `statut` VARCHAR(20) DEFAULT NULL,
+  `statut` VARCHAR(20) DEFAULT NULL COMMENT 'planifie, en_cours, en_pause, terminee, annulee',
   `id_medecin` INT NOT NULL,
   `id_patient` INT NOT NULL,
   `id_rdv` INT DEFAULT NULL,
@@ -1064,10 +1069,10 @@ CREATE TABLE `inventaire_ligne` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
--- Table: notification
+-- Table: notifications
 -- --------------------------------------------------------
 
-CREATE TABLE `notification` (
+CREATE TABLE `notifications` (
   `id_notification` INT NOT NULL AUTO_INCREMENT,
   `nom_notification` VARCHAR(100) DEFAULT NULL,
   `contenu` TEXT NOT NULL,
@@ -1455,6 +1460,11 @@ CREATE TABLE `documents_medicaux` (
   `taille_octets` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Taille en octets',
   `hash_sha256` CHAR(64) DEFAULT NULL COMMENT 'Hash SHA-256 du contenu pour verification integrite',
   `hash_calcule_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date du dernier calcul de hash',
+  `est_chiffre` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indique si le fichier est chiffre',
+  `encryption_iv` VARBINARY(16) DEFAULT NULL COMMENT 'Vecteur d initialisation pour le chiffrement AES-GCM',
+  `encryption_tag` VARBINARY(16) DEFAULT NULL COMMENT 'Tag d authentification GCM',
+  `statut_integrite` ENUM('ok', 'hash_invalide', 'fichier_absent', 'erreur_lecture', 'non_verifie') NOT NULL DEFAULT 'non_verifie' COMMENT 'Statut de la derniere verification d integrite',
+  `date_derniere_verification` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date de la derniere verification d integrite',
   `type_document` ENUM(
     'resultat_examen',
     'imagerie_medicale',
@@ -1577,6 +1587,28 @@ CREATE TABLE `verification_integrite` (
 COMMENT='Historique des verifications d integrite des documents';
 
 -- --------------------------------------------------------
+-- Table: alertes_systeme (Monitoring et alertes)
+-- --------------------------------------------------------
+
+CREATE TABLE `alertes_systeme` (
+  `id_alerte` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `type_alerte` ENUM('storage_health', 'disk_space', 'corruption', 'access_denied', 'suspicious_activity', 'backup_failed', 'system_error') NOT NULL,
+  `message` TEXT NOT NULL,
+  `severite` ENUM('info', 'warning', 'critical', 'emergency') NOT NULL DEFAULT 'warning',
+  `source` VARCHAR(100) DEFAULT 'system' COMMENT 'Source de l alerte (script, service, etc.)',
+  `details` JSON COMMENT 'Details supplementaires en JSON',
+  `acquittee` BOOLEAN NOT NULL DEFAULT FALSE,
+  `acquittee_par` INT UNSIGNED NULL,
+  `date_acquittement` TIMESTAMP NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_alertes_type` (`type_alerte`),
+  INDEX `idx_alertes_severite` (`severite`),
+  INDEX `idx_alertes_acquittee` (`acquittee`),
+  INDEX `idx_alertes_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Alertes systeme pour le monitoring du stockage et de la securite';
+
+-- --------------------------------------------------------
 -- Contraintes (Foreign Keys)
 -- --------------------------------------------------------
 
@@ -1686,8 +1718,8 @@ ALTER TABLE `inventaire_ligne`
   ADD CONSTRAINT `inventaire_ligne_ibfk_1` FOREIGN KEY (`id_inventaire`) REFERENCES `inventaire` (`id_inventaire`) ON DELETE CASCADE,
   ADD CONSTRAINT `inventaire_ligne_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`);
 
-ALTER TABLE `notification`
-  ADD CONSTRAINT `notification_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
 
 ALTER TABLE `acces_verification`
   ADD CONSTRAINT `acces_verification_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`),
@@ -2226,6 +2258,54 @@ FROM `documents_medicaux`
 WHERE est_version_courante = TRUE
 GROUP BY type_document
 WITH ROLLUP;
+
+-- --------------------------------------------------------
+-- Table: consultation_audit (historique des modifications de consultations)
+-- --------------------------------------------------------
+
+CREATE TABLE `consultation_audit` (
+  `id_audit` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `id_utilisateur` INT NOT NULL,
+  `type_action` VARCHAR(50) NOT NULL COMMENT 'creation, modification, statut_change, annulation, validation, pause, reprise',
+  `champ_modifie` VARCHAR(100) DEFAULT NULL,
+  `ancienne_valeur` TEXT DEFAULT NULL,
+  `nouvelle_valeur` TEXT DEFAULT NULL,
+  `description` TEXT DEFAULT NULL,
+  `adresse_ip` VARCHAR(45) DEFAULT NULL,
+  `user_agent` TEXT DEFAULT NULL,
+  `date_modification` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_audit`),
+  KEY `idx_consultation_audit_consultation` (`id_consultation`),
+  KEY `idx_consultation_audit_utilisateur` (`id_utilisateur`),
+  KEY `idx_consultation_audit_date` (`date_modification`),
+  KEY `idx_consultation_audit_type` (`type_action`),
+  CONSTRAINT `fk_consultation_audit_consultation` FOREIGN KEY (`id_consultation`) 
+    REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
+  CONSTRAINT `fk_consultation_audit_utilisateur` FOREIGN KEY (`id_utilisateur`) 
+    REFERENCES `utilisateurs` (`id_user`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: question_libre (questions libres posées par le médecin)
+-- --------------------------------------------------------
+
+CREATE TABLE `question_libre` (
+  `id_question_libre` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `texte_question` TEXT NOT NULL,
+  `reponse` TEXT DEFAULT NULL,
+  `ordre` INT DEFAULT 0,
+  `date_creation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id_medecin` INT NOT NULL,
+  PRIMARY KEY (`id_question_libre`),
+  KEY `idx_question_libre_consultation` (`id_consultation`),
+  KEY `idx_question_libre_medecin` (`id_medecin`),
+  CONSTRAINT `fk_question_libre_consultation` FOREIGN KEY (`id_consultation`) 
+    REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
+  CONSTRAINT `fk_question_libre_medecin` FOREIGN KEY (`id_medecin`) 
+    REFERENCES `medecin` (`id_user`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

@@ -44,6 +44,7 @@ export { AccueilService } from './accueil.service';
 export { AssuranceService } from './assurance.service';
 export { CaisseService } from './caisse.service';
 export { DossierAccessService } from './dossier-access.service';
+export { DossierMedicalService } from './dossier-medical.service';
 export { HospitalisationService } from './hospitalisation.service';
 export { InfirmierService } from './infirmier.service';
 export { PharmacieStockService } from './pharmacie-stock.service';

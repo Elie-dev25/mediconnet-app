@@ -687,6 +687,27 @@
     color: white;
     &:hover:not(:disabled) { background: #5a67d8; }
   }
+
+  .btn-warning {
+    background: #f59e0b;
+    border: none;
+    color: white;
+    &:hover:not(:disabled) { background: #d97706; }
+  }
+
+  .btn-pause {
+    margin-left: auto;
+    margin-right: 0.5rem;
+    
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  }
 }
 
 @media (max-width: 600px) {

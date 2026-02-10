@@ -104,6 +104,9 @@ public class ConsultationEnCoursDto
     public bool IsPremiereConsultation { get; set; }
     public int SpecialiteId { get; set; }
     
+    /// <summary>Étape actuelle de la consultation (pour reprise après pause)</summary>
+    public string? EtapeActuelle { get; set; }
+    
     // Données de la consultation (workflow mis à jour)
     public AnamneseDto? Anamnese { get; set; }
     public ExamenCliniqueDto? ExamenClinique { get; set; }
@@ -447,4 +450,15 @@ public class ExamenPrescritDetailDto
     public string? Instructions { get; set; }
     public string? Statut { get; set; }
     public bool Disponible { get; set; } = true;
+}
+
+// ==================== REQUÊTES D'ACTION ====================
+
+/// <summary>
+/// Requête pour annuler une consultation
+/// </summary>
+public class AnnulerConsultationRequest
+{
+    /// <summary>Motif d'annulation (obligatoire)</summary>
+    public string Motif { get; set; } = "";
 }

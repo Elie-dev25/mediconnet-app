@@ -5,10 +5,8 @@ import { MenuItem } from '../../../shared';
  */
 export const LABORANTIN_MENU_ITEMS: MenuItem[] = [
   { icon: 'layout-dashboard', label: 'Tableau de bord', route: '/laborantin/dashboard', implemented: true },
-  { icon: 'flask-conical', label: 'Analyses en cours', route: '/laborantin/analyses', implemented: false },
-  { icon: 'file-check', label: 'Résultats', route: '/laborantin/resultats', implemented: false },
-  { icon: 'microscope', label: 'Examens', route: '/laborantin/examens', implemented: false },
-  { icon: 'clipboard-list', label: 'Historique', route: '/laborantin/historique', implemented: false },
+  { icon: 'microscope', label: 'Examens', route: '/laborantin/examens', implemented: true },
+  { icon: 'clipboard-list', label: 'Historique', route: '/laborantin/examens', queryParams: { statut: 'termine' }, implemented: true },
   { icon: 'user', label: 'Mon profil', route: '/laborantin/profile', implemented: false }
 ];
 

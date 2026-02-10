@@ -55,6 +55,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   
   isLoading = true;
   isSaving = false;
+  isPausing = false;
   error: string | null = null;
 
   // Hospitalisation (nouveau workflow: médecin ne choisit pas de lit)
@@ -1249,6 +1250,32 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       this.error = 'Erreur lors de la sauvegarde';
     }
     this.isSaving = false;
+  }
+
+  /**
+   * Mettre la consultation en pause (sauvegarde + changement de statut)
+   */
+  async pauserConsultation(): Promise<void> {
+    this.isPausing = true;
+    this.error = null;
+    try {
+      // Sauvegarder d'abord toutes les données
+      await this.saveAnamnese();
+      await this.saveDiagnostic();
+      await this.savePrescriptions();
+      
+      // Mettre en pause via l'API (l'étape est sauvegardée avec les données)
+      await this.consultationService.pauseConsultation(this.consultationId).toPromise();
+      
+      console.log('[Consultation] Mise en pause réussie');
+      
+      // Émettre l'événement cancelled pour retourner au dashboard
+      this.cancelled.emit();
+    } catch (err) {
+      console.error('Erreur mise en pause:', err);
+      this.error = 'Erreur lors de la mise en pause';
+    }
+    this.isPausing = false;
   }
 
   /**

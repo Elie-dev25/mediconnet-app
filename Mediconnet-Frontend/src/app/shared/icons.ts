@@ -208,7 +208,17 @@ import {
   Construction,
   
   // Lab & Science
-  Microscope
+  Microscope,
+  FilePlus,
+  UploadCloud,
+  FileCheck,
+  FileClock,
+  
+  // Missing icons for consultation
+  ScanLine,
+  CirclePlus,
+  BrainCircuit,
+  FolderCheck
 } from 'lucide-angular';
 
 // Export du module et des utilitaires Lucide
@@ -423,7 +433,26 @@ export const ALL_ICONS = {
   Construction,
   
   // Lab & Science
-  Microscope
+  Microscope,
+  'microscope': Microscope,
+  FilePlus,
+  'file-plus': FilePlus,
+  UploadCloud,
+  'upload-cloud': UploadCloud,
+  FileCheck,
+  'file-check': FileCheck,
+  FileClock,
+  'file-clock': FileClock,
+  
+  // Consultation icons
+  ScanLine,
+  'scan-line': ScanLine,
+  CirclePlus,
+  'circle-plus': CirclePlus,
+  BrainCircuit,
+  'brain-circuit': BrainCircuit,
+  FolderCheck,
+  'folder-check': FolderCheck
 };
 
 /**

@@ -302,6 +302,14 @@
                     <lucide-icon name="clock" [size]="12"></lucide-icon> {{ formatDateTime(examen.dateResultat) }}
                   </span>
                 </div>
+                <!-- Bouton Consulter -->
+                <button 
+                  class="btn btn-consulter btn-sm" 
+                  *ngIf="examen.statut === 'termine' || examen.hasResultat"
+                  (click)="openResultatExamen(examen)">
+                  <lucide-icon name="eye" [size]="14"></lucide-icon>
+                  Consulter
+                </button>
               </div>
             </div>
           </div>
@@ -378,7 +386,7 @@
 
       <!-- Medecin Actions -->
       <ng-container *ngIf="isMedecin">
-        <button class="btn btn-danger" *ngIf="hospitalisation.statut === 'EN_COURS'" (click)="onFinHospitalisation()">
+        <button class="btn btn-danger" *ngIf="hospitalisation.statut?.toLowerCase() === 'en_cours'" (click)="onFinHospitalisation()">
           <lucide-icon name="log-out" [size]="16"></lucide-icon>
           Fin hospitalisation
         </button>
@@ -469,3 +477,10 @@
     </div>
   </div>
 </div>
+
+<!-- Sidebar Résultat Examen -->
+<app-resultat-examen-sidebar
+  [isOpen]="showResultatSidebar"
+  [idBulletinExamen]="selectedExamenId"
+  (close)="closeResultatSidebar()">
+</app-resultat-examen-sidebar>

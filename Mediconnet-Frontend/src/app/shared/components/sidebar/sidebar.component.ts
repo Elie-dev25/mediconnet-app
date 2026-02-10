@@ -14,7 +14,9 @@ import {
   AlertCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, Loader2,
   PackageX, Sparkles, Truck, ClipboardCheck, RotateCcw, ArrowDownCircle, ArrowUpCircle,
   Inbox, Eye, EyeOff, XCircle, Save, RefreshCw, Download, Upload,
-  Syringe, BedDouble, Activity
+  Syringe, BedDouble, Activity,
+  Microscope, FilePlus, UploadCloud,
+  FileCheck, FileClock
 } from 'lucide-angular';
 
 export interface MenuItem {
@@ -24,6 +26,7 @@ export interface MenuItem {
   badge?: number;
   implemented?: boolean; // true par defaut si non specifie
   action?: string; // 'profile' pour ouvrir le formulaire de profil
+  queryParams?: { [key: string]: any }; // paramètres de requête pour la route
 }
 
 @Component({
@@ -44,7 +47,12 @@ export interface MenuItem {
         AlertCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, Loader2,
         PackageX, Sparkles, Truck, ClipboardCheck, RotateCcw, ArrowDownCircle, ArrowUpCircle,
         Inbox, Eye, EyeOff, XCircle, Save, RefreshCw, Download, Upload,
-        Syringe, BedDouble, Activity
+        Syringe, BedDouble, Activity,
+        Microscope, 'microscope': Microscope,
+        FilePlus, 'file-plus': FilePlus,
+        UploadCloud, 'upload-cloud': UploadCloud,
+        FileCheck, 'file-check': FileCheck,
+        FileClock, 'file-clock': FileClock
       })
     }
   ],

@@ -1,0 +1,473 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="examens-container">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-title">
+        <h1><lucide-icon name="microscope" [size]="28"></lucide-icon> Examens</h1>
+        <p class="subtitle">Gestion des examens prescrits</p>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="alert alert-success" *ngIf="successMessage">
+      <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+      {{ successMessage }}
+    </div>
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+      {{ errorMessage }}
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="18"></lucide-icon>
+        <input type="text" 
+               placeholder="Rechercher patient, examen..." 
+               [(ngModel)]="searchTerm"
+               (ngModelChange)="onSearchChange($event)">
+      </div>
+      
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="filters.statut" (ngModelChange)="onFilterChange()">
+            <option [ngValue]="undefined">Tous</option>
+            <option value="prescrit">En attente</option>
+            <option value="en_cours">En cours</option>
+            <option value="termine">Terminé</option>
+            <option value="annule">Annulé</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Urgence</label>
+          <select [(ngModel)]="filters.urgence" (ngModelChange)="onFilterChange()">
+            <option [ngValue]="undefined">Tous</option>
+            <option [ngValue]="true">Urgents uniquement</option>
+            <option [ngValue]="false">Non urgents</option>
+          </select>
+        </div>
+
+        <button class="btn-clear" (click)="clearFilters()" *ngIf="filters.statut || filters.urgence || searchTerm">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+          Effacer filtres
+        </button>
+      </div>
+    </div>
+
+    <!-- Liste des examens -->
+    <div class="examens-table-container">
+      <div class="loading-state" *ngIf="isLoading">
+        <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+        <p>Chargement des examens...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoading && examens.length === 0">
+        <lucide-icon name="inbox" [size]="48"></lucide-icon>
+        <p>Aucun examen trouvé</p>
+      </div>
+
+      <table class="examens-table" *ngIf="!isLoading && examens.length > 0">
+        <thead>
+          <tr>
+            <th>Examen</th>
+            <th>Patient</th>
+            <th>Médecin</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let examen of examens" [class.urgent]="examen.urgence">
+            <td class="cell-examen">
+              <div class="examen-info">
+                <span class="urgence-badge" *ngIf="examen.urgence">
+                  <lucide-icon name="alert-triangle" [size]="12"></lucide-icon> URGENT
+                </span>
+                <span class="examen-name">{{ examen.nomExamen || 'Examen' }}</span>
+                <span class="examen-type" *ngIf="examen.categorie">{{ examen.categorie }}</span>
+              </div>
+            </td>
+            <td class="cell-patient">
+              <div class="patient-info">
+                <span class="patient-name">{{ formatPatientName(examen) }}</span>
+                <span class="patient-dossier" *ngIf="examen.patientNumeroDossier">
+                  {{ examen.patientNumeroDossier }}
+                </span>
+              </div>
+            </td>
+            <td class="cell-medecin">
+              <span>{{ formatMedecinName(examen) }}</span>
+            </td>
+            <td class="cell-date">
+              {{ examen.dateDemande ? (examen.dateDemande | date:'dd/MM/yyyy') : '-' }}
+            </td>
+            <td class="cell-statut">
+              <span class="status-badge" [ngClass]="getStatutClass(examen.statut)">
+                {{ getStatutLabel(examen.statut) }}
+              </span>
+            </td>
+            <td class="cell-actions">
+              <button class="btn-icon" title="Détails" (click)="openDetails(examen.idBulletinExamen)">
+                <lucide-icon name="eye" [size]="18"></lucide-icon>
+              </button>
+              <button class="btn-icon btn-start" title="Démarrer" 
+                      *ngIf="examen.statut === 'prescrit'"
+                      (click)="demarrerExamen(examen.idBulletinExamen)">
+                <lucide-icon name="play" [size]="18"></lucide-icon>
+              </button>
+              <button class="btn-icon btn-result" title="Enregistrer résultat" 
+                      *ngIf="examen.statut === 'prescrit' || examen.statut === 'en_cours'"
+                      (click)="openResultatSidebar(examen.idBulletinExamen)">
+                <lucide-icon name="file-plus" [size]="18"></lucide-icon>
+              </button>
+              <button class="btn-icon btn-view" title="Voir résultat" 
+                      *ngIf="examen.hasResultat"
+                      (click)="openDetails(examen.idBulletinExamen)">
+                <lucide-icon name="file-text" [size]="18"></lucide-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="btn-page" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+        </button>
+        <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+        <button class="btn-page" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Cards View -->
+    <div class="examens-cards" *ngIf="!isLoading && examens.length > 0">
+      <div class="examen-card" *ngFor="let examen of examens" [class.urgent]="examen.urgence">
+        <div class="card-header">
+          <div class="examen-type-info">
+            <span class="urgence-badge" *ngIf="examen.urgence">
+              <lucide-icon name="alert-triangle" [size]="12"></lucide-icon> URGENT
+            </span>
+            <span class="examen-name">{{ examen.nomExamen || 'Examen' }}</span>
+          </div>
+          <span class="status-badge" [ngClass]="getStatutClass(examen.statut)">
+            {{ getStatutLabel(examen.statut) }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <lucide-icon name="user" [size]="14"></lucide-icon>
+            <span>{{ formatPatientName(examen) }}</span>
+          </div>
+          <div class="info-row" *ngIf="examen.patientNumeroDossier">
+            <lucide-icon name="folder" [size]="14"></lucide-icon>
+            <span>{{ examen.patientNumeroDossier }}</span>
+          </div>
+          <div class="info-row">
+            <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+            <span>{{ formatMedecinName(examen) }}</span>
+          </div>
+          <div class="info-row">
+            <lucide-icon name="calendar" [size]="14"></lucide-icon>
+            <span>{{ examen.dateDemande ? (examen.dateDemande | date:'dd/MM/yyyy') : '-' }}</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-action" (click)="openDetails(examen.idBulletinExamen)">
+            <lucide-icon name="eye" [size]="16"></lucide-icon> Détails
+          </button>
+          <button class="btn-action btn-primary" 
+                  *ngIf="examen.statut === 'prescrit' || examen.statut === 'en_cours'"
+                  (click)="openResultatSidebar(examen.idBulletinExamen)">
+            <lucide-icon name="file-plus" [size]="16"></lucide-icon> Résultat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Détails -->
+  <div class="sidebar-overlay" *ngIf="showDetailsSidebar" (click)="closeDetailsSidebar()"></div>
+  <div class="sidebar sidebar-details" [class.open]="showDetailsSidebar">
+    <div class="sidebar-header">
+      <h2><lucide-icon name="file-text" [size]="22"></lucide-icon> Détails de l'examen</h2>
+      <button class="btn-close" (click)="closeDetailsSidebar()">
+        <lucide-icon name="x" [size]="22"></lucide-icon>
+      </button>
+    </div>
+    
+    <div class="sidebar-content">
+      <div class="loading-state" *ngIf="isLoadingDetails">
+        <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+        <p>Chargement...</p>
+      </div>
+
+      <div class="details-content" *ngIf="!isLoadingDetails && selectedExamen">
+        <!-- Infos examen -->
+        <div class="detail-section">
+          <h3>Examen</h3>
+          <div class="detail-card">
+            <div class="detail-row" *ngIf="selectedExamen.urgence">
+              <span class="urgence-badge large">
+                <lucide-icon name="alert-triangle" [size]="14"></lucide-icon> URGENT
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Type</span>
+              <span class="value">{{ selectedExamen.nomExamen || 'Examen' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.categorie">
+              <span class="label">Catégorie</span>
+              <span class="value">{{ selectedExamen.categorie }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.specialite">
+              <span class="label">Spécialité</span>
+              <span class="value">{{ selectedExamen.specialite }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.dateDemande">
+              <span class="label">Date prescription</span>
+              <span class="value">{{ selectedExamen.dateDemande | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Statut</span>
+              <span class="status-badge" [ngClass]="getStatutClass(selectedExamen.statut)">
+                {{ getStatutLabel(selectedExamen.statut) }}
+              </span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.instructions">
+              <span class="label">Instructions</span>
+              <span class="value instructions">{{ selectedExamen.instructions }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Patient -->
+        <div class="detail-section" *ngIf="selectedExamen.patient">
+          <h3><lucide-icon name="user" [size]="18"></lucide-icon> Patient</h3>
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="label">Nom</span>
+              <span class="value">{{ selectedExamen.patient.prenom }} {{ selectedExamen.patient.nom }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.patient.numeroDossier">
+              <span class="label">N° Dossier</span>
+              <span class="value">{{ selectedExamen.patient.numeroDossier }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.patient.dateNaissance">
+              <span class="label">Âge</span>
+              <span class="value">{{ calculateAge(selectedExamen.patient.dateNaissance) }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.patient.sexe">
+              <span class="label">Sexe</span>
+              <span class="value">{{ selectedExamen.patient.sexe }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.patient.groupeSanguin">
+              <span class="label">Groupe sanguin</span>
+              <span class="value blood-type">{{ selectedExamen.patient.groupeSanguin }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.patient.allergies">
+              <span class="label">Allergies</span>
+              <span class="value warning">{{ selectedExamen.patient.allergies }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Médecin -->
+        <div class="detail-section" *ngIf="selectedExamen.medecin">
+          <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Médecin prescripteur</h3>
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="label">Nom</span>
+              <span class="value">Dr. {{ selectedExamen.medecin.prenom }} {{ selectedExamen.medecin.nom }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.medecin.specialite">
+              <span class="label">Spécialité</span>
+              <span class="value">{{ selectedExamen.medecin.specialite }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.medecin.telephone">
+              <span class="label">Téléphone</span>
+              <span class="value">{{ selectedExamen.medecin.telephone }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Laboratoire -->
+        <div class="detail-section" *ngIf="selectedExamen.laboratoire">
+          <h3><lucide-icon name="building-2" [size]="18"></lucide-icon> Laboratoire</h3>
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="label">Nom</span>
+              <span class="value">{{ selectedExamen.laboratoire.nomLabo }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.laboratoire.type">
+              <span class="label">Type</span>
+              <span class="value">{{ selectedExamen.laboratoire.type }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Résultat -->
+        <div class="detail-section" *ngIf="selectedExamen.resultat">
+          <h3><lucide-icon name="file-check" [size]="18"></lucide-icon> Résultat</h3>
+          <div class="detail-card result-card">
+            <div class="detail-row" *ngIf="selectedExamen.resultat.dateResultat">
+              <span class="label">Date</span>
+              <span class="value">{{ selectedExamen.resultat.dateResultat | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="selectedExamen.resultat.laborantinNom">
+              <span class="label">Validé par</span>
+              <span class="value">{{ selectedExamen.resultat.laborantinNom }}</span>
+            </div>
+            <div class="result-text" *ngIf="selectedExamen.resultat.resultatTexte">
+              <span class="label">Résultat</span>
+              <div class="text-content">{{ selectedExamen.resultat.resultatTexte }}</div>
+            </div>
+            <div class="result-text" *ngIf="selectedExamen.resultat.commentaireLabo">
+              <span class="label">Commentaire</span>
+              <div class="text-content comment">{{ selectedExamen.resultat.commentaireLabo }}</div>
+            </div>
+            
+            <!-- Documents -->
+            <div class="documents-list" *ngIf="selectedExamen.resultat.documents?.length">
+              <span class="label">Documents</span>
+              <div class="document-item" *ngFor="let doc of selectedExamen.resultat.documents">
+                <lucide-icon name="file" [size]="16"></lucide-icon>
+                <span class="doc-name">{{ doc.nomFichier }}</span>
+                <span class="doc-size">{{ formatFileSize(doc.tailleOctets) }}</span>
+                <button class="btn-download" (click)="downloadDocument(doc.uuid, doc.nomFichier)">
+                  <lucide-icon name="download" [size]="16"></lucide-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historique -->
+        <div class="detail-section" *ngIf="selectedExamen.historique?.length">
+          <h3><lucide-icon name="history" [size]="18"></lucide-icon> Historique</h3>
+          <div class="history-list">
+            <div class="history-item" *ngFor="let h of selectedExamen.historique">
+              <div class="history-date">{{ h.dateDemande ? (h.dateDemande | date:'dd/MM/yyyy') : '-' }}</div>
+              <div class="history-info">
+                <span class="history-name">{{ h.nomExamen }}</span>
+                <span class="status-badge small" [ngClass]="getStatutClass(h.statut)">
+                  {{ getStatutLabel(h.statut) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="sidebar-actions" *ngIf="selectedExamen.statut !== 'termine' && selectedExamen.statut !== 'annule'">
+          <button class="btn btn-secondary" *ngIf="selectedExamen.statut === 'prescrit'"
+                  (click)="demarrerExamen(selectedExamen.idBulletinExamen)">
+            <lucide-icon name="play" [size]="18"></lucide-icon> Démarrer l'examen
+          </button>
+          <button class="btn btn-primary" (click)="openResultatSidebar(selectedExamen.idBulletinExamen)">
+            <lucide-icon name="file-plus" [size]="18"></lucide-icon> Enregistrer le résultat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Résultat -->
+  <div class="sidebar-overlay" *ngIf="showResultatSidebar" (click)="closeResultatSidebar()"></div>
+  <div class="sidebar sidebar-resultat" [class.open]="showResultatSidebar">
+    <div class="sidebar-header">
+      <h2><lucide-icon name="file-plus" [size]="22"></lucide-icon> Enregistrer le résultat</h2>
+      <button class="btn-close" (click)="closeResultatSidebar()">
+        <lucide-icon name="x" [size]="22"></lucide-icon>
+      </button>
+    </div>
+    
+    <div class="sidebar-content">
+      <div class="loading-state" *ngIf="isLoadingDetails">
+        <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+        <p>Chargement...</p>
+      </div>
+
+      <form class="resultat-form" *ngIf="!isLoadingDetails && selectedExamen" (ngSubmit)="submitResultat()">
+        <!-- Résumé examen -->
+        <div class="examen-summary">
+          <div class="summary-header">
+            <span class="examen-name">{{ selectedExamen.nomExamen || 'Examen' }}</span>
+            <span class="urgence-badge" *ngIf="selectedExamen.urgence">URGENT</span>
+          </div>
+          <div class="summary-patient">
+            <lucide-icon name="user" [size]="14"></lucide-icon>
+            {{ formatPatientName(selectedExamen) }}
+          </div>
+        </div>
+
+        <!-- Résultat texte -->
+        <div class="form-group">
+          <label for="resultat">Résultat de l'examen *</label>
+          <textarea id="resultat" 
+                    [(ngModel)]="resultatTexte" 
+                    name="resultatTexte"
+                    rows="8" 
+                    placeholder="Saisissez les résultats de l'examen..."
+                    required></textarea>
+        </div>
+
+        <!-- Commentaire -->
+        <div class="form-group">
+          <label for="commentaire">Commentaire (optionnel)</label>
+          <textarea id="commentaire" 
+                    [(ngModel)]="commentaire" 
+                    name="commentaire"
+                    rows="3" 
+                    placeholder="Observations, remarques..."></textarea>
+        </div>
+
+        <!-- Upload fichiers -->
+        <div class="form-group">
+          <label>Documents joints</label>
+          <div class="file-upload-zone" 
+               (click)="fileInput.click()"
+               (dragover)="$event.preventDefault()"
+               (drop)="$event.preventDefault()">
+            <lucide-icon name="upload-cloud" [size]="32"></lucide-icon>
+            <p>Cliquez ou glissez des fichiers ici</p>
+            <span class="hint">PDF, Images (max 50 Mo)</span>
+            <input #fileInput type="file" 
+                   multiple 
+                   accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.tiff"
+                   (change)="onFilesSelected($event)" 
+                   hidden>
+          </div>
+          
+          <div class="files-list" *ngIf="fichiersResultat.length > 0">
+            <div class="file-item" *ngFor="let file of fichiersResultat; let i = index">
+              <lucide-icon name="file" [size]="16"></lucide-icon>
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-size">{{ formatFileSize(file.size) }}</span>
+              <button type="button" class="btn-remove" (click)="removeFile(i)">
+                <lucide-icon name="x" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeResultatSidebar()">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmittingResultat || !resultatTexte.trim()">
+            <lucide-icon name="loader-2" [size]="18" class="spinner" *ngIf="isSubmittingResultat"></lucide-icon>
+            <lucide-icon name="check" [size]="18" *ngIf="!isSubmittingResultat"></lucide-icon>
+            {{ isSubmittingResultat ? 'Enregistrement...' : 'Enregistrer le résultat' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</app-dashboard-layout>
