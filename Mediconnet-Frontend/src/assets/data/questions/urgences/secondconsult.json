@@ -1,0 +1,46 @@
+{
+  "specialiteId": 9,
+  "specialiteNom": "Médecine d'Urgence",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "urg-s1",
+      "texte": "Pourquoi revenez-vous aux urgences aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-s2",
+      "texte": "Les symptômes pour lesquels vous aviez consulté précédemment se sont-ils améliorés, aggravés ou sont-ils restés identiques ?",
+      "type": "choix",
+      "options": ["Améliorés", "Identiques", "Aggravés", "Nouveaux symptômes"],
+      "obligatoire": true
+    },
+    {
+      "id": "urg-s3",
+      "texte": "Avez-vous suivi le traitement ou les recommandations donnés lors de votre précédente visite ?",
+      "type": "choix",
+      "options": ["Oui, entièrement", "Partiellement", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "urg-s4",
+      "texte": "Avez-vous consulté un autre médecin ou spécialiste depuis votre dernière visite aux urgences ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": false
+    },
+    {
+      "id": "urg-s5",
+      "texte": "Avez-vous de nouveaux symptômes ou des complications à signaler ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-s6",
+      "texte": "Y a-t-il eu un changement dans vos médicaments ou votre état de santé général depuis la dernière visite ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

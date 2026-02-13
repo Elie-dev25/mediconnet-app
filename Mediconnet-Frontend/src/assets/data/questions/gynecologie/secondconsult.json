@@ -1,0 +1,44 @@
+{
+  "specialiteId": 23,
+  "specialiteNom": "Obstétrique et Gynécologie",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "gyn-s1",
+      "texte": "Avez-vous eu de nouveaux problèmes de santé depuis notre dernière consultation ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-s2",
+      "texte": "Avez-vous ressenti de nouveaux symptômes gynécologiques (douleurs pelviennes, saignements anormaux, démangeaisons, pertes inhabituelles, ou autres) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-s3",
+      "texte": "Votre cycle menstruel est-il resté régulier/irrégulier depuis la dernière fois ? Avez-vous remarqué des changements (durée, abondance, douleurs) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-s4",
+      "texte": "Avez-vous été traitée pour une nouvelle maladie ou débuté de nouveaux médicaments récemment ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-s5",
+      "texte": "Avez-vous eu des rapports sexuels ? Si oui, protégés ou non ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "gyn-s6",
+      "texte": "Avez-vous d'autres questions ou préoccupations concernant votre santé gynécologique ou vos projets (grossesse, contraception) actuels ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

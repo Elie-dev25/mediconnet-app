@@ -1,0 +1,45 @@
+{
+  "specialiteId": 12,
+  "specialiteNom": "Chirurgie Générale",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "chir-s1",
+      "texte": "Comment vous sentez-vous depuis la dernière consultation ou l'intervention ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-s2",
+      "texte": "Avez-vous ressenti des douleurs au niveau de la zone opérée ou concernée ? Si oui, décrivez l'intensité.",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-s3",
+      "texte": "Avez-vous remarqué des signes d'infection (rougeur, gonflement, écoulement, fièvre) ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "chir-s4",
+      "texte": "Avez-vous bien suivi le traitement post-opératoire prescrit (médicaments, soins de plaie, repos) ?",
+      "type": "choix",
+      "options": ["Oui, entièrement", "Partiellement", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "chir-s5",
+      "texte": "Avez-vous repris vos activités quotidiennes ? Si oui, lesquelles ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "chir-s6",
+      "texte": "Avez-vous de nouvelles plaintes ou préoccupations depuis notre dernière consultation ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

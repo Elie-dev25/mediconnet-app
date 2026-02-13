@@ -1,0 +1,69 @@
+{
+  "specialiteId": 12,
+  "specialiteNom": "Chirurgie Générale",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "chir-p1",
+      "texte": "Quelle est la raison de votre consultation chirurgicale aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p2",
+      "texte": "Avez-vous déjà subi une intervention chirurgicale auparavant ? Si oui, laquelle (lesquelles) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p3",
+      "texte": "Avez-vous des allergies connues (médicaments, latex, anesthésiques, aliments) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p4",
+      "texte": "Prenez-vous actuellement des médicaments (anticoagulants, aspirine, anti-inflammatoires, autres) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p5",
+      "texte": "Avez-vous des problèmes de coagulation ou de saignement excessif ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Je ne sais pas"],
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p6",
+      "texte": "Souffrez-vous de maladies chroniques (diabète, hypertension, maladies cardiaques, respiratoires) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p7",
+      "texte": "Fumez-vous ou consommez-vous de l'alcool régulièrement ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "chir-p8",
+      "texte": "Avez-vous déjà eu des complications lors d'une anesthésie (générale ou locale) ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Jamais eu d'anesthésie"],
+      "obligatoire": true
+    },
+    {
+      "id": "chir-p9",
+      "texte": "Depuis combien de temps présentez-vous les symptômes qui motivent cette consultation ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "chir-p10",
+      "texte": "Avez-vous des antécédents familiaux de maladies chirurgicales (hernies, cancers, etc.) ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

@@ -1195,10 +1195,10 @@ public class ConsultationCompleteController : BaseApiController
     }
 
     /// <summary>
-    /// Mettre une consultation en pause
+    /// Mettre une consultation en pause avec sauvegarde de l'étape actuelle
     /// </summary>
     [HttpPost("{idConsultation}/pause")]
-    public async Task<IActionResult> PauseConsultation(int idConsultation)
+    public async Task<IActionResult> PauseConsultation(int idConsultation, [FromBody] PauseConsultationRequest? request = null)
     {
         try
         {
@@ -1221,6 +1221,12 @@ public class ConsultationCompleteController : BaseApiController
             var nouveauStatut = ConsultationStatut.EnPause.ToDbString();
             consultation.Statut = nouveauStatut;
             consultation.UpdatedAt = DateTime.UtcNow;
+            
+            // Sauvegarder l'étape actuelle si fournie
+            if (!string.IsNullOrEmpty(request?.EtapeActuelle))
+            {
+                consultation.EtapeActuelle = request.EtapeActuelle;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -1903,6 +1909,11 @@ public class CreerRdvSuiviRequest
 public class CloturerDossierRequest
 {
     public string? Motif { get; set; }
+}
+
+public class PauseConsultationRequest
+{
+    public string? EtapeActuelle { get; set; }
 }
 
 public static class ConsultationHelpers

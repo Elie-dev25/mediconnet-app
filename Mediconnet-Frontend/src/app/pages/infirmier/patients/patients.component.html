@@ -217,12 +217,12 @@
                 </div>
               </div>
               <div class="card-main">
-                <div class="card-top">
+                <div class="card-header">
                   <div class="patient-details">
                     <span class="patient-name">{{ h.patient.prenom }} {{ h.patient.nom }}</span>
                     <span class="patient-dossier" *ngIf="h.patient.numeroDossier">{{ h.patient.numeroDossier }}</span>
                   </div>
-                  <div class="badges">
+                  <div class="card-badges">
                     <span class="badge" [class.badge-warning]="h.statut === 'EN_ATTENTE'" 
                           [class.badge-success]="h.statut === 'EN_COURS'">
                       {{ getStatutLabel(h.statut) }}
@@ -232,23 +232,36 @@
                     </span>
                   </div>
                 </div>
-                <div class="card-info" *ngIf="h.medecin?.nom || h.dateEntree || h.motif || h.lit">
-                  <span class="info-item" *ngIf="h.medecin?.nom">
-                    <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
-                    Dr {{ h.medecin.prenom }} {{ h.medecin.nom }}
-                  </span>
-                  <span class="info-item" *ngIf="h.dateEntree">
-                    <lucide-icon name="calendar" [size]="14"></lucide-icon>
-                    {{ formatDateTime(h.dateEntree) }}
-                  </span>
-                  <span class="info-item" *ngIf="h.motif">
-                    <lucide-icon name="file-text" [size]="14"></lucide-icon>
-                    {{ h.motif }}
-                  </span>
-                  <span class="info-item" *ngIf="h.lit?.chambre">
-                    <lucide-icon name="bed" [size]="14"></lucide-icon>
-                    Chambre {{ h.lit?.chambre }} - Lit {{ h.lit?.numero }}
-                  </span>
+
+                <div class="card-meta-grid" *ngIf="h.medecin?.nom || h.dateEntree || h.motif || h.lit">
+                  <div class="meta-item" *ngIf="h.medecin?.nom">
+                    <span class="meta-label">Médecin référent</span>
+                    <span class="meta-value">
+                      <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                      Dr {{ h.medecin.prenom }} {{ h.medecin.nom }}
+                    </span>
+                  </div>
+                  <div class="meta-item" *ngIf="h.dateEntree">
+                    <span class="meta-label">Date d'entrée</span>
+                    <span class="meta-value">
+                      <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                      {{ formatDateTime(h.dateEntree) }}
+                    </span>
+                  </div>
+                  <div class="meta-item" *ngIf="h.motif">
+                    <span class="meta-label">Motif</span>
+                    <span class="meta-value">
+                      <lucide-icon name="file-text" [size]="14"></lucide-icon>
+                      {{ h.motif }}
+                    </span>
+                  </div>
+                  <div class="meta-item" *ngIf="h.lit?.chambre">
+                    <span class="meta-label">Chambre / lit</span>
+                    <span class="meta-value">
+                      <lucide-icon name="bed" [size]="14"></lucide-icon>
+                      Chambre {{ h.lit?.chambre }} - Lit {{ h.lit?.numero }}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div class="card-actions" *ngIf="isMajor && h.statut === 'EN_ATTENTE'">

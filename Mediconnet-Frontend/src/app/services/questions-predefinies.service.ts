@@ -29,6 +29,8 @@ export interface QuestionsFile {
 })
 export class QuestionsPredefiniesService {
   private readonly baseUrl = '/assets/data/questions';
+  // Version pour éviter le cache navigateur sur les fichiers JSON
+  private readonly cacheVersion = 'v=20260213';
   private indexCache$: Observable<SpecialiteIndex[]> | null = null;
   private questionsCache: Map<string, Observable<QuestionPredefinie[]>> = new Map();
 
@@ -39,7 +41,7 @@ export class QuestionsPredefiniesService {
    */
   private loadIndex(): Observable<SpecialiteIndex[]> {
     if (!this.indexCache$) {
-      this.indexCache$ = this.http.get<{ specialites: SpecialiteIndex[] }>(`${this.baseUrl}/index.json`).pipe(
+      this.indexCache$ = this.http.get<{ specialites: SpecialiteIndex[] }>(`${this.baseUrl}/index.json?${this.cacheVersion}`).pipe(
         map(data => data.specialites),
         shareReplay(1),
         catchError(err => {
@@ -55,19 +57,32 @@ export class QuestionsPredefiniesService {
    * Récupère les questions pour une spécialité donnée
    */
   getQuestionsParSpecialite(specialiteId: number, typeVisite: 'premiere' | 'suivante'): Observable<QuestionPredefinie[]> {
+    console.log(`[Questions] Recherche questions pour spécialité ${specialiteId}, type: ${typeVisite}`);
+    
     if (!specialiteId || specialiteId === 0) {
+      console.log('[Questions] ID spécialité invalide');
       return of([]);
     }
 
     return this.loadIndex().pipe(
-      map(specialites => specialites.find(s => s.id === specialiteId)),
+      map(specialites => {
+        console.log('[Questions] Spécialités disponibles:', specialites);
+        const specialite = specialites.find(s => s.id === specialiteId);
+        console.log(`[Questions] Spécialité trouvée pour ID ${specialiteId}:`, specialite);
+        return specialite;
+      }),
       switchMap(specialite => {
         if (!specialite) {
+          console.log(`[Questions] Aucune spécialité trouvée pour ID ${specialiteId}`);
           return of([]);
         }
+        console.log(`[Questions] Chargement fichier: ${specialite.key}/${typeVisite}`);
         return this.loadQuestionsFile(specialite.key, typeVisite);
       }),
-      catchError(() => of([]))
+      catchError((err) => {
+        console.error('[Questions] Erreur:', err);
+        return of([]);
+      })
     );
   }
 
@@ -79,9 +94,13 @@ export class QuestionsPredefiniesService {
     const cacheKey = `${specialiteKey}-${typeVisite}`;
 
     if (!this.questionsCache.has(cacheKey)) {
-      const url = `${this.baseUrl}/${specialiteKey}/${fileName}`;
+      const url = `${this.baseUrl}/${specialiteKey}/${fileName}?${this.cacheVersion}`;
+      console.log(`[Questions] URL du fichier: ${url}`);
       const obs$ = this.http.get<QuestionsFile>(url).pipe(
-        map(data => data.questions || []),
+        map(data => {
+          console.log(`[Questions] Données reçues pour ${specialiteKey}/${fileName}:`, data);
+          return data.questions || [];
+        }),
         shareReplay(1),
         catchError(err => {
           console.error(`Erreur chargement questions ${specialiteKey}/${fileName}:`, err);

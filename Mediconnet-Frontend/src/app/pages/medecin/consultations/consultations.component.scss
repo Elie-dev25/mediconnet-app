@@ -18,8 +18,10 @@ $consult-purple: #7c3aed;
 // ==================== HEADER COMPACT ====================
 .page-header-compact {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 
   .header-left h1 {
@@ -36,8 +38,19 @@ $consult-purple: #7c3aed;
 
   .header-actions {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.5rem;
+    width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    .header-actions {
+      width: auto;
+    }
   }
 }
 
@@ -49,6 +62,12 @@ $consult-purple: #7c3aed;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+  width: 100%;
+  max-width: 460px;
+
+  @include sm-down {
+    width: 100%;
+  }
 
   lucide-icon { color: #9ca3af; }
   
@@ -56,8 +75,14 @@ $consult-purple: #7c3aed;
     border: none;
     outline: none;
     font-size: 0.8rem;
-    width: 140px;
+    flex: 1;
+    min-width: 0;
     &::placeholder { color: #9ca3af; }
+  }
+
+  .search-box-compact__refresh {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 }
 
@@ -82,17 +107,19 @@ $consult-purple: #7c3aed;
 
 // ==================== STATS ROW COMPACT ====================
 .stats-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
 
 .stat-chip {
+  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -151,14 +178,22 @@ $consult-purple: #7c3aed;
 
 .tabs-nav {
   display: flex;
+  flex-wrap: nowrap;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-bottom: 1px solid #e5e7eb;
   padding: 0.25rem;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .tab-btn {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,6 +207,8 @@ $consult-purple: #7c3aed;
   color: #6b7280;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 150px;
+  white-space: nowrap;
 
   lucide-icon { opacity: 0.7; }
 
@@ -207,32 +244,54 @@ $consult-purple: #7c3aed;
 
 .tab-content {
   padding: 0.5rem;
-  max-height: 500px;
-  overflow-y: auto;
+}
 
-  // Scrollbar invisible mais fonctionnelle
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+.consultations-date-nav {
+  padding: 0.75rem 0.5rem 0;
+  display: flex;
+  justify-content: center;
+
+  .date-nav-arrows {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .date-label {
+    font-weight: 600;
+    min-width: 200px;
+    text-align: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #1f2937;
+    cursor: pointer;
+
+    @include sm-down {
+      min-width: 0;
+      flex: 1;
+    }
+  }
+}
+
+.consultations-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all 0.2s;
 
   &:hover {
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: #f1f5f9;
+    color: $consult-primary;
   }
 }
 
@@ -252,6 +311,19 @@ $consult-purple: #7c3aed;
 .consultations-table {
   display: flex;
   flex-direction: column;
+}
+
+.consultations-table--scrollable {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  margin-right: -0.25rem;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
 
 .table-header {

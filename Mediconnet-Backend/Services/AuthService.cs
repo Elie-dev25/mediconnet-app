@@ -89,9 +89,20 @@ public class AuthService : IAuthService
                 declarationHonneurAcceptee = patient?.DeclarationHonneurAcceptee ?? false;
             }
 
-            // Récupérer le titre affiché pour les infirmiers (Major si applicable via Service.IdMajor)
+            // Récupérer le titre affiché selon le rôle
             string? titreAffiche = null;
-            if (utilisateur.Role == "infirmier")
+            if (utilisateur.Role == "medecin")
+            {
+                var medecin = await _context.Medecins
+                    .Include(m => m.Specialite)
+                    .FirstOrDefaultAsync(m => m.IdUser == utilisateur.IdUser);
+                
+                if (medecin?.Specialite != null)
+                {
+                    titreAffiche = $"Médecin - {medecin.Specialite.NomSpecialite}";
+                }
+            }
+            else if (utilisateur.Role == "infirmier")
             {
                 var serviceMajor = await _context.Services
                     .FirstOrDefaultAsync(s => s.IdMajor == utilisateur.IdUser);

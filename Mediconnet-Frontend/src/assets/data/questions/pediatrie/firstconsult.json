@@ -1,0 +1,68 @@
+{
+  "specialiteId": 29,
+  "specialiteNom": "Pédiatrie",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "ped-p1",
+      "texte": "Quelle est la raison de la consultation de votre enfant aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p2",
+      "texte": "Quel est l'âge exact de l'enfant (date de naissance) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p3",
+      "texte": "Comment s'est déroulée la grossesse et l'accouchement (prématurité, complications) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p4",
+      "texte": "L'enfant est-il à jour dans ses vaccinations ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Partiellement", "Je ne sais pas"],
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p5",
+      "texte": "L'enfant a-t-il des allergies connues (alimentaires, médicamenteuses, autres) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p6",
+      "texte": "L'enfant prend-il actuellement des médicaments ou des suppléments ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "ped-p7",
+      "texte": "Comment est l'alimentation de l'enfant (allaitement, diversification, appétit) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-p8",
+      "texte": "Comment est le développement de l'enfant (marche, langage, sociabilité) ? Avez-vous des inquiétudes ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "ped-p9",
+      "texte": "Y a-t-il des antécédents familiaux de maladies importantes (asthme, diabète, maladies génétiques) ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "ped-p10",
+      "texte": "L'enfant a-t-il déjà été hospitalisé ou opéré ? Si oui, pour quelle raison ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

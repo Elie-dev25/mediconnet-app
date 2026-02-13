@@ -1,0 +1,44 @@
+{
+  "specialiteId": 8,
+  "specialiteNom": "Radiologie Diagnostique",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "rad-s1",
+      "texte": "Quel examen de suivi venez-vous réaliser aujourd'hui et pour quelle raison ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-s2",
+      "texte": "Avez-vous eu des résultats ou un compte-rendu de votre précédent examen d'imagerie ? Si oui, qu'en a dit votre médecin ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-s3",
+      "texte": "Vos symptômes ont-ils évolué depuis le dernier examen (amélioration, aggravation, nouveaux symptômes) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-s4",
+      "texte": "Avez-vous eu des réactions indésirables lors du précédent examen (allergie au produit de contraste, malaise) ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "rad-s5",
+      "texte": "Votre situation médicale a-t-elle changé depuis le dernier examen (nouveaux traitements, nouvelles maladies) ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "rad-s6",
+      "texte": "Avez-vous des questions ou des préoccupations concernant l'examen d'aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

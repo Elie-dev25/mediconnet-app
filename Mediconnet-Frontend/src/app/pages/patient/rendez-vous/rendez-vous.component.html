@@ -163,7 +163,10 @@
         </div>
 
         <!-- Table header -->
-        <div class="list-page-table" *ngIf="!isLoading && currentRdvs.length > 0">
+        <div 
+          class="list-page-table" 
+          *ngIf="!isLoading && currentRdvs.length > 0"
+          [class.list-page-table--scrollable]="currentRdvs.length > 5">
           <div class="list-page-table-header patient-rdv-grid">
             <span>Heure</span>
             <span>Médecin</span>
@@ -179,13 +182,13 @@
             *ngFor="let rdv of currentRdvs">
             
             <!-- Heure -->
-            <div class="list-page-col-time">
+            <div class="list-page-col-time" data-label="Heure">
               <span class="time-value">{{ formatTime(rdv.dateHeure) }}</span>
               <span class="time-date">{{ formatDate(rdv.dateHeure) }}</span>
             </div>
 
             <!-- Médecin -->
-            <div class="list-page-col-user">
+            <div class="list-page-col-user" data-label="Médecin">
               <div class="user-avatar">
                 <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
               </div>
@@ -196,20 +199,20 @@
             </div>
 
             <!-- Motif -->
-            <div class="list-page-col-info">
+            <div class="list-page-col-info" data-label="Motif">
               <span class="info-text">{{ rdv.motif || 'Consultation' }}</span>
               <span class="info-sub">{{ getTypeRdvLabel(rdv.typeRdv) }}</span>
             </div>
 
             <!-- Statut -->
-            <div class="list-page-col-status">
+            <div class="list-page-col-status" data-label="Statut">
               <span class="list-page-status-badge" [ngClass]="getStatusBadgeClass(rdv.statut)">
                 {{ getStatutLabel(rdv.statut) }}
               </span>
             </div>
 
             <!-- Actions -->
-            <div class="list-page-col-actions">
+            <div class="list-page-col-actions" data-label="Actions">
               <!-- Bouton remplir questionnaire (si RDV confirmé et à venir) -->
               <button 
                 class="list-page-action-btn list-page-action-btn--primary"

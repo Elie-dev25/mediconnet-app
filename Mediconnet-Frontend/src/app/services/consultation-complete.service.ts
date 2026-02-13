@@ -88,6 +88,7 @@ export interface ConsultationEnCoursDto {
   dateHeure: Date;
   motif?: string;
   statut?: string;
+  etapeActuelle?: string;  // Étape sauvegardée pour reprise après pause
   isPremiereConsultation: boolean;
   specialiteId: number;
   // Workflow mis à jour
@@ -603,12 +604,12 @@ export class ConsultationCompleteService {
   }
 
   /**
-   * Mettre une consultation en pause
+   * Mettre une consultation en pause avec sauvegarde de l'étape actuelle
    */
-  pauseConsultation(idConsultation: number): Observable<{ message: string; idConsultation: number }> {
+  pauseConsultation(idConsultation: number, etapeActuelle?: string): Observable<{ message: string; idConsultation: number }> {
     return this.http.post<{ message: string; idConsultation: number }>(
       `${this.apiUrl}/${idConsultation}/pause`,
-      {}
+      { etapeActuelle }
     );
   }
 

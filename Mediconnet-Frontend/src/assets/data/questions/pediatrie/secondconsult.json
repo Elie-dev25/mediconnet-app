@@ -1,0 +1,45 @@
+{
+  "specialiteId": 29,
+  "specialiteNom": "Pédiatrie",
+  "typeVisite": "suivante",
+  "questions": [
+    {
+      "id": "ped-s1",
+      "texte": "Comment va votre enfant depuis la dernière consultation ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-s2",
+      "texte": "Les symptômes pour lesquels vous aviez consulté se sont-ils améliorés, aggravés ou sont-ils restés stables ?",
+      "type": "choix",
+      "options": ["Améliorés", "Stables", "Aggravés"],
+      "obligatoire": true
+    },
+    {
+      "id": "ped-s3",
+      "texte": "L'enfant a-t-il présenté de nouveaux symptômes (fièvre, toux, vomissements, éruptions cutanées, autres) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "ped-s4",
+      "texte": "Le traitement prescrit a-t-il été bien suivi et bien toléré ?",
+      "type": "choix",
+      "options": ["Oui, bien suivi et toléré", "Suivi mais mal toléré", "Partiellement suivi", "Non suivi"],
+      "obligatoire": true
+    },
+    {
+      "id": "ped-s5",
+      "texte": "Comment est l'appétit et le sommeil de l'enfant actuellement ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "ped-s6",
+      "texte": "Avez-vous d'autres préoccupations concernant la santé ou le développement de votre enfant ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "specialiteId": 8,
+  "specialiteNom": "Radiologie Diagnostique",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "rad-p1",
+      "texte": "Quel examen d'imagerie venez-vous réaliser et pour quelle raison (motif de la demande) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p2",
+      "texte": "Qui vous a prescrit cet examen (médecin traitant, spécialiste, urgences) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p3",
+      "texte": "Avez-vous déjà passé des examens d'imagerie auparavant (radiographie, échographie, scanner, IRM) ? Si oui, lesquels ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p4",
+      "texte": "Avez-vous des allergies connues, notamment aux produits de contraste iodés ou au gadolinium ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Je ne sais pas"],
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p5",
+      "texte": "Êtes-vous enceinte ou y a-t-il une possibilité de grossesse ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Non concerné(e)"],
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p6",
+      "texte": "Avez-vous des implants métalliques, un pacemaker, des prothèses ou des corps étrangers métalliques ?",
+      "type": "choix",
+      "options": ["Oui", "Non", "Je ne sais pas"],
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p7",
+      "texte": "Souffrez-vous de problèmes rénaux ou de diabète ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "rad-p8",
+      "texte": "Prenez-vous actuellement des médicaments ? Si oui, lesquels ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "rad-p9",
+      "texte": "Êtes-vous claustrophobe ou avez-vous des difficultés à rester immobile ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": false
+    },
+    {
+      "id": "rad-p10",
+      "texte": "Avez-vous des symptômes particuliers à signaler en lien avec l'examen demandé ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

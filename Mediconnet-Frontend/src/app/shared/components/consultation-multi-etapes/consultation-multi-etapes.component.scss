@@ -708,6 +708,40 @@
       to { transform: rotate(360deg); }
     }
   }
+
+  .btn-success {
+    background: #10b981;
+    border: none;
+    color: white;
+    &:hover:not(:disabled) { background: #059669; }
+  }
+
+  .btn-resume {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &.paused-footer {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-top: 2px solid #f59e0b;
+    
+    .pause-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #92400e;
+      font-weight: 600;
+      
+      lucide-icon {
+        color: #f59e0b;
+      }
+    }
+  }
 }
 
 @media (max-width: 600px) {

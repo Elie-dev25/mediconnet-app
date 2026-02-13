@@ -19,10 +19,10 @@
             placeholder="Rechercher..." 
             [(ngModel)]="searchTerm"
             (input)="applyFilters()">
+          <button class="list-page-btn-icon list-page-search__refresh" (click)="refresh()" title="Actualiser">
+            <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+          </button>
         </div>
-        <button class="list-page-btn-icon" (click)="refresh()" title="Actualiser">
-          <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
-        </button>
       </div>
     </header>
 
@@ -92,13 +92,15 @@
 
       <!-- Navigation date (pour vue jour) -->
       <div class="list-page-date-nav" *ngIf="activeFilter === 'jour'">
-        <button class="list-page-nav-btn" (click)="prevDay()">
-          <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
-        </button>
-        <span class="date-label" (click)="goToToday()">{{ dateLabel }}</span>
-        <button class="list-page-nav-btn" (click)="nextDay()">
-          <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
-        </button>
+        <div class="date-nav-arrows">
+          <button class="list-page-nav-btn" (click)="prevDay()">
+            <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+          </button>
+          <span class="date-label" (click)="goToToday()">{{ dateLabel }}</span>
+          <button class="list-page-nav-btn" (click)="nextDay()">
+            <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+          </button>
+        </div>
       </div>
 
       <!-- Contenu de l'onglet actif -->
@@ -114,14 +116,15 @@
         </div>
 
         <!-- Liste des RDV -->
-        <div class="list-page-table" *ngIf="filteredRdv.length > 0">
+        <div 
+          class="list-page-table" 
+          *ngIf="filteredRdv.length > 0"
+          [class.list-page-table--scrollable]="filteredRdv.length > 5">
           <!-- En-tête du tableau -->
           <div class="list-page-table-header rdv-grid">
             <span class="col-time">Heure</span>
             <span class="col-patient">Patient</span>
             <span class="col-motif">Motif</span>
-            <span class="col-status">Statut</span>
-            <span class="col-actions">Actions</span>
           </div>
 
           <!-- Lignes -->
@@ -130,14 +133,14 @@
             [class.list-page-table-row--missed]="rdv.statut === 'absent'"
             *ngFor="let rdv of filteredRdv">
             <!-- Heure -->
-            <div class="list-page-col-time">
+            <div class="list-page-col-time" data-label="Heure">
               <span class="time-value">{{ formatTime(rdv.dateHeure) }}</span>
               <span class="time-duration">{{ rdv.duree || 30 }}min</span>
               <span class="time-date" *ngIf="activeFilter !== 'jour'">{{ formatDate(rdv.dateHeure) }}</span>
             </div>
 
             <!-- Patient -->
-            <div class="list-page-col-user">
+            <div class="list-page-col-user" data-label="Patient">
               <div class="user-avatar">
                 <lucide-icon name="user" [size]="14"></lucide-icon>
               </div>
@@ -148,20 +151,20 @@
             </div>
 
             <!-- Motif -->
-            <div class="list-page-col-info">
+            <div class="list-page-col-info" data-label="Motif">
               <span class="info-text">{{ rdv.motif || 'Consultation' }}</span>
               <span class="info-sub">{{ rdv.typeRdv }}</span>
             </div>
 
             <!-- Statut -->
-            <div class="list-page-col-status">
+            <div class="list-page-col-status" data-label="Statut">
               <span class="list-page-status-badge" [ngClass]="getStatutBadgeClass(rdv.statut)">
                 {{ getStatutLabel(rdv.statut) }}
               </span>
             </div>
 
             <!-- Actions -->
-            <div class="list-page-col-actions">
+            <div class="list-page-col-actions" data-label="Actions">
               <button 
                 class="list-page-action-btn list-page-action-btn--success" 
                 *ngIf="rdv.statut === 'planifie'"

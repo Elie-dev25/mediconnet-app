@@ -56,6 +56,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   isLoading = true;
   isSaving = false;
   isPausing = false;
+  isPaused = false;  // État de pause (consultation en pause mais toujours affichée)
+  isResuming = false;  // En cours de reprise
   error: string | null = null;
 
   // Hospitalisation (nouveau workflow: médecin ne choisit pas de lit)
@@ -719,6 +721,18 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.consultationService.getConsultation(this.consultationId).subscribe({
       next: (data) => {
         this.consultation = data;
+        
+        // Restaurer l'étape actuelle si sauvegardée (reprise après pause)
+        if (data.etapeActuelle && this.etapes.includes(data.etapeActuelle as EtapeConsultation)) {
+          this.etapeActuelle = data.etapeActuelle as EtapeConsultation;
+          console.log('[Consultation] Reprise à l\'étape:', this.etapeActuelle);
+        }
+        
+        // Vérifier si la consultation est en pause
+        if (data.statut === 'en_pause') {
+          this.isPaused = true;
+        }
+        
         this.loadQuestions();
         this.populateForms();
         this.loadOrientations();
@@ -1254,6 +1268,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   /**
    * Mettre la consultation en pause (sauvegarde + changement de statut)
+   * Ne redirige PAS - reste sur la page avec un état "en pause"
    */
   async pauserConsultation(): Promise<void> {
     this.isPausing = true;
@@ -1264,18 +1279,45 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       await this.saveDiagnostic();
       await this.savePrescriptions();
       
-      // Mettre en pause via l'API (l'étape est sauvegardée avec les données)
-      await this.consultationService.pauseConsultation(this.consultationId).toPromise();
+      // Mettre en pause via l'API avec l'étape actuelle
+      await this.consultationService.pauseConsultation(this.consultationId, this.etapeActuelle).toPromise();
       
-      console.log('[Consultation] Mise en pause réussie');
+      console.log('[Consultation] Mise en pause réussie à l\'étape:', this.etapeActuelle);
       
-      // Émettre l'événement cancelled pour retourner au dashboard
-      this.cancelled.emit();
+      // Passer en état "en pause" sans redirection
+      this.isPaused = true;
     } catch (err) {
       console.error('Erreur mise en pause:', err);
       this.error = 'Erreur lors de la mise en pause';
     }
     this.isPausing = false;
+  }
+
+  /**
+   * Reprendre la consultation après une pause
+   */
+  async reprendreConsultation(): Promise<void> {
+    this.isResuming = true;
+    this.error = null;
+    try {
+      await this.consultationService.reprendreConsultation(this.consultationId).toPromise();
+      
+      console.log('[Consultation] Reprise réussie');
+      
+      // Sortir de l'état "en pause"
+      this.isPaused = false;
+    } catch (err) {
+      console.error('Erreur reprise:', err);
+      this.error = 'Erreur lors de la reprise de la consultation';
+    }
+    this.isResuming = false;
+  }
+
+  /**
+   * Quitter la consultation (retour au dashboard)
+   */
+  quitterConsultation(): void {
+    this.cancelled.emit();
   }
 
   /**

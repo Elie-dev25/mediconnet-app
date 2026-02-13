@@ -3,8 +3,7 @@
 @use '../../../shared/styles/common';
 
 // ============================================
-// Patient Profile Page - Refonte complète
-// NOTE: Utilise les classes partagées de _common.scss
+// Patient Profile Page - Version Responsive Optimisée
 // ============================================
 
 .profile-page {
@@ -18,7 +17,8 @@
   }
 
   @media (max-width: $breakpoint-sm) {
-    padding: 0.75rem;
+    padding: 0.5rem;
+    min-height: auto;
   }
 }
 
@@ -32,6 +32,10 @@
   color: $text-secondary;
   gap: 1rem;
 
+  @media (max-width: $breakpoint-sm) {
+    min-height: 300px;
+  }
+
   .spinner {
     animation: spin 1s linear infinite;
   }
@@ -43,7 +47,7 @@
 }
 
 // ============================================
-// Page Header
+// Page Header - Responsive
 // ============================================
 .page-header {
   display: flex;
@@ -52,13 +56,21 @@
   margin-bottom: 2rem;
   gap: 1rem;
 
-  @media (max-width: $breakpoint-sm) {
-    flex-direction: column;
-    align-items: stretch;
+  @media (max-width: $breakpoint-md) {
     margin-bottom: 1.25rem;
   }
 
+  @media (max-width: $breakpoint-sm) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+  }
+
   .header-left {
+    flex: 1;
+    min-width: 0; // Permet le text-overflow
+
     h1 {
       font-size: 1.75rem;
       font-weight: 700;
@@ -70,7 +82,8 @@
       }
 
       @media (max-width: $breakpoint-sm) {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
+        margin-bottom: 0.15rem;
       }
     }
 
@@ -79,7 +92,7 @@
       font-size: 0.9rem;
 
       @media (max-width: $breakpoint-sm) {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
       }
     }
   }
@@ -100,10 +113,12 @@
     transition: all $transition-fast;
     box-shadow: 0 2px 8px rgba($primary-color, 0.3);
     flex-shrink: 0;
+    white-space: nowrap;
 
     @media (max-width: $breakpoint-sm) {
       width: 100%;
-      padding: 0.65rem 1rem;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
     }
 
     &:hover {
@@ -115,7 +130,7 @@
 }
 
 // ============================================
-// Patient Header Card
+// Patient Header Card - Responsive
 // ============================================
 .patient-header-card {
   display: flex;
@@ -136,13 +151,16 @@
   @media (max-width: $breakpoint-md) {
     flex-direction: column;
     text-align: center;
-    padding: 1.25rem;
+    padding: 1rem;
+    gap: 1rem;
+    border-radius: $radius-lg;
   }
 
   @media (max-width: $breakpoint-sm) {
-    padding: 1rem;
-    gap: 1rem;
+    padding: 0.85rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
+    border-radius: $radius-md;
   }
 
   .avatar-wrapper {
@@ -156,9 +174,15 @@
       object-fit: cover;
       border: 3px solid $primary-light;
 
+      @media (max-width: $breakpoint-md) {
+        width: 90px;
+        height: 90px;
+      }
+
       @media (max-width: $breakpoint-sm) {
-        width: 80px;
-        height: 80px;
+        width: 70px;
+        height: 70px;
+        border-width: 2px;
       }
     }
 
@@ -177,16 +201,22 @@
       border: 2px solid white;
 
       @media (max-width: $breakpoint-sm) {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         bottom: 2px;
         right: 2px;
+        
+        lucide-icon {
+          width: 10px;
+          height: 10px;
+        }
       }
     }
   }
 
   .patient-info {
     flex: 1;
+    min-width: 0;
 
     .patient-name {
       display: flex;
@@ -196,9 +226,17 @@
       font-weight: 700;
       color: $text-primary;
       margin: 0 0 0.5rem;
+      flex-wrap: wrap;
 
       @media (max-width: $breakpoint-md) {
         justify-content: center;
+        font-size: 1.35rem;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 1.1rem;
+        margin-bottom: 0.35rem;
+        gap: 0.35rem;
       }
 
       .declaration-badge {
@@ -213,6 +251,16 @@
         flex-shrink: 0;
         transition: all $transition-fast;
 
+        @media (max-width: $breakpoint-sm) {
+          width: 22px;
+          height: 22px;
+          
+          lucide-icon {
+            width: 14px;
+            height: 14px;
+          }
+        }
+
         &.validated {
           background: $success-color;
         }
@@ -223,9 +271,16 @@
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
+      align-items: center;
 
       @media (max-width: $breakpoint-md) {
         justify-content: center;
+        gap: 0.75rem;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        gap: 0.5rem;
+        font-size: 0.7rem;
       }
 
       .meta-item {
@@ -235,8 +290,19 @@
         color: $text-secondary;
         font-size: 0.85rem;
 
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.7rem;
+          gap: 0.25rem;
+        }
+
         lucide-icon {
           color: $text-muted;
+          flex-shrink: 0;
+
+          @media (max-width: $breakpoint-sm) {
+            width: 12px;
+            height: 12px;
+          }
         }
 
         &.complete {
@@ -273,7 +339,8 @@
     }
 
     @media (max-width: $breakpoint-sm) {
-      gap: 0.75rem;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
     }
 
     .stat-item {
@@ -282,8 +349,13 @@
       align-items: center;
       padding: 0.5rem 1rem;
 
+      @media (max-width: $breakpoint-md) {
+        padding: 0.35rem 0.75rem;
+      }
+
       @media (max-width: $breakpoint-sm) {
-        padding: 0.35rem 0.5rem;
+        padding: 0.25rem 0.35rem;
+        min-width: 0;
       }
 
       .stat-value {
@@ -291,8 +363,12 @@
         font-weight: 700;
         color: $primary-color;
 
+        @media (max-width: $breakpoint-md) {
+          font-size: 1.35rem;
+        }
+
         @media (max-width: $breakpoint-sm) {
-          font-size: 1.25rem;
+          font-size: 1.15rem;
         }
       }
 
@@ -301,10 +377,11 @@
         color: $text-muted;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-align: center;
 
         @media (max-width: $breakpoint-sm) {
-          font-size: 0.65rem;
-          letter-spacing: 0.3px;
+          font-size: 0.6rem;
+          letter-spacing: 0.2px;
         }
       }
     }
@@ -312,7 +389,7 @@
 }
 
 // ============================================
-// Information Grid
+// Information Grid - Responsive
 // ============================================
 .info-grid {
   display: grid;
@@ -321,11 +398,12 @@
   margin-bottom: 1.5rem;
 
   @media (max-width: $breakpoint-md) {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1rem;
   }
 
   @media (max-width: $breakpoint-sm) {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
     margin-bottom: 1rem;
   }
@@ -338,8 +416,12 @@
   box-shadow: $shadow-sm;
   border: 1px solid $border-light;
 
-  @media (max-width: $breakpoint-sm) {
+  @media (max-width: $breakpoint-md) {
     padding: 1rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.85rem;
     border-radius: $radius-md;
   }
 
@@ -351,8 +433,20 @@
     padding-bottom: 0.75rem;
     border-bottom: 1px solid $border-light;
 
+    @media (max-width: $breakpoint-sm) {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      gap: 0.35rem;
+    }
+
     lucide-icon {
       color: $primary-color;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     h3 {
@@ -360,6 +454,10 @@
       font-weight: 600;
       color: $text-primary;
       margin: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.85rem;
+      }
     }
   }
 
@@ -367,6 +465,10 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.6rem;
+    }
   }
 
   .info-item {
@@ -374,6 +476,10 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 1rem;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.5rem;
+    }
 
     &.full-width {
       flex-direction: column;
@@ -384,6 +490,10 @@
       color: $text-muted;
       font-size: 0.8rem;
       flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.7rem;
+      }
     }
 
     .info-value {
@@ -391,6 +501,11 @@
       font-size: 0.875rem;
       font-weight: 500;
       text-align: right;
+      word-break: break-word;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+      }
 
       &.highlight {
         color: $error-color;
@@ -415,6 +530,10 @@
     height: 1px;
     background: $border-light;
     margin: 0.5rem 0;
+
+    @media (max-width: $breakpoint-sm) {
+      margin: 0.35rem 0;
+    }
   }
 
   .info-subtitle {
@@ -424,6 +543,12 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.65rem;
+      letter-spacing: 0.3px;
+      margin-bottom: 0.35rem;
+    }
   }
 
   .inline-tags {
@@ -431,12 +556,21 @@
     flex-wrap: wrap;
     gap: 0.5rem;
 
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.35rem;
+    }
+
     .tag {
       display: inline-block;
       padding: 0.25rem 0.65rem;
       border-radius: $radius-full;
       font-size: 0.75rem;
       font-weight: 500;
+
+      @media (max-width: $breakpoint-sm) {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.65rem;
+      }
 
       &.allergy {
         background: $error-light;
@@ -457,7 +591,7 @@
 }
 
 // ============================================
-// Visits Section
+// Visits Section - Responsive
 // ============================================
 .visits-section {
   background: white;
@@ -472,7 +606,7 @@
   }
 
   @media (max-width: $breakpoint-sm) {
-    padding: 1rem;
+    padding: 0.85rem;
     margin-bottom: 1rem;
     border-radius: $radius-md;
   }
@@ -484,11 +618,22 @@
     border-bottom: 1px solid $border-light;
     padding-bottom: 0.75rem;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; // Firefox
+    
+    &::-webkit-scrollbar {
+      display: none; // Chrome, Safari
+    }
+
+    @media (max-width: $breakpoint-md) {
+      gap: 1rem;
+    }
 
     @media (max-width: $breakpoint-sm) {
-      gap: 1rem;
+      gap: 0.75rem;
       margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
     }
   }
 
@@ -503,9 +648,21 @@
     position: relative;
     transition: all $transition-fast;
     white-space: nowrap;
+    flex-shrink: 0;
 
     @media (max-width: $breakpoint-sm) {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+    }
+
+    .tab-icon {
+      margin-right: 0.25rem;
+      vertical-align: middle;
+      
+      @media (max-width: $breakpoint-sm) {
+        width: 12px;
+        height: 12px;
+        margin-right: 0.15rem;
+      }
     }
 
     &:hover {
@@ -524,6 +681,10 @@
         right: 0;
         height: 2px;
         background: $primary-color;
+
+        @media (max-width: $breakpoint-sm) {
+          bottom: -0.55rem;
+        }
       }
     }
   }
@@ -532,8 +693,17 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    // Scroll invisible après 5 éléments (~400px)
     @include mixins.scrollable-list(400px);
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.6rem;
+    }
+  }
+
+  .scrollable-list {
+    @media (max-width: $breakpoint-sm) {
+      max-height: 350px;
+    }
   }
 
   .visit-row {
@@ -551,45 +721,101 @@
     }
 
     @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 120px 1fr 1fr 90px;
+      gap: 0.75rem;
+      padding: 0.85rem;
     }
 
     @media (max-width: $breakpoint-sm) {
       grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    &.missed {
+      background: rgba($error-color, 0.05);
+      border-left: 3px solid $error-color;
+
+      @media (max-width: $breakpoint-sm) {
+        border-left-width: 2px;
+      }
     }
   }
 
   .visit-time-col {
+    @media (max-width: $breakpoint-sm) {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
     .time {
       display: block;
       font-size: 0.8rem;
       color: $text-secondary;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.7rem;
+        order: 2;
+      }
     }
+
     .date {
       display: block;
       font-size: 0.95rem;
       font-weight: 600;
       color: $text-primary;
       margin-top: 0.15rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.85rem;
+        margin-top: 0;
+        order: 1;
+      }
     }
   }
 
   .visit-service-col,
   .visit-doctor-col {
+    @media (max-width: $breakpoint-sm) {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
     .label {
       display: block;
       font-size: 0.7rem;
       color: $text-muted;
       margin-bottom: 0.15rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.65rem;
+        margin-bottom: 0;
+      }
     }
+
     .service,
     .doctor {
       font-size: 0.85rem;
       font-weight: 500;
       color: $text-primary;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+      }
     }
+
     .doctor {
       color: $primary-color;
+    }
+  }
+
+  .visit-status-col {
+    @media (max-width: $breakpoint-sm) {
+      display: flex;
+      justify-content: flex-start;
     }
   }
 
@@ -599,6 +825,11 @@
     border-radius: $radius-full;
     font-size: 0.75rem;
     font-weight: 600;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.2rem 0.6rem;
+      font-size: 0.65rem;
+    }
 
     &.scheduled {
       background: rgba($primary-color, 0.1);
@@ -616,14 +847,13 @@
     }
   }
 
-  .visit-row.missed {
-    background: rgba($error-color, 0.05);
-    border-left: 3px solid $error-color;
-  }
-
   .visit-actions-col {
     display: flex;
     justify-content: flex-end;
+
+    @media (max-width: $breakpoint-sm) {
+      justify-content: flex-start;
+    }
   }
 
   .btn-reschedule {
@@ -641,6 +871,12 @@
     transition: all $transition-fast;
     white-space: nowrap;
 
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.4rem 0.7rem;
+      font-size: 0.7rem;
+      gap: 0.25rem;
+    }
+
     &:hover {
       background: darken($primary-color, 8%);
       transform: translateY(-1px);
@@ -648,68 +884,10 @@
 
     lucide-icon {
       flex-shrink: 0;
-    }
-  }
 
-  .tab-icon {
-    margin-right: 0.25rem;
-    vertical-align: middle;
-  }
-
-  .empty-subtitle {
-    display: block;
-    font-size: 0.8rem;
-    color: $text-muted;
-    margin-top: 0.25rem;
-  }
-
-  .treatment-row {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
-    gap: 1rem;
-    align-items: center;
-    padding: 1rem;
-    background: $bg-gray;
-    border-radius: $radius-md;
-
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-    }
-
-    .treatment-info {
-      .treatment-name {
-        display: block;
-        font-weight: 600;
-        color: $text-primary;
-        font-size: 0.9rem;
-      }
-      .treatment-posologie {
-        display: block;
-        font-size: 0.8rem;
-        color: $text-secondary;
-        margin-top: 0.15rem;
-      }
-    }
-
-    .treatment-dates {
-      font-size: 0.85rem;
-      color: $text-secondary;
-
-      .treatment-end {
-        color: $primary-color;
-      }
-    }
-
-    .treatment-doctor {
-      .label {
-        font-size: 0.7rem;
-        color: $text-muted;
-      }
-      .doctor {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: $primary-color;
+      @media (max-width: $breakpoint-sm) {
+        width: 14px;
+        height: 14px;
       }
     }
   }
@@ -723,20 +901,129 @@
     color: $text-muted;
     text-align: center;
 
+    @media (max-width: $breakpoint-sm) {
+      padding: 2rem 0.75rem;
+    }
+
     lucide-icon {
       margin-bottom: 0.75rem;
       opacity: 0.5;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 0.5rem;
+      }
     }
 
     p {
       margin: 0;
       font-size: 0.9rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.8rem;
+      }
+    }
+
+    .empty-subtitle {
+      display: block;
+      font-size: 0.8rem;
+      color: $text-muted;
+      margin-top: 0.25rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  .treatment-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: $bg-gray;
+    border-radius: $radius-md;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      padding: 0.85rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .treatment-info {
+      .treatment-name {
+        display: block;
+        font-weight: 600;
+        color: $text-primary;
+        font-size: 0.9rem;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.8rem;
+        }
+      }
+
+      .treatment-posologie {
+        display: block;
+        font-size: 0.8rem;
+        color: $text-secondary;
+        margin-top: 0.15rem;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.7rem;
+        }
+      }
+    }
+
+    .treatment-dates {
+      font-size: 0.85rem;
+      color: $text-secondary;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+      }
+
+      .treatment-end {
+        color: $primary-color;
+      }
+    }
+
+    .treatment-doctor {
+      @media (max-width: $breakpoint-md) {
+        grid-column: 1 / -1;
+      }
+
+      .label {
+        font-size: 0.7rem;
+        color: $text-muted;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.65rem;
+        }
+      }
+
+      .doctor {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: $primary-color;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.75rem;
+        }
+      }
     }
   }
 }
 
 // ============================================
-// Files Section
+// Files Section - Responsive
 // ============================================
 .files-section {
   background: white;
@@ -746,6 +1033,16 @@
   border: 1px solid $border-light;
   margin-bottom: 1.5rem;
 
+  @media (max-width: $breakpoint-md) {
+    padding: 1.25rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    border-radius: $radius-md;
+  }
+
   .section-header {
     display: flex;
     align-items: center;
@@ -754,8 +1051,20 @@
     padding-bottom: 0.75rem;
     border-bottom: 1px solid $border-light;
 
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+
     lucide-icon {
       color: $primary-color;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     h3 {
@@ -764,6 +1073,10 @@
       color: $text-primary;
       margin: 0;
       flex: 1;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.85rem;
+      }
     }
 
     .download-all-btn {
@@ -779,6 +1092,19 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
 
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.65rem;
+        gap: 0.25rem;
+        letter-spacing: 0.3px;
+      }
+
+      lucide-icon {
+        @media (max-width: $breakpoint-sm) {
+          width: 12px;
+          height: 12px;
+        }
+      }
+
       &:hover {
         text-decoration: underline;
       }
@@ -789,8 +1115,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    // Scroll invisible après 5 éléments (~300px)
     @include mixins.scrollable-list(300px);
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.35rem;
+      max-height: 280px;
+    }
   }
 
   .file-row {
@@ -800,6 +1130,11 @@
     padding: 0.75rem;
     border-radius: $radius-md;
     transition: all $transition-fast;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.5rem;
+      padding: 0.6rem;
+    }
 
     &:hover {
       background: $bg-gray;
@@ -814,6 +1149,17 @@
       background: rgba($primary-color, 0.1);
       border-radius: $radius-md;
       color: $primary-color;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 35px;
+        height: 35px;
+
+        lucide-icon {
+          width: 18px;
+          height: 18px;
+        }
+      }
     }
 
     .file-info {
@@ -828,6 +1174,10 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.75rem;
+        }
       }
 
       .file-meta {
@@ -835,12 +1185,21 @@
         font-size: 0.75rem;
         color: $text-muted;
         margin-top: 0.15rem;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.65rem;
+        }
       }
     }
 
     .file-actions {
       display: flex;
       gap: 0.25rem;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        gap: 0.15rem;
+      }
     }
 
     .file-action-btn {
@@ -855,6 +1214,16 @@
       color: $text-secondary;
       cursor: pointer;
       transition: all $transition-fast;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 28px;
+        height: 28px;
+
+        lucide-icon {
+          width: 14px;
+          height: 14px;
+        }
+      }
 
       &:hover {
         background: white;
@@ -873,20 +1242,34 @@
     color: $text-muted;
     text-align: center;
 
+    @media (max-width: $breakpoint-sm) {
+      padding: 2rem 0.75rem;
+    }
+
     lucide-icon {
       margin-bottom: 0.75rem;
       opacity: 0.5;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 0.5rem;
+      }
     }
 
     p {
       margin: 0;
       font-size: 0.9rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.8rem;
+      }
     }
   }
 }
 
 // ============================================
-// Print Sections (Historiques)
+// Print Sections - Responsive
 // ============================================
 .print-section {
   background: white;
@@ -896,6 +1279,12 @@
   box-shadow: $shadow-sm;
   border: 1px solid $border-light;
 
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    border-radius: $radius-md;
+  }
+
   .section-header {
     display: flex;
     align-items: center;
@@ -904,8 +1293,19 @@
     padding-bottom: 0.75rem;
     border-bottom: 1px solid $border-light;
 
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+
     lucide-icon {
       color: $primary-color;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     h3 {
@@ -913,17 +1313,30 @@
       font-weight: 600;
       color: $text-primary;
       margin: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.85rem;
+      }
     }
   }
 }
 
+// Table responsive
 .data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
 
+  @media (max-width: $breakpoint-sm) {
+    font-size: 0.75rem;
+  }
+
   thead {
     background: $bg-gray;
+
+    @media (max-width: $breakpoint-sm) {
+      display: none; // Masquer le thead sur mobile
+    }
 
     th {
       padding: 0.75rem 1rem;
@@ -931,23 +1344,67 @@
       font-weight: 600;
       color: $text-primary;
       border-bottom: 2px solid $border-light;
+
+      @media (max-width: $breakpoint-md) {
+        padding: 0.6rem 0.75rem;
+      }
     }
   }
 
   tbody {
+    @media (max-width: $breakpoint-sm) {
+      display: block;
+    }
+
     tr {
+      @media (max-width: $breakpoint-sm) {
+        display: block;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background: $bg-gray;
+        border-radius: $radius-md;
+        border: 1px solid $border-light;
+      }
+
       &:hover {
         background: $bg-gray;
+
+        @media (max-width: $breakpoint-sm) {
+          background: darken($bg-gray, 2%);
+        }
       }
 
       &:not(:last-child) td {
         border-bottom: 1px solid $border-light;
+
+        @media (max-width: $breakpoint-sm) {
+          border-bottom: none;
+        }
       }
     }
 
     td {
       padding: 0.75rem 1rem;
       color: $text-secondary;
+
+      @media (max-width: $breakpoint-md) {
+        padding: 0.6rem 0.75rem;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        display: block;
+        padding: 0.35rem 0;
+        text-align: left !important;
+
+        &::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: $text-muted;
+          font-size: 0.7rem;
+          display: block;
+          margin-bottom: 0.15rem;
+        }
+      }
     }
   }
 
@@ -959,6 +1416,11 @@
     border-radius: $radius-sm;
     font-size: 0.75rem;
     font-weight: 500;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.65rem;
+    }
   }
 }
 
@@ -966,6 +1428,10 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.75rem;
+  }
 }
 
 .ordonnance-item {
@@ -973,19 +1439,38 @@
   background: $bg-gray;
   border-radius: $radius-md;
 
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.75rem;
+  }
+
   .ordonnance-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+
+    @media (max-width: $breakpoint-sm) {
+      margin-bottom: 0.5rem;
+    }
 
     .ordonnance-date {
       font-weight: 600;
       color: $text-primary;
+      font-size: 0.85rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+      }
     }
 
     .ordonnance-medecin {
       color: $text-secondary;
       font-size: 0.85rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.7rem;
+      }
     }
   }
 
@@ -993,10 +1478,19 @@
     margin: 0;
     padding-left: 1.25rem;
 
+    @media (max-width: $breakpoint-sm) {
+      padding-left: 1rem;
+    }
+
     li {
       margin-bottom: 0.5rem;
       color: $text-secondary;
       font-size: 0.85rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+        margin-bottom: 0.35rem;
+      }
 
       strong {
         color: $text-primary;
@@ -1008,6 +1502,10 @@
         color: $text-muted;
         font-size: 0.8rem;
         margin-top: 0.25rem;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.7rem;
+        }
       }
     }
   }
@@ -1018,6 +1516,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.5rem;
+  }
 }
 
 .allergy-item,
@@ -1029,6 +1531,12 @@
   background: $bg-gray;
   border-radius: $radius-md;
   font-size: 0.85rem;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
 
   .allergy-type,
   .antecedent-type {
@@ -1047,6 +1555,11 @@
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.1rem 0.4rem;
+      font-size: 0.6rem;
+    }
 
     &.légère, &.legere {
       background: $success-light;
@@ -1072,6 +1585,11 @@
     background: $success-light;
     color: $success-color;
 
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.1rem 0.4rem;
+      font-size: 0.6rem;
+    }
+
     &.actif {
       background: $warning-light;
       color: $warning-color;
@@ -1080,7 +1598,7 @@
 }
 
 // ============================================
-// Panel Overlay
+// Panel Overlay & Side Panel - Responsive
 // ============================================
 .panel-overlay {
   position: fixed;
@@ -1092,9 +1610,6 @@
   z-index: $z-modal-backdrop;
 }
 
-// ============================================
-// Side Panel
-// ============================================
 .side-panel {
   position: fixed;
   top: 0;
@@ -1108,8 +1623,9 @@
   display: flex;
   flex-direction: column;
 
-  @media (max-width: $breakpoint-sm) {
+  @media (max-width: $breakpoint-md) {
     width: 100%;
+    max-width: 100%;
   }
 
   .panel-header {
@@ -1120,11 +1636,19 @@
     border-bottom: 1px solid $border-light;
     background: $bg-gray;
 
+    @media (max-width: $breakpoint-sm) {
+      padding: 1rem 1.25rem;
+    }
+
     h2 {
       font-size: 1.1rem;
       font-weight: 600;
       color: $text-primary;
       margin: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 1rem;
+      }
     }
 
     .close-btn {
@@ -1139,6 +1663,17 @@
       color: $text-secondary;
       cursor: pointer;
       transition: all $transition-fast;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 32px;
+        height: 32px;
+
+        lucide-icon {
+          width: 18px;
+          height: 18px;
+        }
+      }
 
       &:hover {
         background: $error-light;
@@ -1152,16 +1687,24 @@
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: 1rem;
+    }
   }
 }
 
 // ============================================
-// Actions Panel
+// Actions Panel - Responsive
 // ============================================
 .actions-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.35rem;
+  }
 }
 
 .action-item {
@@ -1176,6 +1719,11 @@
   cursor: pointer;
   transition: all $transition-fast;
   text-align: left;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
 
   &:hover {
     border-color: $primary-color;
@@ -1201,6 +1749,11 @@
   lucide-icon:first-child {
     color: $primary-color;
     flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   .action-content {
@@ -1208,22 +1761,37 @@
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+    min-width: 0;
 
     .action-title {
       font-weight: 600;
       color: $text-primary;
       font-size: 0.95rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.85rem;
+      }
     }
 
     .action-desc {
       color: $text-muted;
       font-size: 0.8rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.7rem;
+      }
     }
   }
 
   .action-arrow {
     color: $text-muted;
     transition: transform $transition-fast;
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 16px;
+      height: 16px;
+    }
   }
 }
 
@@ -1231,10 +1799,14 @@
   height: 1px;
   background: $border-light;
   margin: 0.75rem 0;
+
+  @media (max-width: $breakpoint-sm) {
+    margin: 0.5rem 0;
+  }
 }
 
 // ============================================
-// Edit Profile Panel - Form Styles
+// Edit Profile Panel - Form Styles Responsive
 // ============================================
 .edit-panel,
 .password-panel {
@@ -1246,6 +1818,21 @@
     border-radius: $radius-md;
     margin-bottom: 1rem;
     font-size: 0.85rem;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: 0.6rem 0.85rem;
+      font-size: 0.75rem;
+      gap: 0.35rem;
+    }
+
+    lucide-icon {
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 16px;
+        height: 16px;
+      }
+    }
 
     &.alert-success {
       background: $success-light;
@@ -1261,6 +1848,10 @@
   .form-section {
     margin-bottom: 1.5rem;
 
+    @media (max-width: $breakpoint-sm) {
+      margin-bottom: 1.25rem;
+    }
+
     h4 {
       font-size: 0.85rem;
       font-weight: 600;
@@ -1268,6 +1859,12 @@
       margin: 0 0 1rem;
       padding-bottom: 0.5rem;
       border-bottom: 1px solid $border-light;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.8rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.35rem;
+      }
     }
   }
 
@@ -1277,13 +1874,23 @@
     gap: 1rem;
     margin-bottom: 1rem;
 
+    @media (max-width: $breakpoint-md) {
+      gap: 0.75rem;
+    }
+
     @media (max-width: $breakpoint-sm) {
       grid-template-columns: 1fr;
+      gap: 0;
+      margin-bottom: 0;
     }
   }
 
   .form-group {
     margin-bottom: 1rem;
+
+    @media (max-width: $breakpoint-sm) {
+      margin-bottom: 0.85rem;
+    }
 
     label {
       display: block;
@@ -1291,6 +1898,11 @@
       font-weight: 500;
       color: $text-secondary;
       margin-bottom: 0.35rem;
+
+      @media (max-width: $breakpoint-sm) {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+      }
     }
 
     input,
@@ -1303,6 +1915,11 @@
       font-size: 0.9rem;
       color: $text-primary;
       transition: all $transition-fast;
+
+      @media (max-width: $breakpoint-sm) {
+        padding: 0.55rem 0.75rem;
+        font-size: 0.85rem;
+      }
 
       &:focus {
         outline: none;
@@ -1318,6 +1935,10 @@
     textarea {
       resize: vertical;
       min-height: 60px;
+
+      @media (max-width: $breakpoint-sm) {
+        min-height: 50px;
+      }
     }
 
     select {
@@ -1336,6 +1957,11 @@
     padding-top: 1rem;
     border-top: 1px solid $border-light;
 
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.5rem;
+      padding-top: 0.85rem;
+    }
+
     .btn {
       flex: 1;
       display: flex;
@@ -1348,6 +1974,19 @@
       font-weight: 600;
       cursor: pointer;
       transition: all $transition-fast;
+
+      @media (max-width: $breakpoint-sm) {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        gap: 0.35rem;
+      }
+
+      lucide-icon {
+        @media (max-width: $breakpoint-sm) {
+          width: 14px;
+          height: 14px;
+        }
+      }
 
       &.btn-secondary {
         background: white;
@@ -1383,10 +2022,9 @@
 }
 
 // ============================================
-// Print Styles - Optimisé pour A4 professionnel
+// Print Styles - Optimisé pour A4
 // ============================================
 @media print {
-  // Masquer TOUS les éléments non pertinents à l'impression
   .page-header .btn-actions,
   .panel-overlay,
   .side-panel,
@@ -1408,7 +2046,6 @@
     overflow: hidden !important;
   }
 
-  // Reset complet du layout
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -1434,9 +2071,20 @@
     max-width: 100%;
     min-height: auto;
     margin: 0;
+
+    &::before {
+      content: "MEDICONNET - Dossier Patient";
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: $primary-color;
+      text-align: center;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
   }
 
-  // En-tête de page - Titre seulement
   .page-header {
     margin-bottom: 0.5rem;
     padding-bottom: 0.4rem;
@@ -1453,7 +2101,6 @@
     }
   }
 
-  // Carte patient compacte SANS avatar
   .patient-header-card {
     display: block !important;
     box-shadow: none;
@@ -1476,33 +2123,15 @@
         .declaration-badge {
           width: 16px;
           height: 16px;
-          
-          lucide-icon {
-            width: 10px;
-            height: 10px;
-          }
         }
       }
 
       .patient-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
         font-size: 0.65rem;
-
-        .meta-item {
-          font-size: 0.65rem;
-          gap: 0.15rem;
-
-          lucide-icon {
-            width: 9px;
-            height: 9px;
-          }
-        }
+        gap: 0.6rem;
       }
     }
 
-    // Stats en format liste horizontale compacte
     .stats-row {
       display: flex;
       flex-direction: row;
@@ -1510,163 +2139,40 @@
       padding-top: 0.4rem;
       margin-top: 0.4rem;
       border-top: 1px solid #e0e0e0;
-      border-left: none;
-      padding-left: 0;
 
       .stat-item {
         display: flex;
         flex-direction: row;
-        align-items: center;
         gap: 0.3rem;
         padding: 0;
 
         .stat-value {
           font-size: 0.8rem;
-          font-weight: 700;
         }
 
         .stat-label {
           font-size: 0.65rem;
           text-transform: lowercase;
-          letter-spacing: 0;
-          
-          &::before {
-            content: "";
-          }
         }
       }
     }
   }
 
-  // Grille d'informations compacte
   .info-grid {
-    display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
   }
 
-  .info-section {
-    box-shadow: none;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    page-break-inside: avoid;
-    padding: 0.5rem 0.75rem;
-
-    .section-header {
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.35rem;
-
-      lucide-icon {
-        width: 12px;
-        height: 12px;
-      }
-
-      h3 {
-        font-size: 0.75rem;
-      }
-    }
-
-    .info-item {
-      padding: 0.2rem 0;
-
-      .info-label {
-        font-size: 0.6rem;
-      }
-
-      .info-value {
-        font-size: 0.7rem;
-      }
-    }
-
-    .info-divider {
-      margin: 0.35rem 0;
-    }
-
-    .info-subtitle {
-      font-size: 0.65rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .inline-tags .tag {
-      font-size: 0.6rem;
-      padding: 0.1rem 0.35rem;
-    }
-  }
-
-  // Sections d'impression
+  .info-section,
   .print-section {
-    display: block !important;
     box-shadow: none;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    page-break-inside: avoid;
-    margin-bottom: 0.5rem;
     padding: 0.5rem 0.75rem;
-
-    .section-header {
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.35rem;
-
-      lucide-icon {
-        width: 12px;
-        height: 12px;
-      }
-
-      h3 {
-        font-size: 0.75rem;
-      }
-    }
+    page-break-inside: avoid;
   }
 
-  .data-table {
-    font-size: 0.65rem;
-
-    th {
-      padding: 0.35rem 0.5rem;
-      font-size: 0.6rem;
-    }
-
-    td {
-      padding: 0.3rem 0.5rem;
-    }
-  }
-
-  .ordonnance-list {
-    .ordonnance-item {
-      padding: 0.35rem 0;
-      
-      .ordonnance-header {
-        font-size: 0.7rem;
-        margin-bottom: 0.25rem;
-      }
-
-      .medicaments-list {
-        font-size: 0.65rem;
-        
-        li {
-          padding: 0.15rem 0;
-        }
-      }
-    }
-  }
-
-  // Configuration de la page A4
   @page {
     margin: 1cm 1.5cm;
     size: A4 portrait;
-  }
-
-  // En-tête d'impression avec logo
-  .profile-page::before {
-    content: "MEDICONNET - Dossier Patient";
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: $primary-color;
-    text-align: center;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid #e0e0e0;
   }
 }

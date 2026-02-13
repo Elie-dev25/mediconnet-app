@@ -3,9 +3,10 @@
 
 .dashboard-content {
   max-width: 1400px;
+  padding: 0;
 }
 
-// ==================== ONGLETS ====================
+// ==================== ONGLETS - RESPONSIVE ====================
 .tabs-container {
   display: flex;
   gap: 0.5rem;
@@ -14,6 +15,27 @@
   padding: 0.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    margin-bottom: 1.25rem;
+    padding: 0.4rem;
+    border-radius: 10px;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    margin-bottom: 1rem;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border-radius: 8px;
+  }
 }
 
 .tab-btn {
@@ -30,6 +52,30 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    gap: 0.4rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    gap: 0.35rem;
+  }
+
+  lucide-icon {
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 16px;
+      height: 16px;
+    }
+  }
 
   &:hover {
     background: #f1f5f9;
@@ -60,10 +106,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @media (max-width: $breakpoint-sm) {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      font-size: 0.65rem;
+      top: -3px;
+      right: -3px;
+    }
   }
 }
 
-// ==================== SECTIONS ====================
+// ==================== SECTIONS - RESPONSIVE ====================
 .search-section,
 .patients-section,
 .hospitalisations-section {
@@ -72,6 +127,18 @@
   padding: 1.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   margin-bottom: 1.5rem;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.85rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
 }
 
 .section-header {
@@ -80,6 +147,17 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+
+  @media (max-width: $breakpoint-md) {
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
 
   h2 {
     display: flex;
@@ -90,8 +168,24 @@
     color: $text-dark;
     margin: 0;
 
+    @media (max-width: $breakpoint-md) {
+      font-size: 1rem;
+      gap: 0.4rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.9rem;
+      gap: 0.35rem;
+    }
+
     lucide-icon {
       color: $primary-color;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 18px;
+        height: 18px;
+      }
     }
   }
 }
@@ -100,6 +194,13 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .icon-btn {
@@ -114,6 +215,26 @@
   cursor: pointer;
   transition: all 0.2s ease;
   color: $text-dark;
+  flex-shrink: 0;
+
+  @media (max-width: $breakpoint-md) {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  lucide-icon {
+    @media (max-width: $breakpoint-sm) {
+      width: 16px;
+      height: 16px;
+    }
+  }
 
   &:hover {
     background: white;
@@ -124,6 +245,10 @@
 
 .search-wrapper {
   margin-bottom: 0.75rem;
+
+  @media (max-width: $breakpoint-sm) {
+    margin-bottom: 0.6rem;
+  }
 }
 
 .search-info {
@@ -136,9 +261,24 @@
   color: $primary-color;
   font-size: 0.85rem;
   font-weight: 500;
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+  }
+
+  lucide-icon {
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 14px;
+      height: 14px;
+    }
+  }
 }
 
-// ==================== BADGES ====================
+// ==================== BADGES - RESPONSIVE ====================
 .badge {
   display: inline-flex;
   align-items: center;
@@ -150,6 +290,26 @@
   line-height: 1.1;
   border: 1px solid transparent;
   white-space: nowrap;
+
+  @media (max-width: $breakpoint-md) {
+    padding: 0.18rem 0.45rem;
+    font-size: 0.72rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.7rem;
+    gap: 0.2rem;
+  }
+
+  lucide-icon {
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 10px;
+      height: 10px;
+    }
+  }
 }
 
 .badge-dossier {
@@ -201,11 +361,16 @@
   color: #075985 !important;
 }
 
-// ==================== PATIENTS LIST ====================
+// ==================== PATIENTS LIST - RESPONSIVE ====================
 .patients-list {
   display: grid;
   gap: 0.75rem;
   @include scrollable-list(350px);
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.6rem;
+    max-height: 400px;
+  }
 }
 
 .patient-card {
@@ -218,14 +383,23 @@
   gap: 1rem;
   transition: all 0.2s ease;
 
+  @media (max-width: $breakpoint-md) {
+    padding: 0.85rem;
+    border-radius: 12px;
+    gap: 0.85rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem;
+    gap: 0.75rem;
+    border-radius: 10px;
+  }
+
   &:hover {
     border-color: $primary-color;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    align-items: stretch;
   }
 }
 
@@ -235,6 +409,10 @@
   gap: 0.85rem;
   flex: 1;
   min-width: 0;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.65rem;
+  }
 }
 
 .patient-avatar {
@@ -247,6 +425,25 @@
   justify-content: center;
   color: white;
   flex-shrink: 0;
+
+  @media (max-width: $breakpoint-md) {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  lucide-icon {
+    @media (max-width: $breakpoint-sm) {
+      width: 20px;
+      height: 20px;
+    }
+  }
 }
 
 .patient-info {
@@ -262,6 +459,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
 }
 
 .badges-row {
@@ -269,6 +476,11 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 0.35rem;
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.25rem;
+    margin-bottom: 0.3rem;
+  }
 }
 
 .patient-contact {
@@ -278,14 +490,34 @@
   color: #64748b;
   font-size: 0.8rem;
 
+  @media (max-width: $breakpoint-md) {
+    gap: 0.6rem;
+    font-size: 0.78rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
   span {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.25rem;
+    }
   }
 
   lucide-icon {
     color: #94a3b8;
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 12px;
+      height: 12px;
+    }
   }
 }
 
@@ -295,14 +527,19 @@
   gap: 0.5rem;
   flex-shrink: 0;
 
-  @media (max-width: 640px) {
+  @media (max-width: $breakpoint-sm) {
     width: 100%;
+    gap: 0.4rem;
   }
 }
 
-// ==================== HOSPITALISATIONS ====================
+// ==================== HOSPITALISATIONS - RESPONSIVE ====================
 .search-bar-container {
   margin-bottom: 1rem;
+
+  @media (max-width: $breakpoint-sm) {
+    margin-bottom: 0.85rem;
+  }
 
   .search-input-wrapper {
     position: relative;
@@ -314,6 +551,13 @@
       left: 1rem;
       color: #9ca3af;
       pointer-events: none;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        left: 0.85rem;
+        width: 16px;
+        height: 16px;
+      }
     }
 
     .search-input {
@@ -325,6 +569,18 @@
       background: #f9fafb;
       transition: all 0.2s ease;
 
+      @media (max-width: $breakpoint-md) {
+        padding: 0.65rem 2.4rem 0.65rem 2.5rem;
+        font-size: 0.85rem;
+        border-radius: 10px;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        padding: 0.55rem 2.2rem 0.55rem 2.25rem;
+        font-size: 0.8rem;
+        border-radius: 8px;
+      }
+
       &:focus {
         outline: none;
         border-color: $primary-color;
@@ -334,6 +590,10 @@
 
       &::placeholder {
         color: #9ca3af;
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: 0.75rem;
+        }
       }
     }
 
@@ -351,6 +611,20 @@
       cursor: pointer;
       color: #6b7280;
       transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        right: 0.6rem;
+        width: 20px;
+        height: 20px;
+      }
+
+      lucide-icon {
+        @media (max-width: $breakpoint-sm) {
+          width: 14px;
+          height: 14px;
+        }
+      }
 
       &:hover {
         background: #d1d5db;
@@ -365,14 +639,30 @@
   flex-direction: column;
   gap: 1rem;
 
+  @media (max-width: $breakpoint-sm) {
+    gap: 0.75rem;
+  }
+
   &.scrollable {
     max-height: 600px;
     overflow-y: auto;
     padding-right: 6px;
 
-    // Scrollbar très discrète
+    @media (max-width: $breakpoint-md) {
+      max-height: 500px;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      max-height: 450px;
+      padding-right: 4px;
+    }
+
     &::-webkit-scrollbar {
       width: 4px;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 3px;
+      }
     }
 
     &::-webkit-scrollbar-track {
@@ -388,7 +678,6 @@
       }
     }
 
-    // Pour Firefox
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
   }
@@ -402,6 +691,14 @@
   transition: all 0.2s ease;
   cursor: pointer;
 
+  @media (max-width: $breakpoint-md) {
+    border-radius: 10px;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    border-radius: 8px;
+  }
+
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
@@ -409,14 +706,26 @@
   &.en-attente {
     border-left: 4px solid #f59e0b;
     background: linear-gradient(to right, #fffbeb 0%, white 100%);
+
+    @media (max-width: $breakpoint-sm) {
+      border-left-width: 3px;
+    }
   }
 
   &.urgence-critique {
     border-left: 4px solid #ef4444;
+
+    @media (max-width: $breakpoint-sm) {
+      border-left-width: 3px;
+    }
   }
 
   &.urgence-urgente {
     border-left: 4px solid #f97316;
+
+    @media (max-width: $breakpoint-sm) {
+      border-left-width: 3px;
+    }
   }
 
   .card-content {
@@ -424,10 +733,32 @@
     align-items: flex-start;
     padding: 1rem;
     gap: 1rem;
+
+    @media (max-width: $breakpoint-md) {
+      padding: 0.85rem;
+      gap: 0.85rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
   }
 
   .card-left {
     flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+  }
+
+  .card-main {
+    flex: 1;
+    min-width: 0;
   }
 
   .patient-avatar {
@@ -439,68 +770,151 @@
     align-items: center;
     justify-content: center;
     color: white;
+
+    @media (max-width: $breakpoint-md) {
+      width: 40px;
+      height: 40px;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      width: 36px;
+      height: 36px;
+    }
+
+    lucide-icon {
+      @media (max-width: $breakpoint-sm) {
+        width: 18px;
+        height: 18px;
+      }
+    }
   }
 
-  .card-main {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .card-top {
+  .card-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+
+    @media (max-width: $breakpoint-sm) {
+      margin-bottom: 0.6rem;
+      gap: 0.4rem 0.75rem;
+    }
   }
 
   .patient-details {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.1rem;
+    }
   }
 
   .patient-name {
     font-weight: 600;
     font-size: 1rem;
     color: #1e293b;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.9rem;
+    }
   }
 
   .patient-dossier {
     font-size: 0.8rem;
     color: #64748b;
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.75rem;
+    }
   }
 
-  .badges {
+  .card-badges {
     display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.3rem;
+    }
   }
 
-  .card-info {
-    display: flex !important;
-    flex-wrap: wrap;
+  .card-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 0.75rem 1.5rem;
-    margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px solid #e5e7eb;
-    min-height: 30px;
-    visibility: visible !important;
-    opacity: 1 !important;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.65rem 1.25rem;
+      padding-top: 0.65rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+      padding-top: 0.6rem;
+    }
   }
 
-  .info-item {
-    display: inline-flex !important;
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    @media (max-width: $breakpoint-sm) {
+      gap: 0.1rem;
+    }
+  }
+
+  .meta-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.65rem;
+      letter-spacing: 0.03em;
+    }
+  }
+
+  .meta-value {
+    display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     font-size: 0.85rem;
-    color: #1e293b !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    color: #1e293b;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 0.82rem;
+      gap: 0.3rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.8rem;
+      gap: 0.25rem;
+    }
 
     lucide-icon {
-      color: #64748b !important;
+      color: #64748b;
       flex-shrink: 0;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 13px;
+        height: 13px;
+      }
     }
   }
 
@@ -508,10 +922,23 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    padding-left: 1rem;
+
+    @media (max-width: $breakpoint-md) {
+      padding-left: 0.85rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      width: 100%;
+      padding-left: 0;
+      padding-top: 0.5rem;
+      justify-content: flex-start;
+      border-top: 1px solid #f1f5f9;
+    }
   }
 }
 
-// ==================== BUTTONS ====================
+// ==================== BUTTONS - RESPONSIVE ====================
 .btn {
   display: inline-flex;
   align-items: center;
@@ -525,8 +952,27 @@
   transition: all 0.2s ease;
   border: none;
 
-  @media (max-width: 640px) {
+  @media (max-width: $breakpoint-md) {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+    border-radius: 8px;
+    gap: 0.35rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
     flex: 1;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
+  }
+
+  lucide-icon {
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 15px;
+      height: 15px;
+    }
   }
 }
 
@@ -556,9 +1002,14 @@
 .btn-sm {
   padding: 0.45rem 0.75rem;
   font-size: 0.8rem;
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
 }
 
-// ==================== STATES ====================
+// ==================== STATES - RESPONSIVE ====================
 .loading-state,
 .error-state {
   display: flex;
@@ -568,8 +1019,27 @@
   color: #64748b;
   font-size: 0.9rem;
 
+  @media (max-width: $breakpoint-md) {
+    padding: 0.85rem;
+    font-size: 0.85rem;
+    gap: 0.65rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+
   lucide-icon {
     flex-shrink: 0;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 22px;
+      height: 22px;
+    }
   }
 }
 
@@ -578,8 +1048,18 @@
   background: rgba($error-color, 0.08);
   border-radius: 10px;
 
+  @media (max-width: $breakpoint-sm) {
+    border-radius: 8px;
+  }
+
   .btn {
     margin-left: auto;
+
+    @media (max-width: $breakpoint-sm) {
+      margin-left: 0;
+      margin-top: 0.5rem;
+      width: 100%;
+    }
   }
 }
 
@@ -588,9 +1068,29 @@
   padding: 3rem 2rem;
   color: #64748b;
 
+  @media (max-width: $breakpoint-md) {
+    padding: 2.5rem 1.5rem;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 2rem 1rem;
+  }
+
   lucide-icon {
     color: #cbd5e1;
     margin-bottom: 1rem;
+
+    @media (max-width: $breakpoint-md) {
+      width: 44px;
+      height: 44px;
+      margin-bottom: 0.85rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 0.75rem;
+    }
   }
 
   h3 {
@@ -598,11 +1098,29 @@
     font-size: 1.15rem;
     font-weight: 600;
     color: #475569;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 1rem;
+      margin-bottom: 0.35rem;
+    }
   }
 
   p {
     margin: 0;
     font-size: 0.9rem;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      font-size: 0.8rem;
+    }
   }
 }
 
@@ -613,61 +1131,4 @@
 
 .spinner {
   animation: spinner 1s linear infinite;
-}
-
-// ==================== RESPONSIVE ====================
-@media (max-width: 768px) {
-  .search-section,
-  .patients-section,
-  .hospitalisations-section {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-
-  .section-header h2 {
-    font-size: 1rem;
-  }
-
-  .patient-avatar {
-    width: 42px;
-    height: 42px;
-  }
-
-  .patient-name {
-    font-size: 0.95rem;
-  }
-
-  .empty-state {
-    padding: 2rem 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .search-section,
-  .patients-section,
-  .hospitalisations-section {
-    padding: 0.85rem;
-  }
-
-  .patient-card {
-    padding: 0.85rem;
-  }
-
-  .patient-avatar {
-    width: 38px;
-    height: 38px;
-  }
-
-  .patient-name {
-    font-size: 0.9rem;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-  }
-
-  .patient-contact {
-    font-size: 0.75rem;
-  }
 }

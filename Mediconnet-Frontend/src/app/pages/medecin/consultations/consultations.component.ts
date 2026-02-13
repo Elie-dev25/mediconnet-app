@@ -65,25 +65,25 @@ export class MedecinConsultationsComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+    const selectedDate = new Date(this.currentDate);
+    const selectedDayStr = selectedDate.toDateString();
     const today = new Date();
     const startOfWeek = this.getStartOfWeek(today);
     const endOfWeek = this.getEndOfWeek(today);
 
     // Charger les 3 sections en parallèle
     forkJoin({
-      aujourdhui: this.medecinDataService.getConsultationsJour(today.toISOString()),
+      aujourdhui: this.medecinDataService.getConsultationsJour(selectedDate.toISOString()),
       semaine: this.medecinDataService.getConsultations(startOfWeek.toISOString(), endOfWeek.toISOString()),
       historique: this.medecinDataService.getConsultations() // Toutes les consultations
     }).subscribe({
       next: (data) => {
-        const todayStr = today.toDateString();
-        
-        // Aujourd'hui: consultations du jour
+        // Consultations du jour sélectionné
         this.consultationsAujourdhui = this.filterBySearch(data.aujourdhui);
         
         // Cette semaine: consultations de la semaine SAUF aujourd'hui
         this.consultationsSemaine = this.filterBySearch(
-          data.semaine.filter(c => new Date(c.dateConsultation).toDateString() !== todayStr)
+          data.semaine.filter(c => new Date(c.dateConsultation).toDateString() !== selectedDayStr)
         );
         
         // Historique: consultations passées (heure passée) OU terminées
@@ -233,6 +233,21 @@ export class MedecinConsultationsComponent implements OnInit {
     this.loadData();
   }
 
+  prevDay(): void {
+    this.currentDate = this.shiftCurrentDate(-1);
+    this.loadData();
+  }
+
+  nextDay(): void {
+    this.currentDate = this.shiftCurrentDate(1);
+    this.loadData();
+  }
+
+  goToToday(): void {
+    this.currentDate = new Date();
+    this.loadData();
+  }
+
   setActiveTab(tab: 'aujourdhui' | 'semaine' | 'historique'): void {
     this.activeTab = tab;
   }
@@ -257,5 +272,11 @@ export class MedecinConsultationsComponent implements OnInit {
       case 'historique': return "Aucune consultation dans l'historique";
       default: return 'Aucune consultation';
     }
+  }
+
+  private shiftCurrentDate(deltaDays: number): Date {
+    const updated = new Date(this.currentDate);
+    updated.setDate(updated.getDate() + deltaDays);
+    return updated;
   }
 }

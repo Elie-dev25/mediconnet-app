@@ -1,13 +1,224 @@
 // Styles page rendez-vous médecin - Utilise les styles partagés list-page
 @use '../../../shared/styles/variables' as *;
 @use '../../../shared/styles/mixins' as *;
-@use '../../../shared/styles/list-page';
+@use '../../../shared/styles/list-page' as listPage;
 
 // Grille spécifique pour les RDV (5 colonnes)
 .rdv-grid {
-  grid-template-columns: 90px 1.2fr 1fr 90px 100px;
+  @include listPage.list-page-rdv-grid;
+}
+
+.list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  @include sm-down {
+    gap: 1rem;
+  }
+}
+
+.list-page-header {
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+
+    @include sm-down {
+      width: 100%;
+      flex-direction: column;
+    }
+  }
+}
+
+.list-page-search {
+  position: relative;
+  width: 320px;
+  padding-right: 0.35rem;
+
+  input {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+  }
+
+  @include sm-down {
+    width: 100%;
+  }
+
+  .list-page-search__refresh {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+.list-page-btn-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.list-page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.list-page-stat {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.list-page-tabs-container {
+  overflow: hidden;
+}
+
+.list-page-tabs-nav {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.list-page-tab {
+  min-width: 140px;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.list-page-tab-content {
+  padding: 1rem;
+  max-height: none;
+
+  @include sm-down {
+    padding: 0.75rem;
+  }
+}
+
+.list-page-date-nav {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+
+  .date-nav-arrows {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .date-label {
+    text-align: center;
+    min-width: 200px;
+
+    @include sm-down {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}
+
+.list-page-nav-btn {
+  width: 40px;
+  height: 40px;
+
+  @include sm-down {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.list-page-table {
+  gap: 0.75rem;
+}
+
+.list-page-table--scrollable {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  margin-right: -0.25rem;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+.list-page-table-header {
+  align-items: center;
+}
+
+.list-page-table-row {
+  border: 1px solid #f1f5f9;
+  background: white;
 
   @include md-down {
-    grid-template-columns: 1fr;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  }
+}
+
+@include md-down {
+  .list-page-table-row [data-label] {
+    position: relative;
+    padding-top: 0.25rem;
+
+    &::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 0.15rem;
+    }
+  }
+}
+
+.list-page-col-user {
+  align-items: flex-start;
+}
+
+.list-page-col-info {
+  .info-text {
+    white-space: normal;
+  }
+}
+
+.list-page-col-status {
+  justify-content: flex-start;
+}
+
+.list-page-col-actions {
+  justify-content: flex-end;
+  gap: 0.35rem;
+
+  @include md-down {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.list-page-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.list-page-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+
+  @include sm-down {
+    padding: 2rem 0.5rem;
   }
 }

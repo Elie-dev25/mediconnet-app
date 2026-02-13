@@ -1,0 +1,68 @@
+{
+  "specialiteId": 23,
+  "specialiteNom": "Obstétrique et Gynécologie",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "gyn-p1",
+      "texte": "Quelle est la raison de votre consultation aujourd'hui ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p2",
+      "texte": "Avez-vous déjà été hospitalisée ou opérée (pour quelle(s) intervention(s)) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p3",
+      "texte": "Fumez-vous ? Buvez-vous de l'alcool ou consommez-vous d'autres substances ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p4",
+      "texte": "Suivez-vous actuellement un traitement médicamenteux régulier ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p5",
+      "texte": "Parlez-moi de vos règles : à quel âge ont-elles commencé ? Sont-elles régulières (tous les combien de jours), abondantes ou douloureuses ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p6",
+      "texte": "Avez-vous déjà eu des rapports sexuels ? Utilisez-vous une méthode contraceptive actuellement ? Si oui, laquelle ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p7",
+      "texte": "Avez-vous déjà été enceinte (grossesse menée, fausse couche, IVG) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "gyn-p8",
+      "texte": "Avez-vous déjà eu une infection sexuellement transmissible (IST) ou des questions à ce sujet ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "gyn-p9",
+      "texte": "Avez-vous déjà réalisé un frottis cervico-utérin ou un autre examen gynécologique (échographie pelvienne, mammographie) ? Quel en était le résultat ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "gyn-p10",
+      "texte": "Quel est votre mode de vie général ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

@@ -9,6 +9,31 @@
       "id": 4,
       "key": "cardiologue",
       "nom": "Cardiologie"
+    },
+    {
+      "id": 8,
+      "key": "radiologie",
+      "nom": "Radiologie Diagnostique"
+    },
+    {
+      "id": 9,
+      "key": "urgences",
+      "nom": "Médecine d'Urgence"
+    },
+    {
+      "id": 12,
+      "key": "chirurgie",
+      "nom": "Chirurgie Générale"
+    },
+    {
+      "id": 23,
+      "key": "gynecologie",
+      "nom": "Obstétrique et Gynécologie"
+    },
+    {
+      "id": 29,
+      "key": "pediatrie",
+      "nom": "Pédiatrie"
     }
   ]
 }

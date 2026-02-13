@@ -16,7 +16,7 @@
       </div>
     </header>
 
-    <!-- Stats rapides -->
+    <!-- Stats rapides --> 
     <section class="stats-grid" *ngIf="dashboard">
       <div class="stat-card today">
         <div class="stat-icon">
@@ -64,14 +64,14 @@
           [class.active]="activeTab === 'horaires'"
           (click)="setActiveTab('horaires')">
           <lucide-icon name="clock" [size]="18"></lucide-icon>
-          Horaires de travail
+          Créneaux
         </button>
         <button 
           class="tab" 
           [class.active]="activeTab === 'conges'"
           (click)="setActiveTab('conges')">
           <lucide-icon name="calendar-off" [size]="18"></lucide-icon>
-          Congés & Absences
+          Absence
         </button>
         <button 
           class="tab" 

@@ -1,0 +1,69 @@
+{
+  "specialiteId": 9,
+  "specialiteNom": "Médecine d'Urgence",
+  "typeVisite": "premiere",
+  "questions": [
+    {
+      "id": "urg-p1",
+      "texte": "Quel est le motif principal de votre venue aux urgences ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p2",
+      "texte": "Depuis quand avez-vous ces symptômes (heures, jours) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p3",
+      "texte": "Sur une échelle de 0 à 10, comment évaluez-vous votre douleur actuelle ?",
+      "type": "choix",
+      "options": ["0-2 (légère)", "3-4 (modérée)", "5-6 (importante)", "7-8 (sévère)", "9-10 (insupportable)"],
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p4",
+      "texte": "Avez-vous subi un traumatisme ou un accident (chute, accident de la route, agression) ?",
+      "type": "choix",
+      "options": ["Oui", "Non"],
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p5",
+      "texte": "Avez-vous des allergies connues (médicaments, aliments, autres) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p6",
+      "texte": "Prenez-vous des médicaments actuellement ? Si oui, lesquels ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p7",
+      "texte": "Avez-vous des antécédents médicaux importants (maladies chroniques, chirurgies, hospitalisations) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p8",
+      "texte": "Avez-vous pris quelque chose pour soulager vos symptômes avant de venir (médicaments, glace, repos) ?",
+      "type": "texte",
+      "obligatoire": false
+    },
+    {
+      "id": "urg-p9",
+      "texte": "Avez-vous des symptômes associés (fièvre, vomissements, saignements, perte de connaissance, difficultés respiratoires) ?",
+      "type": "texte",
+      "obligatoire": true
+    },
+    {
+      "id": "urg-p10",
+      "texte": "Quand avez-vous mangé ou bu pour la dernière fois ?",
+      "type": "texte",
+      "obligatoire": false
+    }
+  ]
+}

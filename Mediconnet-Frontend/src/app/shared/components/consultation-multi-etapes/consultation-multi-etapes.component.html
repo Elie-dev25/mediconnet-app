@@ -1138,8 +1138,8 @@
 
     </div>
 
-  <!-- Footer -->
-  <div class="wizard-footer" *ngIf="!isLoading && !error">
+  <!-- Footer - État normal -->
+  <div class="wizard-footer" *ngIf="!isLoading && !error && !isPaused">
     <button type="button" class="btn btn-secondary" (click)="previousEtape()" 
             *ngIf="etapeActuelle !== 'anamnese'" [disabled]="isSaving">
       <lucide-icon name="arrow-left" [size]="16"></lucide-icon> Retour
@@ -1173,6 +1173,25 @@
           <lucide-icon name="printer" [size]="16"></lucide-icon> Clôturer & Imprimer
         </button>
       </ng-container>
+    </div>
+  </div>
+
+  <!-- Footer - État en pause -->
+  <div class="wizard-footer paused-footer" *ngIf="!isLoading && !error && isPaused">
+    <div class="pause-status">
+      <lucide-icon name="pause-circle" [size]="20"></lucide-icon>
+      <span>Consultation en pause</span>
+    </div>
+    
+    <div class="footer-right">
+      <button type="button" class="btn btn-secondary" (click)="quitterConsultation()">
+        <lucide-icon name="log-out" [size]="16"></lucide-icon> Quitter
+      </button>
+      <button type="button" class="btn btn-success btn-resume" (click)="reprendreConsultation()" 
+              [disabled]="isResuming">
+        <lucide-icon [name]="isResuming ? 'loader-2' : 'play'" [size]="16" [class.spin]="isResuming"></lucide-icon>
+        Reprendre
+      </button>
     </div>
   </div>
 </div>

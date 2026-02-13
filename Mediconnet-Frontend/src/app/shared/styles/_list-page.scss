@@ -13,6 +13,21 @@ $list-page-warning: #f59e0b;
 $list-page-danger: #ef4444;
 $list-page-purple: #7c3aed;
 
+// Mixin pour la grille RDV (5 colonnes desktop, collapsée en mobile)
+@mixin list-page-rdv-grid {
+  display: grid;
+  grid-template-columns: 90px 1.2fr 1fr 110px 110px;
+  gap: 0.75rem;
+
+  @include lg-down {
+    grid-template-columns: 80px 1fr 1fr;
+  }
+
+  @include md-down {
+    grid-template-columns: 1fr;
+  }
+}
+
 // ==================== PAGE CONTAINER ====================
 .list-page {
   @include page-container;
