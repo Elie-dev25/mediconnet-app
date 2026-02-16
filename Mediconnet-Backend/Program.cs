@@ -96,6 +96,17 @@ builder.Services.AddScoped<IStandardChambreService, StandardChambreService>();
 // Add Pharmacie Stock Service
 builder.Services.AddScoped<IPharmacieStockService, PharmacieStockService>();
 
+// Add Facturation Avancée Service (PDF, échéanciers, remboursements assurance)
+builder.Services.AddScoped<IFactureService, FactureAvanceeService>();
+
+// Add Assurance Couverture Service (calcul couverture par type de prestation)
+builder.Services.AddScoped<IAssuranceCouvertureService, AssuranceCouvertureService>();
+
+// Add Facture Assurance Services (PDF generation, Email, Management)
+builder.Services.AddScoped<IFacturePdfService, FacturePdfService>();
+builder.Services.AddScoped<IFactureEmailService, FactureEmailService>();
+builder.Services.AddScoped<IFactureAssuranceService, FactureAssuranceService>();
+
 // Add Medecin Helper Service
 builder.Services.AddScoped<IMedecinHelperService, MedecinHelperService>();
 

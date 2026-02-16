@@ -15,6 +15,18 @@ export interface AssuranceListItem {
   nombrePatientsAssures: number;
 }
 
+export interface ReferenceCode {
+  id: number;
+  code: string;
+  libelle: string;
+}
+
+export interface ZoneInfo {
+  idZone: number;
+  code: string;
+  libelle: string;
+}
+
 export interface AssuranceDetail {
   idAssurance: number;
   nom: string;
@@ -25,16 +37,23 @@ export interface AssuranceDetail {
   paysOrigine?: string;
   statutJuridique?: string;
   description?: string;
-  typeCouverture?: string;
   isComplementaire: boolean;
-  categorieBeneficiaires?: string;
   conditionsAdhesion?: string;
-  zoneCouverture?: string;
-  modePaiement?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   nombrePatientsAssures: number;
+  // Nouvelles relations normalisées
+  idZoneCouverture?: number;
+  zone?: ZoneInfo;
+  typesCouvertureSante: ReferenceCode[];
+  categoriesBeneficiaires: ReferenceCode[];
+  modesPaiement: ReferenceCode[];
+  // Champs legacy (pour compatibilité)
+  typeCouverture?: string;
+  categorieBeneficiaires?: string;
+  zoneCouverture?: string;
+  modePaiement?: string;
 }
 
 export interface CreateAssuranceDto {
@@ -46,13 +65,19 @@ export interface CreateAssuranceDto {
   paysOrigine?: string;
   statutJuridique?: string;
   description?: string;
-  typeCouverture?: string;
   isComplementaire?: boolean;
-  categorieBeneficiaires?: string;
   conditionsAdhesion?: string;
+  isActive?: boolean;
+  // Nouvelles relations normalisées
+  idZoneCouverture?: number;
+  typesCouvertureSanteIds?: number[];
+  categoriesBeneficiairesIds?: number[];
+  modesPaiementIds?: number[];
+  // Champs legacy (pour compatibilité)
+  typeCouverture?: string;
+  categorieBeneficiaires?: string;
   zoneCouverture?: string;
   modePaiement?: string;
-  isActive?: boolean;
 }
 
 export interface PatientAssuranceInfo {
@@ -60,12 +85,13 @@ export interface PatientAssuranceInfo {
   assuranceId?: number;
   nomAssurance?: string;
   typeAssurance?: string;
-  couvertureAssurance?: number; // Taux de couverture du patient
+  tauxCouvertureOverride?: number; // Override manuel du taux de couverture
   numeroCarteAssurance?: string;
   dateDebutValidite?: string;
   dateFinValidite?: string;
   estValide: boolean;
   tauxEffectif?: number; // Taux effectif calculé
+  couvertureAssurance?: number; // Alias pour compatibilité
 }
 
 export interface UpdatePatientAssuranceDto {
@@ -73,7 +99,8 @@ export interface UpdatePatientAssuranceDto {
   numeroCarteAssurance?: string;
   dateDebutValidite?: string;
   dateFinValidite?: string;
-  couvertureAssurance?: number;
+  tauxCouvertureOverride?: number; // Override manuel du taux
+  couvertureAssurance?: number; // Alias pour compatibilité
 }
 
 export interface AssuranceListResponse {
@@ -103,6 +130,45 @@ export interface AssuranceFilter {
   page?: number;
   pageSize?: number;
 }
+
+// ==================== COUVERTURE INTERFACES ====================
+
+export interface AssuranceCouverture {
+  idCouverture: number;
+  idAssurance: number;
+  typePrestation: string;
+  tauxCouverture: number;
+  plafondAnnuel?: number;
+  plafondParActe?: number;
+  franchise?: number;
+  actif: boolean;
+  notes?: string;
+}
+
+export interface AssuranceAvecCouvertures {
+  idAssurance: number;
+  nom: string;
+  typeAssurance: string;
+  isActive: boolean;
+  couvertures: AssuranceCouverture[];
+}
+
+export interface UpsertCouvertureRequest {
+  typePrestation: string;
+  tauxCouverture: number;
+  plafondAnnuel?: number;
+  plafondParActe?: number;
+  franchise?: number;
+  actif?: boolean;
+  notes?: string;
+}
+
+export const TYPES_PRESTATION = [
+  { value: 'consultation', label: 'Consultation', icon: 'stethoscope' },
+  { value: 'hospitalisation', label: 'Hospitalisation', icon: 'bed' },
+  { value: 'examen', label: 'Examens', icon: 'microscope' },
+  { value: 'pharmacie', label: 'Pharmacie', icon: 'pill' }
+];
 
 // ==================== CONSTANTES ====================
 
@@ -228,5 +294,44 @@ export class AssuranceService {
    */
   removePatientAssurance(idPatient: number): Observable<PatientAssuranceResponse> {
     return this.http.delete<PatientAssuranceResponse>(`${this.apiUrl}/patient/${idPatient}`);
+  }
+
+  // ==================== COUVERTURES ====================
+
+  private couvertureUrl = `${environment.apiUrl}/assurances`;
+
+  /**
+   * Récupérer toutes les assurances avec leurs couvertures
+   */
+  getAssurancesAvecCouvertures(): Observable<{ success: boolean; data: AssuranceAvecCouvertures[] }> {
+    return this.http.get<{ success: boolean; data: AssuranceAvecCouvertures[] }>(`${this.couvertureUrl}/avec-couvertures`);
+  }
+
+  /**
+   * Récupérer les couvertures d'une assurance
+   */
+  getCouvertures(idAssurance: number): Observable<{ success: boolean; data: AssuranceCouverture[] }> {
+    return this.http.get<{ success: boolean; data: AssuranceCouverture[] }>(`${this.couvertureUrl}/${idAssurance}/couvertures`);
+  }
+
+  /**
+   * Créer ou mettre à jour une couverture
+   */
+  upsertCouverture(idAssurance: number, request: UpsertCouvertureRequest): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.couvertureUrl}/${idAssurance}/couvertures`, request);
+  }
+
+  /**
+   * Mettre à jour toutes les couvertures d'une assurance en batch
+   */
+  batchUpdateCouvertures(idAssurance: number, requests: UpsertCouvertureRequest[]): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.couvertureUrl}/${idAssurance}/couvertures/batch`, requests);
+  }
+
+  /**
+   * Supprimer une couverture
+   */
+  deleteCouverture(idCouverture: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.couvertureUrl}/couvertures/${idCouverture}`);
   }
 }

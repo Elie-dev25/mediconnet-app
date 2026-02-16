@@ -14,17 +14,20 @@ public class HospitalisationService : IHospitalisationService
     private readonly ILogger<HospitalisationService> _logger;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
+    private readonly IAssuranceCouvertureService _assuranceCouvertureService;
 
     public HospitalisationService(
         ApplicationDbContext context, 
         ILogger<HospitalisationService> logger,
         INotificationService notificationService,
-        IEmailService emailService)
+        IEmailService emailService,
+        IAssuranceCouvertureService assuranceCouvertureService)
     {
         _context = context;
         _logger = logger;
         _notificationService = notificationService;
         _emailService = emailService;
+        _assuranceCouvertureService = assuranceCouvertureService;
     }
 
     public async Task<ChambresResponse> GetChambresAsync()
@@ -166,6 +169,7 @@ public class HospitalisationService : IHospitalisationService
             // Vérifier que le patient existe
             var patient = await _context.Patients
                 .Include(p => p.Utilisateur)
+                .Include(p => p.Assurance)
                 .FirstOrDefaultAsync(p => p.IdUser == request.IdPatient);
 
             if (patient == null)
@@ -230,17 +234,23 @@ public class HospitalisationService : IHospitalisationService
             var montantEstime = prixJournalier * dureeEstimee;
 
             var numeroFacture = $"HOSP-{DateTime.Now:yyyyMMdd}-{hospitalisation.IdAdmission:D4}";
+            var couverture = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "hospitalisation", montantEstime);
             var facture = new Facture
             {
                 NumeroFacture = numeroFacture,
                 IdPatient = request.IdPatient,
                 IdMedecin = request.IdMedecin.Value,
                 MontantTotal = montantEstime,
-                MontantRestant = montantEstime,
+                MontantPaye = 0,
+                MontantRestant = couverture.MontantPatient,
                 Statut = FactureStatuts.EnAttente,
                 TypeFacture = FactureTypes.Hospitalisation,
                 DateCreation = DateTime.UtcNow,
                 DateEcheance = request.DateSortiePrevue ?? DateTime.Now.AddDays(BusinessRules.FactureHospitalisationEcheanceDays),
+                CouvertureAssurance = couverture.EstAssure,
+                IdAssurance = couverture.IdAssurance,
+                TauxCouverture = couverture.EstAssure ? couverture.TauxCouverture : (decimal?)null,
+                MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null,
                 Notes = $"Hospitalisation - Chambre {lit.Chambre?.Numero}, Lit {lit.Numero}"
             };
 
@@ -395,7 +405,10 @@ public class HospitalisationService : IHospitalisationService
         try
         {
             var hospitalisation = await _context.Hospitalisations
-                .Include(h => h.Lit)
+                .Include(h => h.Lit).ThenInclude(l => l!.Chambre).ThenInclude(c => c!.Standard)
+                .Include(h => h.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(h => h.Patient).ThenInclude(p => p!.Assurance)
+                .Include(h => h.Medecin).ThenInclude(m => m!.Utilisateur)
                 .FirstOrDefaultAsync(h => h.IdAdmission == request.IdAdmission);
 
             if (hospitalisation == null)
@@ -407,9 +420,42 @@ public class HospitalisationService : IHospitalisationService
                 };
             }
 
+            // Vérifier que l'hospitalisation est en cours
+            if (!string.Equals(hospitalisation.Statut, HospitalisationStatut.EnCours.ToDbString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return new HospitalisationResponse
+                {
+                    Success = false,
+                    Message = $"Impossible de terminer: l'hospitalisation n'est pas en cours (statut actuel: {hospitalisation.Statut})"
+                };
+            }
+
+            // Vérifier que le résumé médical est fourni
+            if (string.IsNullOrWhiteSpace(request.ResumeMedical))
+            {
+                return new HospitalisationResponse
+                {
+                    Success = false,
+                    Message = "Le résumé médical de sortie est obligatoire"
+                };
+            }
+
+            // Annuler automatiquement les examens en cours/attente
+            var examensEnCours = await _context.Set<BulletinExamen>()
+                .Where(b => b.IdHospitalisation == request.IdAdmission 
+                    && b.Statut != "termine" && b.Statut != "annule" && b.Statut != null)
+                .ToListAsync();
+
+            foreach (var examen in examensEnCours)
+            {
+                examen.Statut = "annule";
+            }
+
             // Mettre à jour l'hospitalisation
             hospitalisation.DateSortie = request.DateSortie ?? DateTime.UtcNow;
             hospitalisation.Statut = HospitalisationStatut.Termine.ToDbString();
+            hospitalisation.MotifSortie = request.MotifSortie;
+            hospitalisation.ResumeMedical = request.ResumeMedical;
 
             // Libérer le lit
             if (hospitalisation.Lit != null)
@@ -417,10 +463,89 @@ public class HospitalisationService : IHospitalisationService
                 hospitalisation.Lit.Statut = LitStatuts.Libre;
             }
 
+            // Annuler les soins encore en cours/prescrits
+            var soinsActifs = await _context.SoinsHospitalisation
+                .Where(s => s.IdHospitalisation == request.IdAdmission 
+                    && (s.Statut == "prescrit" || s.Statut == "en_cours"))
+                .ToListAsync();
+
+            foreach (var soin in soinsActifs)
+            {
+                soin.Statut = "termine";
+            }
+
+            // Annuler les exécutions de soins prévues non effectuées
+            var executionsPrevu = await _context.ExecutionsSoins
+                .Where(e => e.Soin!.IdHospitalisation == request.IdAdmission && e.Statut == "prevu")
+                .ToListAsync();
+
+            foreach (var exec in executionsPrevu)
+            {
+                exec.Statut = "annule";
+                exec.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // ==================== RECALCUL FACTURE ====================
+            // Recalculer la facture avec la durée réelle du séjour
+            var factureHospit = await _context.Factures
+                .Include(f => f.Lignes)
+                .FirstOrDefaultAsync(f => f.IdPatient == hospitalisation.IdPatient
+                    && f.TypeFacture == FactureTypes.Hospitalisation
+                    && f.NumeroFacture.StartsWith("HOSP-")
+                    && f.NumeroFacture.EndsWith($"-{hospitalisation.IdAdmission:D4}")
+                    && f.Statut != "annulee");
+
+            if (factureHospit != null)
+            {
+                var dateSortieReelle = hospitalisation.DateSortie ?? DateTime.UtcNow;
+                var dureeReelle = (int)(dateSortieReelle - hospitalisation.DateEntree).TotalDays;
+                if (dureeReelle < 1) dureeReelle = 1;
+
+                var prixJournalier = hospitalisation.Lit?.Chambre?.Standard?.PrixJournalier ?? 0;
+                var montantReel = prixJournalier * dureeReelle;
+
+                // Recalculer la couverture assurance avec le montant réel
+                var couvertureSortie = await _assuranceCouvertureService.CalculerCouvertureAsync(hospitalisation.Patient!, "hospitalisation", montantReel);
+
+                factureHospit.MontantTotal = montantReel;
+                factureHospit.CouvertureAssurance = couvertureSortie.EstAssure;
+                factureHospit.IdAssurance = couvertureSortie.IdAssurance;
+                factureHospit.TauxCouverture = couvertureSortie.EstAssure ? couvertureSortie.TauxCouverture : (decimal?)null;
+                factureHospit.MontantAssurance = couvertureSortie.EstAssure ? couvertureSortie.MontantAssurance : (decimal?)null;
+                factureHospit.MontantRestant = couvertureSortie.MontantPatient - factureHospit.MontantPaye;
+                if (factureHospit.MontantRestant < 0) factureHospit.MontantRestant = 0;
+                factureHospit.Notes = $"Hospitalisation terminée - Durée réelle: {dureeReelle} jour(s) - Chambre {hospitalisation.Lit?.Chambre?.Numero}";
+
+                // Mettre à jour la ligne de facture
+                var ligneHospit = factureHospit.Lignes.FirstOrDefault(l => l.Categorie == "hospitalisation");
+                if (ligneHospit != null)
+                {
+                    ligneHospit.Quantite = dureeReelle;
+                    ligneHospit.PrixUnitaire = prixJournalier;
+                }
+            }
+
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            _logger.LogInformation("Hospitalisation terminée: {IdAdmission}", request.IdAdmission);
+            // Notification au patient
+            var patientNom = $"{hospitalisation.Patient?.Utilisateur?.Prenom} {hospitalisation.Patient?.Utilisateur?.Nom}";
+            var medecinNom = $"Dr. {hospitalisation.Medecin?.Utilisateur?.Prenom} {hospitalisation.Medecin?.Utilisateur?.Nom}";
+
+            await _notificationService.CreateAsync(new CreateNotificationRequest
+            {
+                IdUser = hospitalisation.IdPatient,
+                Type = "alerte",
+                Titre = "Hospitalisation terminée",
+                Message = $"Votre hospitalisation a été clôturée par {medecinNom}. " +
+                          $"Motif de sortie: {request.MotifSortie ?? "Non spécifié"}.",
+                Lien = "/patient/dossier-medical",
+                Priorite = "haute",
+                SendRealTime = true
+            });
+
+            _logger.LogInformation("Hospitalisation terminée: {IdAdmission}, Motif: {MotifSortie}", 
+                request.IdAdmission, request.MotifSortie);
 
             return new HospitalisationResponse
             {
@@ -444,26 +569,15 @@ public class HospitalisationService : IHospitalisationService
     public async Task<List<HospitalisationDto>> GetHospitalisationsPatientAsync(int idPatient)
     {
         var hospitalisations = await _context.Hospitalisations
+            .Include(h => h.Patient).ThenInclude(p => p!.Utilisateur)
+            .Include(h => h.Medecin).ThenInclude(m => m!.Utilisateur)
+            .Include(h => h.Service)
             .Include(h => h.Lit).ThenInclude(l => l!.Chambre)
             .Where(h => h.IdPatient == idPatient)
             .OrderByDescending(h => h.DateEntree)
             .ToListAsync();
 
-        return hospitalisations.Select(h => new HospitalisationDto
-        {
-            IdAdmission = h.IdAdmission,
-            DateEntree = h.DateEntree,
-            DateSortie = h.DateSortie,
-            Motif = h.Motif,
-            Statut = h.Statut,
-            IdPatient = h.IdPatient,
-            IdLit = h.IdLit ?? 0,
-            NumeroLit = h.Lit?.Numero,
-            NumeroChambre = h.Lit?.Chambre?.Numero,
-            DureeJours = h.DateSortie.HasValue 
-                ? (int)(h.DateSortie.Value - h.DateEntree).TotalDays 
-                : (int)(DateTime.UtcNow - h.DateEntree).TotalDays
-        }).ToList();
+        return hospitalisations.Select(MapToDto).ToList();
     }
 
     /// <summary>
@@ -842,6 +956,7 @@ public class HospitalisationService : IHospitalisationService
             // Récupérer l'hospitalisation
             var hospitalisation = await _context.Hospitalisations
                 .Include(h => h.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(h => h.Patient).ThenInclude(p => p!.Assurance)
                 .Include(h => h.Medecin).ThenInclude(m => m!.Utilisateur)
                 .FirstOrDefaultAsync(h => h.IdAdmission == request.IdAdmission);
 
@@ -851,7 +966,7 @@ public class HospitalisationService : IHospitalisationService
             }
 
             // Vérifier le statut EN_ATTENTE
-            if (hospitalisation.Statut != HospitalisationStatut.EnAttente.ToDbString())
+            if (!string.Equals(hospitalisation.Statut, HospitalisationStatut.EnAttente.ToDbString(), StringComparison.OrdinalIgnoreCase))
             {
                 return new HospitalisationResponse { Success = false, Message = $"Cette hospitalisation n'est pas en attente (statut actuel: {hospitalisation.Statut})" };
             }
@@ -887,7 +1002,7 @@ public class HospitalisationService : IHospitalisationService
 
             await _context.SaveChangesAsync();
 
-            // Créer la facture
+            // Créer la facture (seulement si aucune facture d'hospitalisation n'existe déjà pour cette admission)
             var prixJournalier = lit.Chambre?.Standard?.PrixJournalier ?? 0;
             var dureeEstimee = hospitalisation.DateSortie.HasValue 
                 ? (int)(hospitalisation.DateSortie.Value - hospitalisation.DateEntree).TotalDays 
@@ -895,36 +1010,79 @@ public class HospitalisationService : IHospitalisationService
             if (dureeEstimee < 1) dureeEstimee = 1;
             var montantEstime = prixJournalier * dureeEstimee;
 
+            var factureExistante = await _context.Factures
+                .Include(f => f.Lignes)
+                .FirstOrDefaultAsync(f => f.IdPatient == hospitalisation.IdPatient 
+                    && f.TypeFacture == FactureTypes.Hospitalisation
+                    && f.NumeroFacture.StartsWith($"HOSP-")
+                    && f.NumeroFacture.EndsWith($"-{hospitalisation.IdAdmission:D4}")
+                    && f.Statut != "annulee");
+
             var numeroFacture = $"HOSP-{DateTime.Now:yyyyMMdd}-{hospitalisation.IdAdmission:D4}";
-            var facture = new Facture
+            Facture facture;
+
+            // Calculer la couverture assurance pour l'hospitalisation
+            var couvertureHosp = await _assuranceCouvertureService.CalculerCouvertureAsync(hospitalisation.Patient!, "hospitalisation", montantEstime);
+
+            if (factureExistante != null)
             {
-                NumeroFacture = numeroFacture,
-                IdPatient = hospitalisation.IdPatient,
-                IdMedecin = hospitalisation.IdMedecin,
-                IdService = hospitalisation.IdService,
-                MontantTotal = montantEstime,
-                MontantRestant = montantEstime,
-                Statut = FactureStatuts.EnAttente,
-                TypeFacture = FactureTypes.Hospitalisation,
-                DateCreation = DateTime.UtcNow,
-                DateEcheance = hospitalisation.DateSortie ?? DateTime.Now.AddDays(BusinessRules.FactureHospitalisationEcheanceDays),
-                Notes = $"Hospitalisation - Chambre {lit.Chambre?.Numero}, Lit {lit.Numero}"
-            };
+                // Mettre à jour la facture existante avec les infos du nouveau lit
+                facture = factureExistante;
+                facture.MontantTotal = montantEstime;
+                facture.CouvertureAssurance = couvertureHosp.EstAssure;
+                facture.IdAssurance = couvertureHosp.IdAssurance;
+                facture.TauxCouverture = couvertureHosp.EstAssure ? couvertureHosp.TauxCouverture : (decimal?)null;
+                facture.MontantAssurance = couvertureHosp.EstAssure ? couvertureHosp.MontantAssurance : (decimal?)null;
+                facture.MontantRestant = couvertureHosp.MontantPatient - facture.MontantPaye;
+                facture.Notes = $"Hospitalisation - Chambre {lit.Chambre?.Numero}, Lit {lit.Numero}";
+                numeroFacture = facture.NumeroFacture;
 
-            _context.Factures.Add(facture);
-            await _context.SaveChangesAsync();
-
-            // Ajouter la ligne de facture
-            var ligneFacture = new LigneFacture
+                // Mettre à jour la ligne de facture existante
+                var ligneExistante = facture.Lignes.FirstOrDefault(l => l.Categorie == "hospitalisation");
+                if (ligneExistante != null)
+                {
+                    ligneExistante.Description = $"Hospitalisation {lit.Chambre?.Standard?.Nom ?? "Standard"} - Chambre {lit.Chambre?.Numero}";
+                    ligneExistante.Quantite = dureeEstimee;
+                    ligneExistante.PrixUnitaire = prixJournalier;
+                }
+            }
+            else
             {
-                IdFacture = facture.IdFacture,
-                Description = $"Hospitalisation {lit.Chambre?.Standard?.Nom ?? "Standard"} - Chambre {lit.Chambre?.Numero}",
-                Quantite = dureeEstimee,
-                PrixUnitaire = prixJournalier,
-                Categorie = "hospitalisation"
-            };
+                facture = new Facture
+                {
+                    NumeroFacture = numeroFacture,
+                    IdPatient = hospitalisation.IdPatient,
+                    IdMedecin = hospitalisation.IdMedecin,
+                    IdService = hospitalisation.IdService,
+                    MontantTotal = montantEstime,
+                    MontantPaye = 0,
+                    MontantRestant = couvertureHosp.MontantPatient,
+                    Statut = FactureStatuts.EnAttente,
+                    TypeFacture = FactureTypes.Hospitalisation,
+                    DateCreation = DateTime.UtcNow,
+                    DateEcheance = hospitalisation.DateSortie ?? DateTime.Now.AddDays(BusinessRules.FactureHospitalisationEcheanceDays),
+                    CouvertureAssurance = couvertureHosp.EstAssure,
+                    IdAssurance = couvertureHosp.IdAssurance,
+                    TauxCouverture = couvertureHosp.EstAssure ? couvertureHosp.TauxCouverture : (decimal?)null,
+                    MontantAssurance = couvertureHosp.EstAssure ? couvertureHosp.MontantAssurance : (decimal?)null,
+                    Notes = $"Hospitalisation - Chambre {lit.Chambre?.Numero}, Lit {lit.Numero}"
+                };
 
-            _context.LignesFacture.Add(ligneFacture);
+                _context.Factures.Add(facture);
+                await _context.SaveChangesAsync();
+
+                var ligneFacture = new LigneFacture
+                {
+                    IdFacture = facture.IdFacture,
+                    Description = $"Hospitalisation {lit.Chambre?.Standard?.Nom ?? "Standard"} - Chambre {lit.Chambre?.Numero}",
+                    Quantite = dureeEstimee,
+                    PrixUnitaire = prixJournalier,
+                    Categorie = "hospitalisation"
+                };
+
+                _context.LignesFacture.Add(ligneFacture);
+            }
+
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
@@ -1046,8 +1204,12 @@ public class HospitalisationService : IHospitalisationService
         {
             IdAdmission = h.IdAdmission,
             DateEntree = h.DateEntree,
-            DateSortie = h.DateSortie,
+            DateSortiePrevue = h.DateSortiePrevue ?? h.DateSortie,
+            DateSortie = h.Statut == HospitalisationStatut.Termine.ToDbString() ? h.DateSortie : null,
             Motif = h.Motif,
+            MotifSortie = h.MotifSortie,
+            ResumeMedical = h.ResumeMedical,
+            DiagnosticPrincipal = h.DiagnosticPrincipal,
             Statut = h.Statut,
             Urgence = h.Urgence,
             IdPatient = h.IdPatient,

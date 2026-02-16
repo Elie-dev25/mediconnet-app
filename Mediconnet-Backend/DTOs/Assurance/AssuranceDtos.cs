@@ -37,21 +37,50 @@ public class AssuranceDetailDto
     public string? StatutJuridique { get; set; }
     public string? Description { get; set; }
     
-    // Couverture santé
-    public string? TypeCouverture { get; set; }
+    // Couverture santé (normalisé)
     public bool IsComplementaire { get; set; }
-    public string? CategorieBeneficiaires { get; set; }
+    public int? IdZoneCouverture { get; set; }
+    public ZoneInfoDto? Zone { get; set; }
+    
+    // Relations many-to-many (normalisé)
+    public List<ReferenceCodeDto> TypesCouvertureSante { get; set; } = new();
+    public List<ReferenceCodeDto> CategoriesBeneficiaires { get; set; } = new();
+    public List<ReferenceCodeDto> ModesPaiement { get; set; } = new();
     
     // Validité et fonctionnement
     public string? ConditionsAdhesion { get; set; }
+    public bool IsActive { get; set; }
+    
+    // Champs legacy (pour compatibilité)
+    public string? TypeCouverture { get; set; }
+    public string? CategorieBeneficiaires { get; set; }
     public string? ZoneCouverture { get; set; }
     public string? ModePaiement { get; set; }
-    public bool IsActive { get; set; }
     
     // Métadonnées
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public int NombrePatientsAssures { get; set; }
+}
+
+/// <summary>
+/// DTO simple pour une référence (code + libellé)
+/// </summary>
+public class ReferenceCodeDto
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Libelle { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// DTO pour la zone de couverture
+/// </summary>
+public class ZoneInfoDto
+{
+    public int IdZone { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Libelle { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -85,26 +114,39 @@ public class CreateAssuranceDto
     [MaxLength(1000)]
     public string? Description { get; set; }
 
-    // Étape 3: Couverture santé
-    [MaxLength(500)]
-    public string? TypeCouverture { get; set; }
-
+    // Étape 3: Couverture santé (normalisé)
     public bool IsComplementaire { get; set; } = false;
-
-    [MaxLength(255)]
-    public string? CategorieBeneficiaires { get; set; }
+    
+    /// <summary>ID de la zone de couverture géographique</summary>
+    public int? IdZoneCouverture { get; set; }
+    
+    /// <summary>IDs des types de couverture santé (hospitalisation, maternité, etc.)</summary>
+    public List<int> TypesCouvertureSanteIds { get; set; } = new();
+    
+    /// <summary>IDs des catégories de bénéficiaires</summary>
+    public List<int> CategoriesBeneficiairesIds { get; set; } = new();
+    
+    /// <summary>IDs des modes de paiement acceptés</summary>
+    public List<int> ModesPaiementIds { get; set; } = new();
 
     // Étape 4: Fonctionnement
     [MaxLength(1000)]
     public string? ConditionsAdhesion { get; set; }
+
+    public bool IsActive { get; set; } = true;
+    
+    // Champs legacy (pour compatibilité pendant la migration)
+    [MaxLength(500)]
+    public string? TypeCouverture { get; set; }
+
+    [MaxLength(255)]
+    public string? CategorieBeneficiaires { get; set; }
 
     [MaxLength(100)]
     public string? ZoneCouverture { get; set; }
 
     [MaxLength(255)]
     public string? ModePaiement { get; set; }
-
-    public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
@@ -126,14 +168,20 @@ public class PatientAssuranceInfoDto
     public int? AssuranceId { get; set; }
     public string? NomAssurance { get; set; }
     public string? TypeAssurance { get; set; }
-    public decimal? CouvertureAssurance { get; set; } // Taux de couverture du patient
+    
+    /// <summary>Override manuel du taux de couverture (si défini)</summary>
+    public decimal? TauxCouvertureOverride { get; set; }
+    
     public string? NumeroCarteAssurance { get; set; }
     public DateTime? DateDebutValidite { get; set; }
     public DateTime? DateFinValidite { get; set; }
     public bool EstValide { get; set; }
     
-    /// <summary>Retourne le taux effectif</summary>
-    public decimal TauxEffectif => CouvertureAssurance ?? 0;
+    /// <summary>Retourne le taux override si défini</summary>
+    public decimal? TauxEffectif => TauxCouvertureOverride;
+    
+    /// <summary>Alias pour compatibilité</summary>
+    public decimal? CouvertureAssurance => TauxCouvertureOverride;
 }
 
 /// <summary>
@@ -150,8 +198,13 @@ public class UpdatePatientAssuranceDto
 
     public DateTime? DateFinValidite { get; set; }
     
+    /// <summary>Override manuel du taux de couverture (priorité sur config assurance)</summary>
     [Range(0, 100)]
-    public decimal? CouvertureAssurance { get; set; }
+    public decimal? TauxCouvertureOverride { get; set; }
+    
+    /// <summary>Alias pour compatibilité</summary>
+    [Range(0, 100)]
+    public decimal? CouvertureAssurance { get => TauxCouvertureOverride; set => TauxCouvertureOverride = value; }
 }
 
 // ==================== RESPONSE DTOs ====================

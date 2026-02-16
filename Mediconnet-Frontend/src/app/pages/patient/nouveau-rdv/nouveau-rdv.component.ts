@@ -499,6 +499,15 @@ export class PatientNouveauRdvComponent implements OnInit {
     this.router.navigate(['/patient/rendez-vous']);
   }
 
+  goToQuestionnaire(): void {
+    if (this.confirmedRdv) {
+      const rdvId = this.confirmedRdv.idRendezVous;
+      this.showConfirmationPopup = false;
+      this.confirmedRdv = null;
+      this.router.navigate(['/patient/rendez-vous'], { queryParams: { questionnaire: rdvId } });
+    }
+  }
+
   // ==================== HELPERS ====================
 
   formatDate(dateStr: string): string {

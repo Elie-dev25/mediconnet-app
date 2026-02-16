@@ -1009,11 +1009,13 @@ public class MedecinController : BaseApiController
             var result = new
             {
                 idAdmission = hospitalisation.IdAdmission,
-                statut = hospitalisation.Statut ?? "EN_ATTENTE",
+                statut = hospitalisation.Statut ?? "en_attente",
                 urgence = hospitalisation.Urgence ?? "normale",
                 dateEntree = hospitalisation.DateEntree,
-                dateSortiePrevue = hospitalisation.DateSortie,
-                dateSortie = hospitalisation.DateSortie,
+                dateSortiePrevue = hospitalisation.DateSortiePrevue,
+                dateSortie = hospitalisation.Statut == "termine" ? hospitalisation.DateSortie : (DateTime?)null,
+                motifSortie = hospitalisation.MotifSortie,
+                resumeMedical = hospitalisation.ResumeMedical,
                 motif = hospitalisation.Motif ?? "",
                 diagnosticPrincipal = hospitalisation.DiagnosticPrincipal,
                 patient = new

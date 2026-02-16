@@ -20,19 +20,22 @@ public class ConsultationService : IConsultationService
     private readonly ILogger<ConsultationService> _logger;
     private readonly IRendezVousService _rendezVousService;
     private readonly IAppointmentNotificationService _notificationService;
+    private readonly IAssuranceCouvertureService _assuranceCouvertureService;
 
     public ConsultationService(
         ApplicationDbContext context,
         IAuditService auditService,
         ILogger<ConsultationService> logger,
         IRendezVousService rendezVousService,
-        IAppointmentNotificationService notificationService)
+        IAppointmentNotificationService notificationService,
+        IAssuranceCouvertureService assuranceCouvertureService)
     {
         _context = context;
         _auditService = auditService;
         _logger = logger;
         _rendezVousService = rendezVousService;
         _notificationService = notificationService;
+        _assuranceCouvertureService = assuranceCouvertureService;
     }
 
     public async Task<EnregistrerConsultationResponse> EnregistrerConsultationAsync(
@@ -132,22 +135,12 @@ public class ConsultationService : IConsultationService
             // Générer un numéro de facture unique
             var numeroFacture = await GenererNumeroFactureAsync();
 
-            // Calculer la couverture assurance si le patient est assuré
-            var estAssure = patient.AssuranceId.HasValue && 
-                            patient.Assurance != null &&
-                            (!patient.DateFinValidite.HasValue || patient.DateFinValidite.Value >= DateTime.UtcNow);
-            
-            decimal tauxCouverture = 0;
-            decimal montantAssurance = 0;
-            decimal montantPatient = request.PrixConsultation;
-            
-            if (estAssure)
-            {
-                // Utiliser le taux de couverture du patient
-                tauxCouverture = patient.CouvertureAssurance ?? 0;
-                montantAssurance = Math.Round(request.PrixConsultation * tauxCouverture / 100, 2);
-                montantPatient = request.PrixConsultation - montantAssurance;
-            }
+            // Calculer la couverture assurance via le service centralisé
+            var couverture = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "consultation", request.PrixConsultation);
+            var estAssure = couverture.EstAssure;
+            var tauxCouverture = couverture.TauxCouverture;
+            var montantAssurance = couverture.MontantAssurance;
+            var montantPatient = couverture.MontantPatient;
 
             // Créer la facture
             var facture = new Facture
@@ -176,6 +169,19 @@ public class ConsultationService : IConsultationService
             };
 
             _context.Factures.Add(facture);
+            await _context.SaveChangesAsync();
+
+            // Ajouter la ligne de facture détaillée
+            var ligneFacture = new LigneFacture
+            {
+                IdFacture = facture.IdFacture,
+                Description = $"Consultation - Dr. {medecin.Utilisateur?.Nom ?? "N/A"}",
+                Quantite = 1,
+                PrixUnitaire = request.PrixConsultation,
+                Categorie = "consultation"
+            };
+
+            _context.LignesFacture.Add(ligneFacture);
             await _context.SaveChangesAsync();
 
             // Logger l'action

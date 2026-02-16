@@ -12,6 +12,8 @@ import {
   MedicamentDto,
   ExamenPrescritDto,
   RecommandationDto,
+  CreateRecommandationRequest,
+  RecommandationResponseDto,
   CreneauDisponible,
   CreerRdvSuiviRequest,
   CreneauAvecStatut,
@@ -91,6 +93,23 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   // Panneau latéral Hospitalisation (composant multi-étapes réutilisable)
   showHospitalisationPanel = false;
   hospitalisationPatientInfo: HospitalisationPatientInfo | null = null;
+
+  // Recommandations structurées
+  recommandationsSauvegardees: RecommandationResponseDto[] = [];
+  showRecommandationForm = false;
+  recommandationType: 'hopital' | 'medecin' = 'medecin';
+  recommandationNomHopital = '';
+  recommandationNomMedecin = '';
+  recommandationIdMedecin: number | null = null;
+  recommandationSpecialite = '';
+  recommandationMotif = '';
+  recommandationPrioritaire = false;
+  recommandationIsSubmitting = false;
+  recommandationError: string | null = null;
+  specialitesListe: SpecialiteDto[] = [];
+  medecinsParSpecialite: MedecinSpecialisteDto[] = [];
+  selectedSpecialiteId: number | null = null;
+  recommandationMedecinMode: 'interne' | 'externe' = 'interne';
 
   // Autocomplete médicaments
   medicamentSuggestions: MedicamentStock[] = [];
@@ -270,6 +289,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.loadConsultation();
     this.loadLaboratoires();
     this.loadSpecialites();
+    this.loadRecommandations();
     this.initOrientationForm();
     this.setupVoiceRecognition();
     this.setupMedicamentAutocomplete();
@@ -285,7 +305,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   private loadSpecialites(): void {
     this.consultationService.getSpecialites().subscribe({
-      next: (specs) => this.specialites = specs,
+      next: (specs) => { this.specialites = specs; this.specialitesListe = specs; },
       error: (err) => console.error('Erreur chargement spécialités:', err)
     });
   }
@@ -960,7 +980,100 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.examensPrescriptions = examens;
   }
 
-  // Recommandations
+  // Recommandations structurées
+  loadRecommandations(): void {
+    this.consultationService.getRecommandations(this.consultationId).subscribe({
+      next: (data) => this.recommandationsSauvegardees = data,
+      error: () => console.error('Erreur chargement recommandations')
+    });
+  }
+
+  onRecommandationSpecialiteChange(): void {
+    this.medecinsParSpecialite = [];
+    this.recommandationIdMedecin = null;
+    if (this.selectedSpecialiteId) {
+      this.consultationService.getMedecinsParSpecialite(this.selectedSpecialiteId).subscribe({
+        next: (data) => this.medecinsParSpecialite = data,
+        error: () => console.error('Erreur chargement médecins')
+      });
+      const spec = this.specialitesListe.find(s => s.idSpecialite === this.selectedSpecialiteId);
+      if (spec) this.recommandationSpecialite = spec.nomSpecialite;
+    }
+  }
+
+  toggleRecommandationForm(): void {
+    this.showRecommandationForm = !this.showRecommandationForm;
+    if (this.showRecommandationForm) {
+      this.resetRecommandationForm();
+    }
+  }
+
+  resetRecommandationForm(): void {
+    this.recommandationType = 'medecin';
+    this.recommandationNomHopital = '';
+    this.recommandationNomMedecin = '';
+    this.recommandationIdMedecin = null;
+    this.recommandationSpecialite = '';
+    this.recommandationMotif = '';
+    this.recommandationPrioritaire = false;
+    this.recommandationError = null;
+    this.selectedSpecialiteId = null;
+    this.medecinsParSpecialite = [];
+    this.recommandationMedecinMode = 'interne';
+  }
+
+  get canSubmitRecommandation(): boolean {
+    if (!this.recommandationMotif.trim()) return false;
+    if (this.recommandationType === 'hopital' && !this.recommandationNomHopital.trim()) return false;
+    if (this.recommandationType === 'medecin') {
+      if (this.recommandationMedecinMode === 'interne' && !this.recommandationIdMedecin) return false;
+      if (this.recommandationMedecinMode === 'externe' && !this.recommandationNomMedecin.trim()) return false;
+    }
+    return true;
+  }
+
+  submitRecommandation(): void {
+    if (!this.canSubmitRecommandation || this.recommandationIsSubmitting) return;
+
+    this.recommandationIsSubmitting = true;
+    this.recommandationError = null;
+
+    const request: CreateRecommandationRequest = {
+      type: this.recommandationType,
+      nomHopital: this.recommandationType === 'hopital' ? this.recommandationNomHopital : undefined,
+      nomMedecinRecommande: this.recommandationType === 'medecin' && this.recommandationMedecinMode === 'externe'
+        ? this.recommandationNomMedecin : undefined,
+      idMedecinRecommande: this.recommandationType === 'medecin' && this.recommandationMedecinMode === 'interne'
+        ? (this.recommandationIdMedecin ?? undefined) : undefined,
+      specialite: this.recommandationSpecialite || undefined,
+      motif: this.recommandationMotif,
+      prioritaire: this.recommandationPrioritaire
+    };
+
+    this.consultationService.createRecommandation(this.consultationId, request).subscribe({
+      next: (rec) => {
+        this.recommandationsSauvegardees.unshift(rec);
+        this.resetRecommandationForm();
+        this.showRecommandationForm = false;
+        this.recommandationIsSubmitting = false;
+      },
+      error: (err) => {
+        this.recommandationError = err.error?.message || 'Erreur lors de la sauvegarde';
+        this.recommandationIsSubmitting = false;
+      }
+    });
+  }
+
+  deleteRecommandation(id: number): void {
+    this.consultationService.deleteRecommandation(id).subscribe({
+      next: () => {
+        this.recommandationsSauvegardees = this.recommandationsSauvegardees.filter(r => r.idRecommandation !== id);
+      },
+      error: () => console.error('Erreur suppression recommandation')
+    });
+  }
+
+  // Legacy compatibility
   addRecommandation(rec?: RecommandationDto): void {
     this.recommandationsArray.push(this.fb.group({
       type: [rec?.type || 'conseil', Validators.required],

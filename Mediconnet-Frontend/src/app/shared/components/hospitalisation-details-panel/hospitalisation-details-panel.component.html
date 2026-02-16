@@ -150,12 +150,34 @@
               <p class="info-text">{{ hospitalisation.diagnosticPrincipal }}</p>
             </div>
           </div>
+
+          <!-- Sortie Info (only for terminated) -->
+          <div class="info-section sortie-section" *ngIf="isTermine">
+            <h4 class="section-title">
+              <lucide-icon name="log-out" [size]="16"></lucide-icon>
+              Informations de sortie
+            </h4>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="hospitalisation.dateSortie">
+                <span class="info-label">Date de sortie</span>
+                <span class="info-value">{{ formatDateTime(hospitalisation.dateSortie) }}</span>
+              </div>
+              <div class="info-item" *ngIf="hospitalisation.motifSortie">
+                <span class="info-label">Motif de sortie</span>
+                <span class="info-value">{{ getMotifSortieLabel(hospitalisation.motifSortie) }}</span>
+              </div>
+            </div>
+            <div class="info-block" *ngIf="hospitalisation.resumeMedical">
+              <span class="info-label">Résumé médical de sortie</span>
+              <p class="info-text resume-medical">{{ hospitalisation.resumeMedical }}</p>
+            </div>
+          </div>
         </div>
 
         <!-- Soins Tab -->
         <div class="tab-pane" *ngIf="activeTab === 'soins'">
-          <!-- Bouton Ajouter (médecin uniquement) -->
-          <div class="tab-actions" *ngIf="isMedecin">
+          <!-- Bouton Ajouter (médecin uniquement, pas si terminé) -->
+          <div class="tab-actions" *ngIf="isMedecin && !isTermine">
             <button class="btn btn-add" (click)="onAddSoins()">
               <lucide-icon name="plus" [size]="16"></lucide-icon>
               Ajouter un soin
@@ -248,6 +270,7 @@
                     Voir le planning
                   </button>
                   <button class="btn btn-primary btn-sm" 
+                          *ngIf="!isTermine"
                           (click)="openEnregistrerSoinModal(soin)"
                           [disabled]="soin.statut === 'termine' || (soin.nbExecutionsPrevues - soin.nbExecutionsEffectuees - (soin.nbExecutionsManquees || 0)) === 0">
                     <lucide-icon name="check-circle" [size]="14"></lucide-icon>
@@ -261,8 +284,8 @@
 
         <!-- Examens Tab -->
         <div class="tab-pane" *ngIf="activeTab === 'examens'">
-          <!-- Bouton Ajouter (médecin uniquement) -->
-          <div class="tab-actions" *ngIf="isMedecin">
+          <!-- Bouton Ajouter (médecin uniquement, pas si terminé) -->
+          <div class="tab-actions" *ngIf="isMedecin && !isTermine">
             <button class="btn btn-add" (click)="onAddExamens()">
               <lucide-icon name="plus" [size]="16"></lucide-icon>
               Prescrire un examen
@@ -317,8 +340,8 @@
 
         <!-- Prescriptions Tab -->
         <div class="tab-pane" *ngIf="activeTab === 'prescriptions'">
-          <!-- Bouton Ajouter (médecin uniquement) -->
-          <div class="tab-actions" *ngIf="isMedecin">
+          <!-- Bouton Ajouter (médecin uniquement, pas si terminé) -->
+          <div class="tab-actions" *ngIf="isMedecin && !isTermine">
             <button class="btn btn-add" (click)="onAddPrescriptions()">
               <lucide-icon name="plus" [size]="16"></lucide-icon>
               Ajouter une ordonnance
@@ -385,12 +408,18 @@
       </ng-container>
 
       <!-- Medecin Actions -->
-      <ng-container *ngIf="isMedecin">
+      <ng-container *ngIf="isMedecin && !isTermine">
         <button class="btn btn-danger" *ngIf="hospitalisation.statut?.toLowerCase() === 'en_cours'" (click)="onFinHospitalisation()">
           <lucide-icon name="log-out" [size]="16"></lucide-icon>
           Fin hospitalisation
         </button>
       </ng-container>
+
+      <!-- Read-only indicator for terminated -->
+      <div class="readonly-indicator" *ngIf="isTermine">
+        <lucide-icon name="lock" [size]="14"></lucide-icon>
+        <span>Hospitalisation clôturée — lecture seule</span>
+      </div>
     </div>
   </div>
 </div>

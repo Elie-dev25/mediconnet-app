@@ -14,7 +14,8 @@ import {
   HospitalisationDetailsPanelComponent,
   OrdonnanceHospitalisationPanelComponent,
   ExamenHospitalisationPanelComponent,
-  SoinHospitalisationPanelComponent
+  SoinHospitalisationPanelComponent,
+  FinHospitalisationPanelComponent
 } from '../../../shared';
 import { AuthService } from '../../../services/auth.service';
 import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
@@ -44,7 +45,8 @@ type TabType = 'tous' | 'hospitalises';
     HospitalisationDetailsPanelComponent,
     OrdonnanceHospitalisationPanelComponent,
     ExamenHospitalisationPanelComponent,
-    SoinHospitalisationPanelComponent
+    SoinHospitalisationPanelComponent,
+    FinHospitalisationPanelComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './patients.component.html',
@@ -121,6 +123,18 @@ export class MedecinPatientsComponent implements OnInit {
   // Panel de détails d'hospitalisation (nouveau composant unifié)
   showDetailsPanel = false;
   selectedHospitalisationId: number | null = null;
+
+  // Panneau fin d'hospitalisation
+  showFinHospPanel = false;
+  finHospitalisationId: number | null = null;
+  finHospPatientNom = '';
+  finHospPatientPrenom = '';
+
+  // Confirmation avant fin d'hospitalisation
+  showFinHospConfirm = false;
+  finHospConfirmExamens = 0;
+  finHospConfirmSoins = 0;
+  pendingFinHospData: any = null;
 
   // Modal ajout de soins
   showSoinsModal = false;
@@ -268,9 +282,62 @@ export class MedecinPatientsComponent implements OnInit {
   }
 
   terminerHospitalisation(hospitalisation: any): void {
-    // TODO: Implémenter la terminaison d'hospitalisation
-    console.log('Terminer hospitalisation pour:', hospitalisation.idAdmission);
     this.closeDetailsPanel();
+
+    // Compter les examens et soins non terminés/annulés
+    const examens = hospitalisation.examens || [];
+    const soins = hospitalisation.soins || [];
+    const examensRestants = examens.filter(
+      (e: any) => e.statut !== 'termine' && e.statut !== 'annule'
+    ).length;
+    const soinsRestants = soins.filter(
+      (s: any) => s.statut !== 'termine' && s.statut !== 'annule'
+    ).length;
+
+    if (examensRestants > 0 || soinsRestants > 0) {
+      // Stocker les données et afficher la confirmation
+      this.pendingFinHospData = hospitalisation;
+      this.finHospConfirmExamens = examensRestants;
+      this.finHospConfirmSoins = soinsRestants;
+      this.showFinHospConfirm = true;
+    } else {
+      // Pas de soins/examens en attente, ouvrir directement le panneau
+      this.openFinHospPanel(hospitalisation);
+    }
+  }
+
+  confirmFinHospitalisation(): void {
+    this.showFinHospConfirm = false;
+    if (this.pendingFinHospData) {
+      this.openFinHospPanel(this.pendingFinHospData);
+      this.pendingFinHospData = null;
+    }
+  }
+
+  cancelFinHospConfirm(): void {
+    this.showFinHospConfirm = false;
+    this.pendingFinHospData = null;
+    this.finHospConfirmExamens = 0;
+    this.finHospConfirmSoins = 0;
+  }
+
+  private openFinHospPanel(hospitalisation: any): void {
+    this.finHospitalisationId = hospitalisation.idAdmission;
+    this.finHospPatientNom = hospitalisation.patient?.nom || '';
+    this.finHospPatientPrenom = hospitalisation.patient?.prenom || '';
+    this.showFinHospPanel = true;
+  }
+
+  closeFinHospPanel(): void {
+    this.showFinHospPanel = false;
+    this.finHospitalisationId = null;
+    this.finHospPatientNom = '';
+    this.finHospPatientPrenom = '';
+  }
+
+  onFinHospCompleted(): void {
+    this.closeFinHospPanel();
+    this.loadPatientsHospitalises();
   }
 
   programmerSoins(): void {
@@ -653,19 +720,25 @@ export class MedecinPatientsComponent implements OnInit {
   }
 
   getStatutLabel(statut: string): string {
-    switch (statut) {
-      case 'EN_ATTENTE': return 'En attente';
-      case 'EN_COURS': return 'En cours';
-      case 'TERMINE': return 'Terminé';
+    const s = statut?.toLowerCase();
+    switch (s) {
+      case 'en_attente':
+      case 'en_attente_lit': return 'En attente';
+      case 'en_cours': return 'En cours';
+      case 'termine': return 'Terminé';
+      case 'annule': return 'Annulé';
       default: return statut;
     }
   }
 
   getStatutClass(statut: string): string {
-    switch (statut) {
-      case 'EN_ATTENTE': return 'statut-attente';
-      case 'EN_COURS': return 'statut-en-cours';
-      case 'TERMINE': return 'statut-termine';
+    const s = statut?.toLowerCase();
+    switch (s) {
+      case 'en_attente':
+      case 'en_attente_lit': return 'statut-attente';
+      case 'en_cours': return 'statut-en-cours';
+      case 'termine': return 'statut-termine';
+      case 'annule': return 'statut-annule';
       default: return '';
     }
   }

@@ -137,6 +137,107 @@ INSERT INTO `specialites` (`id_specialite`, `nom_specialite`) VALUES
 (47, 'Médecine du Travail et de l\'Environnement');
 
 -- --------------------------------------------------------
+-- Tables de référence: Assurance
+-- --------------------------------------------------------
+
+CREATE TABLE `type_prestation` (
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `ordre` INT NOT NULL DEFAULT 0,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `type_prestation` (`code`, `libelle`, `description`, `icone`, `ordre`) VALUES
+('consultation', 'Consultation', 'Consultations médicales générales et spécialisées', 'stethoscope', 1),
+('hospitalisation', 'Hospitalisation', 'Séjours hospitaliers et soins intensifs', 'bed', 2),
+('examen', 'Examens', 'Examens de laboratoire et imagerie médicale', 'microscope', 3),
+('pharmacie', 'Pharmacie', 'Médicaments et produits pharmaceutiques', 'pill', 4);
+
+CREATE TABLE `categorie_beneficiaire` (
+  `id_categorie` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_categorie`),
+  UNIQUE KEY `uq_categorie_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `categorie_beneficiaire` (`code`, `libelle`, `description`) VALUES
+('salaries', 'Salariés', 'Employés du secteur formel'),
+('familles', 'Familles', 'Membres de la famille des assurés'),
+('retraites', 'Retraités', 'Personnes à la retraite'),
+('artisans', 'Artisans', 'Travailleurs indépendants et artisans'),
+('etudiants', 'Étudiants', 'Étudiants et élèves'),
+('femmes_enceintes', 'Femmes enceintes', 'Couverture maternité'),
+('enfants', 'Enfants', 'Mineurs de moins de 18 ans'),
+('diaspora', 'Diaspora', 'Ressortissants vivant à l''étranger'),
+('indigents', 'Indigents', 'Personnes en situation de précarité');
+
+CREATE TABLE `mode_paiement` (
+  `id_mode` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_mode`),
+  UNIQUE KEY `uq_mode_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `mode_paiement` (`code`, `libelle`, `description`) VALUES
+('mobile_money', 'Mobile Money', 'Paiement via Orange Money, MTN MoMo, etc.'),
+('virement', 'Virement bancaire', 'Virement depuis un compte bancaire'),
+('prelevement', 'Prélèvement automatique', 'Prélèvement mensuel automatique'),
+('especes', 'Espèces', 'Paiement en espèces'),
+('employeur', 'Retenue employeur', 'Cotisation prélevée sur salaire'),
+('cotisation_groupe', 'Cotisation de groupe', 'Cotisation collective');
+
+CREATE TABLE `zone_couverture` (
+  `id_zone` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_zone`),
+  UNIQUE KEY `uq_zone_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `zone_couverture` (`code`, `libelle`, `description`) VALUES
+('national', 'National', 'Couverture sur tout le territoire national'),
+('regional', 'Régional', 'Couverture limitée à certaines régions'),
+('urbain', 'Zones urbaines', 'Couverture dans les grandes villes'),
+('rural', 'Zones rurales', 'Couverture en milieu rural'),
+('international', 'International', 'Couverture à l''étranger incluse'),
+('diaspora', 'Diaspora', 'Couverture pour les ressortissants à l''étranger');
+
+CREATE TABLE `type_couverture_sante` (
+  `id_type_couverture` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_type_couverture`),
+  UNIQUE KEY `uq_type_couverture_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `type_couverture_sante` (`code`, `libelle`, `description`) VALUES
+('hospitalisation', 'Hospitalisation', 'Frais d''hospitalisation et séjours'),
+('ambulatoire', 'Soins ambulatoires', 'Consultations et soins sans hospitalisation'),
+('maternite', 'Maternité', 'Suivi grossesse, accouchement, post-partum'),
+('dentaire', 'Soins dentaires', 'Soins et prothèses dentaires'),
+('optique', 'Optique', 'Lunettes et lentilles de contact'),
+('medicaments', 'Médicaments', 'Remboursement des médicaments'),
+('prevention', 'Prévention', 'Vaccinations et bilans de santé'),
+('urgences', 'Urgences', 'Soins d''urgence et évacuations'),
+('chirurgie', 'Chirurgie', 'Interventions chirurgicales'),
+('reeducation', 'Rééducation', 'Kinésithérapie et rééducation'),
+('psychiatrie', 'Psychiatrie', 'Soins de santé mentale'),
+('maladies_chroniques', 'Maladies chroniques', 'Prise en charge des ALD');
+
+-- --------------------------------------------------------
 -- Table: assurances (catalogue des assurances)
 -- --------------------------------------------------------
 
@@ -150,18 +251,22 @@ CREATE TABLE `assurances` (
   `pays_origine` VARCHAR(100) DEFAULT NULL,
   `statut_juridique` VARCHAR(50) DEFAULT NULL,
   `description` VARCHAR(1000) DEFAULT NULL,
-  `type_couverture` VARCHAR(500) DEFAULT NULL,
   `is_complementaire` TINYINT(1) DEFAULT 0,
-  `categorie_beneficiaires` VARCHAR(255) DEFAULT NULL,
   `conditions_adhesion` VARCHAR(1000) DEFAULT NULL,
-  `zone_couverture` VARCHAR(100) DEFAULT NULL,
-  `mode_paiement` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
+  `id_zone_couverture` INT DEFAULT NULL COMMENT 'FK vers zone_couverture',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- Champs legacy (pour compatibilité pendant migration)
+  `type_couverture` VARCHAR(500) DEFAULT NULL COMMENT 'LEGACY: utiliser assurance_type_couverture',
+  `categorie_beneficiaires` VARCHAR(255) DEFAULT NULL COMMENT 'LEGACY: utiliser assurance_categorie_beneficiaire',
+  `zone_couverture` VARCHAR(100) DEFAULT NULL COMMENT 'LEGACY: utiliser id_zone_couverture',
+  `mode_paiement` VARCHAR(255) DEFAULT NULL COMMENT 'LEGACY: utiliser assurance_mode_paiement',
   PRIMARY KEY (`id_assurance`),
   KEY `IX_assurance_nom` (`nom`),
-  KEY `IX_assurance_type` (`type_assurance`)
+  KEY `IX_assurance_type` (`type_assurance`),
+  KEY `IX_assurance_zone` (`id_zone_couverture`),
+  CONSTRAINT `fk_assurance_zone` FOREIGN KEY (`id_zone_couverture`) REFERENCES `zone_couverture` (`id_zone`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Donnees par defaut: Assurances
@@ -173,6 +278,87 @@ INSERT INTO `assurances` (`nom`, `type_assurance`, `type_couverture`, `zone_couv
 ('AXA Assurances', 'privee', 'accidents,maladies,hospitalisation,maternite', 'international', 1),
 ('Saham Assurance', 'privee', 'maladies,hospitalisation', 'national', 1),
 ('CMU', 'publique', 'forfait_soins_base', 'national', 1);
+
+-- --------------------------------------------------------
+-- Table: assurance_couverture (couverture par type de prestation)
+-- --------------------------------------------------------
+
+CREATE TABLE `assurance_couverture` (
+  `id_couverture` INT NOT NULL AUTO_INCREMENT,
+  `id_assurance` INT NOT NULL,
+  `type_prestation` VARCHAR(50) NOT NULL COMMENT 'consultation, hospitalisation, examen, pharmacie',
+  `taux_couverture` DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT 'Pourcentage de couverture (0-100)',
+  `plafond_annuel` DECIMAL(12,2) DEFAULT NULL COMMENT 'Plafond annuel de remboursement (null = illimite)',
+  `plafond_par_acte` DECIMAL(12,2) DEFAULT NULL COMMENT 'Plafond par acte/facture (null = illimite)',
+  `franchise` DECIMAL(12,2) DEFAULT NULL COMMENT 'Montant minimum non couvert (null = pas de franchise)',
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id_couverture`),
+  UNIQUE KEY `uq_assurance_type_prestation` (`id_assurance`, `type_prestation`),
+  CONSTRAINT `fk_assurance_couverture_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Couvertures assurance (taux par type de prestation)
+INSERT INTO `assurance_couverture` (`id_assurance`, `type_prestation`, `taux_couverture`, `actif`) VALUES
+(1, 'consultation', 80.00, 1), (1, 'hospitalisation', 70.00, 1), (1, 'examen', 60.00, 1), (1, 'pharmacie', 50.00, 1),
+(2, 'consultation', 80.00, 1), (2, 'hospitalisation', 75.00, 1), (2, 'examen', 70.00, 1), (2, 'pharmacie', 60.00, 1),
+(3, 'consultation', 85.00, 1), (3, 'hospitalisation', 80.00, 1), (3, 'examen', 75.00, 1), (3, 'pharmacie', 65.00, 1),
+(4, 'consultation', 75.00, 1), (4, 'hospitalisation', 70.00, 1), (4, 'examen', 65.00, 1), (4, 'pharmacie', 55.00, 1),
+(5, 'consultation', 90.00, 1), (5, 'hospitalisation', 85.00, 1), (5, 'examen', 80.00, 1), (5, 'pharmacie', 70.00, 1),
+(6, 'consultation', 80.00, 1), (6, 'hospitalisation', 75.00, 1), (6, 'examen', 65.00, 1), (6, 'pharmacie', 55.00, 1),
+(7, 'consultation', 100.00, 1), (7, 'hospitalisation', 80.00, 1), (7, 'examen', 70.00, 1), (7, 'pharmacie', 60.00, 1);
+
+-- --------------------------------------------------------
+-- Tables de liaison many-to-many: Assurance
+-- --------------------------------------------------------
+
+CREATE TABLE `assurance_type_couverture` (
+  `id_assurance` INT NOT NULL,
+  `id_type_couverture` INT NOT NULL,
+  PRIMARY KEY (`id_assurance`, `id_type_couverture`),
+  CONSTRAINT `fk_atc_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`) ON DELETE CASCADE,
+  CONSTRAINT `fk_atc_type_couverture` FOREIGN KEY (`id_type_couverture`) REFERENCES `type_couverture_sante` (`id_type_couverture`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `assurance_categorie_beneficiaire` (
+  `id_assurance` INT NOT NULL,
+  `id_categorie` INT NOT NULL,
+  PRIMARY KEY (`id_assurance`, `id_categorie`),
+  CONSTRAINT `fk_acb_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`) ON DELETE CASCADE,
+  CONSTRAINT `fk_acb_categorie` FOREIGN KEY (`id_categorie`) REFERENCES `categorie_beneficiaire` (`id_categorie`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `assurance_mode_paiement` (
+  `id_assurance` INT NOT NULL,
+  `id_mode` INT NOT NULL,
+  PRIMARY KEY (`id_assurance`, `id_mode`),
+  CONSTRAINT `fk_amp_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`) ON DELETE CASCADE,
+  CONSTRAINT `fk_amp_mode` FOREIGN KEY (`id_mode`) REFERENCES `mode_paiement` (`id_mode`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Donnees par defaut: Liaisons assurance (exemples)
+-- Toutes les assurances: hospitalisation + ambulatoire + medicaments
+INSERT INTO `assurance_type_couverture` (`id_assurance`, `id_type_couverture`)
+SELECT a.id_assurance, tc.id_type_couverture
+FROM assurances a
+CROSS JOIN type_couverture_sante tc
+WHERE tc.code IN ('hospitalisation', 'ambulatoire', 'medicaments');
+
+-- Toutes les assurances: salaries + familles
+INSERT INTO `assurance_categorie_beneficiaire` (`id_assurance`, `id_categorie`)
+SELECT a.id_assurance, cb.id_categorie
+FROM assurances a
+CROSS JOIN categorie_beneficiaire cb
+WHERE cb.code IN ('salaries', 'familles');
+
+-- Toutes les assurances: mobile_money + virement
+INSERT INTO `assurance_mode_paiement` (`id_assurance`, `id_mode`)
+SELECT a.id_assurance, mp.id_mode
+FROM assurances a
+CROSS JOIN mode_paiement mp
+WHERE mp.code IN ('mobile_money', 'virement');
 
 -- --------------------------------------------------------
 -- Table: service
@@ -447,7 +633,10 @@ CREATE TABLE `hospitalisation` (
   `id_admission` INT NOT NULL AUTO_INCREMENT,
   `date_entree` DATE NOT NULL,
   `date_sortie` DATE DEFAULT NULL,
+  `date_sortie_prevue` DATETIME DEFAULT NULL COMMENT 'Date de sortie prévue',
   `motif` TEXT DEFAULT NULL,
+  `motif_sortie` VARCHAR(500) DEFAULT NULL COMMENT 'Motif de sortie: guerison, amelioration, transfert, demande_patient, autre',
+  `resume_medical` TEXT DEFAULT NULL COMMENT 'Résumé médical de sortie',
   `statut` VARCHAR(20) DEFAULT 'en_attente_lit',
   `id_patient` INT NOT NULL,
   `id_lit` INT DEFAULT NULL COMMENT 'Nullable: hospitalisation en attente de lit',
@@ -466,6 +655,30 @@ CREATE TABLE `hospitalisation` (
   KEY `idx_hospitalisation_urgence` (`urgence`),
   KEY `fk_hospitalisation_consultation` (`id_consultation`),
   KEY `fk_hospitalisation_service` (`id_service`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: recommandation (recommandations médicales liées à une consultation)
+-- --------------------------------------------------------
+
+CREATE TABLE `recommandation` (
+  `id_recommandation` INT NOT NULL AUTO_INCREMENT,
+  `id_consultation` INT NOT NULL,
+  `id_patient` INT NOT NULL,
+  `id_medecin` INT NOT NULL COMMENT 'Médecin prescripteur',
+  `type` VARCHAR(20) NOT NULL COMMENT 'Type: hopital, medecin',
+  `nom_hopital` VARCHAR(255) DEFAULT NULL COMMENT 'Nom hôpital recommandé (saisie libre ou interne)',
+  `nom_medecin_recommande` VARCHAR(255) DEFAULT NULL COMMENT 'Nom médecin recommandé (saisie libre)',
+  `id_medecin_recommande` INT DEFAULT NULL COMMENT 'Médecin interne recommandé (FK)',
+  `specialite` VARCHAR(100) DEFAULT NULL COMMENT 'Spécialité du médecin recommandé',
+  `motif` TEXT NOT NULL COMMENT 'Motif / commentaire obligatoire',
+  `prioritaire` TINYINT(1) DEFAULT 0 COMMENT 'Recommandation prioritaire',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_recommandation`),
+  KEY `idx_recommandation_consultation` (`id_consultation`),
+  KEY `idx_recommandation_patient` (`id_patient`),
+  KEY `idx_recommandation_medecin` (`id_medecin`),
+  KEY `idx_recommandation_type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

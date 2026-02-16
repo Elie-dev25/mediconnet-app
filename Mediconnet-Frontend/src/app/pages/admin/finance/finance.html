@@ -1,0 +1,204 @@
+<app-dashboard-layout>
+  <div class="finance-container">
+    <!-- Header -->
+    <div class="page-header">
+      <h1>Finance</h1>
+      <p class="subtitle">Gestion financière et factures assurance</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab === 'general'" (click)="activeTab = 'general'">
+        <i class="fas fa-chart-line"></i> Vue générale
+      </button>
+      <button class="tab" [class.active]="activeTab === 'factures'" (click)="activeTab = 'factures'">
+        <i class="fas fa-file-invoice"></i> Factures Assurance
+      </button>
+    </div>
+
+    <!-- Tab: Vue générale -->
+    <div class="tab-content" *ngIf="activeTab === 'general'">
+      <div class="stats-grid" *ngIf="stats">
+        <div class="stat-card">
+          <div class="stat-icon total"><i class="fas fa-file-invoice-dollar"></i></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stats.totalFactures }}</span>
+            <span class="stat-label">Total factures</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stats.facturesEnAttente }}</span>
+            <span class="stat-label">En attente</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon sent"><i class="fas fa-paper-plane"></i></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stats.facturesEnvoyees }}</span>
+            <span class="stat-label">Envoyées</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon paid"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stats.facturesPayees }}</span>
+            <span class="stat-label">Payées</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="amount-cards" *ngIf="stats">
+        <div class="amount-card due">
+          <h3>Montant total dû</h3>
+          <span class="amount">{{ formatMontant(stats.montantTotalDu) }}</span>
+        </div>
+        <div class="amount-card waiting">
+          <h3>En attente de paiement</h3>
+          <span class="amount">{{ formatMontant(stats.montantEnAttente) }}</span>
+        </div>
+        <div class="amount-card received">
+          <h3>Montant reçu</h3>
+          <span class="amount">{{ formatMontant(stats.montantTotalPaye) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Factures Assurance -->
+    <div class="tab-content" *ngIf="activeTab === 'factures'">
+      <!-- Filtres -->
+      <div class="filters-section">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>Assurance</label>
+            <select [(ngModel)]="filter.idAssurance">
+              <option [ngValue]="undefined">Toutes</option>
+              <option *ngFor="let a of assurances" [ngValue]="a.idAssurance">{{ a.nom }}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Statut</label>
+            <select [(ngModel)]="filter.statut">
+              <option [ngValue]="undefined">Tous</option>
+              <option *ngFor="let s of statuts" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Type</label>
+            <select [(ngModel)]="filter.typeFacture">
+              <option [ngValue]="undefined">Tous</option>
+              <option *ngFor="let t of types" [value]="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Recherche</label>
+            <input type="text" [(ngModel)]="filter.recherche" placeholder="N° facture, patient...">
+          </div>
+          <div class="filter-actions">
+            <button class="btn-filter" (click)="applyFilter()"><i class="fas fa-search"></i> Filtrer</button>
+            <button class="btn-reset" (click)="resetFilter()"><i class="fas fa-times"></i> Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions en lot -->
+      <div class="bulk-actions" *ngIf="selectedFactures.size > 0">
+        <span>{{ selectedFactures.size }} facture(s) sélectionnée(s)</span>
+        <button class="btn-send" (click)="envoyerSelection()">
+          <i class="fas fa-paper-plane"></i> Envoyer aux assurances
+        </button>
+      </div>
+
+      <!-- Table des factures -->
+      <div class="table-container">
+        <table class="factures-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col">
+                <input type="checkbox" [(ngModel)]="selectAll" (change)="toggleSelectAll()">
+              </th>
+              <th>N° Facture</th>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Assurance</th>
+              <th>Type</th>
+              <th>Montant</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let facture of factures" [class.selected]="isSelected(facture.idFacture)">
+              <td class="checkbox-col">
+                <input type="checkbox" [checked]="isSelected(facture.idFacture)" (change)="toggleSelect(facture.idFacture)">
+              </td>
+              <td class="numero">{{ facture.numeroFacture }}</td>
+              <td>{{ formatDate(facture.dateFacture) }}</td>
+              <td>
+                <div class="patient-info">
+                  <span class="name">{{ facture.patientNom }}</span>
+                  <span class="card-number" *ngIf="facture.numeroCarteAssurance">{{ facture.numeroCarteAssurance }}</span>
+                </div>
+              </td>
+              <td>{{ facture.assuranceNom }}</td>
+              <td>{{ getTypeLabel(facture.typeFacture) }}</td>
+              <td class="montant">{{ formatMontant(facture.montantAssurance) }}</td>
+              <td>
+                <span class="badge" [ngClass]="'badge-' + getStatutColor(facture.statut)">
+                  {{ getStatutLabel(facture.statut) }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-icon" title="Télécharger PDF" (click)="telechargerPdf(facture)">
+                  <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-icon" title="Envoyer" (click)="envoyerFacture(facture)" 
+                        *ngIf="facture.statut === 'en_attente'" [disabled]="!facture.assuranceEmail">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="btn-icon" title="Modifier statut" (click)="openStatutModal(facture)">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="factures.length === 0 && !loadingFactures">
+              <td colspan="9" class="empty">Aucune facture trouvée</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Modification Statut -->
+  <div class="modal-overlay" *ngIf="showStatutModal" (click)="closeStatutModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Modifier le statut</h2>
+        <button class="close-btn" (click)="closeStatutModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedFacture">
+        <p class="facture-info">Facture: <strong>{{ selectedFacture.numeroFacture }}</strong></p>
+        
+        <div class="form-group">
+          <label>Nouveau statut</label>
+          <select [(ngModel)]="newStatut">
+            <option *ngFor="let s of statuts" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Notes (optionnel)</label>
+          <textarea [(ngModel)]="statutNotes" rows="3" placeholder="Ajouter une note..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeStatutModal()">Annuler</button>
+        <button class="btn-save" (click)="updateStatut()" [disabled]="updatingStatut">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

@@ -150,6 +150,35 @@ export class DossierMedicalComponent implements OnInit {
         allergene: a.allergene,
         severite: a.severite,
         reaction: a.reaction
+      })),
+      hospitalisations: (dto.hospitalisations || []).map(h => ({
+        idAdmission: h.idAdmission,
+        dateEntree: h.dateEntree,
+        dateSortiePrevue: h.dateSortiePrevue,
+        dateSortie: h.dateSortie,
+        motif: h.motif,
+        motifSortie: h.motifSortie,
+        resumeMedical: h.resumeMedical,
+        diagnosticPrincipal: h.diagnosticPrincipal,
+        statut: h.statut,
+        urgence: h.urgence,
+        medecinNom: h.medecinNom,
+        serviceNom: h.serviceNom,
+        numeroChambre: h.numeroChambre,
+        numeroLit: h.numeroLit,
+        dureeJours: h.dureeJours
+      })),
+      recommandations: (dto.recommandations || []).map(r => ({
+        idRecommandation: r.idRecommandation,
+        type: r.type,
+        nomHopital: r.nomHopital,
+        nomMedecinRecommande: r.nomMedecinRecommande,
+        specialite: r.specialite,
+        motif: r.motif,
+        prioritaire: r.prioritaire,
+        createdAt: r.createdAt,
+        medecinPrescripteur: r.medecinPrescripteur,
+        idConsultation: r.idConsultation
       }))
     };
   }

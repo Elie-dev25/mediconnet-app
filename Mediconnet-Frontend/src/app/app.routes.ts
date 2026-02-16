@@ -172,6 +172,10 @@ export const routes: Routes = [
       { 
         path: 'audit', 
         loadComponent: () => import('./pages/admin/audit/audit.component').then(m => m.AuditComponent)
+      },
+      { 
+        path: 'finance', 
+        loadComponent: () => import('./pages/admin/finance/finance').then(m => m.Finance)
       }
     ]
   },

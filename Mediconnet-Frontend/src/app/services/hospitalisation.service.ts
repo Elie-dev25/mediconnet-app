@@ -26,8 +26,12 @@ export interface LitDto {
 export interface HospitalisationDto {
   idAdmission: number;
   dateEntree: string;
+  dateSortiePrevue?: string;
   dateSortie?: string;
   motif: string;
+  motifSortie?: string;
+  resumeMedical?: string;
+  diagnosticPrincipal?: string;
   statut: string;
   urgence?: string;
   idPatient: number;
@@ -43,6 +47,12 @@ export interface HospitalisationDto {
   medecinNom?: string;
   idConsultation?: number;
   dureeJours?: number;
+}
+
+export interface TerminerHospitalisationRequest {
+  motifSortie?: string;
+  resumeMedical: string;
+  dateSortie?: string;
 }
 
 export interface CreerHospitalisationRequest {
@@ -290,10 +300,14 @@ export class HospitalisationService {
   /**
    * Terminer une hospitalisation
    */
-  terminerHospitalisation(id: number, dateSortie?: string, notesDepart?: string): Observable<HospitalisationResponse> {
-    return this.http.post<HospitalisationResponse>(`${this.apiUrl}/${id}/terminer`, {
-      dateSortie,
-      notesDepart
-    });
+  terminerHospitalisation(id: number, request: TerminerHospitalisationRequest): Observable<HospitalisationResponse> {
+    return this.http.post<HospitalisationResponse>(`${this.apiUrl}/${id}/terminer`, request);
+  }
+
+  /**
+   * Vérifier si une hospitalisation peut être terminée (examens en cours)
+   */
+  getHospitalisationDetails(id: number, context: 'medecin' | 'infirmier' = 'medecin'): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/${context}/hospitalisation/${id}/details`);
   }
 }

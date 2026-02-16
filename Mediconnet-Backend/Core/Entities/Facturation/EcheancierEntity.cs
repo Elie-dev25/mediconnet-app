@@ -6,7 +6,7 @@ namespace Mediconnet_Backend.Core.Entities.Facturation;
 /// <summary>
 /// Entité représentant un échéancier de paiement pour une facture
 /// </summary>
-[Table("Echeanciers")]
+[Table("echeancier")]
 public class Echeancier
 {
     [Key]
@@ -49,7 +49,7 @@ public class Echeancier
 /// <summary>
 /// Entité représentant une échéance individuelle
 /// </summary>
-[Table("Echeances")]
+[Table("echeance")]
 public class Echeance
 {
     [Key]
@@ -88,7 +88,7 @@ public class Echeance
 /// <summary>
 /// Entité représentant une demande de remboursement assurance
 /// </summary>
-[Table("DemandesRemboursement")]
+[Table("demande_remboursement")]
 public class DemandeRemboursement
 {
     [Key]

@@ -374,13 +374,26 @@
         </div>
       </div>
       
+      <!-- Invitation questionnaire -->
+      <div class="questionnaire-invite">
+        <div class="invite-icon">
+          <lucide-icon name="clipboard-list" [size]="24"></lucide-icon>
+        </div>
+        <p class="invite-text">
+          Gagnez du temps ! Remplissez le questionnaire pré-consultation dès maintenant pour préparer votre rendez-vous.
+        </p>
+        <button class="btn-questionnaire" (click)="goToQuestionnaire()">
+          <lucide-icon name="clipboard-list" [size]="16"></lucide-icon>
+          Remplir le questionnaire
+        </button>
+      </div>
+
       <p class="confirmation-note">
         Un rappel vous sera envoyé avant votre rendez-vous.
       </p>
       
-      <button class="btn-primary btn-full" (click)="closeConfirmationPopup()">
-        <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-        Compris
+      <button class="btn-secondary btn-full" (click)="closeConfirmationPopup()">
+        Plus tard
       </button>
     </div>
   </div>

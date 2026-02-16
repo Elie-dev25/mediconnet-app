@@ -297,6 +297,30 @@ export interface RecommandationDto {
   urgence: boolean;
 }
 
+export interface CreateRecommandationRequest {
+  type: string;
+  nomHopital?: string;
+  nomMedecinRecommande?: string;
+  idMedecinRecommande?: number;
+  specialite?: string;
+  motif: string;
+  prioritaire: boolean;
+}
+
+export interface RecommandationResponseDto {
+  idRecommandation: number;
+  idConsultation: number;
+  type: string;
+  nomHopital?: string;
+  nomMedecinRecommande?: string;
+  idMedecinRecommande?: number;
+  specialite?: string;
+  motif: string;
+  prioritaire: boolean;
+  createdAt: string;
+  medecinPrescripteur?: string;
+}
+
 export interface SpecialiteDto {
   idSpecialite: number;
   nomSpecialite: string;
@@ -589,6 +613,29 @@ export class ConsultationCompleteService {
    */
   deleteOrientation(idOrientation: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/orientations/${idOrientation}`);
+  }
+
+  // ==================== RECOMMANDATIONS ====================
+
+  /**
+   * Récupérer les recommandations d'une consultation
+   */
+  getRecommandations(idConsultation: number): Observable<RecommandationResponseDto[]> {
+    return this.http.get<RecommandationResponseDto[]>(`${this.apiUrl}/${idConsultation}/recommandations`);
+  }
+
+  /**
+   * Créer une recommandation pour une consultation
+   */
+  createRecommandation(idConsultation: number, request: CreateRecommandationRequest): Observable<RecommandationResponseDto> {
+    return this.http.post<RecommandationResponseDto>(`${this.apiUrl}/${idConsultation}/recommandations`, request);
+  }
+
+  /**
+   * Supprimer une recommandation
+   */
+  deleteRecommandation(idRecommandation: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/recommandations/${idRecommandation}`);
   }
 
   // ==================== GESTION DU STATUT ====================

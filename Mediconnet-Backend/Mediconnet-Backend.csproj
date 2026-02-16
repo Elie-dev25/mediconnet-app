@@ -61,6 +61,9 @@
     <PackageReference Include="MailKit" Version="4.8.0" />
     <PackageReference Include="MimeKit" Version="4.8.0" />
 
+    <!-- PDF Generation -->
+    <PackageReference Include="QuestPDF" Version="2024.3.0" />
+
     <!-- Security - Rate Limiting & Data Protection -->
     <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.0" />

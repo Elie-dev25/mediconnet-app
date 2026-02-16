@@ -1896,6 +1896,165 @@ public class ConsultationCompleteController : BaseApiController
             return StatusCode(500, new { message = "Erreur lors de la suppression de l'orientation" });
         }
     }
+
+    // ==================== RECOMMANDATIONS ====================
+
+    /// <summary>
+    /// Récupérer les recommandations d'une consultation
+    /// </summary>
+    [HttpGet("{idConsultation}/recommandations")]
+    public async Task<IActionResult> GetRecommandations(int idConsultation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var recommandations = await _context.Recommandations
+                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(r => r.MedecinRecommande).ThenInclude(m => m!.Utilisateur)
+                .Where(r => r.IdConsultation == idConsultation)
+                .OrderByDescending(r => r.Prioritaire)
+                .ThenByDescending(r => r.CreatedAt)
+                .Select(r => new RecommandationResponseDto
+                {
+                    IdRecommandation = r.IdRecommandation,
+                    IdConsultation = r.IdConsultation,
+                    Type = r.Type,
+                    NomHopital = r.NomHopital,
+                    NomMedecinRecommande = r.IdMedecinRecommande.HasValue && r.MedecinRecommande != null && r.MedecinRecommande.Utilisateur != null
+                        ? $"Dr. {r.MedecinRecommande.Utilisateur.Prenom} {r.MedecinRecommande.Utilisateur.Nom}"
+                        : r.NomMedecinRecommande,
+                    IdMedecinRecommande = r.IdMedecinRecommande,
+                    Specialite = r.Specialite,
+                    Motif = r.Motif,
+                    Prioritaire = r.Prioritaire,
+                    CreatedAt = r.CreatedAt ?? DateTime.UtcNow,
+                    MedecinPrescripteur = r.Medecin != null && r.Medecin.Utilisateur != null
+                        ? $"Dr. {r.Medecin.Utilisateur.Prenom} {r.Medecin.Utilisateur.Nom}"
+                        : null
+                })
+                .ToListAsync();
+
+            return Ok(recommandations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetRecommandations: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Créer une recommandation pour une consultation
+    /// </summary>
+    [HttpPost("{idConsultation}/recommandations")]
+    public async Task<IActionResult> CreateRecommandation(int idConsultation, [FromBody] CreateRecommandationRequest request)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var consultation = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            if (string.IsNullOrWhiteSpace(request.Motif))
+                return BadRequest(new { message = "Le motif est obligatoire" });
+
+            if (request.Type != "hopital" && request.Type != "medecin")
+                return BadRequest(new { message = "Le type doit être 'hopital' ou 'medecin'" });
+
+            // Résoudre le nom du médecin interne si IdMedecinRecommande est fourni
+            string? nomMedecinRecommande = request.NomMedecinRecommande;
+            string? specialite = request.Specialite;
+            if (request.IdMedecinRecommande.HasValue)
+            {
+                var medecinRec = await _context.Medecins
+                    .Include(m => m.Utilisateur)
+                    .Include(m => m.Specialite)
+                    .FirstOrDefaultAsync(m => m.IdUser == request.IdMedecinRecommande.Value);
+                if (medecinRec != null)
+                {
+                    nomMedecinRecommande = $"Dr. {medecinRec.Utilisateur?.Prenom} {medecinRec.Utilisateur?.Nom}";
+                    specialite = medecinRec.Specialite?.NomSpecialite ?? specialite;
+                }
+            }
+
+            var recommandation = new Recommandation
+            {
+                IdConsultation = idConsultation,
+                IdPatient = consultation.IdPatient,
+                IdMedecin = medecinId.Value,
+                Type = request.Type,
+                NomHopital = request.NomHopital,
+                NomMedecinRecommande = nomMedecinRecommande,
+                IdMedecinRecommande = request.IdMedecinRecommande,
+                Specialite = specialite,
+                Motif = request.Motif,
+                Prioritaire = request.Prioritaire,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Recommandations.Add(recommandation);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Recommandation créée: {Id} pour consultation {ConsultationId}", 
+                recommandation.IdRecommandation, idConsultation);
+
+            return Ok(new RecommandationResponseDto
+            {
+                IdRecommandation = recommandation.IdRecommandation,
+                IdConsultation = recommandation.IdConsultation,
+                Type = recommandation.Type,
+                NomHopital = recommandation.NomHopital,
+                NomMedecinRecommande = nomMedecinRecommande,
+                IdMedecinRecommande = recommandation.IdMedecinRecommande,
+                Specialite = specialite,
+                Motif = recommandation.Motif,
+                Prioritaire = recommandation.Prioritaire,
+                CreatedAt = recommandation.CreatedAt ?? DateTime.UtcNow,
+                MedecinPrescripteur = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur CreateRecommandation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Supprimer une recommandation
+    /// </summary>
+    [HttpDelete("recommandations/{idRecommandation}")]
+    public async Task<IActionResult> DeleteRecommandation(int idRecommandation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var recommandation = await _context.Recommandations
+                .FirstOrDefaultAsync(r => r.IdRecommandation == idRecommandation && r.IdMedecin == medecinId.Value);
+
+            if (recommandation == null)
+                return NotFound(new { message = "Recommandation non trouvée" });
+
+            _context.Recommandations.Remove(recommandation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Recommandation supprimée" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur DeleteRecommandation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
 }
 
 public class CreerRdvSuiviRequest
@@ -1909,6 +2068,32 @@ public class CreerRdvSuiviRequest
 public class CloturerDossierRequest
 {
     public string? Motif { get; set; }
+}
+
+public class CreateRecommandationRequest
+{
+    public string Type { get; set; } = "medecin";
+    public string? NomHopital { get; set; }
+    public string? NomMedecinRecommande { get; set; }
+    public int? IdMedecinRecommande { get; set; }
+    public string? Specialite { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Prioritaire { get; set; } = false;
+}
+
+public class RecommandationResponseDto
+{
+    public int IdRecommandation { get; set; }
+    public int IdConsultation { get; set; }
+    public string Type { get; set; } = "";
+    public string? NomHopital { get; set; }
+    public string? NomMedecinRecommande { get; set; }
+    public int? IdMedecinRecommande { get; set; }
+    public string? Specialite { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Prioritaire { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? MedecinPrescripteur { get; set; }
 }
 
 public class PauseConsultationRequest

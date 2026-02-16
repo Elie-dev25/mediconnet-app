@@ -57,6 +57,18 @@ public static class FactureTypes
     public const string Hospitalisation = "hospitalisation";
     public const string Examen = "examen";
     public const string Medicament = "medicament";
+    public const string Pharmacie = "pharmacie";
+}
+
+/// <summary>
+/// Types de prestations pour la couverture assurance
+/// </summary>
+public static class PrestationTypes
+{
+    public const string Consultation = "consultation";
+    public const string Hospitalisation = "hospitalisation";
+    public const string Examen = "examen";
+    public const string Pharmacie = "pharmacie";
 }
 
 /// <summary>

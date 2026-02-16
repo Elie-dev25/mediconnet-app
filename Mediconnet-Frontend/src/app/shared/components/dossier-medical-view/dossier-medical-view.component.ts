@@ -16,6 +16,8 @@ export type {
   ExamenItem,
   AntecedentItem,
   AllergieItem,
+  HospitalisationItem,
+  RecommandationItem,
   DossierMedicalData
 } from '../../../models/dossier-medical.models';
 
@@ -234,6 +236,18 @@ export class DossierMedicalViewComponent {
         return 'users';
       default:
         return 'file-text';
+    }
+  }
+
+  getMotifSortieLabel(motif?: string): string {
+    if (!motif) return 'Non spécifié';
+    switch (motif) {
+      case 'guerison': return 'Guérison';
+      case 'amelioration': return 'Amélioration';
+      case 'transfert': return 'Transfert';
+      case 'demande_patient': return 'Demande du patient';
+      case 'autre': return 'Autre';
+      default: return motif;
     }
   }
 

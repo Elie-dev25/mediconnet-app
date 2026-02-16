@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
 import { PATIENT_MENU_ITEMS, PATIENT_SIDEBAR_TITLE } from '../shared';
@@ -17,6 +17,12 @@ import {
   ServiceDto,
   ActionRdvResponse
 } from '../../../services/rendez-vous.service';
+import { 
+  PatientAnamneseService, 
+  AnamneseQuestionDto, 
+  AnamneseQuestionsResponse 
+} from '../../../services/patient-anamnese.service';
+import { QuestionsPredefiniesService, QuestionPredefinie } from '../../../services/questions-predefinies.service';
 
 @Component({
   selector: 'app-patient-rendez-vous',
@@ -49,9 +55,19 @@ export class PatientRendezVousComponent implements OnInit {
   missedRdvs: RendezVousListDto[] = [];
   propositions: RendezVousDto[] = [];
   
-  // Modal questionnaire
-  showQuestionnaireModal = false;
+  // Drawer questionnaire
+  showQuestionnaireDrawer = false;
   selectedRdvForQuestionnaire: RendezVousListDto | null = null;
+  questionnaireLoading = false;
+  questionnaireError = '';
+  questionnaireSuccess = '';
+  questionnaireSaving = false;
+  questionnaireData: AnamneseQuestionsResponse | null = null;
+  questionnaireQuestions: QuestionPredefinie[] = [];
+  questionnaireReponses: { [questionId: string]: string } = {};
+  questionnaireConsultationId: number | null = null;
+  questionnaireIsFirstConsult = true;
+  questionnaireSpecialiteId = 0;
 
   // Modal nouveau RDV
   showNewRdvModal = false;
@@ -94,14 +110,53 @@ export class PatientRendezVousComponent implements OnInit {
 
   constructor(
     private rdvService: RendezVousService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private anamneseService: PatientAnamneseService,
+    private questionsPredefiniesService: QuestionsPredefiniesService,
+    private route: ActivatedRoute
   ) {
     this.initForm();
   }
 
   ngOnInit(): void {
-    this.loadData();
+    this.loadDataAndCheckQueryParams();
     this.generateCalendarDays();
+  }
+
+  private loadDataAndCheckQueryParams(): void {
+    this.isLoading = true;
+
+    forkJoin({
+      stats: this.rdvService.getStats(),
+      upcoming: this.rdvService.getUpcoming(),
+      history: this.rdvService.getHistory(),
+      propositions: this.rdvService.getPropositions()
+    }).pipe(
+      finalize(() => {
+        this.isLoading = false;
+      })
+    ).subscribe({
+      next: ({ stats, upcoming, history, propositions }) => {
+        this.stats = stats;
+        this.upcomingRdvs = upcoming;
+        this.missedRdvs = history.filter(rdv => rdv.statut === 'absent');
+        this.historyRdvs = history.filter(rdv => rdv.statut !== 'absent');
+        this.propositions = propositions;
+
+        // Vérifier si on doit ouvrir le questionnaire (redirect depuis nouveau-rdv)
+        this.route.queryParams.subscribe(params => {
+          if (params['questionnaire']) {
+            const rdvId = parseInt(params['questionnaire']);
+            if (rdvId) {
+              setTimeout(() => this.openQuestionnaireByRdvId(rdvId), 300);
+            }
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Erreur chargement RDV:', err);
+      }
+    });
   }
 
   private initForm(): void {
@@ -165,15 +220,136 @@ export class PatientRendezVousComponent implements OnInit {
     return classes[statut] || 'list-page-status-badge--pending';
   }
 
-  // Ouvrir le modal de questionnaire
-  openQuestionnaireModal(rdv: RendezVousListDto): void {
+  // Ouvrir le drawer de questionnaire
+  openQuestionnaireDrawer(rdv: RendezVousListDto): void {
     this.selectedRdvForQuestionnaire = rdv;
-    this.showQuestionnaireModal = true;
+    this.showQuestionnaireDrawer = true;
+    this.questionnaireLoading = true;
+    this.questionnaireError = '';
+    this.questionnaireSuccess = '';
+    this.questionnaireData = null;
+    this.questionnaireQuestions = [];
+    this.questionnaireReponses = {};
+    this.questionnaireConsultationId = null;
+
+    this.anamneseService.getQuestionsByRdv(rdv.idRendezVous).subscribe({
+      next: (data) => {
+        this.questionnaireData = data;
+        this.questionnaireConsultationId = data.consultationId ?? null;
+        this.questionnaireIsFirstConsult = data.isPremiereConsultation;
+        this.questionnaireSpecialiteId = data.specialiteId;
+
+        // Charger les questions JSON adaptées au type de consultation
+        const typeVisite = data.isPremiereConsultation ? 'premiere' : 'suivante';
+        this.questionsPredefiniesService.getQuestionsParSpecialite(data.specialiteId, typeVisite).subscribe({
+          next: (questions) => {
+            this.questionnaireQuestions = questions;
+            this.questionnaireLoading = false;
+            // Pré-remplir les réponses existantes (par texte de question)
+            if (data.existingReponses) {
+              // Les réponses existantes sont indexées par questionId DB
+              // On les mappe vers les questions prédéfinies par texte
+              const dbQuestions = data.questions || [];
+              for (const q of questions) {
+                const dbQ = dbQuestions.find(dq => dq.texte === q.texte);
+                if (dbQ && data.existingReponses[dbQ.id]) {
+                  this.questionnaireReponses[q.id] = data.existingReponses[dbQ.id];
+                }
+              }
+            }
+          },
+          error: () => {
+            this.questionnaireQuestions = [];
+            this.questionnaireLoading = false;
+          }
+        });
+      },
+      error: (err) => {
+        this.questionnaireLoading = false;
+        this.questionnaireError = err.error?.message || 'Impossible de charger le questionnaire';
+      }
+    });
   }
 
-  closeQuestionnaireModal(): void {
-    this.showQuestionnaireModal = false;
+  openQuestionnaireByRdvId(rdvId: number): void {
+    // Trouver le RDV dans la liste des upcoming
+    const rdv = this.upcomingRdvs.find(r => r.idRendezVous === rdvId);
+    if (rdv) {
+      this.openQuestionnaireDrawer(rdv);
+    }
+  }
+
+  closeQuestionnaireDrawer(): void {
+    this.showQuestionnaireDrawer = false;
     this.selectedRdvForQuestionnaire = null;
+    this.questionnaireData = null;
+    this.questionnaireQuestions = [];
+    this.questionnaireReponses = {};
+    this.questionnaireError = '';
+    this.questionnaireSuccess = '';
+    this.questionnaireConsultationId = null;
+  }
+
+  onQuestionnaireReponseChange(questionId: string, value: string): void {
+    this.questionnaireReponses[questionId] = value;
+  }
+
+  submitQuestionnaire(): void {
+    if (!this.questionnaireConsultationId || this.questionnaireSaving) return;
+
+    // Vérifier les champs obligatoires
+    const missingRequired = this.questionnaireQuestions
+      .filter(q => q.obligatoire && !this.questionnaireReponses[q.id]?.trim());
+    
+    if (missingRequired.length > 0) {
+      this.questionnaireError = 'Veuillez remplir tous les champs obligatoires';
+      return;
+    }
+
+    this.questionnaireSaving = true;
+    this.questionnaireError = '';
+    this.questionnaireSuccess = '';
+
+    // Construire les réponses avec le texte de la question pour le backend
+    const reponses = this.questionnaireQuestions
+      .filter(q => this.questionnaireReponses[q.id]?.trim())
+      .map(q => ({
+        texteQuestion: q.texte,
+        typeQuestion: q.type,
+        valeurReponse: this.questionnaireReponses[q.id]
+      }));
+
+    this.anamneseService.saveReponsesAvecQuestions({
+      consultationId: this.questionnaireConsultationId,
+      reponses
+    }).subscribe({
+      next: (res) => {
+        this.questionnaireSaving = false;
+        if (res.success) {
+          this.questionnaireSuccess = 'Vos réponses ont été enregistrées avec succès !';
+          if (this.selectedRdvForQuestionnaire) {
+            this.selectedRdvForQuestionnaire.anamneseRemplie = true;
+          }
+          setTimeout(() => this.closeQuestionnaireDrawer(), 2000);
+        } else {
+          this.questionnaireError = res.message || 'Erreur lors de l\'enregistrement';
+        }
+      },
+      error: (err) => {
+        this.questionnaireSaving = false;
+        this.questionnaireError = err.error?.message || 'Erreur serveur';
+      }
+    });
+  }
+
+  getQuestionnaireProgress(): number {
+    if (!this.questionnaireQuestions?.length) return 0;
+    const answered = this.questionnaireQuestions.filter(q => this.questionnaireReponses[q.id]?.trim()).length;
+    return Math.round((answered / this.questionnaireQuestions.length) * 100);
+  }
+
+  getConsultationTypeLabel(): string {
+    return this.questionnaireIsFirstConsult ? 'Première consultation' : 'Consultation de suivi';
   }
 
   // Reprogrammer un RDV manqué

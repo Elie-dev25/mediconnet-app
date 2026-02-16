@@ -62,12 +62,24 @@ public class Facture
     [Column(TypeName = "decimal(12,2)")]
     public decimal? MontantAssurance { get; set; }
 
+    [Column(TypeName = "decimal(12,2)")]
+    public decimal? MontantPatient { get; set; }
+
+    /// <summary>Date d'envoi de la facture à l'assurance</summary>
+    [Column("date_envoi_assurance")]
+    public DateTime? DateEnvoiAssurance { get; set; }
+
+    /// <summary>Alias pour DateCreation (compatibilité)</summary>
+    [NotMapped]
+    public DateTime DateFacture => DateCreation;
+
     // Navigation
     public virtual Patient? Patient { get; set; }
     public virtual Medecin? Medecin { get; set; }
     public virtual Service? Service { get; set; }
     public virtual Specialite? Specialite { get; set; }
     public virtual Consultation? Consultation { get; set; }
+    public virtual Assurance? Assurance { get; set; }
     public virtual ICollection<LigneFacture> Lignes { get; set; } = new List<LigneFacture>();
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 }
@@ -99,6 +111,10 @@ public class LigneFacture
 
     [Column(TypeName = "decimal(10,2)")]
     public decimal Montant { get; set; }
+
+    /// <summary>Montant total de la ligne (alias pour Montant)</summary>
+    [NotMapped]
+    public decimal MontantTotal => Montant;
 
     [MaxLength(50)]
     public string? Categorie { get; set; } // acte, medicament, materiel, etc.

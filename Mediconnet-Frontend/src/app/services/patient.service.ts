@@ -162,6 +162,37 @@ export interface AllergieDto {
   reaction?: string;
 }
 
+export interface HospitalisationHistoryDto {
+  idAdmission: number;
+  dateEntree: string;
+  dateSortiePrevue?: string;
+  dateSortie?: string;
+  motif: string;
+  motifSortie?: string;
+  resumeMedical?: string;
+  diagnosticPrincipal?: string;
+  statut: string;
+  urgence?: string;
+  medecinNom?: string;
+  serviceNom?: string;
+  numeroChambre?: string;
+  numeroLit?: string;
+  dureeJours?: number;
+}
+
+export interface RecommandationHistoryDto {
+  idRecommandation: number;
+  type: string;
+  nomHopital?: string;
+  nomMedecinRecommande?: string;
+  specialite?: string;
+  motif: string;
+  prioritaire: boolean;
+  createdAt: string;
+  medecinPrescripteur?: string;
+  idConsultation?: number;
+}
+
 export interface DossierMedicalDto {
   patient: PatientProfile;
   antecedents: AntecedentDto[];
@@ -169,6 +200,8 @@ export interface DossierMedicalDto {
   consultations: ConsultationHistoryDto[];
   ordonnances: OrdonnanceDto[];
   examens: ExamenDto[];
+  hospitalisations?: HospitalisationHistoryDto[];
+  recommandations?: RecommandationHistoryDto[];
   stats: {
     totalConsultations: number;
     totalOrdonnances: number;

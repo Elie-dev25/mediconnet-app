@@ -4,7 +4,7 @@
  */
 
 export type ViewMode = 'patient' | 'medecin';
-export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents';
+export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents' | 'hospitalisations' | 'recommandations';
 
 /**
  * Informations du patient dans le dossier médical
@@ -139,6 +139,43 @@ export interface AllergieItem {
 }
 
 /**
+ * Item d'hospitalisation dans l'historique
+ */
+export interface HospitalisationItem {
+  idAdmission: number;
+  dateEntree: string;
+  dateSortiePrevue?: string;
+  dateSortie?: string;
+  motif: string;
+  motifSortie?: string;
+  resumeMedical?: string;
+  diagnosticPrincipal?: string;
+  statut: string;
+  urgence?: string;
+  medecinNom?: string;
+  serviceNom?: string;
+  numeroChambre?: string;
+  numeroLit?: string;
+  dureeJours?: number;
+}
+
+/**
+ * Item de recommandation dans l'historique
+ */
+export interface RecommandationItem {
+  idRecommandation: number;
+  type: string;
+  nomHopital?: string;
+  nomMedecinRecommande?: string;
+  specialite?: string;
+  motif: string;
+  prioritaire: boolean;
+  createdAt: string;
+  medecinPrescripteur?: string;
+  idConsultation?: number;
+}
+
+/**
  * Structure complète du dossier médical
  */
 export interface DossierMedicalData {
@@ -149,6 +186,8 @@ export interface DossierMedicalData {
   examens: ExamenItem[];
   antecedents: AntecedentItem[];
   allergies: AllergieItem[];
+  hospitalisations?: HospitalisationItem[];
+  recommandations?: RecommandationItem[];
 }
 
 /**

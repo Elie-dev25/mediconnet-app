@@ -6,6 +6,7 @@ using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Entities.Documents;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Laborantin;
+using Mediconnet_Backend.Services;
 using System.Security.Claims;
 
 namespace Mediconnet_Backend.Controllers;
@@ -19,6 +20,7 @@ public class LaborantinController : ControllerBase
     private readonly IDocumentStorageService _storageService;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
+    private readonly IAssuranceCouvertureService _assuranceService;
     private readonly ILogger<LaborantinController> _logger;
 
     public LaborantinController(
@@ -26,12 +28,14 @@ public class LaborantinController : ControllerBase
         IDocumentStorageService storageService,
         IEmailService emailService,
         INotificationService notificationService,
+        IAssuranceCouvertureService assuranceService,
         ILogger<LaborantinController> logger)
     {
         _context = context;
         _storageService = storageService;
         _emailService = emailService;
         _notificationService = notificationService;
+        _assuranceService = assuranceService;
         _logger = logger;
     }
 
@@ -381,14 +385,21 @@ public class LaborantinController : ControllerBase
     }
 
     /// <summary>
-    /// Démarrer un examen (passer en statut "en_cours")
+    /// Démarrer un examen (passer en statut "en_cours") et créer/compléter la facture
     /// </summary>
     [HttpPost("examens/{idBulletin}/demarrer")]
     public async Task<IActionResult> DemarrerExamen(int idBulletin)
     {
         try
         {
-            var bulletin = await _context.BulletinsExamen.FindAsync(idBulletin);
+            var bulletin = await _context.BulletinsExamen
+                .Include(b => b.Examen)
+                .Include(b => b.Consultation).ThenInclude(c => c!.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(b => b.Consultation).ThenInclude(c => c!.Patient).ThenInclude(p => p!.Assurance)
+                .Include(b => b.Hospitalisation).ThenInclude(h => h!.Patient).ThenInclude(p => p!.Utilisateur)
+                .Include(b => b.Hospitalisation).ThenInclude(h => h!.Patient).ThenInclude(p => p!.Assurance)
+                .FirstOrDefaultAsync(b => b.IdBulletinExamen == idBulletin);
+
             if (bulletin == null)
             {
                 return NotFound(new { success = false, message = "Examen non trouvé" });
@@ -407,9 +418,91 @@ public class LaborantinController : ControllerBase
             bulletin.Statut = nouveauStatut;
             bulletin.DateRealisation = DateTime.UtcNow;
 
+            // ==================== FACTURATION EXAMEN ====================
+            var patient = bulletin.Consultation?.Patient ?? bulletin.Hospitalisation?.Patient;
+            var prixExamen = bulletin.Examen?.PrixUnitaire ?? 0;
+            var nomExamen = bulletin.Examen?.NomExamen ?? ExtractExamenName(bulletin.Instructions);
+
+            if (patient != null && prixExamen > 0)
+            {
+                var now = DateTime.UtcNow;
+                var couverture = await _assuranceService.CalculerCouvertureAsync(patient, "examen", prixExamen);
+
+                // Chercher une facture examen en_attente existante pour ce patient (même jour)
+                var aujourdhui = now.Date;
+                var demain = aujourdhui.AddDays(1);
+                var factureExistante = await _context.Factures
+                    .Include(f => f.Lignes)
+                    .FirstOrDefaultAsync(f => f.IdPatient == patient.IdUser
+                        && f.TypeFacture == "examen"
+                        && f.Statut == "en_attente"
+                        && f.DateCreation >= aujourdhui && f.DateCreation < demain);
+
+                if (factureExistante != null)
+                {
+                    // Ajouter une ligne à la facture existante
+                    var ligneFacture = new LigneFacture
+                    {
+                        IdFacture = factureExistante.IdFacture,
+                        Description = nomExamen,
+                        Code = bulletin.Examen?.IdExamen.ToString(),
+                        Quantite = 1,
+                        PrixUnitaire = prixExamen,
+                        Categorie = "examen"
+                    };
+                    _context.LignesFacture.Add(ligneFacture);
+
+                    // Recalculer les totaux
+                    factureExistante.MontantTotal += prixExamen;
+                    if (couverture.EstAssure)
+                    {
+                        factureExistante.MontantAssurance = (factureExistante.MontantAssurance ?? 0) + couverture.MontantAssurance;
+                    }
+                    factureExistante.MontantRestant = factureExistante.MontantTotal 
+                        - factureExistante.MontantPaye 
+                        - (factureExistante.MontantAssurance ?? 0);
+                }
+                else
+                {
+                    // Créer une nouvelle facture examen
+                    var numeroFacture = $"EXA-{now:yyyyMMdd}-{now:HHmmss}-{patient.IdUser}";
+                    var facture = new Facture
+                    {
+                        NumeroFacture = numeroFacture,
+                        IdPatient = patient.IdUser,
+                        MontantTotal = prixExamen,
+                        MontantPaye = 0,
+                        MontantRestant = couverture.MontantPatient,
+                        Statut = "en_attente",
+                        TypeFacture = "examen",
+                        DateCreation = now,
+                        DateEcheance = now.AddDays(30),
+                        CouvertureAssurance = couverture.EstAssure,
+                        IdAssurance = couverture.IdAssurance,
+                        TauxCouverture = couverture.EstAssure ? couverture.TauxCouverture : (decimal?)null,
+                        MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null,
+                        Notes = $"Examens médicaux - {nomExamen}"
+                    };
+
+                    _context.Factures.Add(facture);
+                    await _context.SaveChangesAsync();
+
+                    var ligneFacture = new LigneFacture
+                    {
+                        IdFacture = facture.IdFacture,
+                        Description = nomExamen,
+                        Code = bulletin.Examen?.IdExamen.ToString(),
+                        Quantite = 1,
+                        PrixUnitaire = prixExamen,
+                        Categorie = "examen"
+                    };
+                    _context.LignesFacture.Add(ligneFacture);
+                }
+            }
+
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Examen {IdBulletin} démarré", idBulletin);
+            _logger.LogInformation("Examen {IdBulletin} démarré, facture générée", idBulletin);
 
             return Ok(new { success = true, message = "Examen démarré" });
         }

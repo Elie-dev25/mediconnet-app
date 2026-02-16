@@ -10,10 +10,13 @@ import {
   AssuranceListItem, 
   AssuranceDetail,
   CreateAssuranceDto,
+  AssuranceCouverture,
+  UpsertCouvertureRequest,
   TYPES_ASSURANCE,
   STATUTS_JURIDIQUES,
   ZONES_COUVERTURE,
-  MODES_PAIEMENT
+  MODES_PAIEMENT,
+  TYPES_PRESTATION
 } from '../../../services/assurance.service';
 
 interface Step {
@@ -331,5 +334,102 @@ export class AdminAssurancesComponent implements OnInit {
 
   getTypeLabel(value: string): string {
     return this.typesAssurance.find(t => t.value === value)?.label || value;
+  }
+
+  // ==================== COUVERTURES ====================
+
+  showCouverturePanel = false;
+  couvertureAssurance: AssuranceListItem | null = null;
+  couvertures: AssuranceCouverture[] = [];
+  couvertureEdits: { [type: string]: { tauxCouverture: number; plafondAnnuel: number | null; plafondParActe: number | null; franchise: number | null; actif: boolean; notes: string } } = {};
+  isSavingCouvertures = false;
+  couvertureSuccess = '';
+  couvertureError = '';
+  typesPrestation = TYPES_PRESTATION;
+
+  openCouverturePanel(assurance: AssuranceListItem): void {
+    this.couvertureAssurance = assurance;
+    this.couvertureSuccess = '';
+    this.couvertureError = '';
+    this.showCouverturePanel = true;
+    this.loadCouvertures(assurance.idAssurance);
+  }
+
+  closeCouverturePanel(): void {
+    this.showCouverturePanel = false;
+    this.couvertureAssurance = null;
+    this.couvertures = [];
+    this.couvertureEdits = {};
+  }
+
+  loadCouvertures(idAssurance: number): void {
+    this.assuranceService.getCouvertures(idAssurance).subscribe({
+      next: (response) => {
+        this.couvertures = response.data || [];
+        this.initCouvertureEdits();
+      },
+      error: (err) => {
+        console.error('Erreur chargement couvertures:', err);
+        this.couvertures = [];
+        this.initCouvertureEdits();
+      }
+    });
+  }
+
+  private initCouvertureEdits(): void {
+    this.couvertureEdits = {};
+    for (const type of this.typesPrestation) {
+      const existing = this.couvertures.find(c => c.typePrestation === type.value);
+      this.couvertureEdits[type.value] = {
+        tauxCouverture: existing?.tauxCouverture ?? 0,
+        plafondAnnuel: existing?.plafondAnnuel ?? null,
+        plafondParActe: existing?.plafondParActe ?? null,
+        franchise: existing?.franchise ?? null,
+        actif: existing?.actif ?? true,
+        notes: existing?.notes ?? ''
+      };
+    }
+  }
+
+  saveCouvertures(): void {
+    if (!this.couvertureAssurance || this.isSavingCouvertures) return;
+
+    this.isSavingCouvertures = true;
+    this.couvertureError = '';
+    this.couvertureSuccess = '';
+
+    const requests: UpsertCouvertureRequest[] = this.typesPrestation.map(type => ({
+      typePrestation: type.value,
+      tauxCouverture: this.couvertureEdits[type.value].tauxCouverture,
+      plafondAnnuel: this.couvertureEdits[type.value].plafondAnnuel || undefined,
+      plafondParActe: this.couvertureEdits[type.value].plafondParActe || undefined,
+      franchise: this.couvertureEdits[type.value].franchise || undefined,
+      actif: this.couvertureEdits[type.value].actif,
+      notes: this.couvertureEdits[type.value].notes || undefined
+    }));
+
+    this.assuranceService.batchUpdateCouvertures(this.couvertureAssurance.idAssurance, requests).pipe(
+      finalize(() => this.isSavingCouvertures = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.couvertureSuccess = 'Couvertures mises à jour avec succès';
+          setTimeout(() => this.couvertureSuccess = '', 3000);
+        } else {
+          this.couvertureError = response.message;
+        }
+      },
+      error: (err) => {
+        this.couvertureError = err.error?.message || 'Erreur lors de la sauvegarde';
+      }
+    });
+  }
+
+  getPrestationLabel(value: string): string {
+    return this.typesPrestation.find(t => t.value === value)?.label || value;
+  }
+
+  getPrestationIcon(value: string): string {
+    return this.typesPrestation.find(t => t.value === value)?.icon || 'circle';
   }
 }

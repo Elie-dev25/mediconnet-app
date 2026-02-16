@@ -721,15 +721,84 @@
     }
   }
 
+  .questionnaire-invite {
+    background: linear-gradient(135deg, rgba($primary-color, 0.06) 0%, rgba($primary-color, 0.12) 100%);
+    border: 1px solid rgba($primary-color, 0.2);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    text-align: center;
+
+    .invite-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba($primary-color, 0.12);
+      color: $primary-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+    }
+
+    .invite-text {
+      font-size: 0.85rem;
+      color: $text-primary;
+      margin: 0 0 1rem;
+      line-height: 1.5;
+    }
+
+    .btn-questionnaire {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: $primary-color;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: darken($primary-color, 8%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+      }
+    }
+  }
+
   .confirmation-note {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: $text-secondary;
-    margin: 0 0 1.5rem;
+    margin: 0 0 1rem;
+    font-style: italic;
   }
 
   .btn-full {
     width: 100%;
     justify-content: center;
+  }
+
+  .btn-secondary.btn-full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    color: $text-secondary;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #e5e7eb;
+    }
   }
 
   .btn-primary {

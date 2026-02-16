@@ -1,0 +1,104 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <aside class="fin-hosp-panel">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <lucide-icon name="log-out" [size]="22"></lucide-icon>
+        <div>
+          <h2>Fin d'hospitalisation</h2>
+          <span class="patient-label" *ngIf="patientNom">{{ patientPrenom }} {{ patientNom }}</span>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()" type="button">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="panel-loading" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="28" class="spinner"></lucide-icon>
+      <span>Vérification en cours...</span>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content" *ngIf="!isLoading">
+
+      <!-- Success -->
+      <div class="success-block" *ngIf="success">
+        <div class="success-icon">
+          <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+        </div>
+        <h3>Hospitalisation terminée</h3>
+        <p>Le patient a été libéré et le lit est de nouveau disponible.</p>
+      </div>
+
+      <!-- Error -->
+      <div class="alert alert-error" *ngIf="error && !success">
+        <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- Form -->
+      <div class="form-content" *ngIf="!success">
+        <!-- Date de sortie -->
+        <div class="form-group">
+          <label for="dateSortie">
+            <lucide-icon name="calendar" [size]="14"></lucide-icon>
+            Date et heure de sortie
+          </label>
+          <input 
+            type="datetime-local" 
+            id="dateSortie"
+            class="form-control"
+            [(ngModel)]="dateSortie">
+        </div>
+
+        <!-- Motif de sortie -->
+        <div class="form-group">
+          <label for="motifSortie">
+            <lucide-icon name="file-text" [size]="14"></lucide-icon>
+            Motif de sortie
+          </label>
+          <select id="motifSortie" class="form-control" [(ngModel)]="motifSortie">
+            <option value="">-- Sélectionner --</option>
+            <option value="guerison">Guérison</option>
+            <option value="amelioration">Amélioration</option>
+            <option value="transfert">Transfert</option>
+            <option value="demande_patient">Demande du patient</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <!-- Résumé médical (obligatoire) -->
+        <div class="form-group">
+          <label for="resumeMedical">
+            <lucide-icon name="clipboard-list" [size]="14"></lucide-icon>
+            Résumé médical de sortie <span class="required">*</span>
+          </label>
+          <textarea 
+            id="resumeMedical"
+            class="form-control textarea-lg"
+            rows="6"
+            [(ngModel)]="resumeMedical"
+            placeholder="Résumé de l'état du patient, traitements effectués, recommandations de suivi..."
+            [class.input-error]="error && !resumeMedical.trim()">
+          </textarea>
+          <span class="hint">Ce résumé sera visible dans le dossier médical du patient.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" *ngIf="!isLoading && !success">
+      <button class="btn btn-ghost" (click)="onClose()">Annuler</button>
+      <button 
+        class="btn btn-danger" 
+        (click)="submit()"
+        [disabled]="!canSubmit">
+        <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+        <lucide-icon *ngIf="!isSubmitting" name="log-out" [size]="16"></lucide-icon>
+        {{ isSubmitting ? 'Traitement...' : 'Terminer l\'hospitalisation' }}
+      </button>
+    </div>
+  </aside>
+</div>

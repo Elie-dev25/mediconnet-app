@@ -68,6 +68,8 @@ export interface HospitalisationDetails {
   dateSortiePrevue?: string;
   dateSortie?: string;
   motif: string;
+  motifSortie?: string;
+  resumeMedical?: string;
   diagnosticPrincipal?: string;
   patient: {
     idPatient: number;
@@ -241,9 +243,25 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
     return this.context === 'medecin';
   }
 
+  get isTermine(): boolean {
+    return this.hospitalisation?.statut?.toLowerCase() === 'termine';
+  }
+
   get canAttribuerLit(): boolean {
     const statut = this.hospitalisation?.statut?.toLowerCase();
-    return this.isMajor && (statut === 'en_attente' || this.hospitalisation?.statut === 'EN_ATTENTE');
+    return this.isMajor && (statut === 'en_attente' || statut === 'en_attente_lit');
+  }
+
+  getMotifSortieLabel(motif?: string): string {
+    if (!motif) return 'Non spécifié';
+    switch (motif) {
+      case 'guerison': return 'Guérison';
+      case 'amelioration': return 'Amélioration';
+      case 'transfert': return 'Transfert';
+      case 'demande_patient': return 'Demande du patient';
+      case 'autre': return 'Autre';
+      default: return motif;
+    }
   }
 
   formatDate(dateStr?: string): string {
@@ -352,7 +370,7 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
     switch (moment.toLowerCase()) {
       case 'matin': return 'sun';
       case 'midi': return 'sun';
-      case 'soir': return 'cloud-sun';
+      case 'soir': return 'cloud';
       case 'nuit': return 'moon';
       default: return 'clock';
     }

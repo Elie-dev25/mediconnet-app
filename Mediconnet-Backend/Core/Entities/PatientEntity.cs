@@ -95,8 +95,23 @@ public class Patient
     /// <summary>Date de fin de validité de l'assurance</summary>
     public DateTime? DateFinValidite { get; set; }
     
-    /// <summary>Taux de couverture assurance propre au patient (0-100)</summary>
-    public decimal? CouvertureAssurance { get; set; }
+    /// <summary>
+    /// Override manuel du taux de couverture (0-100).
+    /// Si défini, ce taux prend priorité sur la configuration AssuranceCouverture.
+    /// Utilisé pour les cas exceptionnels (négociations spéciales, contrats particuliers).
+    /// </summary>
+    public decimal? TauxCouvertureOverride { get; set; }
+    
+    /// <summary>
+    /// Ancien champ - conservé pour compatibilité, mappé vers taux_couverture_override en DB.
+    /// Utiliser TauxCouvertureOverride à la place.
+    /// </summary>
+    [Obsolete("Utiliser TauxCouvertureOverride à la place")]
+    public decimal? CouvertureAssurance 
+    { 
+        get => TauxCouvertureOverride; 
+        set => TauxCouvertureOverride = value; 
+    }
     
     // Relations
     public virtual Utilisateur? Utilisateur { get; set; }

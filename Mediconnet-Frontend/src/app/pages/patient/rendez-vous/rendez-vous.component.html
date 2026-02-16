@@ -213,13 +213,13 @@
 
             <!-- Actions -->
             <div class="list-page-col-actions" data-label="Actions">
-              <!-- Bouton remplir questionnaire (si RDV confirmé et à venir) -->
+              <!-- Bouton remplir questionnaire (si RDV planifié ou confirmé et à venir) -->
               <button 
                 class="list-page-action-btn list-page-action-btn--primary"
-                *ngIf="rdv.statut === 'confirme' && activeTab === 'upcoming'"
-                (click)="openQuestionnaireModal(rdv)"
-                title="Remplir le questionnaire">
-                <lucide-icon name="clipboard-list" [size]="14"></lucide-icon>
+                *ngIf="(rdv.statut === 'confirme' || rdv.statut === 'planifie') && activeTab === 'upcoming'"
+                (click)="openQuestionnaireDrawer(rdv)"
+                [title]="rdv.anamneseRemplie ? 'Modifier le questionnaire' : 'Remplir le questionnaire'">
+                <lucide-icon [name]="rdv.anamneseRemplie ? 'clipboard-check' : 'clipboard-list'" [size]="14"></lucide-icon>
               </button>
               
               <!-- Bouton voir détails -->
@@ -320,5 +320,122 @@
       </div>
     </div>
   </div>
+
+  <!-- Overlay Drawer Questionnaire -->
+  <div class="drawer-overlay" *ngIf="showQuestionnaireDrawer" (click)="closeQuestionnaireDrawer()"></div>
+
+  <!-- Drawer Questionnaire Pré-consultation -->
+  <aside class="questionnaire-drawer" [class.open]="showQuestionnaireDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <lucide-icon name="clipboard-list" [size]="20"></lucide-icon>
+        <div>
+          <h3>Questionnaire pré-consultation</h3>
+          <span class="drawer-subtitle" *ngIf="questionnaireQuestions.length > 0">
+            {{ getConsultationTypeLabel() }}
+          </span>
+        </div>
+      </div>
+      <button class="drawer-close" (click)="closeQuestionnaireDrawer()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- RDV Info Banner -->
+    <div class="drawer-rdv-info" *ngIf="selectedRdvForQuestionnaire">
+      <div class="rdv-info-row">
+        <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
+        <span>{{ selectedRdvForQuestionnaire.medecinNom }}</span>
+      </div>
+      <div class="rdv-info-row">
+        <lucide-icon name="calendar" [size]="16"></lucide-icon>
+        <span>{{ formatDateTime(selectedRdvForQuestionnaire.dateHeure) }}</span>
+      </div>
+    </div>
+
+    <div class="drawer-content">
+      <!-- Loading -->
+      <div *ngIf="questionnaireLoading" class="questionnaire-loading">
+        <lucide-icon name="loader-2" [size]="24" class="spinning"></lucide-icon>
+        <p>Chargement du questionnaire...</p>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="questionnaireError && !questionnaireLoading" class="alert alert-error">
+        <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+        {{ questionnaireError }}
+      </div>
+
+      <!-- Success -->
+      <div *ngIf="questionnaireSuccess" class="alert alert-success">
+        <lucide-icon name="check-circle" [size]="16"></lucide-icon>
+        {{ questionnaireSuccess }}
+      </div>
+
+      <!-- Progress bar -->
+      <div *ngIf="questionnaireQuestions.length > 0 && !questionnaireLoading" class="questionnaire-progress">
+        <div class="progress-info">
+          <span>Progression</span>
+          <span>{{ getQuestionnaireProgress() }}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="getQuestionnaireProgress()"></div>
+        </div>
+      </div>
+
+      <!-- Questions -->
+      <div *ngIf="questionnaireQuestions.length > 0 && !questionnaireLoading" class="questionnaire-questions">
+        <div class="question-item" *ngFor="let question of questionnaireQuestions; let i = index">
+          <label class="question-label">
+            <span class="question-number">{{ i + 1 }}.</span>
+            {{ question.texte }}
+            <span class="required-mark" *ngIf="question.obligatoire">*</span>
+          </label>
+
+          <!-- Type choix -->
+          <div class="question-choices" *ngIf="question.type === 'choix' && question.options">
+            <button 
+              *ngFor="let option of question.options"
+              class="choice-btn"
+              [class.selected]="questionnaireReponses[question.id] === option"
+              (click)="onQuestionnaireReponseChange(question.id, option)"
+              type="button">
+              {{ option }}
+            </button>
+          </div>
+
+          <!-- Type texte -->
+          <textarea 
+            *ngIf="question.type !== 'choix'"
+            class="question-input"
+            [value]="questionnaireReponses[question.id] || ''"
+            (input)="onQuestionnaireReponseChange(question.id, $any($event.target).value)"
+            rows="2"
+            [placeholder]="question.obligatoire ? 'Réponse obligatoire...' : 'Votre réponse (optionnel)...'"
+            [class.input-error]="question.obligatoire && questionnaireError === 'Veuillez remplir tous les champs obligatoires' && !questionnaireReponses[question.id]?.trim()">
+          </textarea>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="questionnaireQuestions.length === 0 && !questionnaireLoading && !questionnaireError" class="questionnaire-empty">
+        <lucide-icon name="clipboard" [size]="32"></lucide-icon>
+        <p>Aucune question disponible pour cette spécialité.</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="drawer-footer" *ngIf="questionnaireQuestions.length > 0 && !questionnaireLoading && !questionnaireSuccess">
+      <button class="btn-secondary" (click)="closeQuestionnaireDrawer()">Annuler</button>
+      <button 
+        class="btn-primary" 
+        (click)="submitQuestionnaire()" 
+        [disabled]="questionnaireSaving">
+        <lucide-icon *ngIf="questionnaireSaving" name="loader-2" [size]="16" class="spinning"></lucide-icon>
+        <lucide-icon *ngIf="!questionnaireSaving" name="save" [size]="16"></lucide-icon>
+        {{ questionnaireSaving ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </aside>
 
 </app-dashboard-layout>

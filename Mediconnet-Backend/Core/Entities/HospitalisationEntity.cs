@@ -173,6 +173,25 @@ public class Hospitalisation
     [Column("id_service")]
     public int? IdService { get; set; }
 
+    /// <summary>
+    /// Date de sortie prévue (estimée à la création)
+    /// </summary>
+    [Column("date_sortie_prevue")]
+    public DateTime? DateSortiePrevue { get; set; }
+
+    /// <summary>
+    /// Motif de sortie (rempli à la fin de l'hospitalisation)
+    /// </summary>
+    [Column("motif_sortie")]
+    [MaxLength(500)]
+    public string? MotifSortie { get; set; }
+
+    /// <summary>
+    /// Résumé médical de sortie (obligatoire pour terminer)
+    /// </summary>
+    [Column("resume_medical")]
+    public string? ResumeMedical { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

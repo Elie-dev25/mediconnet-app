@@ -44,11 +44,13 @@ public interface IPharmacieStockService
 public class PharmacieStockService : IPharmacieStockService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAssuranceCouvertureService _assuranceService;
     private readonly ILogger<PharmacieStockService> _logger;
 
-    public PharmacieStockService(ApplicationDbContext context, ILogger<PharmacieStockService> logger)
+    public PharmacieStockService(ApplicationDbContext context, IAssuranceCouvertureService assuranceService, ILogger<PharmacieStockService> logger)
     {
         _context = context;
+        _assuranceService = assuranceService;
         _logger = logger;
     }
 
@@ -636,7 +638,11 @@ public class PharmacieStockService : IPharmacieStockService
     {
         var prescription = await _context.Ordonnances
             .Include(o => o.Consultation!)
-                .ThenInclude(c => c.Patient)
+                .ThenInclude(c => c.Patient!)
+                    .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Consultation!)
+                .ThenInclude(c => c.Patient!)
+                    .ThenInclude(p => p.Assurance)
             .FirstOrDefaultAsync(o => o.IdOrdonnance == request.IdPrescription)
             ?? throw new KeyNotFoundException($"Ordonnance {request.IdPrescription} non trouvée");
 
@@ -726,6 +732,87 @@ public class PharmacieStockService : IPharmacieStockService
 
         dispensation.Statut = toutDispense ? "complete" : "partielle";
         dispensation.UpdatedAt = DateTime.UtcNow;
+
+        // ==================== FACTURATION PHARMACIE ====================
+        var patient = prescription.Consultation?.Patient;
+        var montantTotalDispensation = dispensation.Lignes!.Sum(l => l.MontantTotal ?? 0);
+
+        if (patient != null && montantTotalDispensation > 0)
+        {
+            var now = DateTime.UtcNow;
+            var couverture = await _assuranceService.CalculerCouvertureAsync(patient, "pharmacie", montantTotalDispensation);
+
+            // Chercher une facture pharmacie en_attente existante pour cette dispensation
+            var factureExistante = await _context.Factures
+                .Include(f => f.Lignes)
+                .FirstOrDefaultAsync(f => f.IdPatient == patient.IdUser
+                    && f.TypeFacture == "pharmacie"
+                    && f.Statut == "en_attente"
+                    && f.Notes != null && f.Notes.Contains($"Dispensation #{dispensation.IdDispensation}"));
+
+            if (factureExistante != null)
+            {
+                // Mettre à jour la facture existante (dispensation partielle complétée)
+                var anciennesLignes = factureExistante.Lignes.Where(l => l.Categorie == "pharmacie").ToList();
+                _context.LignesFacture.RemoveRange(anciennesLignes);
+
+                foreach (var ligne in dispensation.Lignes!)
+                {
+                    _context.LignesFacture.Add(new LigneFacture
+                    {
+                        IdFacture = factureExistante.IdFacture,
+                        Description = ligne.Medicament?.Nom ?? $"Médicament #{ligne.IdMedicament}",
+                        Code = ligne.IdMedicament.ToString(),
+                        Quantite = ligne.QuantiteDispensee,
+                        PrixUnitaire = ligne.PrixUnitaire ?? 0,
+                        Categorie = "pharmacie"
+                    });
+                }
+
+                factureExistante.MontantTotal = montantTotalDispensation;
+                factureExistante.MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null;
+                factureExistante.MontantRestant = couverture.MontantPatient - factureExistante.MontantPaye;
+                if (factureExistante.MontantRestant < 0) factureExistante.MontantRestant = 0;
+            }
+            else
+            {
+                // Créer une nouvelle facture pharmacie
+                var numeroFacture = $"PHA-{now:yyyyMMdd}-{now:HHmmss}-{patient.IdUser}";
+                var facture = new Facture
+                {
+                    NumeroFacture = numeroFacture,
+                    IdPatient = patient.IdUser,
+                    MontantTotal = montantTotalDispensation,
+                    MontantPaye = 0,
+                    MontantRestant = couverture.MontantPatient,
+                    Statut = "en_attente",
+                    TypeFacture = "pharmacie",
+                    DateCreation = now,
+                    DateEcheance = now.AddDays(30),
+                    CouvertureAssurance = couverture.EstAssure,
+                    IdAssurance = couverture.IdAssurance,
+                    TauxCouverture = couverture.EstAssure ? couverture.TauxCouverture : (decimal?)null,
+                    MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null,
+                    Notes = $"Dispensation #{dispensation.IdDispensation} - Ordonnance #{request.IdPrescription}"
+                };
+
+                _context.Factures.Add(facture);
+                await _context.SaveChangesAsync();
+
+                foreach (var ligne in dispensation.Lignes!)
+                {
+                    _context.LignesFacture.Add(new LigneFacture
+                    {
+                        IdFacture = facture.IdFacture,
+                        Description = ligne.Medicament?.Nom ?? $"Médicament #{ligne.IdMedicament}",
+                        Code = ligne.IdMedicament.ToString(),
+                        Quantite = ligne.QuantiteDispensee,
+                        PrixUnitaire = ligne.PrixUnitaire ?? 0,
+                        Categorie = "pharmacie"
+                    });
+                }
+            }
+        }
 
         await _context.SaveChangesAsync();
 

@@ -37,8 +37,12 @@ public class HospitalisationDto
 {
     public int IdAdmission { get; set; }
     public DateTime DateEntree { get; set; }
+    public DateTime? DateSortiePrevue { get; set; }
     public DateTime? DateSortie { get; set; }
     public string? Motif { get; set; }
+    public string? MotifSortie { get; set; }
+    public string? ResumeMedical { get; set; }
+    public string? DiagnosticPrincipal { get; set; }
     public string? Statut { get; set; }
     public string? Urgence { get; set; }
     public int IdPatient { get; set; }
@@ -216,6 +220,8 @@ public class TerminerHospitalisationRequest
 {
     public int IdAdmission { get; set; }
     public DateTime? DateSortie { get; set; }
+    public string? MotifSortie { get; set; }
+    public string ResumeMedical { get; set; } = string.Empty;
     public string? NotesDepart { get; set; }
 }
 

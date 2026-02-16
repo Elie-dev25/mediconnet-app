@@ -553,3 +553,325 @@
     cursor: not-allowed;
   }
 }
+
+// ==================== COUVERTURE PANEL ====================
+
+.btn-icon-sm.accent {
+  color: $primary-color;
+  &:hover {
+    background: rgba($primary-color, 0.1);
+  }
+}
+
+.couverture-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.couverture-panel {
+  width: 600px;
+  max-width: 90vw;
+  height: 100vh;
+  background: $bg-white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $border-color;
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+
+    .panel-subtitle {
+      font-size: 0.8rem;
+      color: $text-secondary;
+      margin: 0.125rem 0 0;
+    }
+
+    lucide-icon {
+      color: $primary-color;
+    }
+  }
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+
+  .panel-description {
+    font-size: 0.85rem;
+    color: $text-secondary;
+    margin: 0 0 1.25rem;
+    line-height: 1.5;
+  }
+}
+
+.panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid $border-color;
+  background: $bg-light;
+}
+
+// Couverture cards
+.couverture-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.couverture-card {
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: $primary-color;
+    box-shadow: 0 2px 8px rgba($primary-color, 0.08);
+  }
+}
+
+.couverture-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: $bg-light;
+  border-bottom: 1px solid $border-color;
+
+  .prestation-info {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    lucide-icon {
+      color: $primary-color;
+    }
+
+    .prestation-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: $text-primary;
+    }
+  }
+}
+
+.couverture-card-body {
+  padding: 1rem;
+  transition: opacity $transition-fast;
+
+  &.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+.taux-row {
+  margin-bottom: 1rem;
+
+  > label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $text-secondary;
+    margin-bottom: 0.375rem;
+  }
+
+  .taux-input {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+
+    input {
+      width: 80px;
+      padding: 0.375rem 0.5rem;
+      border: 1px solid $border-color;
+      border-radius: $radius-md;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      color: $text-primary;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.15);
+      }
+
+      &:disabled {
+        background: $bg-light;
+        color: $text-secondary;
+      }
+    }
+
+    .suffix {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-secondary;
+    }
+  }
+
+  .taux-bar {
+    height: 6px;
+    background: $bg-light;
+    border-radius: 3px;
+    overflow: hidden;
+
+    .taux-fill {
+      height: 100%;
+      background: linear-gradient(90deg, $primary-color, $success-color);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+  }
+}
+
+.advanced-fields {
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .field-group {
+    > label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: $text-secondary;
+      margin-bottom: 0.25rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.375rem 0.5rem;
+      border: 1px solid $border-color;
+      border-radius: $radius-md;
+      font-size: 0.85rem;
+      color: $text-primary;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.15);
+      }
+
+      &:disabled {
+        background: $bg-light;
+        color: $text-secondary;
+      }
+
+      &::placeholder {
+        color: lighten($text-secondary, 15%);
+      }
+    }
+  }
+
+  .money-input {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .suffix {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: $text-secondary;
+      white-space: nowrap;
+    }
+  }
+}
+
+// Toggle switch
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ccc;
+    border-radius: 22px;
+    transition: all 0.3s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+  }
+
+  input:checked + .toggle-slider {
+    background: $success-color;
+
+    &::before {
+      transform: translateX(18px);
+    }
+  }
+}

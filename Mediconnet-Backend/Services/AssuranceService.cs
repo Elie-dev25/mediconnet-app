@@ -297,7 +297,7 @@ public class AssuranceService : IAssuranceService
             AssuranceId = patient.AssuranceId,
             NomAssurance = patient.Assurance?.Nom,
             TypeAssurance = patient.Assurance?.TypeAssurance,
-            CouvertureAssurance = patient.CouvertureAssurance,
+            TauxCouvertureOverride = patient.TauxCouvertureOverride,
             NumeroCarteAssurance = patient.NumeroCarteAssurance,
             DateDebutValidite = patient.DateDebutValidite,
             DateFinValidite = patient.DateFinValidite,
@@ -329,7 +329,7 @@ public class AssuranceService : IAssuranceService
             patient.NumeroCarteAssurance = dto.NumeroCarteAssurance;
             patient.DateDebutValidite = dto.DateDebutValidite;
             patient.DateFinValidite = dto.DateFinValidite;
-            patient.CouvertureAssurance = dto.CouvertureAssurance;
+            patient.TauxCouvertureOverride = dto.TauxCouvertureOverride;
 
             await _context.SaveChangesAsync();
 
@@ -361,7 +361,7 @@ public class AssuranceService : IAssuranceService
         patient.NumeroCarteAssurance = null;
         patient.DateDebutValidite = null;
         patient.DateFinValidite = null;
-        patient.CouvertureAssurance = null;
+        patient.TauxCouvertureOverride = null;
 
         await _context.SaveChangesAsync();
 

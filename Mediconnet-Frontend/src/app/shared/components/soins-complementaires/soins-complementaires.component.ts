@@ -119,7 +119,7 @@ export class SoinsComplementairesComponent implements OnInit {
   momentsList = [
     { value: 'matin', label: 'Matin (8h)', icon: 'sun' },
     { value: 'midi', label: 'Midi (12h)', icon: 'sun' },
-    { value: 'soir', label: 'Soir (18h)', icon: 'cloud-sun' },
+    { value: 'soir', label: 'Soir (18h)', icon: 'cloud' },
     { value: 'nuit', label: 'Nuit (22h)', icon: 'moon' }
   ];
 

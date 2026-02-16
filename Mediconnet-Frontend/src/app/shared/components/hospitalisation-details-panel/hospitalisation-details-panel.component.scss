@@ -1295,3 +1295,44 @@ $info-color: #3b82f6;
     gap: 0.5rem;
   }
 }
+
+// Sortie section
+.sortie-section {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 1rem !important;
+
+  .section-title {
+    color: #166534;
+  }
+
+  .resume-medical {
+    background: white;
+    border: 1px solid #d1fae5;
+    border-radius: 8px;
+    padding: 0.75rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+}
+
+// Read-only indicator
+.readonly-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+
+  lucide-icon {
+    color: #9ca3af;
+  }
+}

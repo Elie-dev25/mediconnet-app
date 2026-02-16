@@ -957,17 +957,139 @@
         <textarea formControlName="consignesPatient" rows="3" placeholder="Instructions données au patient..."></textarea>
       </div>
 
-      <div class="form-section">
+      <!-- Recommandations structurées -->
+      <div class="form-section recommandations-section">
         <div class="field-header">
-          <h4>Recommandations</h4>
-          <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
-                  [class.recording]="isVoiceActive('conclusion.recommandations')"
-                  (click)="toggleVoiceInput('conclusion.recommandations')"
-                  title="Dictée vocale">
-            <lucide-icon [name]="isVoiceActive('conclusion.recommandations') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
+          <h4><lucide-icon name="send" [size]="16"></lucide-icon> Recommandations</h4>
+          <button type="button" class="btn-add" (click)="toggleRecommandationForm()">
+            <lucide-icon [name]="showRecommandationForm ? 'x' : 'plus'" [size]="14"></lucide-icon>
+            {{ showRecommandationForm ? 'Annuler' : 'Ajouter' }}
           </button>
         </div>
-        <textarea formControlName="recommandations" rows="3" placeholder="Recommandations générales..."></textarea>
+
+        <!-- Formulaire d'ajout -->
+        <div class="recommandation-form" *ngIf="showRecommandationForm">
+          <!-- Type -->
+          <div class="rec-type-selector">
+            <button type="button" class="rec-type-btn" [class.active]="recommandationType === 'medecin'" (click)="recommandationType = 'medecin'">
+              <lucide-icon name="user-check" [size]="16"></lucide-icon> Médecin
+            </button>
+            <button type="button" class="rec-type-btn" [class.active]="recommandationType === 'hopital'" (click)="recommandationType = 'hopital'">
+              <lucide-icon name="building-2" [size]="16"></lucide-icon> Hôpital
+            </button>
+          </div>
+
+          <!-- Hôpital -->
+          <div class="rec-field" *ngIf="recommandationType === 'hopital'">
+            <label>Nom de l'hôpital <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="recommandationNomHopital" [ngModelOptions]="{standalone: true}" placeholder="Nom de l'hôpital recommandé...">
+          </div>
+
+          <!-- Médecin -->
+          <ng-container *ngIf="recommandationType === 'medecin'">
+            <div class="rec-mode-selector">
+              <label class="rec-radio" [class.active]="recommandationMedecinMode === 'interne'">
+                <input type="radio" name="medecinMode" value="interne" [(ngModel)]="recommandationMedecinMode" [ngModelOptions]="{standalone: true}">
+                Médecin interne
+              </label>
+              <label class="rec-radio" [class.active]="recommandationMedecinMode === 'externe'">
+                <input type="radio" name="medecinMode" value="externe" [(ngModel)]="recommandationMedecinMode" [ngModelOptions]="{standalone: true}">
+                Médecin externe
+              </label>
+            </div>
+
+            <!-- Médecin interne: filtre par spécialité -->
+            <ng-container *ngIf="recommandationMedecinMode === 'interne'">
+              <div class="rec-field">
+                <label>Spécialité</label>
+                <select [(ngModel)]="selectedSpecialiteId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onRecommandationSpecialiteChange()">
+                  <option [ngValue]="null">-- Choisir une spécialité --</option>
+                  <option *ngFor="let spec of specialitesListe" [ngValue]="spec.idSpecialite">{{ spec.nomSpecialite }}</option>
+                </select>
+              </div>
+              <div class="rec-field" *ngIf="medecinsParSpecialite.length > 0">
+                <label>Médecin <span class="required">*</span></label>
+                <select [(ngModel)]="recommandationIdMedecin" [ngModelOptions]="{standalone: true}">
+                  <option [ngValue]="null">-- Choisir un médecin --</option>
+                  <option *ngFor="let med of medecinsParSpecialite" [ngValue]="med.idUser">Dr. {{ med.prenom }} {{ med.nom }}</option>
+                </select>
+              </div>
+              <p class="rec-hint" *ngIf="selectedSpecialiteId && medecinsParSpecialite.length === 0">Aucun médecin trouvé pour cette spécialité.</p>
+            </ng-container>
+
+            <!-- Médecin externe: saisie libre -->
+            <ng-container *ngIf="recommandationMedecinMode === 'externe'">
+              <div class="rec-field">
+                <label>Nom du médecin <span class="required">*</span></label>
+                <input type="text" [(ngModel)]="recommandationNomMedecin" [ngModelOptions]="{standalone: true}" placeholder="Dr. Nom Prénom">
+              </div>
+              <div class="rec-field">
+                <label>Spécialité</label>
+                <input type="text" [(ngModel)]="recommandationSpecialite" [ngModelOptions]="{standalone: true}" placeholder="Spécialité...">
+              </div>
+            </ng-container>
+          </ng-container>
+
+          <!-- Motif (obligatoire) -->
+          <div class="rec-field">
+            <label>Motif / Commentaire <span class="required">*</span></label>
+            <textarea [(ngModel)]="recommandationMotif" [ngModelOptions]="{standalone: true}" rows="3" placeholder="Raison de la recommandation..."></textarea>
+          </div>
+
+          <!-- Prioritaire -->
+          <label class="rec-checkbox">
+            <input type="checkbox" [(ngModel)]="recommandationPrioritaire" [ngModelOptions]="{standalone: true}">
+            <span>Recommandation prioritaire</span>
+          </label>
+
+          <!-- Erreur -->
+          <div class="rec-error" *ngIf="recommandationError">
+            <lucide-icon name="alert-circle" [size]="14"></lucide-icon> {{ recommandationError }}
+          </div>
+
+          <!-- Bouton soumettre -->
+          <button type="button" class="btn-submit-rec" [disabled]="!canSubmitRecommandation || recommandationIsSubmitting" (click)="submitRecommandation()">
+            <lucide-icon *ngIf="recommandationIsSubmitting" name="loader-2" [size]="14" class="spinning"></lucide-icon>
+            <lucide-icon *ngIf="!recommandationIsSubmitting" name="check" [size]="14"></lucide-icon>
+            {{ recommandationIsSubmitting ? 'Enregistrement...' : 'Enregistrer la recommandation' }}
+          </button>
+        </div>
+
+        <!-- Liste des recommandations sauvegardées -->
+        <div class="recommandations-list" *ngIf="recommandationsSauvegardees.length > 0">
+          <div class="rec-card" *ngFor="let rec of recommandationsSauvegardees" [class.prioritaire]="rec.prioritaire">
+            <div class="rec-card-header">
+              <div class="rec-card-type">
+                <lucide-icon [name]="rec.type === 'hopital' ? 'building-2' : 'user-check'" [size]="14"></lucide-icon>
+                <span>{{ rec.type === 'hopital' ? 'Hôpital' : 'Médecin' }}</span>
+                <span class="rec-badge-priority" *ngIf="rec.prioritaire">Prioritaire</span>
+              </div>
+              <button type="button" class="rec-delete-btn" (click)="deleteRecommandation(rec.idRecommandation)" title="Supprimer">
+                <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+              </button>
+            </div>
+            <div class="rec-card-body">
+              <p class="rec-card-target" *ngIf="rec.type === 'hopital'">
+                <strong>{{ rec.nomHopital }}</strong>
+              </p>
+              <p class="rec-card-target" *ngIf="rec.type === 'medecin'">
+                <strong>{{ rec.nomMedecinRecommande }}</strong>
+                <span class="rec-specialite" *ngIf="rec.specialite"> — {{ rec.specialite }}</span>
+              </p>
+              <p class="rec-card-motif">{{ rec.motif }}</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="rec-empty" *ngIf="recommandationsSauvegardees.length === 0 && !showRecommandationForm">
+          Aucune recommandation ajoutée. Cliquez sur "Ajouter" pour recommander un médecin ou un hôpital.
+        </p>
+
+        <!-- Champ texte libre conservé pour recommandations générales -->
+        <div class="rec-general-notes" *ngIf="!showRecommandationForm">
+          <label>Notes de recommandation générales</label>
+          <textarea formControlName="recommandations" rows="2" placeholder="Recommandations générales supplémentaires (optionnel)..."></textarea>
+        </div>
       </div>
     </div>
 

@@ -192,7 +192,7 @@
       <div class="table-row" 
            *ngFor="let patient of filteredPatientsHospitalises; let i = index; let odd = odd" 
            [class.odd]="odd"
-           [class.en-attente]="patient.statut === 'EN_ATTENTE'"
+           [class.en-attente]="patient.statut?.toLowerCase() === 'en_attente' || patient.statut?.toLowerCase() === 'en_attente_lit'"
            (click)="openHospitalisationDetail(patient)">
         
         <!-- ID -->
@@ -202,7 +202,7 @@
 
         <!-- Patient Info -->
         <div class="td-cell td-patient">
-          <div class="patient-avatar-circle" [class.attente]="patient.statut === 'EN_ATTENTE'">
+          <div class="patient-avatar-circle" [class.attente]="patient.statut?.toLowerCase() === 'en_attente' || patient.statut?.toLowerCase() === 'en_attente_lit'">
             <lucide-icon name="user" [size]="18"></lucide-icon>
           </div>
           <div class="patient-details">
@@ -213,11 +213,11 @@
 
         <!-- Chambre / Lit -->
         <div class="td-cell td-chambre">
-          <ng-container *ngIf="patient.statut !== 'EN_ATTENTE'">
+          <ng-container *ngIf="patient.statut?.toLowerCase() !== 'en_attente' && patient.statut?.toLowerCase() !== 'en_attente_lit'">
             <span class="chambre-text">Ch. {{ patient.numeroChambre || '-' }}</span>
             <span class="lit-text">Lit {{ patient.numeroLit || '-' }}</span>
           </ng-container>
-          <span class="no-room" *ngIf="patient.statut === 'EN_ATTENTE'">Non assigné</span>
+          <span class="no-room" *ngIf="patient.statut?.toLowerCase() === 'en_attente' || patient.statut?.toLowerCase() === 'en_attente_lit'">Non assigné</span>
         </div>
 
         <!-- Statut -->
@@ -252,10 +252,10 @@
             <lucide-icon name="folder-open" [size]="14"></lucide-icon>
             Dossier
           </button>
-          <button class="action-btn installer" *ngIf="patient.statut === 'EN_ATTENTE'" (click)="openAttribuerLitPanel(patient)" title="Installer">
+          <button class="action-btn installer" *ngIf="patient.statut?.toLowerCase() === 'en_attente' || patient.statut?.toLowerCase() === 'en_attente_lit'" (click)="openAttribuerLitPanel(patient)" title="Installer">
             <lucide-icon name="bed" [size]="14"></lucide-icon>
           </button>
-          <button class="action-btn delete" *ngIf="patient.statut !== 'EN_ATTENTE'" title="Options">
+          <button class="action-btn delete" *ngIf="patient.statut?.toLowerCase() !== 'en_attente' && patient.statut?.toLowerCase() !== 'en_attente_lit'" title="Options">
             <lucide-icon name="more-vertical" [size]="14"></lucide-icon>
           </button>
           <button class="action-btn expand" title="Détails">
@@ -564,6 +564,40 @@
     (addPrescriptions)="openOrdonnancePanelFromDetails($event)"
     (finHospitalisation)="terminerHospitalisation($event)"
   ></app-hospitalisation-details-panel>
+
+  <!-- Confirmation avant fin d'hospitalisation -->
+  <div class="confirm-overlay" *ngIf="showFinHospConfirm" (click)="cancelFinHospConfirm()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">
+        <lucide-icon name="alert-triangle" [size]="32"></lucide-icon>
+      </div>
+      <h3>Confirmer la fin d'hospitalisation</h3>
+      <p class="confirm-message">
+        Ce patient a encore
+        <strong *ngIf="finHospConfirmExamens > 0">{{ finHospConfirmExamens }} examen(s) à passer</strong>
+        <span *ngIf="finHospConfirmExamens > 0 && finHospConfirmSoins > 0"> et </span>
+        <strong *ngIf="finHospConfirmSoins > 0">{{ finHospConfirmSoins }} soin(s) à effectuer</strong>.
+      </p>
+      <p class="confirm-sub">Voulez-vous vraiment mettre fin à l'hospitalisation ?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost" (click)="cancelFinHospConfirm()">Annuler</button>
+        <button class="btn btn-danger" (click)="confirmFinHospitalisation()">
+          <lucide-icon name="log-out" [size]="16"></lucide-icon>
+          Oui, terminer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau Fin Hospitalisation -->
+  <app-fin-hospitalisation-panel
+    [isOpen]="showFinHospPanel"
+    [hospitalisationId]="finHospitalisationId"
+    [patientNom]="finHospPatientNom"
+    [patientPrenom]="finHospPatientPrenom"
+    (close)="closeFinHospPanel()"
+    (completed)="onFinHospCompleted()">
+  </app-fin-hospitalisation-panel>
 
   <!-- Panel Attribution Lit -->
   <app-attribuer-lit-panel

@@ -26,6 +26,11 @@ public class Assurance
     [MaxLength(30)]
     public string? TelephoneServiceClient { get; set; }
 
+    /// <summary>Email pour l'envoi des factures à l'assurance</summary>
+    [MaxLength(255)]
+    [Column("email_facturation")]
+    public string? EmailFacturation { get; set; }
+
     // ==================== 2. INFORMATIONS ADMINISTRATIVES ====================
     
     [MaxLength(100)]
@@ -40,26 +45,19 @@ public class Assurance
     [MaxLength(1000)]
     public string? Description { get; set; }
 
-    // ==================== 3. COUVERTURE SANTÉ ====================
+    // ==================== 3. COUVERTURE SANTÉ (Normalisé) ====================
     
-    [MaxLength(500)]
-    public string? TypeCouverture { get; set; } // accidents, maladies, hospitalisation, maternite, forfait_soins_base
-
+    /// <summary>Assurance complémentaire santé</summary>
     public bool IsComplementaire { get; set; } = false;
 
-    [MaxLength(255)]
-    public string? CategorieBeneficiaires { get; set; } // salaries, familles, diaspora, artisans, femmes_enceintes
+    /// <summary>FK vers zone de couverture géographique</summary>
+    [Column("id_zone_couverture")]
+    public int? IdZoneCouverture { get; set; }
 
     // ==================== 4. VALIDITÉ ET FONCTIONNEMENT ====================
     
     [MaxLength(1000)]
     public string? ConditionsAdhesion { get; set; }
-
-    [MaxLength(100)]
-    public string? ZoneCouverture { get; set; } // national, rural, diaspora, international
-
-    [MaxLength(255)]
-    public string? ModePaiement { get; set; } // mobile_money, entreprise, cotisations, prelevement
 
     public bool IsActive { get; set; } = true;
 
@@ -69,6 +67,41 @@ public class Assurance
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation - Une assurance peut couvrir plusieurs patients
+    // ==================== 6. CHAMPS LEGACY (à supprimer après migration complète) ====================
+    
+    [MaxLength(500)]
+    [Obsolete("Utiliser TypesCouvertureSante (many-to-many) à la place")]
+    public string? TypeCouverture { get; set; }
+
+    [MaxLength(255)]
+    [Obsolete("Utiliser CategoriesBeneficiaires (many-to-many) à la place")]
+    public string? CategorieBeneficiaires { get; set; }
+
+    [MaxLength(100)]
+    [Obsolete("Utiliser IdZoneCouverture (FK) à la place")]
+    public string? ZoneCouverture { get; set; }
+
+    [MaxLength(255)]
+    [Obsolete("Utiliser ModesPaiement (many-to-many) à la place")]
+    public string? ModePaiement { get; set; }
+
+    // ==================== NAVIGATION ====================
+    
+    /// <summary>Zone de couverture géographique</summary>
+    public virtual ZoneCouverture? Zone { get; set; }
+
+    /// <summary>Patients couverts par cette assurance</summary>
     public virtual ICollection<Patient> Patients { get; set; } = new List<Patient>();
+
+    /// <summary>Couvertures par type de prestation (taux, plafonds, franchises)</summary>
+    public virtual ICollection<AssuranceCouverture> Couvertures { get; set; } = new List<AssuranceCouverture>();
+
+    /// <summary>Types de couverture santé offerts (hospitalisation, maternité, etc.)</summary>
+    public virtual ICollection<TypeCouvertureSante> TypesCouvertureSante { get; set; } = new List<TypeCouvertureSante>();
+
+    /// <summary>Catégories de bénéficiaires éligibles</summary>
+    public virtual ICollection<CategorieBeneficiaire> CategoriesBeneficiaires { get; set; } = new List<CategorieBeneficiaire>();
+
+    /// <summary>Modes de paiement acceptés</summary>
+    public virtual ICollection<ModePaiement> ModesPaiement { get; set; } = new List<ModePaiement>();
 }

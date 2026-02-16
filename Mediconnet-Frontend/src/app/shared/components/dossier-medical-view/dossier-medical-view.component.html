@@ -126,6 +126,16 @@
           <lucide-icon name="heart-pulse" [size]="16"></lucide-icon>
           Antécédents
         </button>
+        <button class="tab-btn" *ngIf="dossier.hospitalisations && dossier.hospitalisations.length > 0" [class.active]="activeTab === 'hospitalisations'" (click)="setActiveTab('hospitalisations')">
+          <lucide-icon name="bed-double" [size]="16"></lucide-icon>
+          Hospitalisations
+          <span class="tab-count">{{ dossier.hospitalisations.length }}</span>
+        </button>
+        <button class="tab-btn" *ngIf="dossier.recommandations && dossier.recommandations.length > 0" [class.active]="activeTab === 'recommandations'" (click)="setActiveTab('recommandations')">
+          <lucide-icon name="send" [size]="16"></lucide-icon>
+          Recommandations
+          <span class="tab-count">{{ dossier.recommandations.length }}</span>
+        </button>
       </div>
 
       <!-- Tab: Résumé -->
@@ -502,6 +512,98 @@
         <div class="empty-state" *ngIf="(!dossier.antecedents || dossier.antecedents.length === 0) && (!dossier.allergies || dossier.allergies.length === 0)">
           <lucide-icon name="heart-pulse" [size]="48"></lucide-icon>
           <p>Aucun antécédent ni allergie enregistré</p>
+        </div>
+      </div>
+
+      <!-- Tab: Hospitalisations -->
+      <div class="tab-content" *ngIf="activeTab === 'hospitalisations'">
+        <div class="hospitalisations-list scrollable-list" *ngIf="dossier.hospitalisations && dossier.hospitalisations.length > 0">
+          <div class="hospitalisation-card" *ngFor="let h of dossier.hospitalisations" [class.termine]="h.statut === 'termine'">
+            <div class="card-header">
+              <div class="card-date">
+                <lucide-icon name="calendar" [size]="16"></lucide-icon>
+                {{ formatDate(h.dateEntree) }}
+                <span *ngIf="h.dateSortie"> — {{ formatDate(h.dateSortie) }}</span>
+              </div>
+              <span class="badge" [class]="getStatutClass(h.statut)">{{ getStatutLabel(h.statut) }}</span>
+            </div>
+            <div class="card-body">
+              <h4>{{ h.motif }}</h4>
+              <p class="diagnostic" *ngIf="h.diagnosticPrincipal">
+                <strong>Diagnostic :</strong> {{ h.diagnosticPrincipal }}
+              </p>
+              <div class="hosp-meta">
+                <span *ngIf="h.medecinNom" class="meta-item">
+                  <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                  {{ h.medecinNom }}
+                </span>
+                <span *ngIf="h.serviceNom" class="meta-item">
+                  <lucide-icon name="building-2" [size]="14"></lucide-icon>
+                  {{ h.serviceNom }}
+                </span>
+                <span *ngIf="h.numeroChambre" class="meta-item">
+                  <lucide-icon name="bed" [size]="14"></lucide-icon>
+                  Ch. {{ h.numeroChambre }} <span *ngIf="h.numeroLit">/ Lit {{ h.numeroLit }}</span>
+                </span>
+                <span *ngIf="h.dureeJours !== undefined && h.dureeJours !== null" class="meta-item">
+                  <lucide-icon name="clock" [size]="14"></lucide-icon>
+                  {{ h.dureeJours }} jour(s)
+                </span>
+              </div>
+            </div>
+            <!-- Sortie info for terminated -->
+            <div class="hosp-sortie" *ngIf="h.statut === 'termine'">
+              <div class="sortie-header">
+                <lucide-icon name="log-out" [size]="14"></lucide-icon>
+                <strong>Sortie</strong>
+                <span class="sortie-motif" *ngIf="h.motifSortie">{{ getMotifSortieLabel(h.motifSortie) }}</span>
+              </div>
+              <p class="sortie-resume" *ngIf="h.resumeMedical">{{ h.resumeMedical }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!dossier.hospitalisations || dossier.hospitalisations.length === 0">
+          <lucide-icon name="bed-double" [size]="48"></lucide-icon>
+          <p>Aucune hospitalisation enregistrée</p>
+        </div>
+      </div>
+
+      <!-- Tab: Recommandations -->
+      <div class="tab-content" *ngIf="activeTab === 'recommandations'">
+        <div class="recommandations-list" *ngIf="dossier.recommandations && dossier.recommandations.length > 0">
+          <div class="rec-dossier-card" *ngFor="let rec of dossier.recommandations" [class.prioritaire]="rec.prioritaire">
+            <div class="rec-dossier-header">
+              <div class="rec-dossier-type">
+                <lucide-icon [name]="rec.type === 'hopital' ? 'building-2' : 'user-check'" [size]="16"></lucide-icon>
+                <span class="rec-type-label">{{ rec.type === 'hopital' ? 'Hôpital' : 'Médecin' }}</span>
+                <span class="rec-priority-badge" *ngIf="rec.prioritaire">Prioritaire</span>
+              </div>
+              <span class="rec-date">{{ rec.createdAt | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="rec-dossier-body">
+              <p class="rec-target" *ngIf="rec.type === 'hopital'">
+                <lucide-icon name="building-2" [size]="14"></lucide-icon>
+                <strong>{{ rec.nomHopital }}</strong>
+              </p>
+              <p class="rec-target" *ngIf="rec.type === 'medecin'">
+                <lucide-icon name="user-check" [size]="14"></lucide-icon>
+                <strong>{{ rec.nomMedecinRecommande }}</strong>
+                <span class="rec-spec" *ngIf="rec.specialite"> — {{ rec.specialite }}</span>
+              </p>
+              <p class="rec-motif">
+                <lucide-icon name="message-square" [size]="14"></lucide-icon>
+                {{ rec.motif }}
+              </p>
+              <p class="rec-prescripteur" *ngIf="rec.medecinPrescripteur">
+                <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+                Recommandé par {{ rec.medecinPrescripteur }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!dossier.recommandations || dossier.recommandations.length === 0">
+          <lucide-icon name="send" [size]="48"></lucide-icon>
+          <p>Aucune recommandation enregistrée</p>
         </div>
       </div>
     </div>

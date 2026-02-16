@@ -112,7 +112,7 @@ export class SoinExecutionsPopupComponent implements OnChanges {
     switch (moment?.toLowerCase()) {
       case 'matin': return 'sun';
       case 'midi': return 'sun';
-      case 'soir': return 'cloud-sun';
+      case 'soir': return 'cloud';
       case 'nuit': return 'moon';
       default: return 'clock';
     }

@@ -59,6 +59,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     // Entités Assurance
     public DbSet<Assurance> Assurances { get; set; }
+    public DbSet<AssuranceCouverture> AssuranceCouvertures { get; set; }
+
+    // Tables de référence Assurance
+    public DbSet<TypePrestation> TypesPrestations { get; set; }
+    public DbSet<CategorieBeneficiaire> CategoriesBeneficiaires { get; set; }
+    public DbSet<ModePaiement> ModesPaiement { get; set; }
+    public DbSet<ZoneCouverture> ZonesCouverture { get; set; }
+    public DbSet<TypeCouvertureSante> TypesCouvertureSante { get; set; }
 
     // Entités Prescriptions/Examens/Médicaments
     public DbSet<Medicament> Medicaments { get; set; }
@@ -70,6 +78,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ExamenCatalogue> ExamensCatalogue { get; set; }
     public DbSet<Laboratoire> Laboratoires { get; set; }
     public DbSet<OrientationSpecialiste> OrientationsSpecialiste { get; set; }
+    public DbSet<Recommandation> Recommandations { get; set; }
 
     // Entités Hospitalisation
     public DbSet<StandardChambre> StandardsChambres { get; set; }
@@ -387,6 +396,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.IdAssurance).HasColumnName("id_assurance");
             entity.Property(e => e.TauxCouverture).HasColumnName("taux_couverture").HasColumnType("decimal(5,2)");
             entity.Property(e => e.MontantAssurance).HasColumnName("montant_assurance").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.MontantPatient).HasColumnName("montant_patient").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.DateEnvoiAssurance).HasColumnName("date_envoi_assurance");
 
             entity.HasIndex(e => e.NumeroFacture).IsUnique();
 
@@ -395,6 +406,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne(e => e.Service).WithMany().HasForeignKey(e => e.IdService);
             entity.HasOne(e => e.Specialite).WithMany().HasForeignKey(e => e.IdSpecialite);
             entity.HasOne(e => e.Consultation).WithMany().HasForeignKey(e => e.IdConsultation);
+            entity.HasOne(e => e.Assurance).WithMany().HasForeignKey(e => e.IdAssurance);
         });
 
         // LigneFacture Configuration - mapped to facture_item table
@@ -1084,6 +1096,101 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ==================== FACTURATION AVANCÉE ====================
+
+        // Echeancier Configuration
+        modelBuilder.Entity<Echeancier>(entity =>
+        {
+            entity.HasKey(e => e.IdEcheancier);
+            entity.ToTable("echeancier");
+
+            entity.Property(e => e.IdEcheancier).HasColumnName("id_echeancier").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdFacture).HasColumnName("id_facture").IsRequired();
+            entity.Property(e => e.MontantTotal).HasColumnName("montant_total").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.NombreEcheances).HasColumnName("nombre_echeances");
+            entity.Property(e => e.MontantParEcheance).HasColumnName("montant_par_echeance").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.DateDebut).HasColumnName("date_debut");
+            entity.Property(e => e.Frequence).HasColumnName("frequence").HasMaxLength(20);
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(50);
+            entity.Property(e => e.DateCreation).HasColumnName("date_creation");
+            entity.Property(e => e.CreePar).HasColumnName("cree_par");
+
+            entity.HasOne(e => e.Facture).WithMany().HasForeignKey(e => e.IdFacture);
+            entity.HasMany(e => e.Echeances).WithOne(e => e.Echeancier).HasForeignKey(e => e.IdEcheancier);
+        });
+
+        // Echeance Configuration
+        modelBuilder.Entity<Echeance>(entity =>
+        {
+            entity.HasKey(e => e.IdEcheance);
+            entity.ToTable("echeance");
+
+            entity.Property(e => e.IdEcheance).HasColumnName("id_echeance").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdEcheancier).HasColumnName("id_echeancier").IsRequired();
+            entity.Property(e => e.NumeroEcheance).HasColumnName("numero");
+            entity.Property(e => e.Montant).HasColumnName("montant").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.DateEcheance).HasColumnName("date_echeance");
+            entity.Property(e => e.DatePaiement).HasColumnName("date_paiement");
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(50);
+            entity.Property(e => e.IdTransaction).HasColumnName("id_transaction");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(500);
+
+            entity.HasOne(e => e.Transaction).WithMany().HasForeignKey(e => e.IdTransaction);
+        });
+
+        // DemandeRemboursement Configuration
+        modelBuilder.Entity<DemandeRemboursement>(entity =>
+        {
+            entity.HasKey(e => e.IdDemande);
+            entity.ToTable("demande_remboursement");
+
+            entity.Property(e => e.IdDemande).HasColumnName("id_demande").ValueGeneratedOnAdd();
+            entity.Property(e => e.NumeroDemande).HasColumnName("numero_demande").HasMaxLength(50);
+            entity.Property(e => e.IdFacture).HasColumnName("id_facture").IsRequired();
+            entity.Property(e => e.IdAssurance).HasColumnName("id_assurance").IsRequired();
+            entity.Property(e => e.IdPatient).HasColumnName("id_patient").IsRequired();
+            entity.Property(e => e.MontantDemande).HasColumnName("montant_demande").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.MontantApprouve).HasColumnName("montant_approuve").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(50);
+            entity.Property(e => e.DateDemande).HasColumnName("date_demande");
+            entity.Property(e => e.DateTraitement).HasColumnName("date_traitement");
+            entity.Property(e => e.MotifRejet).HasColumnName("motif_rejet").HasMaxLength(500);
+            entity.Property(e => e.ReferenceAssurance).HasColumnName("reference").HasMaxLength(100);
+            entity.Property(e => e.Justificatif).HasColumnName("justificatif").HasMaxLength(500);
+            entity.Property(e => e.TraitePar).HasColumnName("traite_par");
+
+            entity.HasOne(e => e.Facture).WithMany().HasForeignKey(e => e.IdFacture);
+            entity.HasOne(e => e.Assurance).WithMany().HasForeignKey(e => e.IdAssurance);
+            entity.HasOne(e => e.Patient).WithMany().HasForeignKey(e => e.IdPatient);
+        });
+
+        // ==================== ASSURANCE COUVERTURE ====================
+
+        modelBuilder.Entity<AssuranceCouverture>(entity =>
+        {
+            entity.HasKey(e => e.IdCouverture);
+            entity.ToTable("assurance_couverture");
+
+            entity.Property(e => e.IdCouverture).HasColumnName("id_couverture").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdAssurance).HasColumnName("id_assurance").IsRequired();
+            entity.Property(e => e.TypePrestation).HasColumnName("type_prestation").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.TauxCouverture).HasColumnName("taux_couverture").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.PlafondAnnuel).HasColumnName("plafond_annuel").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.PlafondParActe).HasColumnName("plafond_par_acte").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.Franchise).HasColumnName("franchise").HasColumnType("decimal(12,2)");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Assurance)
+                .WithMany(a => a.Couvertures)
+                .HasForeignKey(e => e.IdAssurance);
+
+            // Index unique: une seule couverture par type de prestation par assurance
+            entity.HasIndex(e => new { e.IdAssurance, e.TypePrestation }).IsUnique();
+        });
+
         // DocumentMedical Configuration - Force UUID as string to avoid Guid conversion
         modelBuilder.Entity<DocumentMedical>(entity =>
         {
@@ -1091,5 +1198,123 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Uuid)
                 .HasConversion<string>();
         });
+
+        // ==================== TABLES DE RÉFÉRENCE ASSURANCE ====================
+
+        // TypePrestation (clé primaire = code string)
+        modelBuilder.Entity<TypePrestation>(entity =>
+        {
+            entity.HasKey(e => e.Code);
+            entity.ToTable("type_prestation");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50);
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Icone).HasColumnName("icone").HasMaxLength(50);
+            entity.Property(e => e.Ordre).HasColumnName("ordre");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+        });
+
+        // CategorieBeneficiaire
+        modelBuilder.Entity<CategorieBeneficiaire>(entity =>
+        {
+            entity.HasKey(e => e.IdCategorie);
+            entity.ToTable("categorie_beneficiaire");
+            entity.Property(e => e.IdCategorie).HasColumnName("id_categorie").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ModePaiement
+        modelBuilder.Entity<ModePaiement>(entity =>
+        {
+            entity.HasKey(e => e.IdMode);
+            entity.ToTable("mode_paiement");
+            entity.Property(e => e.IdMode).HasColumnName("id_mode").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ZoneCouverture
+        modelBuilder.Entity<ZoneCouverture>(entity =>
+        {
+            entity.HasKey(e => e.IdZone);
+            entity.ToTable("zone_couverture");
+            entity.Property(e => e.IdZone).HasColumnName("id_zone").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // TypeCouvertureSante
+        modelBuilder.Entity<TypeCouvertureSante>(entity =>
+        {
+            entity.HasKey(e => e.IdTypeCouverture);
+            entity.ToTable("type_couverture_sante");
+            entity.Property(e => e.IdTypeCouverture).HasColumnName("id_type_couverture").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ==================== RELATIONS MANY-TO-MANY ASSURANCE ====================
+
+        // Assurance <-> TypeCouvertureSante (many-to-many)
+        modelBuilder.Entity<Assurance>()
+            .HasMany(a => a.TypesCouvertureSante)
+            .WithMany(t => t.Assurances)
+            .UsingEntity<Dictionary<string, object>>(
+                "assurance_type_couverture",
+                j => j.HasOne<TypeCouvertureSante>().WithMany().HasForeignKey("id_type_couverture"),
+                j => j.HasOne<Assurance>().WithMany().HasForeignKey("id_assurance"),
+                j =>
+                {
+                    j.HasKey("id_assurance", "id_type_couverture");
+                    j.ToTable("assurance_type_couverture");
+                });
+
+        // Assurance <-> CategorieBeneficiaire (many-to-many)
+        modelBuilder.Entity<Assurance>()
+            .HasMany(a => a.CategoriesBeneficiaires)
+            .WithMany(c => c.Assurances)
+            .UsingEntity<Dictionary<string, object>>(
+                "assurance_categorie_beneficiaire",
+                j => j.HasOne<CategorieBeneficiaire>().WithMany().HasForeignKey("id_categorie"),
+                j => j.HasOne<Assurance>().WithMany().HasForeignKey("id_assurance"),
+                j =>
+                {
+                    j.HasKey("id_assurance", "id_categorie");
+                    j.ToTable("assurance_categorie_beneficiaire");
+                });
+
+        // Assurance <-> ModePaiement (many-to-many)
+        modelBuilder.Entity<Assurance>()
+            .HasMany(a => a.ModesPaiement)
+            .WithMany(m => m.Assurances)
+            .UsingEntity<Dictionary<string, object>>(
+                "assurance_mode_paiement",
+                j => j.HasOne<ModePaiement>().WithMany().HasForeignKey("id_mode"),
+                j => j.HasOne<Assurance>().WithMany().HasForeignKey("id_assurance"),
+                j =>
+                {
+                    j.HasKey("id_assurance", "id_mode");
+                    j.ToTable("assurance_mode_paiement");
+                });
+
+        // Assurance -> ZoneCouverture (FK)
+        modelBuilder.Entity<Assurance>()
+            .HasOne(a => a.Zone)
+            .WithMany(z => z.Assurances)
+            .HasForeignKey(a => a.IdZoneCouverture)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

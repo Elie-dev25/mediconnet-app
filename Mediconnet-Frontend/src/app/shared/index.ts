@@ -32,6 +32,7 @@ export * from './components/hospitalisation-details-panel/hospitalisation-detail
 export * from './components/ordonnance-hospitalisation-panel/ordonnance-hospitalisation-panel.component';
 export * from './components/examen-hospitalisation-panel/examen-hospitalisation-panel.component';
 export * from './components/soin-hospitalisation-panel/soin-hospitalisation-panel.component';
+export * from './components/fin-hospitalisation-panel/fin-hospitalisation-panel.component';
 export * from './components/resultat-examen-sidebar/resultat-examen-sidebar.component';
 // NOTE: Composant voice-input non utilisé - la fonctionnalité vocale est intégrée directement dans consultation-multi-etapes
 // export * from './components/voice-input/voice-input.component';

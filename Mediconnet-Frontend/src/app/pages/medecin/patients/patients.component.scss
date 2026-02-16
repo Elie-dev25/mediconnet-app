@@ -2384,3 +2384,108 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+// Confirmation dialog fin d'hospitalisation
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-dialog {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.25s ease;
+
+  .confirm-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff7ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: #f59e0b;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.75rem;
+  }
+
+  .confirm-message {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0 0 0.25rem;
+
+    strong {
+      color: #dc2626;
+    }
+  }
+
+  .confirm-sub {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0 0 1.5rem;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost {
+      background: #f1f5f9;
+      color: #475569;
+
+      &:hover { background: #e2e8f0; }
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+
+      &:hover { background: #b91c1c; }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}

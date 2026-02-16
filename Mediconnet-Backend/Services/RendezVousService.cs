@@ -21,19 +21,22 @@ public class RendezVousService : IRendezVousService
     private readonly ISlotLockService _slotLockService;
     private readonly IAppointmentNotificationService _notificationService;
     private readonly NotificationIntegrationService _notificationIntegration;
+    private readonly IAssuranceCouvertureService _assuranceCouvertureService;
 
     public RendezVousService(
         ApplicationDbContext context, 
         ILogger<RendezVousService> logger,
         ISlotLockService slotLockService,
         IAppointmentNotificationService notificationService,
-        NotificationIntegrationService notificationIntegration)
+        NotificationIntegrationService notificationIntegration,
+        IAssuranceCouvertureService assuranceCouvertureService)
     {
         _context = context;
         _logger = logger;
         _slotLockService = slotLockService;
         _notificationService = notificationService;
         _notificationIntegration = notificationIntegration;
+        _assuranceCouvertureService = assuranceCouvertureService;
     }
 
     // ==================== PATIENT ====================
@@ -253,24 +256,15 @@ public class RendezVousService : IRendezVousService
                 // Générer un numéro de facture unique
                 var numeroFacture = await GenererNumeroFactureAsync();
 
-                // Calculer la couverture assurance si le patient est assuré
-                var estAssure = patient.AssuranceId.HasValue && 
-                                patient.Assurance != null &&
-                                (!patient.DateFinValidite.HasValue || patient.DateFinValidite.Value >= now);
-                
                 // Prix consultation par défaut (peut être configuré)
                 decimal prixConsultation = 5000; // FCFA - à récupérer depuis config ou spécialité
                 
-                decimal tauxCouverture = 0;
-                decimal montantAssurance = 0;
-                decimal montantPatient = prixConsultation;
-                
-                if (estAssure)
-                {
-                    tauxCouverture = patient.CouvertureAssurance ?? 0;
-                    montantAssurance = Math.Round(prixConsultation * tauxCouverture / 100, 2);
-                    montantPatient = prixConsultation - montantAssurance;
-                }
+                // Calculer la couverture assurance via le service centralisé
+                var couverture = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "consultation", prixConsultation);
+                var estAssure = couverture.EstAssure;
+                var tauxCouverture = couverture.TauxCouverture;
+                var montantAssurance = couverture.MontantAssurance;
+                var montantPatient = couverture.MontantPatient;
 
                 // Créer la facture (en attente de paiement, sauf si paiement valide existe)
                 var facture = new Facture
@@ -299,6 +293,19 @@ public class RendezVousService : IRendezVousService
                 };
 
                 _context.Factures.Add(facture);
+                await _context.SaveChangesAsync();
+
+                // Ajouter la ligne de facture détaillée
+                var ligneFacture = new LigneFacture
+                {
+                    IdFacture = facture.IdFacture,
+                    Description = $"Consultation - Dr. {medecin.Utilisateur?.Nom ?? "N/A"}",
+                    Quantite = 1,
+                    PrixUnitaire = prixConsultation,
+                    Categorie = "consultation"
+                };
+
+                _context.LignesFacture.Add(ligneFacture);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();

@@ -150,7 +150,48 @@ public class DossierMedicalDto
     public List<ConsultationHistoryDto> Consultations { get; set; } = new();
     public List<OrdonnanceDto> Ordonnances { get; set; } = new();
     public List<ExamenDto> Examens { get; set; } = new();
+    public List<HospitalisationHistoryDto> Hospitalisations { get; set; } = new();
+    public List<RecommandationHistoryDto> Recommandations { get; set; } = new();
     public DossierStatsDto Stats { get; set; } = new();
+}
+
+/// <summary>
+/// DTO pour l'historique des hospitalisations dans le dossier patient
+/// </summary>
+public class HospitalisationHistoryDto
+{
+    public int IdAdmission { get; set; }
+    public DateTime DateEntree { get; set; }
+    public DateTime? DateSortiePrevue { get; set; }
+    public DateTime? DateSortie { get; set; }
+    public string Motif { get; set; } = "";
+    public string? MotifSortie { get; set; }
+    public string? ResumeMedical { get; set; }
+    public string? DiagnosticPrincipal { get; set; }
+    public string Statut { get; set; } = "";
+    public string? Urgence { get; set; }
+    public string? MedecinNom { get; set; }
+    public string? ServiceNom { get; set; }
+    public string? NumeroChambre { get; set; }
+    public string? NumeroLit { get; set; }
+    public int? DureeJours { get; set; }
+}
+
+/// <summary>
+/// DTO pour l'historique des recommandations dans le dossier patient
+/// </summary>
+public class RecommandationHistoryDto
+{
+    public int IdRecommandation { get; set; }
+    public string Type { get; set; } = "";
+    public string? NomHopital { get; set; }
+    public string? NomMedecinRecommande { get; set; }
+    public string? Specialite { get; set; }
+    public string Motif { get; set; } = "";
+    public bool Prioritaire { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? MedecinPrescripteur { get; set; }
+    public int? IdConsultation { get; set; }
 }
 
 /// <summary>
