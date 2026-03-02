@@ -183,67 +183,10 @@ public class Consultation
 
     public virtual Ordonnance? Ordonnance { get; set; }
 
+    public virtual ConsultationGynecologique? ConsultationGynecologique { get; set; }
+
     public virtual ICollection<BulletinExamen>? BulletinsExamen { get; set; }
 
-    public virtual ICollection<OrientationSpecialiste>? OrientationsSpecialiste { get; set; }
-}
-
-/// <summary>
-/// Entité OrientationSpecialiste - Représente une orientation vers un spécialiste
-/// </summary>
-[Table("orientation_specialiste")]
-public class OrientationSpecialiste
-{
-    [Key]
-    [Column("id_orientation")]
-    public int IdOrientation { get; set; }
-
-    [Column("id_consultation")]
-    public int IdConsultation { get; set; }
-
-    [Column("id_specialite")]
-    public int? IdSpecialite { get; set; }
-
-    [Column("specialite_manuelle")]
-    public string? SpecialiteManuelle { get; set; }
-
-    [Column("id_medecin_oriente")]
-    public int? IdMedecinOriente { get; set; }
-
-    [Column("medecin_manuel")]
-    public string? MedecinManuel { get; set; }
-
-    [Column("motif")]
-    public string Motif { get; set; } = string.Empty;
-
-    [Column("urgence")]
-    public bool Urgence { get; set; } = false;
-
-    [Column("statut")]
-    public string Statut { get; set; } = "en_attente";
-
-    [Column("date_orientation")]
-    public DateTime DateOrientation { get; set; } = DateTime.Now;
-
-    [Column("date_rdv_propose")]
-    public DateTime? DateRdvPropose { get; set; }
-
-    [Column("notes")]
-    public string? Notes { get; set; }
-
-    [Column("id_rdv_cree")]
-    public int? IdRdvCree { get; set; }
-
-    // Navigation properties
-    [ForeignKey("IdConsultation")]
-    public virtual Consultation? Consultation { get; set; }
-
-    [ForeignKey("IdSpecialite")]
-    public virtual Specialite? Specialite { get; set; }
-
-    [ForeignKey("IdMedecinOriente")]
-    public virtual Medecin? MedecinOriente { get; set; }
-
-    [ForeignKey("IdRdvCree")]
-    public virtual RendezVous? RendezVousCree { get; set; }
+    /// <summary>Orientations pré-consultation (unifiées)</summary>
+    public virtual ICollection<OrientationPreConsultation>? OrientationsPreConsultation { get; set; }
 }

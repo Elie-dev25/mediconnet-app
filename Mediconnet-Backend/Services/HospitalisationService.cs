@@ -5,6 +5,7 @@ using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Core.Enums;
 using Mediconnet_Backend.Core.Constants;
 using Mediconnet_Backend.DTOs.Hospitalisation;
+using Mediconnet_Backend.DTOs.Prescription;
 
 namespace Mediconnet_Backend.Services;
 
@@ -15,19 +16,22 @@ public class HospitalisationService : IHospitalisationService
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
     private readonly IAssuranceCouvertureService _assuranceCouvertureService;
+    private readonly IPrescriptionService _prescriptionService;
 
     public HospitalisationService(
         ApplicationDbContext context, 
         ILogger<HospitalisationService> logger,
         INotificationService notificationService,
         IEmailService emailService,
-        IAssuranceCouvertureService assuranceCouvertureService)
+        IAssuranceCouvertureService assuranceCouvertureService,
+        IPrescriptionService prescriptionService)
     {
         _context = context;
         _logger = logger;
         _notificationService = notificationService;
         _emailService = emailService;
         _assuranceCouvertureService = assuranceCouvertureService;
+        _prescriptionService = prescriptionService;
     }
 
     public async Task<ChambresResponse> GetChambresAsync()
@@ -831,42 +835,31 @@ public class HospitalisationService : IHospitalisationService
                 await _context.SaveChangesAsync();
             }
 
-            // Enregistrer les médicaments dans prescription/prescription_medicament
-            if (request.Medicaments?.Any() == true && request.IdConsultation.HasValue)
+            // Enregistrer les médicaments via le service centralisé de prescription
+            if (request.Medicaments?.Any() == true)
             {
-                // Créer une ordonnance liée à la consultation
-                var ordonnance = new Ordonnance
+                var medicamentsRequest = request.Medicaments.Select(med => new MedicamentPrescriptionRequest
                 {
-                    Date = DateTime.UtcNow,
-                    IdConsultation = request.IdConsultation.Value,
-                    Commentaire = $"Prescription hospitalisation #{hospitalisation.IdAdmission}"
-                };
-                _context.Ordonnances.Add(ordonnance);
-                await _context.SaveChangesAsync();
+                    NomMedicament = med.NomMedicament,
+                    Dosage = med.Dosage,
+                    Quantite = med.Quantite ?? 1,
+                    Posologie = med.Posologie,
+                    DureeTraitement = med.DureeTraitement,
+                    VoieAdministration = med.VoieAdministration,
+                    FormePharmaceutique = med.FormePharmaceutique,
+                    Instructions = med.Instructions
+                }).ToList();
 
-                foreach (var med in request.Medicaments)
+                var ordonnanceResult = await _prescriptionService.CreerOrdonnanceHospitalisationAsync(
+                    hospitalisation.IdAdmission,
+                    medicamentsRequest,
+                    $"Prescription hospitalisation #{hospitalisation.IdAdmission}",
+                    medecinId);
+
+                if (!ordonnanceResult.Success)
                 {
-                    // Rechercher le médicament dans le catalogue
-                    var medicament = await _context.Medicaments
-                        .FirstOrDefaultAsync(m => m.Nom.Contains(med.NomMedicament) || med.NomMedicament.Contains(m.Nom));
-
-                    if (medicament != null)
-                    {
-                        var prescriptionMed = new PrescriptionMedicament
-                        {
-                            IdOrdonnance = ordonnance.IdOrdonnance,
-                            IdMedicament = medicament.IdMedicament,
-                            Quantite = med.Quantite ?? 1,
-                            Posologie = med.Posologie,
-                            DureeTraitement = med.DureeTraitement,
-                            VoieAdministration = med.VoieAdministration,
-                            FormePharmaceutique = med.FormePharmaceutique,
-                            Instructions = med.Instructions
-                        };
-                        _context.PrescriptionMedicaments.Add(prescriptionMed);
-                    }
+                    _logger.LogWarning("Erreur lors de la création de l'ordonnance hospitalisation: {Message}", ordonnanceResult.Message);
                 }
-                await _context.SaveChangesAsync();
             }
             await transaction.CommitAsync();
 

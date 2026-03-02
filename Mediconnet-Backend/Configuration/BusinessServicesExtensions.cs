@@ -39,15 +39,6 @@ public static class BusinessServicesExtensions
     }
 
     /// <summary>
-    /// Ajoute les services de prescriptions électroniques
-    /// </summary>
-    public static IServiceCollection AddElectronicPrescriptions(this IServiceCollection services)
-    {
-        services.AddScoped<IPrescriptionElectroniqueService, PrescriptionElectroniqueService>();
-        return services;
-    }
-
-    /// <summary>
     /// Ajoute les services DMP (Dossier Médical Partagé)
     /// </summary>
     public static IServiceCollection AddDMP(this IServiceCollection services)
@@ -83,7 +74,6 @@ public static class BusinessServicesExtensions
         services.AddAdvancedBilling();
         services.AddMedicalAlerts();
         services.AddBedManagement();
-        services.AddElectronicPrescriptions();
         services.AddDMP();
         services.AddConsultationAudit();
         

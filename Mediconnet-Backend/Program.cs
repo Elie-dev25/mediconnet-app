@@ -110,6 +110,9 @@ builder.Services.AddScoped<IFactureAssuranceService, FactureAssuranceService>();
 // Add Medecin Helper Service
 builder.Services.AddScoped<IMedecinHelperService, MedecinHelperService>();
 
+// Add Prescription Service (centralized prescription management)
+builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
+
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
 

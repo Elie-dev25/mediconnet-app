@@ -81,7 +81,8 @@
             rows="6"
             [(ngModel)]="resumeMedical"
             placeholder="Résumé de l'état du patient, traitements effectués, recommandations de suivi..."
-            [class.input-error]="error && !resumeMedical.trim()">
+            [class.input-error]="error && !resumeMedical.trim()"
+            appVoiceInput>
           </textarea>
           <span class="hint">Ce résumé sera visible dans le dossier médical du patient.</span>
         </div>

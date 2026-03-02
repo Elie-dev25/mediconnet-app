@@ -389,7 +389,8 @@ public class PatientController : BaseApiController
                 {
                     Type = "chirurgical",
                     Description = patient.OperationsDetails,
-                    Actif = false
+                    Actif = false,
+                    DateDebut = patient.Utilisateur.CreatedAt
                 });
             }
 
@@ -504,60 +505,70 @@ public class PatientController : BaseApiController
                 .ToListAsync();
 
             // Hospitalisations du patient
-            var hospitalisations = await _context.Hospitalisations
+            var hospitalisationsRaw = await _context.Hospitalisations
                 .Include(h => h.Medecin).ThenInclude(m => m!.Utilisateur)
                 .Include(h => h.Service)
                 .Include(h => h.Lit).ThenInclude(l => l!.Chambre)
                 .Where(h => h.IdPatient == userId.Value)
                 .OrderByDescending(h => h.DateEntree)
                 .Take(20)
-                .Select(h => new HospitalisationHistoryDto
-                {
-                    IdAdmission = h.IdAdmission,
-                    DateEntree = h.DateEntree,
-                    DateSortiePrevue = h.DateSortiePrevue,
-                    DateSortie = h.Statut == "termine" ? h.DateSortie : null,
-                    Motif = h.Motif ?? "",
-                    MotifSortie = h.MotifSortie,
-                    ResumeMedical = h.ResumeMedical,
-                    DiagnosticPrincipal = h.DiagnosticPrincipal,
-                    Statut = h.Statut ?? "en_attente",
-                    Urgence = h.Urgence,
-                    MedecinNom = h.Medecin != null && h.Medecin.Utilisateur != null
-                        ? $"Dr. {h.Medecin.Utilisateur.Prenom} {h.Medecin.Utilisateur.Nom}"
-                        : null,
-                    ServiceNom = h.Service != null ? h.Service.NomService : null,
-                    NumeroChambre = h.Lit != null && h.Lit.Chambre != null ? h.Lit.Chambre.Numero : null,
-                    NumeroLit = h.Lit != null ? h.Lit.Numero : null,
-                    DureeJours = h.DateSortie.HasValue
-                        ? (int)(h.DateSortie.Value - h.DateEntree).TotalDays
-                        : (int)(DateTime.UtcNow - h.DateEntree).TotalDays
-                })
                 .ToListAsync();
 
-            // Recommandations du patient
-            var recommandations = await _context.Recommandations
-                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
-                .Include(r => r.MedecinRecommande).ThenInclude(m => m!.Utilisateur)
-                .Where(r => r.IdPatient == userId.Value)
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(30)
-                .Select(r => new RecommandationHistoryDto
+            var hospitalisations = hospitalisationsRaw
+                .Select(h =>
                 {
-                    IdRecommandation = r.IdRecommandation,
-                    Type = r.Type,
-                    NomHopital = r.NomHopital,
-                    NomMedecinRecommande = r.IdMedecinRecommande.HasValue && r.MedecinRecommande != null && r.MedecinRecommande.Utilisateur != null
-                        ? $"Dr. {r.MedecinRecommande.Utilisateur.Prenom} {r.MedecinRecommande.Utilisateur.Nom}"
-                        : r.NomMedecinRecommande,
-                    Specialite = r.Specialite,
-                    Motif = r.Motif,
-                    Prioritaire = r.Prioritaire,
-                    CreatedAt = r.CreatedAt ?? DateTime.UtcNow,
-                    MedecinPrescripteur = r.Medecin != null && r.Medecin.Utilisateur != null
-                        ? $"Dr. {r.Medecin.Utilisateur.Prenom} {r.Medecin.Utilisateur.Nom}"
+                    var sortieEffective = h.DateSortie ?? DateTime.UtcNow;
+                    var duree = Math.Max(1, (int)Math.Round((sortieEffective - h.DateEntree).TotalDays));
+
+                    return new HospitalisationHistoryDto
+                    {
+                        IdAdmission = h.IdAdmission,
+                        DateEntree = h.DateEntree,
+                        DateSortiePrevue = h.DateSortiePrevue,
+                        DateSortie = h.Statut == "termine" ? h.DateSortie : null,
+                        Motif = h.Motif ?? string.Empty,
+                        MotifSortie = h.MotifSortie,
+                        ResumeMedical = h.ResumeMedical,
+                        DiagnosticPrincipal = h.DiagnosticPrincipal,
+                        Statut = h.Statut ?? "en_attente",
+                        Urgence = h.Urgence,
+                        MedecinNom = h.Medecin != null && h.Medecin.Utilisateur != null
+                            ? $"Dr. {h.Medecin.Utilisateur.Prenom} {h.Medecin.Utilisateur.Nom}"
+                            : null,
+                        ServiceNom = h.Service?.NomService,
+                        NumeroChambre = h.Lit?.Chambre?.Numero,
+                        NumeroLit = h.Lit?.Numero,
+                        DureeJours = duree
+                    };
+                })
+                .ToList();
+
+            // Orientations du patient (remplace les anciennes recommandations)
+            var orientations = await _context.OrientationsPreConsultation
+                .Include(o => o.MedecinPrescripteur).ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.MedecinOriente).ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.Specialite)
+                .Where(o => o.IdPatient == userId.Value)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(30)
+                .Select(o => new OrientationHistoryDto
+                {
+                    IdOrientation = o.IdOrientation,
+                    TypeOrientation = o.TypeOrientation,
+                    NomDestinataire = o.NomDestinataire,
+                    NomMedecinOriente = o.IdMedecinOriente.HasValue && o.MedecinOriente != null && o.MedecinOriente.Utilisateur != null
+                        ? $"Dr. {o.MedecinOriente.Utilisateur.Prenom} {o.MedecinOriente.Utilisateur.Nom}"
+                        : o.NomDestinataire,
+                    NomSpecialite = o.Specialite != null ? o.Specialite.NomSpecialite : o.SpecialiteTexte,
+                    Motif = o.Motif,
+                    Prioritaire = o.Prioritaire,
+                    Urgence = o.Urgence,
+                    Statut = o.Statut,
+                    CreatedAt = o.CreatedAt ?? DateTime.UtcNow,
+                    MedecinPrescripteur = o.MedecinPrescripteur != null && o.MedecinPrescripteur.Utilisateur != null
+                        ? $"Dr. {o.MedecinPrescripteur.Utilisateur.Prenom} {o.MedecinPrescripteur.Utilisateur.Nom}"
                         : null,
-                    IdConsultation = r.IdConsultation
+                    IdConsultation = o.IdConsultation
                 })
                 .ToListAsync();
 
@@ -588,7 +599,7 @@ public class PatientController : BaseApiController
                 Ordonnances = ordonnances,
                 Examens = examens,
                 Hospitalisations = hospitalisations,
-                Recommandations = recommandations,
+                Orientations = orientations,
                 Stats = new DossierStatsDto
                 {
                     TotalConsultations = totalConsultations,

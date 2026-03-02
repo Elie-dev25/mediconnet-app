@@ -15,6 +15,7 @@ import {
   CreneauJourDto,
   CreneauxMedecinJourResponse
 } from '../../../services/consultation.service';
+import { CreneauxSelectorComponent, CreneauUnifie } from '../../../shared/components/creneaux-selector/creneaux-selector.component';
 
 interface Step {
   id: number;
@@ -32,7 +33,8 @@ interface Step {
     RouterModule,
     LucideAngularModule,
     DashboardLayoutComponent,
-    PatientSearchComponent
+    PatientSearchComponent,
+    CreneauxSelectorComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './enregistrement.component.html',
@@ -407,6 +409,47 @@ export class EnregistrementComponent implements OnInit {
     const heures = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `~${heures}h${mins > 0 ? mins : ''}`;
+  }
+
+  // ==================== CRÉNEAUX UNIFIÉS ====================
+
+  /**
+   * Convertir les créneaux du médecin vers le format unifié
+   */
+  get creneauxUnifies(): CreneauUnifie[] {
+    return this.creneauxMedecin.map(c => ({
+      dateHeure: c.dateHeure,
+      heureDebut: c.heureDebut,
+      heureFin: c.heureFin,
+      duree: 30, // Durée par défaut
+      statut: c.statut as 'disponible' | 'occupe' | 'passe' | 'indisponible',
+      selectionnable: c.selectionnable
+    }));
+  }
+
+  /**
+   * Créneau sélectionné au format unifié
+   */
+  get selectedCreneauUnifie(): CreneauUnifie | null {
+    if (!this.selectedCreneau) return null;
+    return {
+      dateHeure: this.selectedCreneau.dateHeure,
+      heureDebut: this.selectedCreneau.heureDebut,
+      heureFin: this.selectedCreneau.heureFin,
+      duree: 30, // Durée par défaut
+      statut: 'disponible',
+      selectionnable: true
+    };
+  }
+
+  /**
+   * Gérer la sélection d'un créneau unifié
+   */
+  onCreneauUnifieSelected(creneau: CreneauUnifie): void {
+    const creneauOriginal = this.creneauxMedecin.find(c => c.dateHeure === creneau.dateHeure);
+    if (creneauOriginal) {
+      this.selectCreneau(creneauOriginal);
+    }
   }
 
   closeSuccessModal(): void {

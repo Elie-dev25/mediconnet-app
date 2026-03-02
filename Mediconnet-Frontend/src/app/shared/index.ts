@@ -45,3 +45,6 @@ export * from './utils';
 
 // Pipes
 export * from './pipes';
+
+// Directives
+export * from './directives/voice-input.directive';

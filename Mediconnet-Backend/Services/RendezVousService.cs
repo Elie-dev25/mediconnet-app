@@ -810,7 +810,31 @@ public class RendezVousService : IRendezVousService
             .OrderBy(r => r.DateHeure)
             .ToListAsync();
 
-        return rdvs.Select(MapToDto).ToList();
+        // Récupérer les orientations liées à ces RDV
+        var rdvIds = rdvs.Select(r => r.IdRendezVous).ToList();
+        var orientations = await _context.OrientationsPreConsultation
+            .Include(o => o.MedecinPrescripteur).ThenInclude(m => m!.Utilisateur)
+            .Where(o => o.IdRdvCree.HasValue && rdvIds.Contains(o.IdRdvCree.Value))
+            .ToListAsync();
+
+        var orientationsByRdvId = orientations.ToDictionary(o => o.IdRdvCree!.Value);
+
+        return rdvs.Select(r => {
+            var dto = MapToDto(r);
+            
+            // Enrichir avec les infos d'orientation si disponibles
+            if (orientationsByRdvId.TryGetValue(r.IdRendezVous, out var orientation))
+            {
+                dto.IdOrientation = orientation.IdOrientation;
+                dto.MotifOrientation = orientation.Motif;
+                dto.TypeOrientation = orientation.TypeOrientation;
+                dto.MedecinOrienteur = orientation.MedecinPrescripteur?.Utilisateur != null
+                    ? $"Dr. {orientation.MedecinPrescripteur.Utilisateur.Prenom} {orientation.MedecinPrescripteur.Utilisateur.Nom}"
+                    : null;
+            }
+            
+            return dto;
+        }).ToList();
     }
 
     public async Task<ActionRdvResponse> ValiderRdvAsync(int medecinId, int rdvId)

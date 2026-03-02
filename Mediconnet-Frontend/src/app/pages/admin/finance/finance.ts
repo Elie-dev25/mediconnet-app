@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FactureAssuranceService, FactureAssurance, FactureAssuranceStats, FactureAssuranceFilter, STATUTS_FACTURE, TYPES_FACTURE } from '../../../services/facture-assurance.service';
 import { AssuranceService } from '../../../services/assurance.service';
-import { DashboardLayoutComponent } from '../shared/dashboard-layout.component';
+import { DashboardLayoutComponent } from '../../../shared';
+import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
 
 @Component({
   selector: 'app-finance',
@@ -13,6 +14,9 @@ import { DashboardLayoutComponent } from '../shared/dashboard-layout.component';
   styleUrl: './finance.css',
 })
 export class Finance implements OnInit {
+  menuItems = ADMIN_MENU_ITEMS;
+  sidebarTitle = ADMIN_SIDEBAR_TITLE;
+
   activeTab: 'general' | 'factures' = 'general';
   
   // Stats

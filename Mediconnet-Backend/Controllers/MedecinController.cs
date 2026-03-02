@@ -4,6 +4,7 @@ using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Medecin;
 using Mediconnet_Backend.DTOs.Hospitalisation;
+using Mediconnet_Backend.DTOs.Prescription;
 using Mediconnet_Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ public class MedecinController : BaseApiController
 {
     private readonly IMedecinService _medecinService;
     private readonly IHospitalisationService _hospitalisationService;
+    private readonly IPrescriptionService _prescriptionService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<MedecinController> _logger;
     private readonly INotificationService _notificationService;
@@ -26,12 +28,14 @@ public class MedecinController : BaseApiController
     public MedecinController(
         IMedecinService medecinService,
         IHospitalisationService hospitalisationService,
+        IPrescriptionService prescriptionService,
         ApplicationDbContext context, 
         ILogger<MedecinController> logger,
         INotificationService notificationService)
     {
         _medecinService = medecinService;
         _hospitalisationService = hospitalisationService;
+        _prescriptionService = prescriptionService;
         _context = context;
         _logger = logger;
         _notificationService = notificationService;
@@ -981,16 +985,23 @@ public class MedecinController : BaseApiController
                 .ToListAsync();
 
             // Récupérer les prescriptions médicamenteuses liées à cette hospitalisation
-            // via les consultations du patient pendant l'hospitalisation
+            // Inclut: ordonnances directement liées à l'hospitalisation OU via consultation pendant l'hospitalisation
             var prescriptions = await _context.Set<PrescriptionMedicament>()
                 .Include(pm => pm.Ordonnance)
                     .ThenInclude(o => o!.Consultation)
+                .Include(pm => pm.Ordonnance)
+                    .ThenInclude(o => o!.Patient)
                 .Include(pm => pm.Medicament)
                 .Where(pm => pm.Ordonnance != null 
-                    && pm.Ordonnance.Consultation != null 
-                    && pm.Ordonnance.Consultation.IdPatient == hospitalisation.IdPatient
-                    && pm.Ordonnance.Date >= hospitalisation.DateEntree.Date
-                    && (hospitalisation.DateSortie == null || pm.Ordonnance.Date <= hospitalisation.DateSortie.Value.Date))
+                    && (
+                        // Ordonnances directement liées à l'hospitalisation
+                        pm.Ordonnance.IdHospitalisation == idAdmission
+                        // OU ordonnances via consultation pendant l'hospitalisation
+                        || (pm.Ordonnance.Consultation != null 
+                            && pm.Ordonnance.Consultation.IdPatient == hospitalisation.IdPatient
+                            && pm.Ordonnance.Date >= hospitalisation.DateEntree.Date
+                            && (hospitalisation.DateSortie == null || pm.Ordonnance.Date <= hospitalisation.DateSortie.Value.Date))
+                    ))
                 .OrderByDescending(pm => pm.Ordonnance!.Date)
                 .Select(pm => new
                 {
@@ -1674,6 +1685,7 @@ public class MedecinController : BaseApiController
 
     /// <summary>
     /// Ajouter une ordonnance pour une hospitalisation
+    /// Utilise le service centralisé IPrescriptionService
     /// </summary>
     [HttpPost("hospitalisation/{idAdmission}/ordonnance")]
     public async Task<IActionResult> AjouterOrdonnanceHospitalisation(int idAdmission, [FromBody] OrdonnanceHospitalisationRequest request)
@@ -1684,102 +1696,46 @@ public class MedecinController : BaseApiController
             if (!userId.HasValue)
                 return Unauthorized(new { message = "Utilisateur non authentifié" });
 
-            var hospitalisation = await _context.Hospitalisations
-                .Include(h => h.Patient)
-                .FirstOrDefaultAsync(h => h.IdAdmission == idAdmission && h.IdMedecin == userId.Value);
-
-            if (hospitalisation == null)
-                return NotFound(new { success = false, message = "Hospitalisation non trouvée" });
-
             if (request.Medicaments == null || !request.Medicaments.Any())
                 return BadRequest(new { success = false, message = "Aucun médicament spécifié" });
 
-            // Vérifier si l'hospitalisation a une consultation liée, sinon en créer une
-            int consultationId;
-            if (hospitalisation.IdConsultation.HasValue)
+            // Convertir les médicaments vers le format du service centralisé
+            var medicamentsRequest = request.Medicaments.Select(med => new MedicamentPrescriptionRequest
             {
-                consultationId = hospitalisation.IdConsultation.Value;
-            }
-            else
+                NomMedicament = med.NomMedicament ?? "",
+                Dosage = med.Dosage,
+                Quantite = med.Quantite ?? 1,
+                Posologie = med.Posologie,
+                VoieAdministration = med.VoieAdministration,
+                FormePharmaceutique = med.FormePharmaceutique,
+                Instructions = med.Instructions,
+                DureeTraitement = med.Duree
+            }).ToList();
+
+            // Utiliser le service centralisé
+            var result = await _prescriptionService.CreerOrdonnanceHospitalisationAsync(
+                idAdmission,
+                medicamentsRequest,
+                request.Notes,
+                userId.Value);
+
+            if (!result.Success)
             {
-                // Créer une consultation de suivi pour l'hospitalisation
-                var consultation = new Consultation
-                {
-                    IdPatient = hospitalisation.IdPatient,
-                    IdMedecin = userId.Value,
-                    DateHeure = DateTime.UtcNow,
-                    Statut = "terminee",
-                    Motif = $"Suivi hospitalisation - {hospitalisation.Motif}",
-                    TypeConsultation = "suivi_hospitalisation"
-                };
-                _context.Consultations.Add(consultation);
-                await _context.SaveChangesAsync();
-                
-                // Lier la consultation à l'hospitalisation
-                hospitalisation.IdConsultation = consultation.IdConsultation;
-                consultationId = consultation.IdConsultation;
-            }
-
-            // Créer l'ordonnance liée à la consultation
-            var ordonnance = new Ordonnance
-            {
-                Date = DateTime.UtcNow,
-                IdConsultation = consultationId,
-                Commentaire = request.Notes
-            };
-
-            _context.Ordonnances.Add(ordonnance);
-            await _context.SaveChangesAsync();
-
-            // Ajouter les prescriptions de médicaments
-            foreach (var med in request.Medicaments)
-            {
-                // Chercher le médicament par nom ou créer une entrée
-                var medicament = await _context.Medicaments
-                    .FirstOrDefaultAsync(m => m.Nom != null && m.Nom.ToLower().Contains(med.NomMedicament!.ToLower()));
-
-                int idMedicament;
-                if (medicament != null)
-                {
-                    idMedicament = medicament.IdMedicament;
-                }
-                else
-                {
-                    // Créer un nouveau médicament si non trouvé
-                    var newMed = new Medicament
-                    {
-                        Nom = med.NomMedicament,
-                        Dosage = med.Dosage,
-                        Actif = true
-                    };
-                    _context.Medicaments.Add(newMed);
-                    await _context.SaveChangesAsync();
-                    idMedicament = newMed.IdMedicament;
-                }
-
-                var prescription = new PrescriptionMedicament
-                {
-                    IdOrdonnance = ordonnance.IdOrdonnance,
-                    IdMedicament = idMedicament,
-                    Quantite = med.Quantite ?? 1,
-                    Posologie = med.Posologie,
-                    VoieAdministration = med.VoieAdministration,
-                    FormePharmaceutique = med.FormePharmaceutique,
-                    Instructions = med.Instructions,
-                    DureeTraitement = med.Duree
-                };
-                _context.PrescriptionMedicaments.Add(prescription);
+                return BadRequest(new { 
+                    success = false, 
+                    message = result.Message,
+                    erreurs = result.Erreurs
+                });
             }
 
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Ordonnance créée pour hospitalisation {IdAdmission}: {NbMedicaments} médicaments", 
+            _logger.LogInformation("Ordonnance créée pour hospitalisation {IdAdmission}: {NbMedicaments} médicaments (via service centralisé)", 
                 idAdmission, request.Medicaments.Count);
 
             return Ok(new { 
                 success = true, 
                 message = "Ordonnance enregistrée avec succès", 
-                idOrdonnance = ordonnance.IdOrdonnance 
+                idOrdonnance = result.IdOrdonnance,
+                alertes = result.Alertes
             });
         }
         catch (Exception ex)

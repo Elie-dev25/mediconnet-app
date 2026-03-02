@@ -151,12 +151,12 @@
         <div class="form-row">
           <div class="form-group">
             <label>Prenom *</label>
-            <input type="text" formControlName="prenom" placeholder="Prenom">
+            <input type="text" formControlName="prenom" placeholder="Prenom" appVoiceInput>
             <span class="error-text" *ngIf="hasError('prenom')">Prenom requis (min 2 caracteres)</span>
           </div>
           <div class="form-group">
             <label>Nom *</label>
-            <input type="text" formControlName="nom" placeholder="Nom">
+            <input type="text" formControlName="nom" placeholder="Nom" appVoiceInput>
             <span class="error-text" *ngIf="hasError('nom')">Nom requis (min 2 caracteres)</span>
           </div>
         </div>
@@ -215,7 +215,7 @@
           </div>
           <div class="form-group">
             <label>Numero d'ordre</label>
-            <input type="text" formControlName="numeroOrdre" placeholder="Ex: ORD-12345">
+            <input type="text" formControlName="numeroOrdre" placeholder="Ex: ORD-12345" appVoiceInput>
           </div>
         </div>
 
@@ -235,7 +235,7 @@
             </div>
             <div class="form-group">
               <label>Matricule</label>
-              <input type="text" formControlName="matricule" placeholder="Ex: INF-12345">
+              <input type="text" formControlName="matricule" placeholder="Ex: INF-12345" appVoiceInput>
             </div>
           </div>
         </div>
@@ -256,12 +256,12 @@
             </div>
             <div class="form-group">
               <label>Matricule</label>
-              <input type="text" formControlName="matricule" placeholder="Ex: LAB-12345">
+              <input type="text" formControlName="matricule" placeholder="Ex: LAB-12345" appVoiceInput>
             </div>
           </div>
           <div class="form-group">
             <label>Spécialisation</label>
-            <input type="text" formControlName="specialisation" placeholder="Ex: Microbiologie, Biochimie, Hématologie...">
+            <input type="text" formControlName="specialisation" placeholder="Ex: Microbiologie, Biochimie, Hématologie..." appVoiceInput>
           </div>
         </div>
       </div>

@@ -276,7 +276,8 @@
           <textarea 
             [(ngModel)]="cancelReason" 
             rows="3" 
-            placeholder="Veuillez indiquer la raison de l'annulation"></textarea>
+            placeholder="Veuillez indiquer la raison de l'annulation"
+            appVoiceInput></textarea>
         </div>
         <div class="alert alert-error" *ngIf="error">{{ error }}</div>
       </div>
@@ -309,7 +310,8 @@
           <textarea 
             [(ngModel)]="refuserMotif" 
             rows="3" 
-            placeholder="Indiquez la raison si vous le souhaitez"></textarea>
+            placeholder="Indiquez la raison si vous le souhaitez"
+            appVoiceInput></textarea>
         </div>
       </div>
       <div class="modal-footer">

@@ -55,4 +55,8 @@ public class Medicament
 
     [Column("temperature_conservation")]
     public string? TemperatureConservation { get; set; }
+
+    // Navigation - Formes pharmaceutiques et voies d'administration
+    public virtual ICollection<MedicamentForme> MedicamentFormes { get; set; } = new List<MedicamentForme>();
+    public virtual ICollection<MedicamentVoie> MedicamentVoies { get; set; } = new List<MedicamentVoie>();
 }

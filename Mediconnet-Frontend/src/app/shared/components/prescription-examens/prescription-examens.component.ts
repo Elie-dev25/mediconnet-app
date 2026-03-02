@@ -38,7 +38,9 @@ export interface CategorieExamen {
 })
 export class PrescriptionExamensComponent implements OnInit {
   @Input() examens: ExamenPrescription[] = [];
+  @Input() collapsed = true;
   @Output() examensChange = new EventEmitter<ExamenPrescription[]>();
+  @Output() collapsedChange = new EventEmitter<boolean>();
 
   laboratoires: LaboratoireDto[] = [];
   categories: CategorieExamen[] = [];
@@ -137,7 +139,7 @@ export class PrescriptionExamensComponent implements OnInit {
       type: type.value,
       label: type.label,
       icon: type.icon,
-      expanded: true,
+      expanded: false,
       examens: (this.examensParType[type.value] || []).map(nom => ({
         nom,
         selected: false,
@@ -174,6 +176,11 @@ export class PrescriptionExamensComponent implements OnInit {
 
   toggleCategory(category: CategorieExamen): void {
     category.expanded = !category.expanded;
+  }
+
+  toggleCollapsed(): void {
+    this.collapsed = !this.collapsed;
+    this.collapsedChange.emit(this.collapsed);
   }
 
   toggleExamen(examen: ExamenCheckboxItem): void {

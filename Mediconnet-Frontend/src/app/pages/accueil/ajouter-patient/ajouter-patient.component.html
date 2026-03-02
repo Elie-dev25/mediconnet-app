@@ -94,14 +94,14 @@
               <lucide-icon name="user" [size]="16"></lucide-icon>
               Nom <span class="required">*</span>
             </label>
-            <input type="text" id="nom" formControlName="nom" placeholder="Nom de famille">
+            <input type="text" id="nom" formControlName="nom" placeholder="Nom de famille" appVoiceInput>
           </div>
           <div class="form-group">
             <label for="prenom">
               <lucide-icon name="user" [size]="16"></lucide-icon>
               Prénom <span class="required">*</span>
             </label>
-            <input type="text" id="prenom" formControlName="prenom" placeholder="Prénom">
+            <input type="text" id="prenom" formControlName="prenom" placeholder="Prénom" appVoiceInput>
           </div>
         </div>
 
@@ -149,7 +149,7 @@
             <lucide-icon name="map-pin" [size]="16"></lucide-icon>
             Adresse <span class="required">*</span>
           </label>
-          <textarea id="adresse" formControlName="adresse" rows="2" placeholder="Adresse complète"></textarea>
+          <textarea id="adresse" formControlName="adresse" rows="2" placeholder="Adresse complète" appVoiceInput></textarea>
         </div>
 
         <div class="form-row">
@@ -158,14 +158,14 @@
               <lucide-icon name="globe" [size]="16"></lucide-icon>
               Nationalité
             </label>
-            <input type="text" id="nationalite" formControlName="nationalite">
+            <input type="text" id="nationalite" formControlName="nationalite" appVoiceInput>
           </div>
           <div class="form-group">
             <label for="regionOrigine">
               <lucide-icon name="map" [size]="16"></lucide-icon>
               Région d'origine
             </label>
-            <input type="text" id="regionOrigine" formControlName="regionOrigine" placeholder="Ex: Centre, Littoral...">
+            <input type="text" id="regionOrigine" formControlName="regionOrigine" placeholder="Ex: Centre, Littoral..." appVoiceInput>
           </div>
         </div>
 
@@ -175,7 +175,7 @@
               <lucide-icon name="briefcase" [size]="16"></lucide-icon>
               Profession
             </label>
-            <input type="text" id="profession" formControlName="profession" placeholder="Profession actuelle">
+            <input type="text" id="profession" formControlName="profession" placeholder="Profession actuelle" appVoiceInput>
           </div>
           <div class="form-group">
             <label for="situationMatrimoniale">
@@ -242,7 +242,8 @@
             *ngIf="medicalInfoForm.get('operationsChirurgicales')?.value === true"
             formControlName="operationsDetails" 
             rows="2" 
-            placeholder="Précisez les opérations...">
+            placeholder="Précisez les opérations..."
+            appVoiceInput>
           </textarea>
         </div>
 
@@ -265,7 +266,8 @@
             *ngIf="medicalInfoForm.get('allergiesConnues')?.value === true"
             formControlName="allergiesDetails" 
             rows="2" 
-            placeholder="Précisez les allergies...">
+            placeholder="Précisez les allergies..."
+            appVoiceInput>
           </textarea>
         </div>
 
@@ -288,7 +290,8 @@
             *ngIf="medicalInfoForm.get('antecedentsFamiliaux')?.value === true"
             formControlName="antecedentsFamiliauxDetails" 
             rows="2" 
-            placeholder="Précisez les antécédents...">
+            placeholder="Précisez les antécédents..."
+            appVoiceInput>
           </textarea>
         </div>
       </form>
@@ -368,7 +371,7 @@
               Personne à contacter
             </label>
             <input type="text" id="personneContact" formControlName="personneContact" 
-                   placeholder="Nom et prénom">
+                   placeholder="Nom et prénom" appVoiceInput>
           </div>
           <div class="form-group">
             <label for="numeroContact">
@@ -427,7 +430,7 @@
                 N° Carte d'assurance
               </label>
               <input type="text" id="numeroCarteAssurance" formControlName="numeroCarteAssurance" 
-                     placeholder="Ex: ASS-2024-001234">
+                     placeholder="Ex: ASS-2024-001234" appVoiceInput>
             </div>
             <div class="form-group">
               <label for="couvertureAssurance">

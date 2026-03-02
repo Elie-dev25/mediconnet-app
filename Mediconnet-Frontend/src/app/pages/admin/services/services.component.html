@@ -135,7 +135,8 @@
           <input 
             type="text" 
             formControlName="nomService" 
-            placeholder="Ex: Cardiologie, Pédiatrie...">
+            placeholder="Ex: Cardiologie, Pédiatrie..."
+            appVoiceInput>
           <span class="error-text" *ngIf="hasError('nomService')">
             Le nom est requis (2-150 caractères)
           </span>
@@ -150,7 +151,8 @@
           <textarea 
             formControlName="description" 
             placeholder="Description du service..."
-            rows="3"></textarea>
+            rows="3"
+            appVoiceInput></textarea>
           <span class="error-text" *ngIf="hasError('description')">
             Maximum 500 caractères
           </span>

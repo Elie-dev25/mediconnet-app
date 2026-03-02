@@ -1,0 +1,53 @@
+<div class="creneaux-selector" [class]="'variant-' + variant">
+  <!-- Chargement -->
+  <div class="creneaux-loading" *ngIf="isLoading">
+    <lucide-icon name="loader-2" [size]="20" class="spinning"></lucide-icon>
+    <span>Chargement des créneaux...</span>
+  </div>
+
+  <!-- Contenu principal -->
+  <ng-container *ngIf="!isLoading">
+    <!-- Légende -->
+    <div class="creneaux-legende" *ngIf="showLegend && creneaux.length > 0">
+      <div class="legende-item" *ngIf="statsCreneaux.disponible > 0">
+        <span class="legende-dot disponible"></span>
+        <span>Disponible ({{ statsCreneaux.disponible }})</span>
+      </div>
+      <div class="legende-item" *ngIf="statsCreneaux.occupe > 0">
+        <span class="legende-dot occupe"></span>
+        <span>Occupé ({{ statsCreneaux.occupe }})</span>
+      </div>
+      <div class="legende-item" *ngIf="statsCreneaux.passe > 0">
+        <span class="legende-dot passe"></span>
+        <span>Passé ({{ statsCreneaux.passe }})</span>
+      </div>
+      <div class="legende-item" *ngIf="statsCreneaux.indisponible > 0">
+        <span class="legende-dot indisponible"></span>
+        <span>Indisponible ({{ statsCreneaux.indisponible }})</span>
+      </div>
+    </div>
+
+    <!-- Grille des créneaux -->
+    <div class="creneaux-grid" *ngIf="creneaux.length > 0">
+      <button type="button" 
+              *ngFor="let creneau of creneaux"
+              [class]="getCreneauClass(creneau)"
+              [disabled]="!creneau.selectionnable"
+              (click)="selectCreneau(creneau)">
+        {{ creneau.heureDebut }}
+      </button>
+    </div>
+
+    <!-- Aucun créneau -->
+    <div class="creneaux-empty" *ngIf="creneaux.length === 0">
+      <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+      <p>{{ emptyMessage }}</p>
+    </div>
+
+    <!-- Info créneau sélectionné -->
+    <div class="creneau-selected-info" *ngIf="showSelectedInfo && selectedCreneau">
+      <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
+      <span>Créneau sélectionné : <strong>{{ formatSelectedTime() }}</strong></span>
+    </div>
+  </ng-container>
+</div>

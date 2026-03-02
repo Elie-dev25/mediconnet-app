@@ -156,21 +156,16 @@
               <lucide-icon name="info" [size]="16"></lucide-icon>
               Sélectionnez une date pour voir les créneaux disponibles
             </div>
-            <div class="slots-grid" *ngIf="selectedDate">
-              <button 
-                *ngFor="let creneau of creneaux"
-                class="slot-btn"
-                [class.available]="creneau.disponible"
-                [class.unavailable]="!creneau.disponible"
-                [class.selected]="selectedCreneau === creneau"
-                [disabled]="!creneau.disponible"
-                (click)="selectCreneau(creneau)">
-                {{ formatTime(creneau.dateHeure) }}
-              </button>
-              <div class="no-slots" *ngIf="creneaux.length === 0">
-                <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
-                Aucun créneau disponible ce jour
-              </div>
+            <div *ngIf="selectedDate">
+              <app-creneaux-selector
+                [creneaux]="creneauxUnifies"
+                [selectedCreneau]="selectedCreneauUnifie"
+                [isLoading]="isLoadingCreneaux"
+                [showLegend]="true"
+                [showSelectedInfo]="true"
+                [emptyMessage]="'Aucun créneau disponible ce jour'"
+                (creneauSelected)="onCreneauUnifieSelected($event)">
+              </app-creneaux-selector>
             </div>
           </div>
         </div>
@@ -303,11 +298,11 @@
           </div>
           <div class="form-group">
             <label>Motif (optionnel)</label>
-            <input type="text" formControlName="motif" placeholder="Ex: Contrôle annuel">
+            <input type="text" formControlName="motif" placeholder="Ex: Contrôle annuel" appVoiceInput>
           </div>
           <div class="form-group">
             <label>Notes (optionnel)</label>
-            <textarea formControlName="notes" rows="3" placeholder="Informations complémentaires pour le médecin"></textarea>
+            <textarea formControlName="notes" rows="3" placeholder="Informations complémentaires pour le médecin" appVoiceInput></textarea>
           </div>
         </form>
 
@@ -467,7 +462,7 @@
         <!-- Adresse -->
         <div class="form-group" *ngIf="isFieldMissing('adresse')">
           <label>{{ getFieldLabel('adresse') }} *</label>
-          <input type="text" formControlName="adresse" class="form-input" placeholder="Votre adresse"
+          <input type="text" formControlName="adresse" class="form-input" placeholder="Votre adresse" appVoiceInput
                  [class.is-error]="profileForm.get('adresse')?.invalid && profileForm.get('adresse')?.touched">
           <span class="error-message" *ngIf="profileForm.get('adresse')?.invalid && profileForm.get('adresse')?.touched">
             Ce champ est requis
@@ -490,7 +485,7 @@
         <!-- Profession -->
         <div class="form-group" *ngIf="isFieldMissing('profession')">
           <label>{{ getFieldLabel('profession') }} *</label>
-          <input type="text" formControlName="profession" class="form-input" placeholder="Votre profession"
+          <input type="text" formControlName="profession" class="form-input" placeholder="Votre profession" appVoiceInput
                  [class.is-error]="profileForm.get('profession')?.invalid && profileForm.get('profession')?.touched">
           <span class="error-message" *ngIf="profileForm.get('profession')?.invalid && profileForm.get('profession')?.touched">
             Ce champ est requis
@@ -500,7 +495,7 @@
         <!-- Personne à contacter -->
         <div class="form-group" *ngIf="isFieldMissing('personneContact')">
           <label>{{ getFieldLabel('personneContact') }} *</label>
-          <input type="text" formControlName="personneContact" class="form-input" placeholder="Nom de la personne"
+          <input type="text" formControlName="personneContact" class="form-input" placeholder="Nom de la personne" appVoiceInput
                  [class.is-error]="profileForm.get('personneContact')?.invalid && profileForm.get('personneContact')?.touched">
           <span class="error-message" *ngIf="profileForm.get('personneContact')?.invalid && profileForm.get('personneContact')?.touched">
             Ce champ est requis
@@ -520,7 +515,7 @@
         <!-- Nationalité -->
         <div class="form-group" *ngIf="isFieldMissing('nationalite')">
           <label>{{ getFieldLabel('nationalite') }} *</label>
-          <input type="text" formControlName="nationalite" class="form-input" placeholder="Ex: Camerounais"
+          <input type="text" formControlName="nationalite" class="form-input" placeholder="Ex: Camerounais" appVoiceInput
                  [class.is-error]="profileForm.get('nationalite')?.invalid && profileForm.get('nationalite')?.touched">
           <span class="error-message" *ngIf="profileForm.get('nationalite')?.invalid && profileForm.get('nationalite')?.touched">
             Ce champ est requis
@@ -579,7 +574,7 @@
         <!-- Détails allergies -->
         <div class="form-group" *ngIf="isFieldMissing('allergiesDetails')">
           <label>{{ getFieldLabel('allergiesDetails') }} *</label>
-          <textarea formControlName="allergiesDetails" class="form-input" placeholder="Décrivez vos allergies..." rows="3"
+          <textarea formControlName="allergiesDetails" class="form-input" placeholder="Décrivez vos allergies..." rows="3" appVoiceInput
                  [class.is-error]="profileForm.get('allergiesDetails')?.invalid && profileForm.get('allergiesDetails')?.touched"></textarea>
           <span class="error-message" *ngIf="profileForm.get('allergiesDetails')?.invalid && profileForm.get('allergiesDetails')?.touched">
             Ce champ est requis

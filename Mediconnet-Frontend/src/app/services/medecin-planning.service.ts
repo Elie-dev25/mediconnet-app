@@ -79,6 +79,11 @@ export interface RdvPlanningDto {
   motif?: string;
   typeRdv: string;
   statut: string;
+  // Informations d'orientation (si RDV créé depuis une orientation)
+  idOrientation?: number;
+  motifOrientation?: string;
+  medecinOrienteur?: string;
+  typeOrientation?: string;
 }
 
 export interface PlanningDashboardDto {

@@ -5,6 +5,7 @@
       <lucide-icon name="user" [size]="20"></lucide-icon>
       <span>{{ patientNom }}</span>
     </div>
+
     <button class="btn-close" (click)="onCancel()">
       <lucide-icon name="x" [size]="20"></lucide-icon>
     </button>
@@ -15,6 +16,7 @@
     <div class="step" *ngFor="let etape of etapes; let i = index"
          [class.active]="etapeActuelle === etape"
          [class.completed]="isEtapeComplete(etape)"
+         [class.locked]="etape === 'examen_gynecologique' && !isGynecoConsultation()"
          (click)="goToEtape(etape)">
       <div class="step-number">
         <span *ngIf="!isEtapeComplete(etape)">{{ i + 1 }}</span>
@@ -23,6 +25,10 @@
       <div class="step-label">
         <span *ngIf="etape === 'anamnese'">Anamnèse</span>
         <span *ngIf="etape === 'examen_clinique'">Examen Clinique</span>
+        <span *ngIf="etape === 'examen_gynecologique'">
+          Examen Gynécologique
+          <small class="step-hint" *ngIf="!isGynecoConsultation()">(gynécologue uniquement)</small>
+        </span>
         <span *ngIf="etape === 'diagnostic'">Diagnostic</span>
         <span *ngIf="etape === 'plan_traitement'">Traitement</span>
         <span *ngIf="etape === 'conclusion'">Conclusion</span>
@@ -104,51 +110,62 @@
             <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.motifConsultation')"></span>
           </button>
         </div>
-        <textarea formControlName="motifConsultation" rows="3" placeholder="Décrivez le motif..."></textarea>
+        <textarea formControlName="motifConsultation" rows="3" placeholder="Décrivez le motif..." appVoiceInput></textarea>
       </div>
 
-      <!-- Réponses déjà fournies par le patient (lecture seule) -->
-      <div class="form-section" *ngIf="questionsDejaRepondues.length > 0">
+      <!-- Formulaire questions (éditable, prérempli avec réponses patient) -->
+      <div class="form-section">
         <div class="section-header">
           <h4>
-            <lucide-icon name="check-circle-2" [size]="16" class="icon-success"></lucide-icon>
-            Réponses du patient
+            <lucide-icon name="clipboard-list" [size]="16"></lucide-icon>
+            Questions prédéfinies
           </h4>
-          <span class="badge-filled">Questionnaire rempli</span>
+          <span class="badge-filled badge-success" *ngIf="hasReponsesPatient">
+            <lucide-icon name="check-circle-2" [size]="12"></lucide-icon>
+            Prérempli par le patient
+          </span>
         </div>
-        <div class="reponses-patient-list">
-          <div class="reponse-patient-item" *ngFor="let qr of questionsDejaRepondues">
-            <div class="reponse-question">
-              <lucide-icon name="help-circle" [size]="14"></lucide-icon>
-              {{ qr.question }}
-            </div>
-            <div class="reponse-valeur">{{ qr.reponse }}</div>
-          </div>
+        
+        <!-- Indicateur réponses patient -->
+        <div class="patient-responses-info" *ngIf="hasReponsesPatient">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          <span>Les réponses ci-dessous ont été saisies par le patient. Vous pouvez les modifier ou les compléter si nécessaire.</span>
         </div>
-      </div>
 
-      <!-- Formulaire questions (seulement si pas encore rempli) -->
-      <div class="form-section" *ngIf="questionsDejaRepondues.length === 0">
-        <div class="section-header">
-          <h4>Questions prédéfinies</h4>
-        </div>
         <div formArrayName="questionsReponses" *ngIf="questionsPredefinies.length > 0">
-          <div class="question-item" *ngFor="let q of questionsArray.controls; let i = index" [formGroupName]="i">
+          <div class="question-item" *ngFor="let q of questionsArray.controls; let i = index" [formGroupName]="i"
+               [class.has-patient-response]="q.get('reponsePatientOriginale')?.value">
             <div class="question-header">
               <label>
                 <lucide-icon name="help-circle" [size]="14"></lucide-icon>
                 {{ q.get('question')?.value }}
               </label>
-              <button type="button" class="voice-btn voice-btn-sm" *ngIf="isVoiceSupported && q.get('type')?.value === 'texte'"
-                      [class.recording]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"
-                      (click)="toggleVoiceInput('anamnese.questionsReponses.' + i + '.reponse')"
-                      title="Dictée vocale">
-                <lucide-icon [name]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
-                <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"></span>
-              </button>
+              <div class="question-actions">
+                <span class="patient-badge" *ngIf="q.get('reponsePatientOriginale')?.value" 
+                      title="Réponse originale du patient: {{ q.get('reponsePatientOriginale')?.value }}">
+                  <lucide-icon name="user" [size]="12"></lucide-icon>
+                  Patient
+                </span>
+                <button type="button" class="voice-btn voice-btn-sm" *ngIf="isVoiceSupported && q.get('type')?.value === 'texte'"
+                        [class.recording]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"
+                        (click)="toggleVoiceInput('anamnese.questionsReponses.' + i + '.reponse')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                  <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.questionsReponses.' + i + '.reponse')"></span>
+                </button>
+              </div>
             </div>
             <div *ngIf="q.get('type')?.value === 'texte'">
-              <textarea formControlName="reponse" rows="2" placeholder="Réponse du patient..."></textarea>
+              <textarea formControlName="reponse" rows="2" 
+                        [placeholder]="q.get('reponsePatientOriginale')?.value ? 'Modifier la réponse du patient...' : 'Réponse du patient...'"
+                        [class.modified]="q.get('reponse')?.value !== q.get('reponsePatientOriginale')?.value && q.get('reponsePatientOriginale')?.value"></textarea>
+              <div class="original-response" *ngIf="q.get('reponse')?.value !== q.get('reponsePatientOriginale')?.value && q.get('reponsePatientOriginale')?.value">
+                <lucide-icon name="history" [size]="12"></lucide-icon>
+                <span>Réponse originale: {{ q.get('reponsePatientOriginale')?.value }}</span>
+                <button type="button" class="btn-restore" (click)="restorePatientResponse(i)" title="Restaurer la réponse du patient">
+                  <lucide-icon name="undo-2" [size]="12"></lucide-icon>
+                </button>
+              </div>
             </div>
             <div *ngIf="q.get('type')?.value === 'choix'" class="radio-group">
               <label *ngFor="let opt of q.get('options')?.value" class="radio-option">
@@ -178,7 +195,7 @@
           <div class="form-group">
             <label>Nouvelle question</label>
             <input type="text" [(ngModel)]="newQuestionText" [ngModelOptions]="{standalone: true}"
-                   placeholder="Saisissez votre question..." (keyup.enter)="addQuestionLibre()">
+                   placeholder="Saisissez votre question..." (keyup.enter)="addQuestionLibre()" appVoiceInput>
           </div>
           <button type="button" class="btn-confirm-add" (click)="addQuestionLibre()" [disabled]="!newQuestionText.trim()">
             <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
@@ -226,7 +243,7 @@
             <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.histoireMaladie')"></span>
           </button>
         </div>
-        <textarea formControlName="histoireMaladie" rows="4" placeholder="Décrivez l'évolution..."></textarea>
+        <textarea formControlName="histoireMaladie" rows="4" placeholder="Décrivez l'évolution..." appVoiceInput></textarea>
       </div>
 
       <!-- Note: Les antécédents et allergies sont déjà dans le dossier patient -->
@@ -242,7 +259,7 @@
             <span class="pulse-ring" *ngIf="isVoiceActive('anamnese.traitementsEnCours')"></span>
           </button>
         </div>
-        <textarea formControlName="traitementsEnCours" rows="2" placeholder="Médicaments actuellement pris..."></textarea>
+        <textarea formControlName="traitementsEnCours" rows="2" placeholder="Médicaments actuellement pris..." appVoiceInput></textarea>
       </div>
     </div>
 
@@ -311,7 +328,7 @@
               <lucide-icon [name]="isVoiceActive('examenClinique.inspection') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
             </button>
           </div>
-          <textarea formControlName="inspection" rows="2" placeholder="Aspect général, peau, muqueuses, coloration..."></textarea>
+          <textarea formControlName="inspection" rows="2" placeholder="Aspect général, peau, muqueuses, coloration..." appVoiceInput></textarea>
         </div>
 
         <div class="form-group">
@@ -324,7 +341,7 @@
               <lucide-icon [name]="isVoiceActive('examenClinique.palpation') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
             </button>
           </div>
-          <textarea formControlName="palpation" rows="2" placeholder="Abdomen, ganglions, masses..."></textarea>
+          <textarea formControlName="palpation" rows="2" placeholder="Abdomen, ganglions, masses..." appVoiceInput></textarea>
         </div>
 
         <div class="form-group">
@@ -337,7 +354,7 @@
               <lucide-icon [name]="isVoiceActive('examenClinique.auscultation') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
             </button>
           </div>
-          <textarea formControlName="auscultation" rows="2" placeholder="Cœur, poumons, abdomen..."></textarea>
+          <textarea formControlName="auscultation" rows="2" placeholder="Cœur, poumons, abdomen..." appVoiceInput></textarea>
         </div>
 
         <div class="form-group">
@@ -350,7 +367,7 @@
               <lucide-icon [name]="isVoiceActive('examenClinique.percussion') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
             </button>
           </div>
-          <textarea formControlName="percussion" rows="2" placeholder="Thorax, abdomen..."></textarea>
+          <textarea formControlName="percussion" rows="2" placeholder="Thorax, abdomen..." appVoiceInput></textarea>
         </div>
 
         <div class="form-group">
@@ -363,9 +380,79 @@
               <lucide-icon [name]="isVoiceActive('examenClinique.autresObservations') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
             </button>
           </div>
-          <textarea formControlName="autresObservations" rows="2" placeholder="Observations complémentaires..."></textarea>
+          <textarea formControlName="autresObservations" rows="2" placeholder="Observations complémentaires..." appVoiceInput></textarea>
         </div>
       </div>
+    </div>
+
+    <!-- ÉTAPE 3: EXAMEN GYNÉCOLOGIQUE -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'examen_gynecologique'" [formGroup]="examenGynecologiqueForm">
+      <div class="etape-header">
+        <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Examen Gynécologique</h3>
+      </div>
+
+      <div class="locked-panel" *ngIf="!isGynecoConsultation()">
+        <lucide-icon name="shield-alert" [size]="32"></lucide-icon>
+        <div>
+          <h4>Étape réservée aux consultations gynécologiques</h4>
+          <p>Cette étape devient disponible lorsque la consultation est associée à la spécialité gynécologie.</p>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isGynecoConsultation()">
+        <div class="form-section gyneco-section">
+          <div class="gyneco-grid">
+            <div class="form-group">
+              <div class="field-header">
+                <label>Inspection externe</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenGynecologique.inspectionExterne')"
+                        (click)="toggleVoiceInput('examenGynecologique.inspectionExterne')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenGynecologique.inspectionExterne') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="inspectionExterne" rows="4" placeholder="Aspect des organes externes, lésions, sécrétions..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Examen au spéculum</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenGynecologique.examenSpeculum')"
+                        (click)="toggleVoiceInput('examenGynecologique.examenSpeculum')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenGynecologique.examenSpeculum') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="examenSpeculum" rows="4" placeholder="État du col, sécrétions, observations spécifiques..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Toucher vaginal</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenGynecologique.toucherVaginal')"
+                        (click)="toggleVoiceInput('examenGynecologique.toucherVaginal')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenGynecologique.toucherVaginal') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="toucherVaginal" rows="4" placeholder="Volume utérin, mobilité, masses, douleurs..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Autres observations</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenGynecologique.autresObservations')"
+                        (click)="toggleVoiceInput('examenGynecologique.autresObservations')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenGynecologique.autresObservations') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="autresObservations" rows="4" placeholder="Notes complémentaires, examens adjunctifs..." appVoiceInput></textarea>
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </div>
 
     <!-- ÉTAPE 3: DIAGNOSTIC -->
@@ -589,7 +676,7 @@
             <lucide-icon [name]="isVoiceActive('diagnostic.hypothesesDiagnostiques') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="hypothesesDiagnostiques" rows="3" placeholder="Hypothèses à explorer..."></textarea>
+        <textarea formControlName="hypothesesDiagnostiques" rows="3" placeholder="Hypothèses à explorer..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -602,7 +689,7 @@
             <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticPrincipal') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="diagnosticPrincipal" rows="3" placeholder="Diagnostic établi..."></textarea>
+        <textarea formControlName="diagnosticPrincipal" rows="3" placeholder="Diagnostic établi..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -615,7 +702,7 @@
             <lucide-icon [name]="isVoiceActive('diagnostic.diagnosticsSecondaires') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="diagnosticsSecondaires" rows="2" placeholder="Diagnostics associés..."></textarea>
+        <textarea formControlName="diagnosticsSecondaires" rows="2" placeholder="Diagnostics associés..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -628,7 +715,7 @@
             <lucide-icon [name]="isVoiceActive('diagnostic.notesCliniques') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="notesCliniques" rows="3" placeholder="Remarques complémentaires..."></textarea>
+        <textarea formControlName="notesCliniques" rows="3" placeholder="Remarques complémentaires..." appVoiceInput></textarea>
       </div>
     </div>
 
@@ -676,7 +763,7 @@
             <lucide-icon [name]="isVoiceActive('planTraitement.explicationDiagnostic') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="explicationDiagnostic" rows="3" placeholder="Explication donnée au patient..."></textarea>
+        <textarea formControlName="explicationDiagnostic" rows="3" placeholder="Explication donnée au patient..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -689,7 +776,7 @@
             <lucide-icon [name]="isVoiceActive('planTraitement.optionsTraitement') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="optionsTraitement" rows="3" placeholder="Options thérapeutiques proposées..."></textarea>
+        <textarea formControlName="optionsTraitement" rows="3" placeholder="Options thérapeutiques proposées..." appVoiceInput></textarea>
       </div>
 
       <!-- Ordonnance médicaments -->
@@ -719,7 +806,8 @@
                          placeholder="Rechercher un médicament..."
                          (input)="onMedicamentSearch(i, $event)"
                          (blur)="hideMedicamentSuggestions()"
-                         autocomplete="off">
+                         autocomplete="off"
+                         appVoiceInput>
                   <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
                     <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
                          (mousedown)="selectMedicament(i, suggestion)">
@@ -731,7 +819,7 @@
                 </div>
                 <div class="form-group flex-1">
                   <label>Dosage</label>
-                  <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g...">
+                  <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g..." appVoiceInput>
                 </div>
               </div>
 
@@ -746,9 +834,9 @@
                 </div>
                 <div class="form-group flex-1">
                   <label>Forme pharmaceutique</label>
-                  <select formControlName="formePharmaceutique">
-                    <option value="">-- Sélectionner --</option>
-                    <option *ngFor="let f of formesPharmaceutiques" [value]="f">{{ f }}</option>
+                  <select formControlName="formePharmaceutique" [class.loading]="isLoadingFormesVoies(i)">
+                    <option value="">{{ isLoadingFormesVoies(i) ? 'Chargement...' : '-- Sélectionner --' }}</option>
+                    <option *ngFor="let f of getFormesForMedicament(i)" [value]="f">{{ f }}</option>
                   </select>
                 </div>
               </div>
@@ -757,14 +845,14 @@
               <div class="form-row">
                 <div class="form-group flex-1">
                   <label>Voie d'administration</label>
-                  <select formControlName="voieAdministration">
-                    <option value="">-- Sélectionner --</option>
-                    <option *ngFor="let v of voiesAdministration" [value]="v">{{ v }}</option>
+                  <select formControlName="voieAdministration" [class.loading]="isLoadingFormesVoies(i)">
+                    <option value="">{{ isLoadingFormesVoies(i) ? 'Chargement...' : '-- Sélectionner --' }}</option>
+                    <option *ngFor="let v of getVoiesForMedicament(i)" [value]="v">{{ v }}</option>
                   </select>
                 </div>
                 <div class="form-group flex-1">
                   <label>Durée du traitement</label>
-                  <input type="text" formControlName="duree" placeholder="Ex: 7 jours, 1 mois...">
+                  <input type="text" formControlName="duree" placeholder="Ex: 7 jours, 1 mois..." appVoiceInput>
                 </div>
                 <div class="form-group flex-half">
                   <label>Quantité</label>
@@ -777,7 +865,7 @@
                 <div class="form-group flex-1">
                   <label>Instructions particulières</label>
                   <textarea formControlName="instructions" rows="2" 
-                            placeholder="Précautions, interactions, conseils..."></textarea>
+                            placeholder="Précautions, interactions, conseils..." appVoiceInput></textarea>
                 </div>
               </div>
             </div>
@@ -790,127 +878,218 @@
       <div class="form-section">
         <app-prescription-examens
           [examens]="examensPrescriptions"
-          (examensChange)="onExamensChange($event)">
+          [collapsed]="examensCollapsed"
+          (examensChange)="onExamensChange($event)"
+          (collapsedChange)="examensCollapsed = $event">
         </app-prescription-examens>
       </div>
 
-      <!-- Orientation spécialiste -->
-      <div class="form-section orientation-section">
-        <div class="section-header">
-          <h4><lucide-icon name="user-plus" [size]="16"></lucide-icon> Orientation vers spécialiste</h4>
-          <button type="button" class="btn-add-orientation" (click)="toggleOrientationForm()">
-            <lucide-icon [name]="showOrientationForm ? 'x' : 'plus'" [size]="16"></lucide-icon>
-            {{ showOrientationForm ? 'Annuler' : 'Ajouter une orientation' }}
+      <!-- Orientations / Recommandations -->
+      <div class="form-section orientations-section">
+        <div class="field-header">
+          <h4><lucide-icon name="route" [size]="16"></lucide-icon> Orientations / Recommandations</h4>
+          <button type="button" class="btn-add" (click)="toggleOrientationForm()">
+            <lucide-icon [name]="showOrientationForm ? 'x' : 'plus'" [size]="14"></lucide-icon>
+            {{ showOrientationForm ? 'Annuler' : 'Ajouter' }}
           </button>
         </div>
 
         <!-- Formulaire d'ajout d'orientation -->
-        <div class="orientation-form" *ngIf="showOrientationForm" [formGroup]="orientationForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Type de sélection</label>
-              <select [(ngModel)]="orientationMode" [ngModelOptions]="{standalone: true}" (change)="onOrientationModeChange()">
-                <option value="liste">Choisir dans la liste</option>
-                <option value="manuel">Saisie manuelle</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Mode liste : sélection depuis la BD -->
-          <div class="form-row" *ngIf="orientationMode === 'liste'">
-            <div class="form-group">
-              <label>Spécialité *</label>
-              <select formControlName="idSpecialite" (change)="onSpecialiteChange($event)">
-                <option [ngValue]="null">-- Sélectionner une spécialité --</option>
-                <option *ngFor="let spec of specialites" [ngValue]="spec.idSpecialite">
-                  {{ spec.nomSpecialite }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Médecin (optionnel)</label>
-              <select formControlName="idMedecinOriente">
-                <option [ngValue]="null">-- Tout médecin disponible --</option>
-                <option *ngFor="let med of medecinsSpecialite" [ngValue]="med.idUser">
-                  Dr. {{ med.prenom }} {{ med.nom }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Mode manuel : saisie libre -->
-          <div class="form-row" *ngIf="orientationMode === 'manuel'">
-            <div class="form-group">
-              <label>Spécialité (saisie libre) *</label>
-              <input type="text" formControlName="specialiteManuelle" placeholder="Ex: Cardiologie, Neurologie...">
-            </div>
-            <div class="form-group">
-              <label>Nom du médecin (optionnel)</label>
-              <input type="text" formControlName="medecinManuel" placeholder="Dr. Nom Prénom...">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Motif de l'orientation *</label>
-            <textarea formControlName="motif" rows="2" placeholder="Raison de l'orientation vers ce spécialiste..."></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Notes complémentaires</label>
-              <input type="text" formControlName="notes" placeholder="Informations supplémentaires...">
-            </div>
-            <div class="form-group checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" formControlName="urgence">
-                <span class="checkmark"></span>
-                Orientation urgente
-              </label>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-confirm-orientation" (click)="addOrientation()" 
-                    [disabled]="!isOrientationFormValid()">
-              <lucide-icon name="check" [size]="16"></lucide-icon> Confirmer l'orientation
+        <div class="orientation-form" *ngIf="showOrientationForm">
+          <!-- Type d'orientation -->
+          <div class="orientation-type-selector">
+            <button type="button" class="orientation-type-btn" 
+                    [class.active]="orientationType === 'medecin_interne'" 
+                    (click)="orientationType = 'medecin_interne'">
+              <lucide-icon name="user-check" [size]="16"></lucide-icon> Médecin interne
+            </button>
+            <button type="button" class="orientation-type-btn" 
+                    [class.active]="orientationType === 'medecin_externe'" 
+                    (click)="orientationType = 'medecin_externe'">
+              <lucide-icon name="user" [size]="16"></lucide-icon> Médecin externe
+            </button>
+            <button type="button" class="orientation-type-btn" 
+                    [class.active]="orientationType === 'hopital'" 
+                    (click)="orientationType = 'hopital'">
+              <lucide-icon name="building-2" [size]="16"></lucide-icon> Hôpital
             </button>
           </div>
+
+          <!-- Médecin interne: sélection spécialité + médecin -->
+          <ng-container *ngIf="orientationType === 'medecin_interne'">
+            <div class="orientation-field">
+              <label>Spécialité <span class="required">*</span></label>
+              <select [(ngModel)]="selectedSpecialiteId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onSpecialiteChange()">
+                <option [ngValue]="null">-- Choisir une spécialité --</option>
+                <option *ngFor="let spec of specialitesListe" [ngValue]="spec.idSpecialite">{{ spec.nomSpecialite }}</option>
+              </select>
+            </div>
+            <div class="orientation-field" *ngIf="medecinsParSpecialite.length > 0">
+              <label>Médecin (optionnel)</label>
+              <select [(ngModel)]="orientationIdMedecin" [ngModelOptions]="{standalone: true}" (ngModelChange)="onOrientationMedecinChange()">
+                <option [ngValue]="null">-- Tout médecin disponible --</option>
+                <option *ngFor="let med of medecinsParSpecialite" [ngValue]="med.idUser">Dr. {{ med.prenom }} {{ med.nom }}</option>
+              </select>
+            </div>
+            <p class="orientation-hint" *ngIf="selectedSpecialiteId && medecinsParSpecialite.length === 0">
+              Aucun médecin trouvé pour cette spécialité.
+            </p>
+
+            <!-- Sélection de créneaux pour RDV immédiat (si médecin sélectionné) -->
+            <div class="orientation-creneaux-section" *ngIf="showOrientationCreneaux && orientationIdMedecin">
+              <div class="creneaux-header">
+                <lucide-icon name="calendar-plus" [size]="16"></lucide-icon>
+                <span>Créer un rendez-vous immédiatement (optionnel)</span>
+              </div>
+              
+              <div class="orientation-field">
+                <label>Date du rendez-vous</label>
+                <input type="date" [(ngModel)]="orientationDateRdv" [ngModelOptions]="{standalone: true}" 
+                       [min]="minDate" (change)="onOrientationDateChange()">
+              </div>
+
+              <!-- Message d'indisponibilité -->
+              <div class="creneaux-indispo" *ngIf="!isLoadingOrientationCreneaux && !orientationMedecinDisponible">
+                <lucide-icon name="calendar-x" [size]="16"></lucide-icon>
+                <span>{{ orientationMessageIndispo || 'Aucun créneau disponible ce jour' }}</span>
+              </div>
+
+              <!-- Composant créneaux unifié -->
+              <app-creneaux-selector *ngIf="orientationMedecinDisponible"
+                [creneaux]="creneauxOrientationUnifies"
+                [selectedCreneau]="selectedOrientationCreneauUnifie"
+                [isLoading]="isLoadingOrientationCreneaux"
+                [showLegend]="true"
+                [showSelectedInfo]="false"
+                [emptyMessage]="'Aucun créneau disponible ce jour'"
+                [variant]="'compact'"
+                (creneauSelected)="onCreneauOrientationSelected($event)">
+              </app-creneaux-selector>
+
+              <div class="creneau-selected-info" *ngIf="orientationCreneauSelectionne">
+                <lucide-icon name="check-circle" [size]="14"></lucide-icon>
+                <span>RDV prévu le {{ formatCreneauDate(orientationCreneauSelectionne.dateHeure) }} à {{ orientationCreneauSelectionne.heureDebut }}</span>
+              </div>
+
+              <p class="orientation-hint" *ngIf="!orientationCreneauSelectionne && orientationCreneaux.length > 0">
+                Sélectionnez un créneau pour créer automatiquement un rendez-vous, ou laissez vide pour une orientation sans RDV.
+              </p>
+            </div>
+          </ng-container>
+
+          <!-- Médecin externe: saisie libre -->
+          <ng-container *ngIf="orientationType === 'medecin_externe'">
+            <div class="orientation-field">
+              <label>Nom du médecin <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="orientationNomDestinataire" [ngModelOptions]="{standalone: true}" placeholder="Dr. Nom Prénom" appVoiceInput>
+            </div>
+            <div class="orientation-field">
+              <label>Spécialité <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="orientationSpecialiteTexte" [ngModelOptions]="{standalone: true}" placeholder="Spécialité..." appVoiceInput>
+            </div>
+            <div class="orientation-row">
+              <div class="orientation-field">
+                <label>Adresse (optionnel)</label>
+                <input type="text" [(ngModel)]="orientationAdresse" [ngModelOptions]="{standalone: true}" placeholder="Adresse du cabinet..." appVoiceInput>
+              </div>
+              <div class="orientation-field">
+                <label>Téléphone (optionnel)</label>
+                <input type="text" [(ngModel)]="orientationTelephone" [ngModelOptions]="{standalone: true}" placeholder="Numéro de téléphone...">
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Hôpital -->
+          <ng-container *ngIf="orientationType === 'hopital'">
+            <div class="orientation-field">
+              <label>Nom de l'hôpital <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="orientationNomDestinataire" [ngModelOptions]="{standalone: true}" placeholder="Nom de l'hôpital..." appVoiceInput>
+            </div>
+            <div class="orientation-row">
+              <div class="orientation-field">
+                <label>Service / Spécialité (optionnel)</label>
+                <input type="text" [(ngModel)]="orientationSpecialiteTexte" [ngModelOptions]="{standalone: true}" placeholder="Service concerné..." appVoiceInput>
+              </div>
+              <div class="orientation-field">
+                <label>Adresse (optionnel)</label>
+                <input type="text" [(ngModel)]="orientationAdresse" [ngModelOptions]="{standalone: true}" placeholder="Adresse de l'hôpital..." appVoiceInput>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Motif (obligatoire pour tous) -->
+          <div class="orientation-field">
+            <label>Motif de l'orientation <span class="required">*</span></label>
+            <textarea [(ngModel)]="orientationMotif" [ngModelOptions]="{standalone: true}" rows="3" placeholder="Raison de l'orientation..." appVoiceInput></textarea>
+          </div>
+
+          <!-- Notes complémentaires -->
+          <div class="orientation-field">
+            <label>Notes complémentaires</label>
+            <input type="text" [(ngModel)]="orientationNotes" [ngModelOptions]="{standalone: true}" placeholder="Informations supplémentaires..." appVoiceInput>
+          </div>
+
+          <!-- Options urgence/prioritaire -->
+          <div class="orientation-options">
+            <label class="orientation-checkbox">
+              <input type="checkbox" [(ngModel)]="orientationUrgence" [ngModelOptions]="{standalone: true}">
+              <span>Orientation urgente</span>
+            </label>
+            <label class="orientation-checkbox">
+              <input type="checkbox" [(ngModel)]="orientationPrioritaire" [ngModelOptions]="{standalone: true}">
+              <span>Prioritaire</span>
+            </label>
+          </div>
+
+          <!-- Erreur -->
+          <div class="orientation-error" *ngIf="orientationError">
+            <lucide-icon name="alert-circle" [size]="14"></lucide-icon> {{ orientationError }}
+          </div>
+
+          <!-- Bouton soumettre -->
+          <button type="button" class="btn-submit-orientation" 
+                  [disabled]="!canSubmitOrientation || orientationIsSubmitting" 
+                  (click)="submitOrientation()">
+            <lucide-icon *ngIf="orientationIsSubmitting" name="loader-2" [size]="14" class="spinning"></lucide-icon>
+            <lucide-icon *ngIf="!orientationIsSubmitting" name="check" [size]="14"></lucide-icon>
+            {{ orientationIsSubmitting ? 'Enregistrement...' : 'Enregistrer l\'orientation' }}
+          </button>
         </div>
 
-        <!-- Liste des orientations -->
-        <div class="orientations-list" *ngIf="orientations.length > 0">
-          <div class="orientation-card" *ngFor="let orientation of orientations" 
-               [class.urgente]="orientation.urgence">
-            <div class="orientation-header">
-              <div class="orientation-specialite">
-                <lucide-icon name="stethoscope" [size]="16"></lucide-icon>
-                <strong>{{ orientation.nomSpecialite }}</strong>
-                <span class="badge" [class.urgente]="orientation.urgence" [class.statut]="!orientation.urgence">
-                  {{ orientation.urgence ? 'Urgent' : getStatutLabel(orientation.statut) }}
-                </span>
+        <!-- Liste des orientations sauvegardées -->
+        <div class="orientations-list" *ngIf="orientationsSauvegardees.length > 0">
+          <div class="orientation-card" *ngFor="let o of orientationsSauvegardees" 
+               [class.urgente]="o.urgence" [class.prioritaire]="o.prioritaire">
+            <div class="orientation-card-header">
+              <div class="orientation-card-type">
+                <lucide-icon [name]="o.typeOrientation === 'hopital' ? 'building-2' : 'user-check'" [size]="14"></lucide-icon>
+                <span>{{ getTypeOrientationLabel(o.typeOrientation) }}</span>
+                <span class="orientation-badge urgente" *ngIf="o.urgence">Urgent</span>
+                <span class="orientation-badge prioritaire" *ngIf="o.prioritaire && !o.urgence">Prioritaire</span>
+                <span class="orientation-badge statut">{{ getStatutLabel(o.statut) }}</span>
               </div>
-              <button type="button" class="btn-remove" (click)="removeOrientation(orientation.idOrientation!)" 
-                      title="Supprimer">
+              <button type="button" class="orientation-delete-btn" (click)="deleteOrientation(o.idOrientation)" title="Supprimer">
                 <lucide-icon name="trash-2" [size]="14"></lucide-icon>
               </button>
             </div>
-            <div class="orientation-body">
-              <p class="orientation-motif">{{ orientation.motif }}</p>
-              <div class="orientation-details">
-                <span *ngIf="orientation.nomMedecinOriente">
-                  <lucide-icon name="user" [size]="12"></lucide-icon> {{ orientation.nomMedecinOriente }}
-                </span>
-                <span>
-                  <lucide-icon name="calendar" [size]="12"></lucide-icon> {{ orientation.dateOrientation | date:'dd/MM/yyyy' }}
-                </span>
+            <div class="orientation-card-body">
+              <p class="orientation-card-target">
+                <strong>{{ o.nomDestinataire || o.nomMedecinOriente || o.nomSpecialite || o.specialiteTexte }}</strong>
+                <span class="orientation-specialite" *ngIf="o.specialiteTexte && o.nomDestinataire"> — {{ o.specialiteTexte }}</span>
+              </p>
+              <p class="orientation-card-motif">{{ o.motif }}</p>
+              <div class="orientation-card-details" *ngIf="o.adresseDestinataire || o.telephoneDestinataire">
+                <span *ngIf="o.adresseDestinataire"><lucide-icon name="map-pin" [size]="12"></lucide-icon> {{ o.adresseDestinataire }}</span>
+                <span *ngIf="o.telephoneDestinataire"><lucide-icon name="phone" [size]="12"></lucide-icon> {{ o.telephoneDestinataire }}</span>
               </div>
-              <p class="orientation-notes" *ngIf="orientation.notes">{{ orientation.notes }}</p>
+              <p class="orientation-card-notes" *ngIf="o.notes">{{ o.notes }}</p>
             </div>
           </div>
         </div>
 
-        <div class="no-orientations" *ngIf="orientations.length === 0 && !showOrientationForm">
-          <lucide-icon name="info" [size]="16"></lucide-icon>
-          <span>Aucune orientation vers un spécialiste pour cette consultation</span>
-        </div>
+        <p class="orientation-empty" *ngIf="orientationsSauvegardees.length === 0 && !showOrientationForm">
+          Aucune orientation ajoutée. Cliquez sur "Ajouter" pour orienter le patient vers un médecin ou un hôpital.
+        </p>
       </div>
     </div>
 
@@ -928,7 +1107,7 @@
             <lucide-icon [name]="isVoiceActive('conclusion.resumeConsultation') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="resumeConsultation" rows="4" placeholder="Synthèse de la consultation..."></textarea>
+        <textarea formControlName="resumeConsultation" rows="4" placeholder="Synthèse de la consultation..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -941,7 +1120,7 @@
             <lucide-icon [name]="isVoiceActive('conclusion.questionsPatient') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="questionsPatient" rows="3" placeholder="Questions posées par le patient..."></textarea>
+        <textarea formControlName="questionsPatient" rows="3" placeholder="Questions posées par le patient..." appVoiceInput></textarea>
       </div>
 
       <div class="form-section">
@@ -954,142 +1133,15 @@
             <lucide-icon [name]="isVoiceActive('conclusion.consignesPatient') ? 'mic-off' : 'mic'" [size]="16"></lucide-icon>
           </button>
         </div>
-        <textarea formControlName="consignesPatient" rows="3" placeholder="Instructions données au patient..."></textarea>
+        <textarea formControlName="consignesPatient" rows="3" placeholder="Instructions données au patient..." appVoiceInput></textarea>
       </div>
 
-      <!-- Recommandations structurées -->
-      <div class="form-section recommandations-section">
+      <!-- Notes de recommandation générales (optionnel) -->
+      <div class="form-section">
         <div class="field-header">
-          <h4><lucide-icon name="send" [size]="16"></lucide-icon> Recommandations</h4>
-          <button type="button" class="btn-add" (click)="toggleRecommandationForm()">
-            <lucide-icon [name]="showRecommandationForm ? 'x' : 'plus'" [size]="14"></lucide-icon>
-            {{ showRecommandationForm ? 'Annuler' : 'Ajouter' }}
-          </button>
+          <h4><lucide-icon name="lightbulb" [size]="16"></lucide-icon> Notes générales</h4>
         </div>
-
-        <!-- Formulaire d'ajout -->
-        <div class="recommandation-form" *ngIf="showRecommandationForm">
-          <!-- Type -->
-          <div class="rec-type-selector">
-            <button type="button" class="rec-type-btn" [class.active]="recommandationType === 'medecin'" (click)="recommandationType = 'medecin'">
-              <lucide-icon name="user-check" [size]="16"></lucide-icon> Médecin
-            </button>
-            <button type="button" class="rec-type-btn" [class.active]="recommandationType === 'hopital'" (click)="recommandationType = 'hopital'">
-              <lucide-icon name="building-2" [size]="16"></lucide-icon> Hôpital
-            </button>
-          </div>
-
-          <!-- Hôpital -->
-          <div class="rec-field" *ngIf="recommandationType === 'hopital'">
-            <label>Nom de l'hôpital <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="recommandationNomHopital" [ngModelOptions]="{standalone: true}" placeholder="Nom de l'hôpital recommandé...">
-          </div>
-
-          <!-- Médecin -->
-          <ng-container *ngIf="recommandationType === 'medecin'">
-            <div class="rec-mode-selector">
-              <label class="rec-radio" [class.active]="recommandationMedecinMode === 'interne'">
-                <input type="radio" name="medecinMode" value="interne" [(ngModel)]="recommandationMedecinMode" [ngModelOptions]="{standalone: true}">
-                Médecin interne
-              </label>
-              <label class="rec-radio" [class.active]="recommandationMedecinMode === 'externe'">
-                <input type="radio" name="medecinMode" value="externe" [(ngModel)]="recommandationMedecinMode" [ngModelOptions]="{standalone: true}">
-                Médecin externe
-              </label>
-            </div>
-
-            <!-- Médecin interne: filtre par spécialité -->
-            <ng-container *ngIf="recommandationMedecinMode === 'interne'">
-              <div class="rec-field">
-                <label>Spécialité</label>
-                <select [(ngModel)]="selectedSpecialiteId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onRecommandationSpecialiteChange()">
-                  <option [ngValue]="null">-- Choisir une spécialité --</option>
-                  <option *ngFor="let spec of specialitesListe" [ngValue]="spec.idSpecialite">{{ spec.nomSpecialite }}</option>
-                </select>
-              </div>
-              <div class="rec-field" *ngIf="medecinsParSpecialite.length > 0">
-                <label>Médecin <span class="required">*</span></label>
-                <select [(ngModel)]="recommandationIdMedecin" [ngModelOptions]="{standalone: true}">
-                  <option [ngValue]="null">-- Choisir un médecin --</option>
-                  <option *ngFor="let med of medecinsParSpecialite" [ngValue]="med.idUser">Dr. {{ med.prenom }} {{ med.nom }}</option>
-                </select>
-              </div>
-              <p class="rec-hint" *ngIf="selectedSpecialiteId && medecinsParSpecialite.length === 0">Aucun médecin trouvé pour cette spécialité.</p>
-            </ng-container>
-
-            <!-- Médecin externe: saisie libre -->
-            <ng-container *ngIf="recommandationMedecinMode === 'externe'">
-              <div class="rec-field">
-                <label>Nom du médecin <span class="required">*</span></label>
-                <input type="text" [(ngModel)]="recommandationNomMedecin" [ngModelOptions]="{standalone: true}" placeholder="Dr. Nom Prénom">
-              </div>
-              <div class="rec-field">
-                <label>Spécialité</label>
-                <input type="text" [(ngModel)]="recommandationSpecialite" [ngModelOptions]="{standalone: true}" placeholder="Spécialité...">
-              </div>
-            </ng-container>
-          </ng-container>
-
-          <!-- Motif (obligatoire) -->
-          <div class="rec-field">
-            <label>Motif / Commentaire <span class="required">*</span></label>
-            <textarea [(ngModel)]="recommandationMotif" [ngModelOptions]="{standalone: true}" rows="3" placeholder="Raison de la recommandation..."></textarea>
-          </div>
-
-          <!-- Prioritaire -->
-          <label class="rec-checkbox">
-            <input type="checkbox" [(ngModel)]="recommandationPrioritaire" [ngModelOptions]="{standalone: true}">
-            <span>Recommandation prioritaire</span>
-          </label>
-
-          <!-- Erreur -->
-          <div class="rec-error" *ngIf="recommandationError">
-            <lucide-icon name="alert-circle" [size]="14"></lucide-icon> {{ recommandationError }}
-          </div>
-
-          <!-- Bouton soumettre -->
-          <button type="button" class="btn-submit-rec" [disabled]="!canSubmitRecommandation || recommandationIsSubmitting" (click)="submitRecommandation()">
-            <lucide-icon *ngIf="recommandationIsSubmitting" name="loader-2" [size]="14" class="spinning"></lucide-icon>
-            <lucide-icon *ngIf="!recommandationIsSubmitting" name="check" [size]="14"></lucide-icon>
-            {{ recommandationIsSubmitting ? 'Enregistrement...' : 'Enregistrer la recommandation' }}
-          </button>
-        </div>
-
-        <!-- Liste des recommandations sauvegardées -->
-        <div class="recommandations-list" *ngIf="recommandationsSauvegardees.length > 0">
-          <div class="rec-card" *ngFor="let rec of recommandationsSauvegardees" [class.prioritaire]="rec.prioritaire">
-            <div class="rec-card-header">
-              <div class="rec-card-type">
-                <lucide-icon [name]="rec.type === 'hopital' ? 'building-2' : 'user-check'" [size]="14"></lucide-icon>
-                <span>{{ rec.type === 'hopital' ? 'Hôpital' : 'Médecin' }}</span>
-                <span class="rec-badge-priority" *ngIf="rec.prioritaire">Prioritaire</span>
-              </div>
-              <button type="button" class="rec-delete-btn" (click)="deleteRecommandation(rec.idRecommandation)" title="Supprimer">
-                <lucide-icon name="trash-2" [size]="14"></lucide-icon>
-              </button>
-            </div>
-            <div class="rec-card-body">
-              <p class="rec-card-target" *ngIf="rec.type === 'hopital'">
-                <strong>{{ rec.nomHopital }}</strong>
-              </p>
-              <p class="rec-card-target" *ngIf="rec.type === 'medecin'">
-                <strong>{{ rec.nomMedecinRecommande }}</strong>
-                <span class="rec-specialite" *ngIf="rec.specialite"> — {{ rec.specialite }}</span>
-              </p>
-              <p class="rec-card-motif">{{ rec.motif }}</p>
-            </div>
-          </div>
-        </div>
-
-        <p class="rec-empty" *ngIf="recommandationsSauvegardees.length === 0 && !showRecommandationForm">
-          Aucune recommandation ajoutée. Cliquez sur "Ajouter" pour recommander un médecin ou un hôpital.
-        </p>
-
-        <!-- Champ texte libre conservé pour recommandations générales -->
-        <div class="rec-general-notes" *ngIf="!showRecommandationForm">
-          <label>Notes de recommandation générales</label>
-          <textarea formControlName="recommandations" rows="2" placeholder="Recommandations générales supplémentaires (optionnel)..."></textarea>
-        </div>
+        <textarea formControlName="recommandations" rows="2" placeholder="Recommandations générales supplémentaires (optionnel)..." appVoiceInput></textarea>
       </div>
     </div>
 
@@ -1164,47 +1216,26 @@
           <div class="form-group">
             <label>Motif (optionnel)</label>
             <input type="text" [(ngModel)]="rdvSuiviMotif" [ngModelOptions]="{standalone: true}"
-                   placeholder="Consultation de suivi" class="form-control">
+                   placeholder="Consultation de suivi" class="form-control" appVoiceInput>
           </div>
         </div>
 
-        <!-- Chargement des créneaux -->
-        <div class="creneaux-loading" *ngIf="isLoadingCreneaux">
-          <lucide-icon name="loader-2" [size]="20" class="spinner"></lucide-icon>
-          <span>Chargement des créneaux...</span>
-        </div>
-
-        <!-- Légende des créneaux -->
-        <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length > 0">
-          <span class="legende-item disponible"><span class="dot"></span> Disponible</span>
-          <span class="legende-item occupe"><span class="dot"></span> Occupé</span>
-          <span class="legende-item passe"><span class="dot"></span> Passé</span>
-        </div>
-
-        <!-- Grille des créneaux avec statut -->
-        <div class="creneaux-grid-statut" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length > 0">
-          <button type="button" 
-                  *ngFor="let creneau of creneauxAvecStatut"
-                  class="creneau-btn-statut"
-                  [ngClass]="getCreneauClass(creneau)"
-                  [class.selected]="isCreneauSelected(creneau)"
-                  [disabled]="creneau.statut !== 'disponible'"
-                  (click)="selectCreneauAvecStatut(creneau)">
-            {{ creneau.heureDebut }}
-          </button>
-        </div>
-
-        <!-- Aucun créneau -->
-        <div class="no-creneaux" *ngIf="!isLoadingCreneaux && creneauxAvecStatut.length === 0 && rdvSuiviDate">
-          <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
-          <p>Aucun créneau configuré pour cette date. Veuillez sélectionner une autre date.</p>
-        </div>
+        <!-- Composant créneaux unifié -->
+        <app-creneaux-selector
+          [creneaux]="creneauxSuiviUnifies"
+          [selectedCreneau]="selectedCreneauUnifie"
+          [isLoading]="isLoadingCreneaux"
+          [showLegend]="true"
+          [showSelectedInfo]="false"
+          [emptyMessage]="'Aucun créneau configuré pour cette date. Veuillez sélectionner une autre date.'"
+          (creneauSelected)="onCreneauSuiviSelected($event)">
+        </app-creneaux-selector>
 
         <!-- Notes -->
         <div class="form-group" *ngIf="selectedCreneau">
           <label>Notes (optionnel)</label>
           <textarea [(ngModel)]="rdvSuiviNotes" [ngModelOptions]="{standalone: true}" rows="2" 
-                    placeholder="Notes pour le prochain rendez-vous..." class="form-control"></textarea>
+                    placeholder="Notes pour le prochain rendez-vous..." class="form-control" appVoiceInput></textarea>
         </div>
 
         <!-- Bouton de confirmation RDV -->

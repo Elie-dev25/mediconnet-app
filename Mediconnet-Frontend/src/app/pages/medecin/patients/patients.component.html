@@ -542,6 +542,16 @@
     (saved)="onOrdonnanceHospSaved()">
   </app-ordonnance-hospitalisation-panel>
 
+  <!-- Panneau latéral Ordonnance Directe (depuis fiche patient) -->
+  <app-ordonnance-directe-panel
+    [isOpen]="showOrdonnanceDirectePanel"
+    [patientId]="ordonnanceDirectePatientId"
+    [patientNom]="ordonnanceDirectePatientNom"
+    [patientPrenom]="ordonnanceDirectePatientPrenom"
+    (close)="closeOrdonnanceDirectePanel()"
+    (saved)="onOrdonnanceDirecteSaved()">
+  </app-ordonnance-directe-panel>
+
   <!-- Panneau latéral Soin Hospitalisation -->
   <app-soin-hospitalisation-panel
     [isOpen]="showSoinHospPanel"
@@ -653,7 +663,7 @@
         <div class="form-group">
           <label class="required">Description du soin</label>
           <textarea [(ngModel)]="soinForm.description" rows="3" 
-                    placeholder="Décrivez le soin à effectuer..."></textarea>
+                    placeholder="Décrivez le soin à effectuer..." appVoiceInput></textarea>
         </div>
 
         <!-- Fréquence + Durée -->
@@ -708,7 +718,7 @@
         <div class="form-group">
           <label>Instructions particulières</label>
           <textarea [(ngModel)]="soinForm.instructions" rows="2" 
-                    placeholder="Instructions pour l'équipe soignante..."></textarea>
+                    placeholder="Instructions pour l'équipe soignante..." appVoiceInput></textarea>
         </div>
       </div>
 

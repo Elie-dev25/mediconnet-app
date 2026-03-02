@@ -502,10 +502,18 @@
 
   .diagnostic,
   .examen-resultat,
-  .examen-date {
+  .examen-date,
+  .examen-specialite {
     margin: 0.5rem 0 0;
     font-size: 0.9rem;
     color: $text-secondary;
+  }
+
+  .examen-specialite {
+    font-size: 0.8rem;
+    color: $primary-color;
+    font-weight: 500;
+    margin-top: 0.25rem;
   }
 
   .medecin-name {
@@ -766,6 +774,7 @@
 
     .patient-meta {
       justify-content: center;
+      flex-wrap: wrap;
     }
   }
 
@@ -785,15 +794,99 @@
   .tabs-nav {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   .tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .items-grid {
     grid-template-columns: 1fr;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  // Orientations responsive
+  .rec-dossier-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .rec-dossier-type {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .rec-target {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+
+  .tabs-nav {
+    gap: 0.25rem;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+
+    .tab-count {
+      display: none;
+    }
+  }
+
+  .consultation-card,
+  .ordonnance-card,
+  .examen-card,
+  .hospitalisation-card,
+  .rec-dossier-card {
+    border-radius: 8px;
+  }
+
+  .card-header {
+    padding: 0.75rem;
+  }
+
+  .card-body {
+    padding: 0.75rem;
+  }
+
+  .card-footer {
+    padding: 0.5rem 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  // Hospitalisations responsive
+  .hosp-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .hosp-sortie {
+    padding: 0.625rem;
   }
 }
 
@@ -1423,6 +1516,11 @@
   &.prioritaire {
     border-left: 3px solid #f59e0b;
   }
+
+  &.urgente {
+    border-left: 3px solid #ef4444;
+    background: linear-gradient(to right, #fef2f2, white 20%);
+  }
 }
 
 .rec-dossier-header {
@@ -1456,6 +1554,49 @@
   font-size: 0.65rem;
   font-weight: 600;
   color: #d97706;
+}
+
+.rec-urgence-badge {
+  padding: 0.1rem 0.45rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.rec-statut-badge {
+  padding: 0.1rem 0.45rem;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 500;
+
+  &.statut-en_attente {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #d97706;
+  }
+
+  &.statut-acceptee,
+  &.statut-rdv_pris {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #059669;
+  }
+
+  &.statut-terminee {
+    background: #e0e7ff;
+    border: 1px solid #a5b4fc;
+    color: #4f46e5;
+  }
+
+  &.statut-refusee,
+  &.statut-annulee {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+  }
 }
 
 .rec-date {
@@ -1508,4 +1649,55 @@
   color: #94a3b8;
 
   lucide-icon { color: #cbd5e1; flex-shrink: 0; }
+}
+
+// Informations du RDV créé
+.rec-rdv-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+
+  lucide-icon { color: #059669; flex-shrink: 0; }
+
+  .rdv-label {
+    font-weight: 600;
+    color: #047857;
+  }
+
+  .rdv-date {
+    color: #065f46;
+  }
+}
+
+// Coordonnées du destinataire externe
+.rec-contact-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 0.75rem;
+  color: #64748b;
+
+  .rec-adresse,
+  .rec-telephone {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    lucide-icon { color: #94a3b8; }
+  }
+}
+
+// Carte avec RDV pris
+.rec-dossier-card.rdv-pris {
+  border-color: #a7f3d0;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
 }

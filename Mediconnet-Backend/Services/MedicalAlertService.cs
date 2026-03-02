@@ -59,14 +59,16 @@ public class MedicalAlertService : IMedicalAlertService
     public async Task<InteractionCheckResult> CheckInteractionAvecTraitementEnCoursAsync(int idPatient, int medicamentId)
     {
         // Récupérer les médicaments du traitement en cours du patient
+        // Filtrer les médicaments hors catalogue (IdMedicament null)
         var traitementEnCours = await _context.PrescriptionMedicaments
             .Include(pm => pm.Ordonnance)
                 .ThenInclude(o => o!.Consultation)
             .Where(pm => pm.Ordonnance != null && 
                 pm.Ordonnance.Consultation != null &&
                 pm.Ordonnance.Consultation.IdPatient == idPatient &&
-                pm.Ordonnance.Date > DateTime.UtcNow.AddMonths(-3))
-            .Select(pm => pm.IdMedicament)
+                pm.Ordonnance.Date > DateTime.UtcNow.AddMonths(-3) &&
+                pm.IdMedicament.HasValue) // Exclure les médicaments hors catalogue
+            .Select(pm => pm.IdMedicament!.Value)
             .Distinct()
             .ToListAsync();
 

@@ -135,11 +135,11 @@
       <div class="form-grid">
         <div class="form-group full-width">
           <label>Nom du médicament *</label>
-          <input type="text" [(ngModel)]="medicamentForm.nom" required>
+          <input type="text" [(ngModel)]="medicamentForm.nom" required appVoiceInput>
         </div>
         <div class="form-group">
           <label>Dosage</label>
-          <input type="text" [(ngModel)]="medicamentForm.dosage" placeholder="Ex: 500mg">
+          <input type="text" [(ngModel)]="medicamentForm.dosage" placeholder="Ex: 500mg" appVoiceInput>
         </div>
         <div class="form-group">
           <label>Forme galénique</label>
@@ -150,11 +150,11 @@
         </div>
         <div class="form-group">
           <label>Laboratoire</label>
-          <input type="text" [(ngModel)]="medicamentForm.laboratoire">
+          <input type="text" [(ngModel)]="medicamentForm.laboratoire" appVoiceInput>
         </div>
         <div class="form-group">
           <label>Code ATC</label>
-          <input type="text" [(ngModel)]="medicamentForm.codeATC">
+          <input type="text" [(ngModel)]="medicamentForm.codeATC" appVoiceInput>
         </div>
         <div class="form-group" *ngIf="showCreateModal">
           <label>Stock initial *</label>
@@ -174,15 +174,15 @@
         </div>
         <div class="form-group">
           <label>Emplacement/Rayon</label>
-          <input type="text" [(ngModel)]="medicamentForm.emplacementRayon" placeholder="Ex: A-12">
+          <input type="text" [(ngModel)]="medicamentForm.emplacementRayon" placeholder="Ex: A-12" appVoiceInput>
         </div>
         <div class="form-group">
           <label>Conditionnement</label>
-          <input type="text" [(ngModel)]="medicamentForm.conditionnement" placeholder="Ex: Boîte de 20">
+          <input type="text" [(ngModel)]="medicamentForm.conditionnement" placeholder="Ex: Boîte de 20" appVoiceInput>
         </div>
         <div class="form-group">
           <label>Température conservation</label>
-          <input type="text" [(ngModel)]="medicamentForm.temperatureConservation" placeholder="Ex: 15-25°C">
+          <input type="text" [(ngModel)]="medicamentForm.temperatureConservation" placeholder="Ex: 15-25°C" appVoiceInput>
         </div>
       </div>
     </div>
@@ -224,7 +224,7 @@
       </div>
       <div class="form-group">
         <label>Motif</label>
-        <textarea [(ngModel)]="ajustementForm.motif" rows="2" placeholder="Raison de l'ajustement..."></textarea>
+        <textarea [(ngModel)]="ajustementForm.motif" rows="2" placeholder="Raison de l'ajustement..." appVoiceInput></textarea>
       </div>
     </div>
     <div class="modal-footer">

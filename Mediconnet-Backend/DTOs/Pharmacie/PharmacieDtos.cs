@@ -198,18 +198,55 @@ public class OrdonnancePharmacieDto
     public string? Commentaire { get; set; }
     public string Statut { get; set; } = "en_attente"; // en_attente, partielle, complete
     public List<MedicamentPrescritDto> Medicaments { get; set; } = new();
+    
+    /// <summary>
+    /// Date d'expiration de l'ordonnance
+    /// </summary>
+    public DateTime? DateExpiration { get; set; }
+    
+    /// <summary>
+    /// Indique si l'ordonnance est expirée
+    /// </summary>
+    public bool EstExpiree => DateExpiration.HasValue && DateExpiration.Value < DateTime.UtcNow;
+    
+    /// <summary>
+    /// Indique si l'ordonnance est renouvelable
+    /// </summary>
+    public bool Renouvelable { get; set; }
 }
 
 public class MedicamentPrescritDto
 {
-    public int IdMedicament { get; set; }
+    /// <summary>
+    /// ID du médicament dans le catalogue (null si hors catalogue)
+    /// </summary>
+    public int? IdMedicament { get; set; }
+    
+    /// <summary>
+    /// Nom du médicament (catalogue ou saisie libre)
+    /// </summary>
     public string NomMedicament { get; set; } = "";
+    
     public string? Dosage { get; set; }
+    
+    /// <summary>
+    /// Indique si le médicament est hors catalogue (saisie libre)
+    /// </summary>
+    public bool EstHorsCatalogue { get; set; } = false;
+    
     public int QuantitePrescrite { get; set; }
     public int QuantiteDispensee { get; set; }
     public string? Posologie { get; set; }
     public string? DureeTraitement { get; set; }
+    
+    /// <summary>
+    /// Stock disponible (null si hors catalogue - non géré en stock)
+    /// </summary>
     public int? StockDisponible { get; set; }
+    
+    /// <summary>
+    /// Prix unitaire (null si hors catalogue - pas de prix référencé)
+    /// </summary>
     public float? PrixUnitaire { get; set; }
 }
 

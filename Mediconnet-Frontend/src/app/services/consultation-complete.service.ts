@@ -94,6 +94,7 @@ export interface ConsultationEnCoursDto {
   // Workflow mis à jour
   anamnese?: AnamneseDto;
   examenClinique?: ExamenCliniqueDto;
+  examenGynecologique?: ExamenGynecologiqueDto;
   diagnostic?: DiagnosticDto;
   planTraitement?: PlanTraitementDto;
   conclusion?: ConclusionDto;
@@ -119,6 +120,11 @@ export interface ConsultationDetailDto {
   ordonnance?: OrdonnanceDto;
   examensPrescrits?: ExamenPrescritDetailDto[];
   questionnaire?: QuestionReponseDto[];
+  parametresVitaux?: ParametresVitauxDto;
+  examenClinique?: ExamenCliniqueDto;
+  examenGynecologique?: ExamenGynecologiqueDto;
+  planTraitement?: PlanTraitementDto;
+  conclusionDetaillee?: ConclusionDto;
 }
 
 export interface ExamenPrescritDetailDto {
@@ -167,6 +173,13 @@ export interface ExamenCliniqueDto {
   palpation?: string;
   auscultation?: string;
   percussion?: string;
+  autresObservations?: string;
+}
+
+export interface ExamenGynecologiqueDto {
+  inspectionExterne?: string;
+  examenSpeculum?: string;
+  toucherVaginal?: string;
   autresObservations?: string;
 }
 
@@ -240,7 +253,7 @@ export interface ConclusionDto {
 export interface PrescriptionsDto {
   ordonnance?: OrdonnanceDto;
   examens: ExamenPrescritDto[];
-  recommandations: RecommandationDto[];
+  orientations: OrientationPreConsultationDto[];
 }
 
 export interface OrdonnanceDto {
@@ -287,38 +300,86 @@ export interface LaboratoireDto {
   type?: string;
 }
 
-export interface RecommandationDto {
-  idRecommandation?: number;
-  type: string;
-  specialiteOrientee?: string;
-  idMedecinOriente?: number;
-  motif?: string;
-  description?: string;
-  urgence: boolean;
-}
+// ==================== ORIENTATION PRE-CONSULTATION (UNIFIÉ) ====================
 
-export interface CreateRecommandationRequest {
-  type: string;
-  nomHopital?: string;
-  nomMedecinRecommande?: string;
-  idMedecinRecommande?: number;
-  specialite?: string;
-  motif: string;
-  prioritaire: boolean;
-}
+/** Types d'orientation disponibles */
+export const TYPES_ORIENTATION = {
+  MEDECIN_INTERNE: 'medecin_interne',
+  MEDECIN_EXTERNE: 'medecin_externe',
+  HOPITAL: 'hopital',
+  SERVICE_INTERNE: 'service_interne',
+  LABORATOIRE: 'laboratoire'
+} as const;
 
-export interface RecommandationResponseDto {
-  idRecommandation: number;
+export type TypeOrientation = typeof TYPES_ORIENTATION[keyof typeof TYPES_ORIENTATION];
+
+/** Statuts d'orientation */
+export const STATUTS_ORIENTATION = {
+  EN_ATTENTE: 'en_attente',
+  ACCEPTEE: 'acceptee',
+  REFUSEE: 'refusee',
+  RDV_PRIS: 'rdv_pris',
+  TERMINEE: 'terminee',
+  ANNULEE: 'annulee'
+} as const;
+
+export type StatutOrientation = typeof STATUTS_ORIENTATION[keyof typeof STATUTS_ORIENTATION];
+
+/** DTO pour afficher une orientation */
+export interface OrientationPreConsultationDto {
+  idOrientation: number;
   idConsultation: number;
-  type: string;
-  nomHopital?: string;
-  nomMedecinRecommande?: string;
-  idMedecinRecommande?: number;
-  specialite?: string;
+  idPatient: number;
+  typeOrientation: TypeOrientation;
+  // Destination
+  idSpecialite?: number;
+  nomSpecialite?: string;
+  idMedecinOriente?: number;
+  nomMedecinOriente?: string;
+  nomDestinataire?: string;
+  specialiteTexte?: string;
+  adresseDestinataire?: string;
+  telephoneDestinataire?: string;
+  // Détails
   motif: string;
+  notes?: string;
+  urgence: boolean;
   prioritaire: boolean;
-  createdAt: string;
+  // Suivi
+  statut: StatutOrientation;
+  dateOrientation: string;
+  dateRdvPropose?: string;
+  idRdvCree?: number;
+  // Métadonnées
   medecinPrescripteur?: string;
+  createdAt?: string;
+}
+
+/** Requête pour créer une orientation */
+export interface CreateOrientationRequest {
+  typeOrientation: TypeOrientation;
+  // Pour médecin interne
+  idSpecialite?: number;
+  idMedecinOriente?: number;
+  // Pour médecin externe / hôpital
+  nomDestinataire?: string;
+  specialiteTexte?: string;
+  adresseDestinataire?: string;
+  telephoneDestinataire?: string;
+  // Détails
+  motif: string;
+  notes?: string;
+  urgence: boolean;
+  prioritaire: boolean;
+  dateRdvPropose?: string;
+}
+
+/** Requête pour mettre à jour le statut */
+export interface UpdateOrientationStatutRequest {
+  statut: StatutOrientation;
+  dateRdvPropose?: string;
+  idRdvCree?: number;
+  notes?: string;
 }
 
 export interface SpecialiteDto {
@@ -334,41 +395,6 @@ export interface MedecinSpecialisteDto {
   nomComplet: string;
   idSpecialite: number;
   nomSpecialite?: string;
-}
-
-export interface OrientationSpecialisteDto {
-  idOrientation?: number;
-  idConsultation: number;
-  idSpecialite: number;
-  nomSpecialite?: string;
-  idMedecinOriente?: number;
-  nomMedecinOriente?: string;
-  motif: string;
-  urgence: boolean;
-  statut: string;
-  dateOrientation: Date;
-  dateRdvPropose?: Date;
-  notes?: string;
-  idRdvCree?: number;
-}
-
-export interface CreateOrientationRequest {
-  idConsultation: number;
-  idSpecialite: number;
-  idMedecinOriente?: number;
-  motif: string;
-  urgence: boolean;
-  dateRdvPropose?: Date;
-  notes?: string;
-}
-
-export interface CreateOrientationManuelleRequest {
-  idConsultation: number;
-  specialiteManuelle: string;
-  medecinManuel?: string;
-  motif: string;
-  urgence: boolean;
-  notes?: string;
 }
 
 export interface ValiderConsultationRequest {
@@ -421,6 +447,36 @@ export interface CreneauAvecStatut {
 export interface CreneauxAvecStatutResponse {
   date: string;
   creneaux: CreneauAvecStatut[];
+}
+
+export interface CreneauxMedecinResponse {
+  date: string;
+  medecinDisponible: boolean;
+  messageIndisponibilite?: string;
+  creneaux: CreneauMedecinDto[];
+}
+
+export interface CreneauMedecinDto {
+  dateHeure: string;
+  heureDebut: string;
+  heureFin: string;
+  duree: number;
+  statut: 'disponible' | 'occupe' | 'passe' | 'indisponible';
+  selectionnable: boolean;
+}
+
+export interface CreerRdvOrientationRequest {
+  dateHeure: string;
+  duree?: number;
+  motif?: string;
+  notes?: string;
+}
+
+export interface CreerRdvOrientationResponse {
+  success: boolean;
+  message: string;
+  idRendezVous?: number;
+  dateHeure?: string;
 }
 
 // ==================== SERVICE ====================
@@ -478,6 +534,15 @@ export class ConsultationCompleteService {
   saveExamenClinique(idConsultation: number, examenClinique: ExamenCliniqueDto): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
       `${this.apiUrl}/${idConsultation}/examen-clinique`, examenClinique
+    );
+  }
+
+  /**
+   * Sauvegarder l'examen gynécologique (étape 2 bis)
+   */
+  saveExamenGynecologique(idConsultation: number, examenGynecologique: ExamenGynecologiqueDto): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.apiUrl}/${idConsultation}/examen-gynecologique`, examenGynecologique
     );
   }
 
@@ -587,55 +652,55 @@ export class ConsultationCompleteService {
     return this.http.get<MedecinSpecialisteDto[]>(`${this.apiUrl}/specialites/${idSpecialite}/medecins`);
   }
 
-  /**
-   * Créer une orientation vers un spécialiste
-   */
-  createOrientation(request: CreateOrientationRequest): Observable<OrientationSpecialisteDto> {
-    return this.http.post<OrientationSpecialisteDto>(`${this.apiUrl}/orientations`, request);
-  }
+  // ==================== ORIENTATIONS PRE-CONSULTATION (UNIFIÉ) ====================
 
   /**
-   * Créer une orientation manuelle (spécialité saisie librement)
+   * Créer une orientation (unifiée: médecin interne/externe, hôpital, etc.)
    */
-  createOrientationManuelle(request: CreateOrientationManuelleRequest): Observable<OrientationSpecialisteDto> {
-    return this.http.post<OrientationSpecialisteDto>(`${this.apiUrl}/orientations/manuelle`, request);
+  createOrientation(idConsultation: number, request: CreateOrientationRequest): Observable<OrientationPreConsultationDto> {
+    return this.http.post<OrientationPreConsultationDto>(`${this.apiUrl}/${idConsultation}/orientations`, request);
   }
 
   /**
    * Récupérer les orientations d'une consultation
    */
-  getOrientations(idConsultation: number): Observable<OrientationSpecialisteDto[]> {
-    return this.http.get<OrientationSpecialisteDto[]>(`${this.apiUrl}/${idConsultation}/orientations`);
+  getOrientations(idConsultation: number): Observable<OrientationPreConsultationDto[]> {
+    return this.http.get<OrientationPreConsultationDto[]>(`${this.apiUrl}/${idConsultation}/orientations`);
+  }
+
+  /**
+   * Mettre à jour le statut d'une orientation
+   */
+  updateOrientationStatut(idOrientation: number, request: UpdateOrientationStatutRequest): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(`${this.apiUrl}/orientations/${idOrientation}/statut`, request);
   }
 
   /**
    * Supprimer une orientation
    */
-  deleteOrientation(idOrientation: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/orientations/${idOrientation}`);
-  }
-
-  // ==================== RECOMMANDATIONS ====================
-
-  /**
-   * Récupérer les recommandations d'une consultation
-   */
-  getRecommandations(idConsultation: number): Observable<RecommandationResponseDto[]> {
-    return this.http.get<RecommandationResponseDto[]>(`${this.apiUrl}/${idConsultation}/recommandations`);
+  deleteOrientation(idOrientation: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/orientations/${idOrientation}`);
   }
 
   /**
-   * Créer une recommandation pour une consultation
+   * Récupérer les orientations d'un patient (pour le dossier médical)
    */
-  createRecommandation(idConsultation: number, request: CreateRecommandationRequest): Observable<RecommandationResponseDto> {
-    return this.http.post<RecommandationResponseDto>(`${this.apiUrl}/${idConsultation}/recommandations`, request);
+  getOrientationsPatient(idPatient: number): Observable<OrientationPreConsultationDto[]> {
+    return this.http.get<OrientationPreConsultationDto[]>(`${this.apiUrl}/patients/${idPatient}/orientations`);
   }
 
   /**
-   * Supprimer une recommandation
+   * Récupérer les créneaux disponibles d'un médecin pour une date
    */
-  deleteRecommandation(idRecommandation: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/recommandations/${idRecommandation}`);
+  getCreneauxMedecinDisponibles(idMedecin: number, date: string): Observable<CreneauxMedecinResponse> {
+    return this.http.get<CreneauxMedecinResponse>(`${this.apiUrl}/medecins/${idMedecin}/creneaux-disponibles?date=${date}`);
+  }
+
+  /**
+   * Créer un RDV lié à une orientation
+   */
+  creerRdvOrientation(idOrientation: number, request: CreerRdvOrientationRequest): Observable<CreerRdvOrientationResponse> {
+    return this.http.post<CreerRdvOrientationResponse>(`${this.apiUrl}/orientations/${idOrientation}/creer-rdv`, request);
   }
 
   // ==================== GESTION DU STATUT ====================

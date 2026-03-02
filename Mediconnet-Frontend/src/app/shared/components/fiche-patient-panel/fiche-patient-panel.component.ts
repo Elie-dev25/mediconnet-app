@@ -4,6 +4,15 @@ import { LucideAngularModule } from 'lucide-angular';
 import { MedecinDataService, MedecinPatientDetailDto, ConsultationHistoriqueDto } from '../../../services/medecin-data.service';
 import { ConsultationCompleteService } from '../../../services/consultation-complete.service';
 
+export interface RdvContextInfo {
+  motif?: string;
+  idOrientation?: number;
+  motifOrientation?: string;
+  medecinOrienteur?: string;
+  typeOrientation?: string;
+  dateHeure?: string;
+}
+
 @Component({
   selector: 'app-fiche-patient-panel',
   standalone: true,
@@ -16,6 +25,7 @@ export class FichePatientPanelComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() showStartConsultation = false;
   @Input() consultationId: number | null = null;
+  @Input() rdvContext: RdvContextInfo | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() startConsultation = new EventEmitter<void>();
   @Output() hospitaliser = new EventEmitter<number>();

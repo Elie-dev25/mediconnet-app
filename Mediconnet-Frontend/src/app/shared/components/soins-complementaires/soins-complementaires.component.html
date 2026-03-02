@@ -51,7 +51,7 @@
                 </select>
               </ng-container>
               <ng-template #inputLibre>
-                <input type="text" formControlName="description" placeholder="Description du soin...">
+                <input type="text" formControlName="description" placeholder="Description du soin..." appVoiceInput>
               </ng-template>
             </div>
           </div>
@@ -61,7 +61,7 @@
             <div class="form-group flex-1">
               <label>Précisez le type de soin *</label>
               <input type="text" formControlName="typeSoinAutre" 
-                     placeholder="Saisissez le type de soin...">
+                     placeholder="Saisissez le type de soin..." appVoiceInput>
             </div>
           </div>
 
@@ -70,7 +70,7 @@
             <div class="form-group flex-1">
               <label>Précisez la description du soin *</label>
               <input type="text" formControlName="descriptionAutre" 
-                     placeholder="Saisissez la description du soin...">
+                     placeholder="Saisissez la description du soin..." appVoiceInput>
             </div>
           </div>
 
@@ -127,7 +127,7 @@
             <div class="form-group flex-1">
               <label>Instructions particulières</label>
               <textarea formControlName="instructions" rows="2" 
-                        placeholder="Précisions, précautions, observations à signaler..."></textarea>
+                        placeholder="Précisions, précautions, observations à signaler..." appVoiceInput></textarea>
             </div>
           </div>
         </div>

@@ -117,6 +117,17 @@ public static class SoinTypes
 }
 
 /// <summary>
+/// Identifiants des spécialités médicales utilisés dans l'application
+/// </summary>
+public static class SpecialiteIds
+{
+    /// <summary>
+    /// ID de la spécialité Obstétrique et Gynécologie dans la table specialites
+    /// </summary>
+    public const int GynecologieObstetrique = 23;
+}
+
+/// <summary>
 /// Statuts de lits
 /// </summary>
 public static class LitStatuts

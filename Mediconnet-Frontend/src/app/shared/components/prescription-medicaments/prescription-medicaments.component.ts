@@ -7,6 +7,8 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { PharmacieStockService, MedicamentStock } from '../../../services/pharmacie-stock.service';
 
 export interface MedicamentPrescription {
+  /** ID du médicament dans le catalogue (undefined si saisie libre) */
+  idMedicament?: number;
   nomMedicament: string;
   dosage?: string;
   posologie?: string;
@@ -137,6 +139,7 @@ export class PrescriptionMedicamentsComponent implements OnInit, OnDestroy {
 
   addMedicament(med?: MedicamentPrescription): void {
     this.medicamentsArray.push(this.fb.group({
+      idMedicament: [med?.idMedicament || null],
       nomMedicament: [med?.nomMedicament || '', Validators.required],
       dosage: [med?.dosage || ''],
       posologie: [med?.posologie || ''],
@@ -164,13 +167,23 @@ export class PrescriptionMedicamentsComponent implements OnInit, OnDestroy {
     const control = this.medicamentsArray.at(index);
     if (control) {
       control.patchValue({
-        nomMedicament: medicament.nom + (medicament.dosage ? ' ' + medicament.dosage : ''),
+        idMedicament: medicament.idMedicament,
+        nomMedicament: medicament.nom,
         dosage: medicament.dosage || '',
         formePharmaceutique: medicament.formeGalenique || ''
       });
     }
     this.medicamentSuggestions = [];
     this.activeMedicamentIndex = null;
+  }
+
+  /** Réinitialise l'ID médicament quand l'utilisateur modifie manuellement le nom */
+  onMedicamentNameChange(index: number): void {
+    const control = this.medicamentsArray.at(index);
+    if (control) {
+      // Si le nom est modifié manuellement, on efface l'ID pour indiquer une saisie libre
+      control.patchValue({ idMedicament: null }, { emitEvent: false });
+    }
   }
 
   hideMedicamentSuggestions(): void {
@@ -197,6 +210,7 @@ export class PrescriptionMedicamentsComponent implements OnInit, OnDestroy {
 
   private emitChanges(): void {
     const medicaments: MedicamentPrescription[] = this.medicamentsArray.controls.map(control => ({
+      idMedicament: control.get('idMedicament')?.value || undefined,
       nomMedicament: control.get('nomMedicament')?.value,
       dosage: control.get('dosage')?.value,
       posologie: control.get('posologie')?.value === 'Autre' 
@@ -217,6 +231,7 @@ export class PrescriptionMedicamentsComponent implements OnInit, OnDestroy {
 
   getMedicamentsData(): MedicamentPrescription[] {
     return this.medicamentsArray.controls.map(control => ({
+      idMedicament: control.get('idMedicament')?.value || undefined,
       nomMedicament: control.get('nomMedicament')?.value,
       dosage: control.get('dosage')?.value,
       posologie: control.get('posologie')?.value === 'Autre' 

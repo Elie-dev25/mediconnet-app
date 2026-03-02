@@ -151,7 +151,7 @@ public class DossierMedicalDto
     public List<OrdonnanceDto> Ordonnances { get; set; } = new();
     public List<ExamenDto> Examens { get; set; } = new();
     public List<HospitalisationHistoryDto> Hospitalisations { get; set; } = new();
-    public List<RecommandationHistoryDto> Recommandations { get; set; } = new();
+    public List<OrientationHistoryDto> Orientations { get; set; } = new();
     public DossierStatsDto Stats { get; set; } = new();
 }
 
@@ -178,17 +178,19 @@ public class HospitalisationHistoryDto
 }
 
 /// <summary>
-/// DTO pour l'historique des recommandations dans le dossier patient
+/// DTO pour l'historique des orientations dans le dossier patient
 /// </summary>
-public class RecommandationHistoryDto
+public class OrientationHistoryDto
 {
-    public int IdRecommandation { get; set; }
-    public string Type { get; set; } = "";
-    public string? NomHopital { get; set; }
-    public string? NomMedecinRecommande { get; set; }
-    public string? Specialite { get; set; }
+    public int IdOrientation { get; set; }
+    public string TypeOrientation { get; set; } = "";
+    public string? NomDestinataire { get; set; }
+    public string? NomMedecinOriente { get; set; }
+    public string? NomSpecialite { get; set; }
     public string Motif { get; set; } = "";
     public bool Prioritaire { get; set; }
+    public bool Urgence { get; set; }
+    public string Statut { get; set; } = "en_attente";
     public DateTime CreatedAt { get; set; }
     public string? MedecinPrescripteur { get; set; }
     public int? IdConsultation { get; set; }

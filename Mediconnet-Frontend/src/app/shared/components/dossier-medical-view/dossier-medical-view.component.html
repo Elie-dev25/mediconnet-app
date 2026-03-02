@@ -431,13 +431,14 @@
           <div class="examen-card" *ngFor="let e of dossier.examens" [class.urgent]="e.urgent">
             <div class="card-header">
               <div class="examen-type">
-                <lucide-icon [name]="getExamenTypeIcon(e.typeExamen)" [size]="16"></lucide-icon>
-                {{ e.typeExamen | titlecase }}
+                <lucide-icon [name]="getExamenTypeIcon(e.categorie || e.typeExamen || '')" [size]="16"></lucide-icon>
+                {{ (e.categorie || e.typeExamen || 'Examen') | titlecase }}
               </div>
               <span class="badge" [class]="getStatutClass(e.statut)">{{ getStatutLabel(e.statut) }}</span>
             </div>
             <div class="card-body">
-              <h4>{{ e.nomExamen }}</h4>
+              <h4>{{ e.nomExamen || 'Examen non spécifié' }}</h4>
+              <p class="examen-specialite" *ngIf="e.specialite">{{ e.specialite }}</p>
               <p class="examen-date">{{ formatDate(getExamenDate(e)) }}</p>
               <p class="examen-resultat" *ngIf="getExamenResult(e)">
                 <strong>Résultat :</strong> {{ getExamenResult(e) }}
@@ -568,27 +569,28 @@
         </div>
       </div>
 
-      <!-- Tab: Recommandations -->
+      <!-- Tab: Recommandations / Orientations -->
       <div class="tab-content" *ngIf="activeTab === 'recommandations'">
         <div class="recommandations-list" *ngIf="dossier.recommandations && dossier.recommandations.length > 0">
-          <div class="rec-dossier-card" *ngFor="let rec of dossier.recommandations" [class.prioritaire]="rec.prioritaire">
+          <div class="rec-dossier-card" *ngFor="let rec of dossier.recommandations" 
+               [class.prioritaire]="rec.prioritaire" 
+               [class.urgente]="rec.urgence"
+               [class.rdv-pris]="rec.idRdvCree">
             <div class="rec-dossier-header">
               <div class="rec-dossier-type">
-                <lucide-icon [name]="rec.type === 'hopital' ? 'building-2' : 'user-check'" [size]="16"></lucide-icon>
-                <span class="rec-type-label">{{ rec.type === 'hopital' ? 'Hôpital' : 'Médecin' }}</span>
-                <span class="rec-priority-badge" *ngIf="rec.prioritaire">Prioritaire</span>
+                <lucide-icon [name]="getOrientationIcon(rec)" [size]="16"></lucide-icon>
+                <span class="rec-type-label">{{ getOrientationTypeLabel(rec) }}</span>
+                <span class="rec-urgence-badge" *ngIf="rec.urgence">Urgent</span>
+                <span class="rec-priority-badge" *ngIf="rec.prioritaire && !rec.urgence">Prioritaire</span>
+                <span class="rec-statut-badge" *ngIf="rec.statut" [class]="'statut-' + rec.statut">{{ getOrientationStatutLabel(rec.statut) }}</span>
               </div>
               <span class="rec-date">{{ rec.createdAt | date:'dd/MM/yyyy' }}</span>
             </div>
             <div class="rec-dossier-body">
-              <p class="rec-target" *ngIf="rec.type === 'hopital'">
-                <lucide-icon name="building-2" [size]="14"></lucide-icon>
-                <strong>{{ rec.nomHopital }}</strong>
-              </p>
-              <p class="rec-target" *ngIf="rec.type === 'medecin'">
-                <lucide-icon name="user-check" [size]="14"></lucide-icon>
-                <strong>{{ rec.nomMedecinRecommande }}</strong>
-                <span class="rec-spec" *ngIf="rec.specialite"> — {{ rec.specialite }}</span>
+              <p class="rec-target">
+                <lucide-icon [name]="getOrientationIcon(rec)" [size]="14"></lucide-icon>
+                <strong>{{ getOrientationDestinataire(rec) }}</strong>
+                <span class="rec-spec" *ngIf="getOrientationSpecialite(rec)"> — {{ getOrientationSpecialite(rec) }}</span>
               </p>
               <p class="rec-motif">
                 <lucide-icon name="message-square" [size]="14"></lucide-icon>
@@ -596,14 +598,31 @@
               </p>
               <p class="rec-prescripteur" *ngIf="rec.medecinPrescripteur">
                 <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
-                Recommandé par {{ rec.medecinPrescripteur }}
+                Orienté par {{ rec.medecinPrescripteur }}
               </p>
+              <!-- Informations du RDV créé -->
+              <div class="rec-rdv-info" *ngIf="rec.idRdvCree && rec.dateRdvPropose">
+                <lucide-icon name="calendar-check" [size]="14"></lucide-icon>
+                <span class="rdv-label">RDV programmé:</span>
+                <span class="rdv-date">{{ rec.dateRdvPropose | date:'EEEE dd MMMM yyyy à HH:mm':'':'fr' }}</span>
+              </div>
+              <!-- Coordonnées du destinataire externe -->
+              <div class="rec-contact-info" *ngIf="rec.adresseDestinataire || rec.telephoneDestinataire">
+                <span *ngIf="rec.adresseDestinataire" class="rec-adresse">
+                  <lucide-icon name="map-pin" [size]="12"></lucide-icon>
+                  {{ rec.adresseDestinataire }}
+                </span>
+                <span *ngIf="rec.telephoneDestinataire" class="rec-telephone">
+                  <lucide-icon name="phone" [size]="12"></lucide-icon>
+                  {{ rec.telephoneDestinataire }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
         <div class="empty-state" *ngIf="!dossier.recommandations || dossier.recommandations.length === 0">
           <lucide-icon name="send" [size]="48"></lucide-icon>
-          <p>Aucune recommandation enregistrée</p>
+          <p>Aucune orientation enregistrée</p>
         </div>
       </div>
     </div>

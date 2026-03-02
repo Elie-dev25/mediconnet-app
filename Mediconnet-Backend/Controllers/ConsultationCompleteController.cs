@@ -9,6 +9,7 @@ using Mediconnet_Backend.Core.Constants;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Core.Services;
 using Mediconnet_Backend.DTOs.Consultation;
+using Mediconnet_Backend.DTOs.Prescription;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -20,17 +21,20 @@ public class ConsultationCompleteController : BaseApiController
     private readonly ILogger<ConsultationCompleteController> _logger;
     private readonly INotificationService _notificationService;
     private readonly IConsultationAuditService _auditService;
+    private readonly IPrescriptionService _prescriptionService;
 
     public ConsultationCompleteController(
         ApplicationDbContext context, 
         ILogger<ConsultationCompleteController> logger,
         INotificationService notificationService,
-        IConsultationAuditService auditService)
+        IConsultationAuditService auditService,
+        IPrescriptionService prescriptionService)
     {
         _context = context;
         _logger = logger;
         _notificationService = notificationService;
         _auditService = auditService;
+        _prescriptionService = prescriptionService;
     }
 
     [HttpGet("dossier-patient/{idPatient}")]
@@ -240,6 +244,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Include(c => c.BulletinsExamen).ThenInclude(b => b.Examen)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Question)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
+                .Include(c => c.ConsultationGynecologique)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
 
             if (consultation == null)
@@ -267,10 +272,10 @@ public class ConsultationCompleteController : BaseApiController
             ).ToList() ?? new List<QuestionReponseDto>();
 
             // Mapper l'ordonnance
-            OrdonnanceDto? ordonnanceDto = null;
+            DTOs.Consultation.OrdonnanceDto? ordonnanceDto = null;
             if (consultation.Ordonnance != null)
             {
-                ordonnanceDto = new OrdonnanceDto
+                ordonnanceDto = new DTOs.Consultation.OrdonnanceDto
                 {
                     IdOrdonnance = consultation.Ordonnance.IdOrdonnance,
                     Notes = consultation.Ordonnance.Commentaire,
@@ -414,6 +419,7 @@ public class ConsultationCompleteController : BaseApiController
                     Percussion = consultation.ExamenPercussion,
                     AutresObservations = consultation.ExamenAutres
                 },
+                ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
                 // Étape 3: Diagnostic
                 Diagnostic = new DiagnosticDto
                 {
@@ -446,7 +452,7 @@ public class ConsultationCompleteController : BaseApiController
                 {
                     Ordonnance = ordonnanceDto,
                     Examens = examensPrescrits,
-                    Recommandations = new List<RecommandationDto>()
+                    Orientations = new List<OrientationPreConsultationDto>()
                 }
             };
 
@@ -475,11 +481,12 @@ public class ConsultationCompleteController : BaseApiController
             var consultation = await _context.Consultations
                 .Include(c => c.Patient).ThenInclude(p => p!.Utilisateur)
                 .Include(c => c.Medecin).ThenInclude(m => m!.Utilisateur)
-                .Include(c => c.Parametre)
+                .Include(c => c.Parametre)!.ThenInclude(p => p!.UtilisateurEnregistrant)
                 .Include(c => c.Ordonnance).ThenInclude(o => o!.Medicaments)!.ThenInclude(m => m.Medicament)
                 .Include(c => c.BulletinsExamen).ThenInclude(b => b.Examen)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Question)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
+                .Include(c => c.ConsultationGynecologique)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation);
 
             if (consultation == null)
@@ -502,10 +509,10 @@ public class ConsultationCompleteController : BaseApiController
             ).ToList() ?? new List<QuestionReponseDto>();
 
             // Mapper l'ordonnance
-            OrdonnanceDto? ordonnanceDto = null;
+            DTOs.Consultation.OrdonnanceDto? ordonnanceDto = null;
             if (consultation.Ordonnance != null)
             {
-                ordonnanceDto = new OrdonnanceDto
+                ordonnanceDto = new DTOs.Consultation.OrdonnanceDto
                 {
                     IdOrdonnance = consultation.Ordonnance.IdOrdonnance,
                     Notes = consultation.Ordonnance.Commentaire,
@@ -536,6 +543,64 @@ public class ConsultationCompleteController : BaseApiController
                 Statut = "prescrit"
             }).ToList() ?? new List<ExamenPrescritDetailDto>();
 
+            var examensPlan = consultation.BulletinsExamen?.Select(b => new ExamenPrescritDto
+            {
+                IdExamen = b.IdBulletinExamen,
+                NomExamen = b.Examen?.NomExamen ?? "",
+                Description = b.Examen?.Description ?? b.Instructions,
+                Notes = b.Instructions,
+                Urgence = b.Urgence,
+                Categorie = b.Examen?.Specialite?.Categorie?.Nom ?? "",
+                Specialite = b.Examen?.Specialite?.Nom ?? ""
+            }).ToList() ?? new List<ExamenPrescritDto>();
+
+            var parametresVitauxDto = consultation.Parametre != null ? new ParametresVitauxDto
+            {
+                Poids = consultation.Parametre.Poids,
+                Taille = consultation.Parametre.Taille,
+                Temperature = consultation.Parametre.Temperature,
+                TensionArterielle = consultation.Parametre.TensionFormatee
+            } : null;
+
+            var parametresPrisParInfirmier = consultation.Parametre?.EnregistrePar.HasValue == true &&
+                consultation.Parametre.EnregistrePar != consultation.IdMedecin;
+            string? infirmierNom = null;
+            if (parametresPrisParInfirmier && consultation.Parametre?.UtilisateurEnregistrant != null)
+            {
+                infirmierNom = $"{consultation.Parametre.UtilisateurEnregistrant.Prenom} {consultation.Parametre.UtilisateurEnregistrant.Nom}";
+            }
+
+            var examenCliniqueDto = new ExamenCliniqueDto
+            {
+                ParametresVitaux = parametresVitauxDto,
+                ParametresPrisParInfirmier = parametresPrisParInfirmier,
+                InfirmierNom = infirmierNom,
+                DatePriseParametres = consultation.Parametre?.DateEnregistrement,
+                Inspection = consultation.ExamenInspection,
+                Palpation = consultation.ExamenPalpation,
+                Auscultation = consultation.ExamenAuscultation,
+                Percussion = consultation.ExamenPercussion,
+                AutresObservations = consultation.ExamenAutres
+            };
+
+            var planTraitementDto = new PlanTraitementDto
+            {
+                ExplicationDiagnostic = consultation.ExplicationDiagnostic,
+                OptionsTraitement = consultation.OptionsTraitement,
+                Ordonnance = ordonnanceDto,
+                ExamensPrescrits = examensPlan,
+                OrientationSpecialiste = consultation.OrientationSpecialiste,
+                MotifOrientation = consultation.MotifOrientation
+            };
+
+            var conclusionDto = new ConclusionDto
+            {
+                ResumeConsultation = consultation.ResumeConsultation,
+                QuestionsPatient = consultation.QuestionsPatient,
+                ConsignesPatient = consultation.ConsignesPatient,
+                Recommandations = consultation.Recommandations
+            };
+
             var result = new ConsultationDetailDto
             {
                 IdConsultation = consultation.IdConsultation,
@@ -554,7 +619,12 @@ public class ConsultationCompleteController : BaseApiController
                 Recommandations = consultation.Recommandations,
                 Ordonnance = ordonnanceDto,
                 ExamensPrescrits = examensPrescrits,
-                Questionnaire = questionsReponses
+                Questionnaire = questionsReponses,
+                ParametresVitaux = parametresVitauxDto,
+                ExamenClinique = examenCliniqueDto,
+                ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
+                PlanTraitement = planTraitementDto,
+                ConclusionDetaillee = conclusionDto
             };
 
             return Ok(result);
@@ -699,34 +769,18 @@ public class ConsultationCompleteController : BaseApiController
             // Sauvegarder les constantes vitales si fournies (et pas déjà prises par infirmier)
             if (examenClinique.ParametresVitaux != null)
             {
-                if (consultation.Parametre == null)
-                {
-                    consultation.Parametre = new Parametre 
-                    { 
-                        IdConsultation = idConsultation,
-                        EnregistrePar = medecinId.Value,
-                        DateEnregistrement = DateTime.UtcNow
-                    };
-                    _context.Parametres.Add(consultation.Parametre);
-                }
-                else if (consultation.Parametre.EnregistrePar == null)
-                {
-                    // Paramètres existants mais pas d'enregistrant = médecin peut les modifier
-                    consultation.Parametre.EnregistrePar = medecinId.Value;
-                    consultation.Parametre.DateEnregistrement = DateTime.UtcNow;
-                }
+                var parametre = GetOrCreateParametre(consultation, medecinId.Value);
+                parametre.Poids = examenClinique.ParametresVitaux.Poids;
+                parametre.Taille = examenClinique.ParametresVitaux.Taille;
+                parametre.Temperature = examenClinique.ParametresVitaux.Temperature;
 
-                consultation.Parametre.Poids = examenClinique.ParametresVitaux.Poids;
-                consultation.Parametre.Taille = examenClinique.ParametresVitaux.Taille;
-                consultation.Parametre.Temperature = examenClinique.ParametresVitaux.Temperature;
-                
                 if (!string.IsNullOrEmpty(examenClinique.ParametresVitaux.TensionArterielle))
                 {
                     var parts = examenClinique.ParametresVitaux.TensionArterielle.Split('/');
                     if (parts.Length == 2 && int.TryParse(parts[0], out int sys) && int.TryParse(parts[1], out int dia))
                     {
-                        consultation.Parametre.TensionSystolique = sys;
-                        consultation.Parametre.TensionDiastolique = dia;
+                        parametre.TensionSystolique = sys;
+                        parametre.TensionDiastolique = dia;
                     }
                 }
             }
@@ -746,6 +800,62 @@ public class ConsultationCompleteController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError($"Erreur SaveExamenClinique: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Étape 2 bis: Sauvegarder l'examen gynécologique (réservé aux gynécologues)
+    /// </summary>
+    [HttpPost("{idConsultation}/examen-gynecologique")]
+    public async Task<IActionResult> SaveExamenGynecologique(int idConsultation, [FromBody] ExamenGynecologiqueDto examenGynecologique)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var medecin = await _context.Medecins
+                .Select(m => new { m.IdUser, m.IdSpecialite })
+                .FirstOrDefaultAsync(m => m.IdUser == medecinId.Value);
+
+            if (medecin == null)
+                return Forbid();
+
+            if (medecin.IdSpecialite != SpecialiteIds.GynecologieObstetrique)
+                return BadRequest(new { message = "Cette étape est réservée aux consultations gynécologiques." });
+
+            var consultation = await _context.Consultations
+                .Include(c => c.ConsultationGynecologique)
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            if (consultation.ConsultationGynecologique == null)
+            {
+                consultation.ConsultationGynecologique = new ConsultationGynecologique
+                {
+                    IdConsultation = idConsultation,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.ConsultationsGynecologiques.Add(consultation.ConsultationGynecologique);
+            }
+
+            consultation.ConsultationGynecologique.InspectionExterne = examenGynecologique.InspectionExterne;
+            consultation.ConsultationGynecologique.ExamenSpeculum = examenGynecologique.ExamenSpeculum;
+            consultation.ConsultationGynecologique.ToucherVaginal = examenGynecologique.ToucherVaginal;
+            consultation.ConsultationGynecologique.AutresObservations = examenGynecologique.AutresObservations;
+            consultation.ConsultationGynecologique.UpdatedAt = DateTime.UtcNow;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Examen gynécologique sauvegardé pour consultation {idConsultation}");
+            return Ok(new { message = "Examen gynécologique sauvegardé" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur SaveExamenGynecologique: {ex.Message}");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -810,64 +920,39 @@ public class ConsultationCompleteController : BaseApiController
             consultation.MotifOrientation = planTraitement.MotifOrientation;
             consultation.UpdatedAt = DateTime.UtcNow;
 
-            // Sauvegarder l'ordonnance si fournie
+            // Sauvegarder l'ordonnance via le service centralisé
             if (planTraitement.Ordonnance != null && planTraitement.Ordonnance.Medicaments.Count > 0)
             {
-                // Créer ou mettre à jour l'ordonnance
-                if (consultation.Ordonnance == null)
+                // Convertir les médicaments du DTO vers le format du service centralisé
+                var medicamentsRequest = planTraitement.Ordonnance.Medicaments.Select(med => new MedicamentPrescriptionRequest
                 {
-                    consultation.Ordonnance = new Ordonnance
-                    {
-                        IdConsultation = idConsultation,
-                        Date = DateTime.UtcNow,
-                        Commentaire = planTraitement.Ordonnance.Notes
-                    };
-                    _context.Ordonnances.Add(consultation.Ordonnance);
-                    await _context.SaveChangesAsync();
+                    NomMedicament = med.NomMedicament,
+                    Dosage = med.Dosage,
+                    Quantite = med.Quantite ?? 1,
+                    Posologie = med.Posologie,
+                    Frequence = med.Frequence,
+                    DureeTraitement = med.Duree,
+                    VoieAdministration = med.VoieAdministration,
+                    FormePharmaceutique = med.FormePharmaceutique,
+                    Instructions = med.Instructions
+                }).ToList();
+
+                // Utiliser le service centralisé pour créer/mettre à jour l'ordonnance
+                var ordonnanceResult = await _prescriptionService.CreerOrdonnanceConsultationAsync(
+                    idConsultation,
+                    medicamentsRequest,
+                    planTraitement.Ordonnance.Notes,
+                    medecinId.Value);
+
+                if (!ordonnanceResult.Success)
+                {
+                    _logger.LogWarning("Erreur lors de la création de l'ordonnance: {Message}", ordonnanceResult.Message);
+                    // On continue quand même pour sauvegarder le reste du plan de traitement
                 }
-                else
+                else if (ordonnanceResult.Alertes.Any())
                 {
-                    consultation.Ordonnance.Commentaire = planTraitement.Ordonnance.Notes;
-                    // Supprimer les anciens médicaments
-                    if (consultation.Ordonnance.Medicaments != null)
-                    {
-                        _context.PrescriptionMedicaments.RemoveRange(consultation.Ordonnance.Medicaments);
-                    }
-                }
-
-                // Ajouter les médicaments
-                foreach (var med in planTraitement.Ordonnance.Medicaments)
-                {
-                    // Chercher le médicament par nom
-                    var medicament = await _context.Medicaments
-                        .FirstOrDefaultAsync(m => m.Nom.Contains(med.NomMedicament) || med.NomMedicament.Contains(m.Nom));
-
-                    if (medicament == null)
-                    {
-                        // Créer le médicament s'il n'existe pas
-                        medicament = new Medicament
-                        {
-                            Nom = med.NomMedicament,
-                            Dosage = med.Dosage,
-                            Actif = true
-                        };
-                        _context.Medicaments.Add(medicament);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    var prescriptionMed = new PrescriptionMedicament
-                    {
-                        IdOrdonnance = consultation.Ordonnance.IdOrdonnance,
-                        IdMedicament = medicament.IdMedicament,
-                        Quantite = med.Quantite ?? 1,
-                        DureeTraitement = med.Duree,
-                        Posologie = med.Posologie,
-                        Frequence = med.Frequence,
-                        VoieAdministration = med.VoieAdministration,
-                        FormePharmaceutique = med.FormePharmaceutique,
-                        Instructions = med.Instructions
-                    };
-                    _context.PrescriptionMedicaments.Add(prescriptionMed);
+                    _logger.LogInformation("Alertes prescription: {Alertes}", 
+                        string.Join(", ", ordonnanceResult.Alertes.Select(a => a.Message)));
                 }
             }
 
@@ -959,21 +1044,8 @@ public class ConsultationCompleteController : BaseApiController
             if (consultation == null)
                 return NotFound(new { message = "Consultation non trouvée" });
 
-            // Sauvegarder les recommandations
-            if (prescriptions.Recommandations != null && prescriptions.Recommandations.Count > 0)
-            {
-                var recommandationsText = string.Join("\n", prescriptions.Recommandations.Select(r => 
-                {
-                    var parts = new List<string>();
-                    if (!string.IsNullOrEmpty(r.Type)) parts.Add($"[{r.Type}]");
-                    if (!string.IsNullOrEmpty(r.Description)) parts.Add(r.Description);
-                    if (!string.IsNullOrEmpty(r.Motif)) parts.Add($"Motif: {r.Motif}");
-                    if (!string.IsNullOrEmpty(r.SpecialiteOrientee)) parts.Add($"Orientation: {r.SpecialiteOrientee}");
-                    if (r.Urgence) parts.Add("(Urgent)");
-                    return string.Join(" - ", parts);
-                }));
-                consultation.Recommandations = recommandationsText;
-            }
+            // Note: Les orientations sont maintenant gérées via les endpoints dédiés /orientations
+            // Le champ Recommandations de la consultation reste pour les notes textuelles générales
             
             consultation.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -1319,7 +1391,7 @@ public class ConsultationCompleteController : BaseApiController
                     Statut = consultation.Statut,
                     Anamnese = new AnamneseDto { MotifConsultation = consultation.Motif, HistoireMaladie = consultation.Anamnese },
                     Diagnostic = new DiagnosticDto { DiagnosticPrincipal = consultation.Diagnostic, NotesCliniques = consultation.NotesCliniques },
-                    Prescriptions = new PrescriptionsDto { Examens = new List<ExamenPrescritDto>(), Recommandations = new List<RecommandationDto>() }
+                    Prescriptions = new PrescriptionsDto { Examens = new List<ExamenPrescritDto>(), Orientations = new List<OrientationPreConsultationDto>() }
                 },
                 Patient = dossierResult?.Value as DossierPatientDto ?? new DossierPatientDto()
             };
@@ -1649,7 +1721,7 @@ public class ConsultationCompleteController : BaseApiController
         }
     }
 
-    // ==================== ORIENTATION SPECIALISTE ====================
+    // ==================== ORIENTATION PRE-CONSULTATION (UNIFIÉ) ====================
 
     /// <summary>
     /// Récupère la liste des spécialités disponibles
@@ -1710,127 +1782,6 @@ public class ConsultationCompleteController : BaseApiController
     }
 
     /// <summary>
-    /// Crée une orientation vers un spécialiste
-    /// </summary>
-    [HttpPost("orientations")]
-    public async Task<IActionResult> CreateOrientation([FromBody] CreateOrientationRequest request)
-    {
-        try
-        {
-            var consultation = await _context.Consultations.FindAsync(request.IdConsultation);
-            if (consultation == null)
-                return NotFound(new { message = "Consultation non trouvée" });
-
-            var specialite = await _context.Specialites.FindAsync(request.IdSpecialite);
-            if (specialite == null)
-                return NotFound(new { message = "Spécialité non trouvée" });
-
-            var orientation = new OrientationSpecialiste
-            {
-                IdConsultation = request.IdConsultation,
-                IdSpecialite = request.IdSpecialite,
-                IdMedecinOriente = request.IdMedecinOriente,
-                Motif = request.Motif,
-                Urgence = request.Urgence,
-                DateRdvPropose = request.DateRdvPropose,
-                Notes = request.Notes,
-                Statut = "en_attente", // TODO: Créer enum OrientationStatut
-                DateOrientation = DateTime.Now
-            };
-
-            _context.OrientationsSpecialiste.Add(orientation);
-            await _context.SaveChangesAsync();
-
-            // Charger les relations pour le retour
-            await _context.Entry(orientation).Reference(o => o.Specialite).LoadAsync();
-            if (orientation.IdMedecinOriente.HasValue)
-            {
-                await _context.Entry(orientation).Reference(o => o.MedecinOriente).LoadAsync();
-                if (orientation.MedecinOriente != null)
-                    await _context.Entry(orientation.MedecinOriente).Reference(m => m.Utilisateur).LoadAsync();
-            }
-
-            var dto = new OrientationSpecialisteDto
-            {
-                IdOrientation = orientation.IdOrientation,
-                IdConsultation = orientation.IdConsultation,
-                IdSpecialite = orientation.IdSpecialite ?? 0,
-                NomSpecialite = orientation.Specialite?.NomSpecialite,
-                IdMedecinOriente = orientation.IdMedecinOriente,
-                NomMedecinOriente = orientation.MedecinOriente?.Utilisateur != null 
-                    ? $"Dr. {orientation.MedecinOriente.Utilisateur.Prenom} {orientation.MedecinOriente.Utilisateur.Nom}" 
-                    : null,
-                Motif = orientation.Motif,
-                Urgence = orientation.Urgence,
-                Statut = orientation.Statut,
-                DateOrientation = orientation.DateOrientation,
-                DateRdvPropose = orientation.DateRdvPropose,
-                Notes = orientation.Notes
-            };
-
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Erreur CreateOrientation: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la création de l'orientation" });
-        }
-    }
-
-    /// <summary>
-    /// Crée une orientation manuelle (spécialité saisie librement)
-    /// </summary>
-    [HttpPost("orientations/manuelle")]
-    public async Task<IActionResult> CreateOrientationManuelle([FromBody] CreateOrientationManuelleRequest request)
-    {
-        try
-        {
-            var consultation = await _context.Consultations.FindAsync(request.IdConsultation);
-            if (consultation == null)
-                return NotFound(new { message = "Consultation non trouvée" });
-
-            var orientation = new OrientationSpecialiste
-            {
-                IdConsultation = request.IdConsultation,
-                IdSpecialite = null,
-                SpecialiteManuelle = request.SpecialiteManuelle,
-                IdMedecinOriente = null,
-                MedecinManuel = request.MedecinManuel,
-                Motif = request.Motif,
-                Urgence = request.Urgence,
-                Notes = request.Notes,
-                Statut = "en_attente", // TODO: Créer enum OrientationStatut
-                DateOrientation = DateTime.Now
-            };
-
-            _context.OrientationsSpecialiste.Add(orientation);
-            await _context.SaveChangesAsync();
-
-            var dto = new OrientationSpecialisteDto
-            {
-                IdOrientation = orientation.IdOrientation,
-                IdConsultation = orientation.IdConsultation,
-                IdSpecialite = 0,
-                NomSpecialite = orientation.SpecialiteManuelle,
-                IdMedecinOriente = null,
-                NomMedecinOriente = orientation.MedecinManuel,
-                Motif = orientation.Motif,
-                Urgence = orientation.Urgence,
-                Statut = orientation.Statut,
-                DateOrientation = orientation.DateOrientation,
-                Notes = orientation.Notes
-            };
-
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Erreur CreateOrientationManuelle: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la création de l'orientation manuelle" });
-        }
-    }
-
-    /// <summary>
     /// Récupère les orientations d'une consultation
     /// </summary>
     [HttpGet("{idConsultation}/orientations")]
@@ -1838,32 +1789,16 @@ public class ConsultationCompleteController : BaseApiController
     {
         try
         {
-            var orientations = await _context.OrientationsSpecialiste
+            var orientationsEntities = await _context.OrientationsPreConsultation
                 .Include(o => o.Specialite)
-                .Include(o => o.MedecinOriente)
-                    .ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.MedecinOriente).ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.MedecinPrescripteur).ThenInclude(m => m!.Utilisateur)
                 .Where(o => o.IdConsultation == idConsultation)
-                .OrderByDescending(o => o.DateOrientation)
-                .Select(o => new OrientationSpecialisteDto
-                {
-                    IdOrientation = o.IdOrientation,
-                    IdConsultation = o.IdConsultation,
-                    IdSpecialite = o.IdSpecialite ?? 0,
-                    NomSpecialite = o.Specialite != null ? o.Specialite.NomSpecialite : o.SpecialiteManuelle,
-                    IdMedecinOriente = o.IdMedecinOriente,
-                    NomMedecinOriente = o.MedecinOriente != null && o.MedecinOriente.Utilisateur != null
-                        ? $"Dr. {o.MedecinOriente.Utilisateur.Prenom} {o.MedecinOriente.Utilisateur.Nom}"
-                        : o.MedecinManuel,
-                    Motif = o.Motif,
-                    Urgence = o.Urgence,
-                    Statut = o.Statut,
-                    DateOrientation = o.DateOrientation,
-                    DateRdvPropose = o.DateRdvPropose,
-                    Notes = o.Notes,
-                    IdRdvCree = o.IdRdvCree
-                })
+                .OrderByDescending(o => o.Prioritaire)
+                .ThenByDescending(o => o.DateOrientation)
                 .ToListAsync();
 
+            var orientations = orientationsEntities.Select(o => MapToOrientationDto(o)).ToList();
             return Ok(orientations);
         }
         catch (Exception ex)
@@ -1874,82 +1809,10 @@ public class ConsultationCompleteController : BaseApiController
     }
 
     /// <summary>
-    /// Supprime une orientation
+    /// Crée une orientation (unifiée: médecin interne/externe, hôpital, etc.)
     /// </summary>
-    [HttpDelete("orientations/{idOrientation}")]
-    public async Task<IActionResult> DeleteOrientation(int idOrientation)
-    {
-        try
-        {
-            var orientation = await _context.OrientationsSpecialiste.FindAsync(idOrientation);
-            if (orientation == null)
-                return NotFound(new { message = "Orientation non trouvée" });
-
-            _context.OrientationsSpecialiste.Remove(orientation);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Orientation supprimée avec succès" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Erreur DeleteOrientation: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la suppression de l'orientation" });
-        }
-    }
-
-    // ==================== RECOMMANDATIONS ====================
-
-    /// <summary>
-    /// Récupérer les recommandations d'une consultation
-    /// </summary>
-    [HttpGet("{idConsultation}/recommandations")]
-    public async Task<IActionResult> GetRecommandations(int idConsultation)
-    {
-        try
-        {
-            var medecinId = GetCurrentUserId();
-            if (!medecinId.HasValue) return Unauthorized();
-
-            var recommandations = await _context.Recommandations
-                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
-                .Include(r => r.MedecinRecommande).ThenInclude(m => m!.Utilisateur)
-                .Where(r => r.IdConsultation == idConsultation)
-                .OrderByDescending(r => r.Prioritaire)
-                .ThenByDescending(r => r.CreatedAt)
-                .Select(r => new RecommandationResponseDto
-                {
-                    IdRecommandation = r.IdRecommandation,
-                    IdConsultation = r.IdConsultation,
-                    Type = r.Type,
-                    NomHopital = r.NomHopital,
-                    NomMedecinRecommande = r.IdMedecinRecommande.HasValue && r.MedecinRecommande != null && r.MedecinRecommande.Utilisateur != null
-                        ? $"Dr. {r.MedecinRecommande.Utilisateur.Prenom} {r.MedecinRecommande.Utilisateur.Nom}"
-                        : r.NomMedecinRecommande,
-                    IdMedecinRecommande = r.IdMedecinRecommande,
-                    Specialite = r.Specialite,
-                    Motif = r.Motif,
-                    Prioritaire = r.Prioritaire,
-                    CreatedAt = r.CreatedAt ?? DateTime.UtcNow,
-                    MedecinPrescripteur = r.Medecin != null && r.Medecin.Utilisateur != null
-                        ? $"Dr. {r.Medecin.Utilisateur.Prenom} {r.Medecin.Utilisateur.Nom}"
-                        : null
-                })
-                .ToListAsync();
-
-            return Ok(recommandations);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Erreur GetRecommandations: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur serveur" });
-        }
-    }
-
-    /// <summary>
-    /// Créer une recommandation pour une consultation
-    /// </summary>
-    [HttpPost("{idConsultation}/recommandations")]
-    public async Task<IActionResult> CreateRecommandation(int idConsultation, [FromBody] CreateRecommandationRequest request)
+    [HttpPost("{idConsultation}/orientations")]
+    public async Task<IActionResult> CreateOrientation(int idConsultation, [FromBody] CreateOrientationRequest request)
     {
         try
         {
@@ -1965,95 +1828,458 @@ public class ConsultationCompleteController : BaseApiController
             if (string.IsNullOrWhiteSpace(request.Motif))
                 return BadRequest(new { message = "Le motif est obligatoire" });
 
-            if (request.Type != "hopital" && request.Type != "medecin")
-                return BadRequest(new { message = "Le type doit être 'hopital' ou 'medecin'" });
+            // Valider le type d'orientation
+            var validTypes = new[] { TypesOrientation.MedecinInterne, TypesOrientation.MedecinExterne, 
+                                     TypesOrientation.Hopital, TypesOrientation.ServiceInterne, TypesOrientation.Laboratoire };
+            if (!validTypes.Contains(request.TypeOrientation))
+                return BadRequest(new { message = "Type d'orientation invalide" });
 
-            // Résoudre le nom du médecin interne si IdMedecinRecommande est fourni
-            string? nomMedecinRecommande = request.NomMedecinRecommande;
-            string? specialite = request.Specialite;
-            if (request.IdMedecinRecommande.HasValue)
+            // Résoudre les noms pour médecin interne
+            string? nomMedecinOriente = null;
+            string? nomSpecialite = null;
+            if (request.TypeOrientation == TypesOrientation.MedecinInterne)
             {
-                var medecinRec = await _context.Medecins
-                    .Include(m => m.Utilisateur)
-                    .Include(m => m.Specialite)
-                    .FirstOrDefaultAsync(m => m.IdUser == request.IdMedecinRecommande.Value);
-                if (medecinRec != null)
+                if (request.IdSpecialite.HasValue)
                 {
-                    nomMedecinRecommande = $"Dr. {medecinRec.Utilisateur?.Prenom} {medecinRec.Utilisateur?.Nom}";
-                    specialite = medecinRec.Specialite?.NomSpecialite ?? specialite;
+                    var specialite = await _context.Specialites.FindAsync(request.IdSpecialite.Value);
+                    nomSpecialite = specialite?.NomSpecialite;
+                }
+                if (request.IdMedecinOriente.HasValue)
+                {
+                    var medecinOriente = await _context.Medecins
+                        .Include(m => m.Utilisateur)
+                        .FirstOrDefaultAsync(m => m.IdUser == request.IdMedecinOriente.Value);
+                    if (medecinOriente?.Utilisateur != null)
+                        nomMedecinOriente = $"Dr. {medecinOriente.Utilisateur.Prenom} {medecinOriente.Utilisateur.Nom}";
                 }
             }
 
-            var recommandation = new Recommandation
+            var orientation = new OrientationPreConsultation
             {
                 IdConsultation = idConsultation,
                 IdPatient = consultation.IdPatient,
-                IdMedecin = medecinId.Value,
-                Type = request.Type,
-                NomHopital = request.NomHopital,
-                NomMedecinRecommande = nomMedecinRecommande,
-                IdMedecinRecommande = request.IdMedecinRecommande,
-                Specialite = specialite,
+                IdMedecinPrescripteur = medecinId.Value,
+                TypeOrientation = request.TypeOrientation,
+                IdSpecialite = request.IdSpecialite,
+                IdMedecinOriente = request.IdMedecinOriente,
+                NomDestinataire = request.NomDestinataire,
+                SpecialiteTexte = request.SpecialiteTexte ?? nomSpecialite,
+                AdresseDestinataire = request.AdresseDestinataire,
+                TelephoneDestinataire = request.TelephoneDestinataire,
                 Motif = request.Motif,
+                Notes = request.Notes,
+                Urgence = request.Urgence,
                 Prioritaire = request.Prioritaire,
-                CreatedAt = DateTime.UtcNow
+                Statut = StatutsOrientation.EnAttente,
+                DateOrientation = DateTime.UtcNow,
+                DateRdvPropose = request.DateRdvPropose,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Recommandations.Add(recommandation);
+            _context.OrientationsPreConsultation.Add(orientation);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Recommandation créée: {Id} pour consultation {ConsultationId}", 
-                recommandation.IdRecommandation, idConsultation);
+            _logger.LogInformation("Orientation créée: {Id} type={Type} pour consultation {ConsultationId}", 
+                orientation.IdOrientation, orientation.TypeOrientation, idConsultation);
 
-            return Ok(new RecommandationResponseDto
-            {
-                IdRecommandation = recommandation.IdRecommandation,
-                IdConsultation = recommandation.IdConsultation,
-                Type = recommandation.Type,
-                NomHopital = recommandation.NomHopital,
-                NomMedecinRecommande = nomMedecinRecommande,
-                IdMedecinRecommande = recommandation.IdMedecinRecommande,
-                Specialite = specialite,
-                Motif = recommandation.Motif,
-                Prioritaire = recommandation.Prioritaire,
-                CreatedAt = recommandation.CreatedAt ?? DateTime.UtcNow,
-                MedecinPrescripteur = null
-            });
+            // Charger les relations pour le retour
+            await _context.Entry(orientation).Reference(o => o.Specialite).LoadAsync();
+            await _context.Entry(orientation).Reference(o => o.MedecinOriente).LoadAsync();
+            if (orientation.MedecinOriente != null)
+                await _context.Entry(orientation.MedecinOriente).Reference(m => m.Utilisateur).LoadAsync();
+            await _context.Entry(orientation).Reference(o => o.MedecinPrescripteur).LoadAsync();
+            if (orientation.MedecinPrescripteur != null)
+                await _context.Entry(orientation.MedecinPrescripteur).Reference(m => m.Utilisateur).LoadAsync();
+
+            return Ok(MapToOrientationDto(orientation));
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateRecommandation: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur serveur" });
+            _logger.LogError($"Erreur CreateOrientation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la création de l'orientation" });
         }
     }
 
     /// <summary>
-    /// Supprimer une recommandation
+    /// Met à jour le statut d'une orientation
     /// </summary>
-    [HttpDelete("recommandations/{idRecommandation}")]
-    public async Task<IActionResult> DeleteRecommandation(int idRecommandation)
+    [HttpPut("orientations/{idOrientation}/statut")]
+    public async Task<IActionResult> UpdateOrientationStatut(int idOrientation, [FromBody] UpdateOrientationStatutRequest request)
     {
         try
         {
             var medecinId = GetCurrentUserId();
             if (!medecinId.HasValue) return Unauthorized();
 
-            var recommandation = await _context.Recommandations
-                .FirstOrDefaultAsync(r => r.IdRecommandation == idRecommandation && r.IdMedecin == medecinId.Value);
+            var orientation = await _context.OrientationsPreConsultation
+                .Include(o => o.Consultation)
+                .FirstOrDefaultAsync(o => o.IdOrientation == idOrientation);
 
-            if (recommandation == null)
-                return NotFound(new { message = "Recommandation non trouvée" });
+            if (orientation == null)
+                return NotFound(new { message = "Orientation non trouvée" });
 
-            _context.Recommandations.Remove(recommandation);
+            // Vérifier que le médecin est autorisé (prescripteur ou médecin de la consultation)
+            if (orientation.IdMedecinPrescripteur != medecinId.Value && orientation.Consultation?.IdMedecin != medecinId.Value)
+                return Forbid();
+
+            orientation.Statut = request.Statut;
+            orientation.DateRdvPropose = request.DateRdvPropose ?? orientation.DateRdvPropose;
+            orientation.IdRdvCree = request.IdRdvCree ?? orientation.IdRdvCree;
+            if (!string.IsNullOrEmpty(request.Notes))
+                orientation.Notes = request.Notes;
+            orientation.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Recommandation supprimée" });
+            return Ok(new { message = "Statut mis à jour" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur DeleteRecommandation: {ex.Message}");
+            _logger.LogError($"Erreur UpdateOrientationStatut: {ex.Message}");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
+    }
+
+    /// <summary>
+    /// Supprime une orientation
+    /// </summary>
+    [HttpDelete("orientations/{idOrientation}")]
+    public async Task<IActionResult> DeleteOrientation(int idOrientation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var orientation = await _context.OrientationsPreConsultation
+                .FirstOrDefaultAsync(o => o.IdOrientation == idOrientation && o.IdMedecinPrescripteur == medecinId.Value);
+
+            if (orientation == null)
+                return NotFound(new { message = "Orientation non trouvée" });
+
+            _context.OrientationsPreConsultation.Remove(orientation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Orientation supprimée avec succès" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur DeleteOrientation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la suppression de l'orientation" });
+        }
+    }
+
+    /// <summary>
+    /// Créer un RDV lié à une orientation (médecin interne)
+    /// </summary>
+    [HttpPost("orientations/{idOrientation}/creer-rdv")]
+    public async Task<IActionResult> CreerRdvPourOrientation(int idOrientation, [FromBody] CreerRdvOrientationRequest request)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var orientation = await _context.OrientationsPreConsultation
+                .Include(o => o.Consultation)
+                .Include(o => o.Patient).ThenInclude(p => p!.Utilisateur)
+                .FirstOrDefaultAsync(o => o.IdOrientation == idOrientation);
+
+            if (orientation == null)
+                return NotFound(new { message = "Orientation non trouvée" });
+
+            // Vérifier que c'est une orientation interne avec un médecin sélectionné
+            if (orientation.TypeOrientation != TypesOrientation.MedecinInterne)
+                return BadRequest(new { message = "La création de RDV n'est possible que pour les orientations internes" });
+
+            if (!orientation.IdMedecinOriente.HasValue)
+                return BadRequest(new { message = "Aucun médecin n'est sélectionné pour cette orientation" });
+
+            // Vérifier que le créneau est disponible
+            var dateHeure = DateTime.Parse(request.DateHeure);
+            var existingRdv = await _context.RendezVous
+                .AnyAsync(r => r.IdMedecin == orientation.IdMedecinOriente.Value 
+                    && r.DateHeure == dateHeure 
+                    && r.Statut != "annule");
+
+            if (existingRdv)
+                return BadRequest(new { message = "Ce créneau n'est plus disponible" });
+
+            // Créer le RDV
+            var rdv = new RendezVous
+            {
+                IdPatient = orientation.IdPatient,
+                IdMedecin = orientation.IdMedecinOriente.Value,
+                DateHeure = dateHeure,
+                Duree = request.Duree ?? 30,
+                Motif = request.Motif ?? orientation.Motif,
+                Notes = $"RDV créé suite à orientation #{orientation.IdOrientation}. {request.Notes ?? ""}".Trim(),
+                TypeRdv = "orientation",
+                Statut = "planifie",
+                DateCreation = DateTime.UtcNow,
+                DateModification = DateTime.UtcNow
+            };
+
+            _context.RendezVous.Add(rdv);
+            await _context.SaveChangesAsync();
+
+            // Mettre à jour l'orientation
+            orientation.IdRdvCree = rdv.IdRendezVous;
+            orientation.DateRdvPropose = dateHeure;
+            orientation.Statut = StatutsOrientation.RdvPris;
+            orientation.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // Envoyer une notification au patient
+            try
+            {
+                var medecinOriente = await _context.Medecins
+                    .Include(m => m.Utilisateur)
+                    .FirstOrDefaultAsync(m => m.IdUser == orientation.IdMedecinOriente.Value);
+                var nomMedecin = medecinOriente?.Utilisateur != null 
+                    ? $"Dr. {medecinOriente.Utilisateur.Prenom} {medecinOriente.Utilisateur.Nom}" 
+                    : "un médecin";
+
+                await _notificationService.CreateAsync(new CreateNotificationRequest
+                {
+                    IdUser = orientation.IdPatient,
+                    Type = "orientation_rdv",
+                    Titre = "Rendez-vous programmé suite à orientation",
+                    Message = $"Un rendez-vous a été programmé pour vous avec {nomMedecin} le {dateHeure:dd/MM/yyyy à HH:mm}.",
+                    Lien = $"/patient/rendez-vous",
+                    Icone = "calendar-check",
+                    Priorite = orientation.Urgence ? "haute" : "normale",
+                    SendRealTime = true
+                });
+            }
+            catch (Exception notifEx)
+            {
+                _logger.LogWarning($"Erreur envoi notification orientation RDV: {notifEx.Message}");
+            }
+
+            _logger.LogInformation("RDV {RdvId} créé pour orientation {OrientationId}", rdv.IdRendezVous, idOrientation);
+
+            return Ok(new { 
+                success = true,
+                message = "Rendez-vous créé avec succès",
+                idRendezVous = rdv.IdRendezVous,
+                dateHeure = rdv.DateHeure
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur CreerRdvPourOrientation: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur lors de la création du rendez-vous" });
+        }
+    }
+
+    /// <summary>
+    /// Récupérer les créneaux disponibles d'un médecin pour une date donnée
+    /// </summary>
+    [HttpGet("medecins/{idMedecin}/creneaux-disponibles")]
+    public async Task<IActionResult> GetCreneauxMedecinDisponibles(int idMedecin, [FromQuery] string date)
+    {
+        try
+        {
+            if (!DateTime.TryParse(date, out var dateRecherche))
+                return BadRequest(new { message = "Date invalide" });
+
+            // Récupérer les créneaux horaires du médecin pour ce jour de la semaine
+            // Note: JourSemaine dans CreneauDisponible: 1=Lundi..7=Dimanche, DayOfWeek: 0=Dimanche..6=Samedi
+            var dayOfWeek = (int)dateRecherche.DayOfWeek;
+            var jourSemaine = dayOfWeek == 0 ? 7 : dayOfWeek; // Convertir au format 1-7
+            var creneauxHoraires = await _context.CreneauxDisponibles
+                .Where(c => c.IdMedecin == idMedecin && c.JourSemaine == jourSemaine && c.Actif)
+                .OrderBy(c => c.HeureDebut)
+                .ToListAsync();
+
+            // Récupérer les RDV existants pour cette date
+            var dateDebut = dateRecherche.Date;
+            var dateFin = dateRecherche.Date.AddDays(1);
+            var rdvExistants = await _context.RendezVous
+                .Where(r => r.IdMedecin == idMedecin 
+                    && r.DateHeure >= dateDebut 
+                    && r.DateHeure < dateFin
+                    && r.Statut != "annule")
+                .Select(r => new { r.DateHeure, r.Duree })
+                .ToListAsync();
+
+            // Récupérer les indisponibilités
+            var indisponibilites = await _context.IndisponibilitesMedecin
+                .Where(i => i.IdMedecin == idMedecin 
+                    && i.DateDebut <= dateFin 
+                    && i.DateFin >= dateDebut)
+                .ToListAsync();
+
+            // Vérifier si le médecin est indisponible toute la journée
+            var indispoJournee = indisponibilites.Any(i => 
+                i.DateDebut.Date <= dateRecherche.Date && i.DateFin.Date >= dateRecherche.Date && i.JourneeComplete);
+
+            if (indispoJournee)
+            {
+                return Ok(new {
+                    date = dateRecherche.ToString("yyyy-MM-dd"),
+                    medecinDisponible = false,
+                    messageIndisponibilite = "Le médecin n'est pas disponible ce jour",
+                    creneaux = new List<object>()
+                });
+            }
+
+            // Générer les créneaux avec leur statut
+            var creneaux = new List<object>();
+            var maintenant = DateTime.UtcNow;
+
+            foreach (var ch in creneauxHoraires)
+            {
+                var heureDebut = dateRecherche.Date.Add(ch.HeureDebut);
+                var heureFin = dateRecherche.Date.Add(ch.HeureFin);
+                var duree = ch.DureeParDefaut > 0 ? ch.DureeParDefaut : 30;
+
+                var current = heureDebut;
+                while (current.AddMinutes(duree) <= heureFin)
+                {
+                    var slotEnd = current.AddMinutes(duree);
+                    
+                    // Vérifier si le créneau est passé
+                    var estPasse = current < maintenant;
+                    
+                    // Vérifier si le créneau est occupé
+                    var estOccupe = rdvExistants.Any(r => 
+                        r.DateHeure < slotEnd && r.DateHeure.AddMinutes(r.Duree) > current);
+
+                    // Vérifier si le créneau est dans une période d'indisponibilité
+                    var estIndispo = indisponibilites.Any(i => 
+                        !i.JourneeComplete && i.DateDebut < slotEnd && i.DateFin > current);
+
+                    string statut;
+                    if (estPasse) statut = "passe";
+                    else if (estOccupe) statut = "occupe";
+                    else if (estIndispo) statut = "indisponible";
+                    else statut = "disponible";
+
+                    creneaux.Add(new {
+                        dateHeure = current.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        heureDebut = current.ToString("HH:mm"),
+                        heureFin = slotEnd.ToString("HH:mm"),
+                        duree = duree,
+                        statut = statut,
+                        selectionnable = statut == "disponible"
+                    });
+
+                    current = current.AddMinutes(duree);
+                }
+            }
+
+            return Ok(new {
+                date = dateRecherche.ToString("yyyy-MM-dd"),
+                medecinDisponible = creneaux.Any(c => ((dynamic)c).statut == "disponible"),
+                creneaux = creneaux
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetCreneauxMedecinDisponibles: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Récupère les orientations d'un patient (pour le dossier médical)
+    /// </summary>
+    [HttpGet("patients/{idPatient}/orientations")]
+    public async Task<IActionResult> GetOrientationsPatient(int idPatient)
+    {
+        try
+        {
+            var orientationsEntities = await _context.OrientationsPreConsultation
+                .Include(o => o.Specialite)
+                .Include(o => o.MedecinOriente).ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.MedecinPrescripteur).ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.Consultation)
+                .Where(o => o.IdPatient == idPatient)
+                .OrderByDescending(o => o.DateOrientation)
+                .ToListAsync();
+
+            var orientations = orientationsEntities.Select(o => MapToOrientationDto(o)).ToList();
+            return Ok(orientations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetOrientationsPatient: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Mapper une entité OrientationPreConsultation vers DTO
+    /// </summary>
+    private static OrientationPreConsultationDto MapToOrientationDto(OrientationPreConsultation o)
+    {
+        return new OrientationPreConsultationDto
+        {
+            IdOrientation = o.IdOrientation,
+            IdConsultation = o.IdConsultation,
+            IdPatient = o.IdPatient,
+            TypeOrientation = o.TypeOrientation,
+            IdSpecialite = o.IdSpecialite,
+            NomSpecialite = o.Specialite?.NomSpecialite ?? o.SpecialiteTexte,
+            IdMedecinOriente = o.IdMedecinOriente,
+            NomMedecinOriente = o.MedecinOriente?.Utilisateur != null
+                ? $"Dr. {o.MedecinOriente.Utilisateur.Prenom} {o.MedecinOriente.Utilisateur.Nom}"
+                : null,
+            NomDestinataire = o.NomDestinataire,
+            SpecialiteTexte = o.SpecialiteTexte,
+            AdresseDestinataire = o.AdresseDestinataire,
+            TelephoneDestinataire = o.TelephoneDestinataire,
+            Motif = o.Motif,
+            Notes = o.Notes,
+            Urgence = o.Urgence,
+            Prioritaire = o.Prioritaire,
+            Statut = o.Statut,
+            DateOrientation = o.DateOrientation,
+            DateRdvPropose = o.DateRdvPropose,
+            IdRdvCree = o.IdRdvCree,
+            MedecinPrescripteur = o.MedecinPrescripteur?.Utilisateur != null
+                ? $"Dr. {o.MedecinPrescripteur.Utilisateur.Prenom} {o.MedecinPrescripteur.Utilisateur.Nom}"
+                : null,
+            CreatedAt = o.CreatedAt
+        };
+    }
+
+    private Parametre GetOrCreateParametre(Consultation consultation, int medecinId)
+    {
+        if (consultation.Parametre != null)
+        {
+            return consultation.Parametre;
+        }
+
+        var parametre = new Parametre
+        {
+            IdConsultation = consultation.IdConsultation,
+            DateEnregistrement = DateTime.UtcNow,
+            EnregistrePar = medecinId
+        };
+
+        consultation.Parametre = parametre;
+        _context.Parametres.Add(parametre);
+        return parametre;
+    }
+
+    private static ExamenGynecologiqueDto? MapExamenGynecologique(ConsultationGynecologique? entity)
+    {
+        if (entity == null)
+        {
+            return null;
+        }
+
+        return new ExamenGynecologiqueDto
+        {
+            InspectionExterne = entity.InspectionExterne,
+            ExamenSpeculum = entity.ExamenSpeculum,
+            ToucherVaginal = entity.ToucherVaginal,
+            AutresObservations = entity.AutresObservations
+        };
     }
 }
 
@@ -2070,31 +2296,6 @@ public class CloturerDossierRequest
     public string? Motif { get; set; }
 }
 
-public class CreateRecommandationRequest
-{
-    public string Type { get; set; } = "medecin";
-    public string? NomHopital { get; set; }
-    public string? NomMedecinRecommande { get; set; }
-    public int? IdMedecinRecommande { get; set; }
-    public string? Specialite { get; set; }
-    public string Motif { get; set; } = "";
-    public bool Prioritaire { get; set; } = false;
-}
-
-public class RecommandationResponseDto
-{
-    public int IdRecommandation { get; set; }
-    public int IdConsultation { get; set; }
-    public string Type { get; set; } = "";
-    public string? NomHopital { get; set; }
-    public string? NomMedecinRecommande { get; set; }
-    public int? IdMedecinRecommande { get; set; }
-    public string? Specialite { get; set; }
-    public string Motif { get; set; } = "";
-    public bool Prioritaire { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string? MedecinPrescripteur { get; set; }
-}
 
 public class PauseConsultationRequest
 {

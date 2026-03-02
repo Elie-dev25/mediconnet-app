@@ -252,15 +252,91 @@ export class DossierMedicalViewComponent {
   }
 
   getExamenTypeIcon(type: string): string {
+    if (!type) return 'flask-conical';
+    const typeLower = type.toLowerCase();
+    
+    if (typeLower.includes('biologie') || typeLower.includes('analyse')) {
+      return 'flask-conical';
+    }
+    if (typeLower.includes('imagerie') || typeLower.includes('radio') || typeLower.includes('scanner') || typeLower.includes('irm')) {
+      return 'scan';
+    }
+    if (typeLower.includes('cardio')) {
+      return 'heart-pulse';
+    }
+    if (typeLower.includes('neuro')) {
+      return 'brain';
+    }
+    return 'test-tube';
+  }
+
+  // ==================== ORIENTATIONS ====================
+
+  getOrientationIcon(rec: any): string {
+    const type = rec.typeOrientation || rec.type;
     switch (type) {
-      case 'biologie':
+      case 'hopital':
+        return 'building-2';
+      case 'medecin_interne':
+        return 'user-check';
+      case 'medecin_externe':
+        return 'user';
+      case 'service_interne':
+        return 'building';
+      case 'laboratoire':
         return 'flask-conical';
-      case 'imagerie':
-        return 'scan';
-      case 'cardiologie':
-        return 'heart-pulse';
+      case 'medecin':
+        return 'user-check';
       default:
-        return 'file-text';
+        return 'send';
+    }
+  }
+
+  getOrientationTypeLabel(rec: any): string {
+    const type = rec.typeOrientation || rec.type;
+    switch (type) {
+      case 'hopital':
+        return 'Hôpital';
+      case 'medecin_interne':
+        return 'Médecin interne';
+      case 'medecin_externe':
+        return 'Médecin externe';
+      case 'service_interne':
+        return 'Service interne';
+      case 'laboratoire':
+        return 'Laboratoire';
+      case 'medecin':
+        return 'Médecin';
+      default:
+        return 'Orientation';
+    }
+  }
+
+  getOrientationDestinataire(rec: any): string {
+    return rec.nomDestinataire || rec.nomMedecinOriente || rec.nomMedecinRecommande || rec.nomHopital || rec.nomSpecialite || 'Non spécifié';
+  }
+
+  getOrientationSpecialite(rec: any): string | null {
+    return rec.nomSpecialite || rec.specialite || rec.specialiteTexte || null;
+  }
+
+  getOrientationStatutLabel(statut: string | undefined): string {
+    if (!statut) return '';
+    switch (statut) {
+      case 'en_attente':
+        return 'En attente';
+      case 'acceptee':
+        return 'Acceptée';
+      case 'refusee':
+        return 'Refusée';
+      case 'rdv_pris':
+        return 'RDV pris';
+      case 'terminee':
+        return 'Terminée';
+      case 'annulee':
+        return 'Annulée';
+      default:
+        return statut;
     }
   }
 

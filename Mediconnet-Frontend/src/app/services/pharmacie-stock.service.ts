@@ -399,4 +399,54 @@ export class PharmacieStockService {
 
     return this.http.get<PagedResult<Dispensation>>(`${this.apiUrl}/dispensations`, { params });
   }
+
+  // ==================== Formes Pharmaceutiques et Voies d'Administration ====================
+
+  /**
+   * Récupère les formes pharmaceutiques et voies d'administration pour un médicament
+   */
+  getFormesVoiesMedicament(idMedicament: number): Observable<MedicamentFormesVoies> {
+    return this.http.get<MedicamentFormesVoies>(`${environment.apiUrl}/medicament/${idMedicament}/formes-voies`);
+  }
+
+  /**
+   * Récupère toutes les formes pharmaceutiques actives
+   */
+  getAllFormesPharmaceutiques(): Observable<FormePharmaceutique[]> {
+    return this.http.get<FormePharmaceutique[]>(`${environment.apiUrl}/medicament/formes`);
+  }
+
+  /**
+   * Récupère toutes les voies d'administration actives
+   */
+  getAllVoiesAdministration(): Observable<VoieAdministration[]> {
+    return this.http.get<VoieAdministration[]>(`${environment.apiUrl}/medicament/voies`);
+  }
+}
+
+// Interfaces pour formes et voies
+export interface FormePharmaceutique {
+  idForme: number;
+  code: string;
+  libelle: string;
+  description?: string;
+  estDefaut?: boolean;
+}
+
+export interface VoieAdministration {
+  idVoie: number;
+  code: string;
+  libelle: string;
+  description?: string;
+  estDefaut?: boolean;
+}
+
+export interface MedicamentFormesVoies {
+  idMedicament: number;
+  nomMedicament: string;
+  dosage?: string;
+  formes: FormePharmaceutique[];
+  voies: VoieAdministration[];
+  hasSpecificFormes: boolean;
+  hasSpecificVoies: boolean;
 }

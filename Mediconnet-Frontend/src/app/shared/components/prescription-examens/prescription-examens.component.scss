@@ -1,4 +1,19 @@
 .prescription-examens {
+  &.collapsed {
+    .section-header {
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      
+      &:hover {
+        background: #f9fafb;
+        border-radius: 8px;
+        margin: -0.5rem;
+        padding: 0.5rem;
+        padding-bottom: 0.75rem;
+      }
+    }
+  }
+
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -6,6 +21,8 @@
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
  
     h4 {
       display: flex;
@@ -22,6 +39,25 @@
         font-size: 0.875rem;
         color: #0891b2;
         font-weight: 500;
+      }
+    }
+
+    .collapse-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #6b7280;
+
+      &:hover {
+        background: #e5e7eb;
+        color: #374151;
       }
     }
   }

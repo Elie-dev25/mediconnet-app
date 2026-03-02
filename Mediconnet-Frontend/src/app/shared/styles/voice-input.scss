@@ -1,0 +1,40 @@
+// Styles globaux pour la directive voice-input
+// À importer dans styles.scss
+
+@keyframes voice-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+// Wrapper créé par la directive
+.voice-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+
+  // Ajuster le padding-right des éléments pour laisser place au bouton
+  input[appVoiceInput],
+  textarea[appVoiceInput] {
+    padding-right: 44px !important;
+  }
+}
+
+// Bouton micro (styles de base appliqués par la directive, ceux-ci sont des overrides)
+.voice-input-mic-btn {
+  &:hover:not(.recording) {
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+    background: #eff6ff !important;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+}

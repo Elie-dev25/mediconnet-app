@@ -17,6 +17,7 @@ import {
   SoinHospitalisationPanelComponent,
   FinHospitalisationPanelComponent
 } from '../../../shared';
+import { OrdonnanceDirectePanelComponent } from '../../../shared/components/ordonnance-directe-panel/ordonnance-directe-panel.component';
 import { AuthService } from '../../../services/auth.service';
 import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
 import { 
@@ -46,7 +47,8 @@ type TabType = 'tous' | 'hospitalises';
     OrdonnanceHospitalisationPanelComponent,
     ExamenHospitalisationPanelComponent,
     SoinHospitalisationPanelComponent,
-    FinHospitalisationPanelComponent
+    FinHospitalisationPanelComponent,
+    OrdonnanceDirectePanelComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './patients.component.html',
@@ -108,6 +110,12 @@ export class MedecinPatientsComponent implements OnInit {
   ordonnanceHospitalisationId: number | null = null;
   ordonnancePatientNom = '';
   ordonnancePatientPrenom = '';
+
+  // Panneau latéral Ordonnance Directe (depuis fiche patient)
+  showOrdonnanceDirectePanel = false;
+  ordonnanceDirectePatientId: number | null = null;
+  ordonnanceDirectePatientNom = '';
+  ordonnanceDirectePatientPrenom = '';
 
   // Panneau latéral Soin Hospitalisation
   showSoinHospPanel = false;
@@ -691,9 +699,37 @@ export class MedecinPatientsComponent implements OnInit {
   }
 
   openOrdonnancePanel(patientId: number): void {
-    // Pour l'instant, afficher un message - fonctionnalité à implémenter via consultation
-    console.log('Faire ordonnance pour patient:', patientId);
-    // TODO: Ouvrir le panneau d'ordonnance dans le contexte consultation
+    // Récupérer les infos du patient depuis la liste ou le patient sélectionné
+    const patient = this.patients.find(p => p.idPatient === patientId);
+    if (patient) {
+      this.ordonnanceDirectePatientId = patientId;
+      this.ordonnanceDirectePatientNom = patient.nom;
+      this.ordonnanceDirectePatientPrenom = patient.prenom;
+    } else if (this.selectedPatientId === patientId) {
+      // Utiliser les infos du patient sélectionné dans la fiche
+      this.ordonnanceDirectePatientId = patientId;
+      // Les noms seront récupérés depuis le panel
+      this.ordonnanceDirectePatientNom = '';
+      this.ordonnanceDirectePatientPrenom = '';
+    } else {
+      this.ordonnanceDirectePatientId = patientId;
+      this.ordonnanceDirectePatientNom = '';
+      this.ordonnanceDirectePatientPrenom = '';
+    }
+    this.showOrdonnanceDirectePanel = true;
+    this.isDetailOpen = false; // Fermer la fiche patient
+  }
+
+  closeOrdonnanceDirectePanel(): void {
+    this.showOrdonnanceDirectePanel = false;
+    this.ordonnanceDirectePatientId = null;
+    this.ordonnanceDirectePatientNom = '';
+    this.ordonnanceDirectePatientPrenom = '';
+  }
+
+  onOrdonnanceDirecteSaved(): void {
+    this.closeOrdonnanceDirectePanel();
+    // Optionnel: recharger les données si nécessaire
   }
 
   // ==================== PANNEAU ATTRIBUTION LIT (MAJOR) ====================

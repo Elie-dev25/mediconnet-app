@@ -150,7 +150,7 @@
         <form [formGroup]="step1Form" *ngIf="currentStep === 1">
           <div class="form-group">
             <label>Nom de l'assurance *</label>
-            <input type="text" formControlName="nom" placeholder="Ex: AXA Assurances Cameroun">
+            <input type="text" formControlName="nom" placeholder="Ex: AXA Assurances Cameroun" appVoiceInput>
           </div>
           <div class="form-group">
             <label>Type d'assurance *</label>
@@ -175,11 +175,11 @@
           <div class="form-row">
             <div class="form-group">
               <label>Groupe / Maison-mère</label>
-              <input type="text" formControlName="groupe" placeholder="Ex: Groupe AXA">
+              <input type="text" formControlName="groupe" placeholder="Ex: Groupe AXA" appVoiceInput>
             </div>
             <div class="form-group">
               <label>Pays d'origine</label>
-              <input type="text" formControlName="paysOrigine" placeholder="Ex: Cameroun">
+              <input type="text" formControlName="paysOrigine" placeholder="Ex: Cameroun" appVoiceInput>
             </div>
           </div>
           <div class="form-group">
@@ -191,7 +191,7 @@
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea formControlName="description" rows="3" placeholder="Brève description de l'organisme..."></textarea>
+            <textarea formControlName="description" rows="3" placeholder="Brève description de l'organisme..." appVoiceInput></textarea>
           </div>
         </form>
 
@@ -199,12 +199,12 @@
         <form [formGroup]="step3Form" *ngIf="currentStep === 3">
           <div class="form-group">
             <label>Types de couverture</label>
-            <input type="text" formControlName="typeCouverture" placeholder="Ex: hospitalisation, maternité, accidents">
+            <input type="text" formControlName="typeCouverture" placeholder="Ex: hospitalisation, maternité, accidents" appVoiceInput>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Catégorie de bénéficiaires</label>
-              <input type="text" formControlName="categorieBeneficiaires" placeholder="Ex: salariés, familles">
+              <input type="text" formControlName="categorieBeneficiaires" placeholder="Ex: salariés, familles" appVoiceInput>
             </div>
           </div>
           <div class="form-group checkbox-group">
@@ -219,7 +219,7 @@
         <form [formGroup]="step4Form" *ngIf="currentStep === 4">
           <div class="form-group">
             <label>Conditions d'adhésion</label>
-            <textarea formControlName="conditionsAdhesion" rows="3" placeholder="Ex: Affiliation CNPS obligatoire, cotisation mensuelle..."></textarea>
+            <textarea formControlName="conditionsAdhesion" rows="3" placeholder="Ex: Affiliation CNPS obligatoire, cotisation mensuelle..." appVoiceInput></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">

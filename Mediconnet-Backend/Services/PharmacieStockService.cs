@@ -603,13 +603,19 @@ public class PharmacieStockService : IPharmacieStockService
             {
                 IdOrdonnance = o.IdOrdonnance,
                 Date = o.Date,
-                IdPatient = o.Consultation?.IdPatient ?? 0,
-                NomPatient = o.Consultation?.Patient?.Utilisateur != null 
-                    ? $"{o.Consultation.Patient.Utilisateur.Prenom} {o.Consultation.Patient.Utilisateur.Nom}" : "",
-                NomMedecin = o.Consultation?.Medecin?.Utilisateur != null 
-                    ? $"Dr. {o.Consultation.Medecin.Utilisateur.Prenom} {o.Consultation.Medecin.Utilisateur.Nom}" : "",
+                IdPatient = o.IdPatient ?? o.Consultation?.IdPatient ?? 0,
+                NomPatient = o.Patient?.Utilisateur != null 
+                    ? $"{o.Patient.Utilisateur.Prenom} {o.Patient.Utilisateur.Nom}" 
+                    : (o.Consultation?.Patient?.Utilisateur != null 
+                        ? $"{o.Consultation.Patient.Utilisateur.Prenom} {o.Consultation.Patient.Utilisateur.Nom}" : ""),
+                NomMedecin = o.Medecin?.Utilisateur != null 
+                    ? $"Dr. {o.Medecin.Utilisateur.Prenom} {o.Medecin.Utilisateur.Nom}" 
+                    : (o.Consultation?.Medecin?.Utilisateur != null 
+                        ? $"Dr. {o.Consultation.Medecin.Utilisateur.Prenom} {o.Consultation.Medecin.Utilisateur.Nom}" : ""),
                 Commentaire = o.Commentaire,
                 Statut = dispensation?.Statut ?? "en_attente",
+                DateExpiration = o.DateExpiration,
+                Renouvelable = o.Renouvelable,
                 Medicaments = o.Medicaments?.Select(pm => new MedicamentPrescritDto
                 {
                     IdMedicament = pm.IdMedicament,

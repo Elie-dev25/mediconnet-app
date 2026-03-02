@@ -26,10 +26,12 @@
             <div class="form-group flex-2 autocomplete-container">
               <label>Médicament *</label>
               <input type="text" formControlName="nomMedicament" 
-                     placeholder="Rechercher un médicament..."
-                     (input)="onMedicamentSearch(i, $event)"
+                     placeholder="Saisir ou rechercher un médicament..."
+                     (input)="onMedicamentSearch(i, $event); onMedicamentNameChange(i)"
                      (blur)="hideMedicamentSuggestions()"
-                     autocomplete="off">
+                     autocomplete="off"
+                     appVoiceInput>
+              <small class="hint-text">Vous pouvez saisir librement un médicament non référencé</small>
               <div class="autocomplete-dropdown" *ngIf="activeMedicamentIndex === i && medicamentSuggestions.length > 0">
                 <div class="autocomplete-item" *ngFor="let suggestion of medicamentSuggestions"
                      (mousedown)="selectMedicament(i, suggestion)">
@@ -44,7 +46,7 @@
             </div>
             <div class="form-group flex-1">
               <label>Dosage</label>
-              <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g...">
+              <input type="text" formControlName="dosage" placeholder="Ex: 500mg, 1g..." appVoiceInput>
             </div>
           </div>
 
@@ -59,7 +61,7 @@
             </div>
             <div class="form-group flex-1" *ngIf="isPosologieAutre(i)">
               <label>Préciser la posologie</label>
-              <input type="text" formControlName="posologieAutre" placeholder="Posologie personnalisée...">
+              <input type="text" formControlName="posologieAutre" placeholder="Posologie personnalisée..." appVoiceInput>
             </div>
             <div class="form-group flex-1">
               <label>Forme pharmaceutique</label>
@@ -70,7 +72,7 @@
             </div>
             <div class="form-group flex-1" *ngIf="isFormeAutre(i)">
               <label>Préciser la forme</label>
-              <input type="text" formControlName="formeAutre" placeholder="Forme personnalisée...">
+              <input type="text" formControlName="formeAutre" placeholder="Forme personnalisée..." appVoiceInput>
             </div>
           </div>
 
@@ -85,11 +87,11 @@
             </div>
             <div class="form-group flex-1" *ngIf="isVoieAutre(i)">
               <label>Préciser la voie</label>
-              <input type="text" formControlName="voieAutre" placeholder="Voie personnalisée...">
+              <input type="text" formControlName="voieAutre" placeholder="Voie personnalisée..." appVoiceInput>
             </div>
             <div class="form-group flex-1">
               <label>Durée du traitement</label>
-              <input type="text" formControlName="dureeTraitement" placeholder="Ex: 7 jours, 1 mois...">
+              <input type="text" formControlName="dureeTraitement" placeholder="Ex: 7 jours, 1 mois..." appVoiceInput>
             </div>
             <div class="form-group flex-half">
               <label>Quantité</label>
@@ -102,7 +104,7 @@
             <div class="form-group flex-1">
               <label>Instructions particulières</label>
               <textarea formControlName="instructions" rows="2" 
-                        placeholder="Précautions, interactions, conseils..."></textarea>
+                        placeholder="Précautions, interactions, conseils..." appVoiceInput></textarea>
             </div>
           </div>
         </div>

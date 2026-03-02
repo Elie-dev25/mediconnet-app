@@ -1,6 +1,6 @@
-<div class="prescription-examens">
-  <!-- Header avec compteur -->
-  <div class="section-header">
+<div class="prescription-examens" [class.collapsed]="collapsed">
+  <!-- Header avec compteur et toggle -->
+  <div class="section-header" (click)="toggleCollapsed()">
     <h4>
       <lucide-icon name="test-tube" [size]="16"></lucide-icon>
       Prescription d'examens
@@ -8,10 +8,13 @@
         ({{ getTotalSelectedCount() }} sélectionné{{ getTotalSelectedCount() > 1 ? 's' : '' }})
       </span>
     </h4>
+    <button type="button" class="collapse-toggle" (click)="toggleCollapsed(); $event.stopPropagation()">
+      <lucide-icon [name]="collapsed ? 'chevron-down' : 'chevron-up'" [size]="18"></lucide-icon>
+    </button>
   </div>
 
   <!-- Catégories d'examens -->
-  <div class="categories-container">
+  <div class="categories-container" *ngIf="!collapsed">
     <div class="category-card" *ngFor="let category of categories">
       <!-- Header de catégorie -->
       <div class="category-header" (click)="toggleCategory(category)">
@@ -89,7 +92,8 @@
                        [ngModel]="examen.notes"
                        (ngModelChange)="updateNotes(examen, $event)"
                        placeholder="Notes..."
-                       class="notes-input">
+                       class="notes-input"
+                       appVoiceInput>
               </td>
             </tr>
           </tbody>
@@ -99,7 +103,7 @@
   </div>
 
   <!-- Ajout d'examen personnalisé -->
-  <div class="custom-examen-section">
+  <div class="custom-examen-section" *ngIf="!collapsed">
     <div class="custom-examen-header">
       <lucide-icon name="circle-plus" [size]="16"></lucide-icon>
       <span>Ajouter un examen personnalisé</span>
@@ -113,7 +117,8 @@
              [(ngModel)]="customExamenNom" 
              placeholder="Nom de l'examen..."
              class="custom-nom-input"
-             (keyup.enter)="addCustomExamen()">
+             (keyup.enter)="addCustomExamen()"
+             appVoiceInput>
       <button type="button" 
               class="btn-add-custom" 
               (click)="addCustomExamen()"
@@ -124,8 +129,8 @@
     </div>
   </div>
 
-  <!-- Résumé des examens sélectionnés -->
-  <div class="selected-summary" *ngIf="getTotalSelectedCount() > 0">
+  <!-- Résumé des examens sélectionnés (toujours visible même si collapsed) -->
+  <div class="selected-summary" *ngIf="getTotalSelectedCount() > 0 && collapsed">
     <div class="summary-header">
       <lucide-icon name="clipboard-check" [size]="16"></lucide-icon>
       <span>Examens prescrits ({{ getTotalSelectedCount() }})</span>

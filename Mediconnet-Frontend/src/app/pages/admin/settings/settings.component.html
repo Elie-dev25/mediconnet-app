@@ -484,7 +484,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>Nom du standard *</label>
-              <input type="text" [(ngModel)]="standardForm.nom" placeholder="Ex: Classique, VIP, Suite...">
+              <input type="text" [(ngModel)]="standardForm.nom" placeholder="Ex: Classique, VIP, Suite..." appVoiceInput>
             </div>
             <div class="form-group">
               <label>Prix journalier (FCFA) *</label>
@@ -493,16 +493,16 @@
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea [(ngModel)]="standardForm.description" rows="2" placeholder="Description du standard..."></textarea>
+            <textarea [(ngModel)]="standardForm.description" rows="2" placeholder="Description du standard..." appVoiceInput></textarea>
           </div>
           <div class="form-group">
             <label>Localisation</label>
-            <input type="text" [(ngModel)]="standardForm.localisation" placeholder="Ex: Bâtiment A, Étage 2...">
+            <input type="text" [(ngModel)]="standardForm.localisation" placeholder="Ex: Bâtiment A, Étage 2..." appVoiceInput>
           </div>
           <div class="form-group">
             <label>Privilèges</label>
             <div class="privileges-input">
-              <input type="text" [(ngModel)]="newPrivilege" placeholder="Ex: WiFi, Climatisation..." 
+              <input type="text" [(ngModel)]="newPrivilege" placeholder="Ex: WiFi, Climatisation..." appVoiceInput
                      (keyup.enter)="addPrivilege()">
               <button class="btn btn-sm btn-primary" (click)="addPrivilege()" [disabled]="!newPrivilege.trim()">
                 <lucide-icon name="plus" [size]="14"></lucide-icon>
@@ -542,7 +542,7 @@
         <div class="modal-body">
           <div class="form-group">
             <label>Numéro de chambre *</label>
-            <input type="text" [(ngModel)]="chambreForm.numero" placeholder="Ex: 101, A12...">
+            <input type="text" [(ngModel)]="chambreForm.numero" placeholder="Ex: 101, A12..." appVoiceInput>
           </div>
           <div class="form-group">
             <label>Standard de chambre</label>
@@ -602,7 +602,7 @@
           </div>
           <div class="form-group">
             <label>Numéro de lit *</label>
-            <input type="text" [(ngModel)]="litForm.numero" placeholder="Ex: A, B, 1, 2...">
+            <input type="text" [(ngModel)]="litForm.numero" placeholder="Ex: A, B, 1, 2..." appVoiceInput>
           </div>
           <div class="form-group">
             <label>Statut</label>

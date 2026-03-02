@@ -23,6 +23,7 @@ import {
   formatDateWithWeekday
 } from '../../../shared';
 import { ConsultationCompleteService, CreneauAvecStatut } from '../../../services/consultation-complete.service';
+import { CreneauxSelectorComponent, CreneauUnifie } from '../../../shared/components/creneaux-selector/creneaux-selector.component';
 import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
 
 @Component({
@@ -39,7 +40,8 @@ import { MEDECIN_MENU_ITEMS, MEDECIN_SIDEBAR_TITLE } from '../shared';
     MiniAgendaComponent,
     ConsultationQuestionnaireFormComponent,
     ModalComponent,
-    FichePatientPanelComponent
+    FichePatientPanelComponent,
+    CreneauxSelectorComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './dashboard.component.html',
@@ -94,6 +96,7 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
   // Panneau fiche patient (sidebar)
   selectedPatientId: number | null = null;
   isFichePanelOpen = false;
+  selectedRdvContext: RdvPlanningDto | null = null;
 
   constructor(
     private authService: AuthService,
@@ -411,6 +414,47 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
     return this.selectedCreneauSuggestion?.dateHeure === creneau.dateHeure;
   }
 
+  // ==================== CRÉNEAUX UNIFIÉS ====================
+
+  /**
+   * Convertir les créneaux de suggestion vers le format unifié
+   */
+  get creneauxSuggestionUnifies(): CreneauUnifie[] {
+    return this.creneauxSuggestion.map(c => ({
+      dateHeure: c.dateHeure,
+      heureDebut: c.heureDebut,
+      heureFin: c.heureFin,
+      duree: c.duree,
+      statut: c.statut as 'disponible' | 'occupe' | 'passe' | 'indisponible',
+      selectionnable: c.statut === 'disponible'
+    }));
+  }
+
+  /**
+   * Créneau de suggestion sélectionné au format unifié
+   */
+  get selectedCreneauSuggestionUnifie(): CreneauUnifie | null {
+    if (!this.selectedCreneauSuggestion) return null;
+    return {
+      dateHeure: this.selectedCreneauSuggestion.dateHeure,
+      heureDebut: this.selectedCreneauSuggestion.heureDebut,
+      heureFin: this.selectedCreneauSuggestion.heureFin,
+      duree: this.selectedCreneauSuggestion.duree,
+      statut: 'disponible',
+      selectionnable: true
+    };
+  }
+
+  /**
+   * Gérer la sélection d'un créneau unifié (suggestion)
+   */
+  onCreneauSuggestionSelected(creneau: CreneauUnifie): void {
+    const creneauOriginal = this.creneauxSuggestion.find(c => c.dateHeure === creneau.dateHeure);
+    if (creneauOriginal) {
+      this.selectCreneauSuggestion(creneauOriginal);
+    }
+  }
+
   confirmSuggerer(): void {
     if (!this.selectedRdvForAction || !this.nouveauCreneau) return;
     if (this.isProcessing) return;
@@ -455,15 +499,17 @@ export class MedecinDashboardComponent implements OnInit, OnDestroy {
 
   // ==================== PANNEAU FICHE PATIENT ====================
 
-  openFichePatient(patientId: number): void {
-    // Ouvrir le panneau latéral de fiche patient
+  openFichePatient(patientId: number, rdv?: RdvPlanningDto): void {
+    // Ouvrir le panneau latéral de fiche patient avec contexte RDV
     this.selectedPatientId = patientId;
+    this.selectedRdvContext = rdv || null;
     this.isFichePanelOpen = true;
   }
 
   closeFichePanel(): void {
     this.isFichePanelOpen = false;
     this.selectedPatientId = null;
+    this.selectedRdvContext = null;
   }
 
   openDossierPatient(patientId: number): void {

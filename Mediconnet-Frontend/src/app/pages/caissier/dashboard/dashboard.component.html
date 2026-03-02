@@ -257,7 +257,7 @@
 
                   <div class="form-group">
                     <label>Référence (optionnel)</label>
-                    <input type="text" formControlName="reference" placeholder="N° chèque, carte...">
+                    <input type="text" formControlName="reference" placeholder="N° chèque, carte..." appVoiceInput>
                   </div>
 
                   @if (paiementError) {
@@ -474,7 +474,7 @@
       </div>
       <div class="form-group">
         <label>Notes (optionnel)</label>
-        <textarea formControlName="notes" rows="2"></textarea>
+        <textarea formControlName="notes" rows="2" appVoiceInput></textarea>
       </div>
       @if (caisseError) {
         <div class="alert alert-error">{{ caisseError }}</div>
@@ -519,7 +519,7 @@
       </div>
       <div class="form-group">
         <label>Notes (optionnel)</label>
-        <textarea formControlName="notes" rows="2"></textarea>
+        <textarea formControlName="notes" rows="2" appVoiceInput></textarea>
       </div>
       @if (caisseError) {
         <div class="alert alert-error">{{ caisseError }}</div>

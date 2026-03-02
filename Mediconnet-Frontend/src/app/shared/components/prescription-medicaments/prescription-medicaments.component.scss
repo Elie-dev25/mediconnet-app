@@ -140,6 +140,13 @@
       resize: vertical;
       min-height: 60px;
     }
+
+    .hint-text {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-style: italic;
+      margin-top: 0.125rem;
+    }
   }
 
   .autocomplete-container {

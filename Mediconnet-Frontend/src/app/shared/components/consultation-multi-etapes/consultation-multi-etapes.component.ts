@@ -11,34 +11,40 @@ import {
   PrescriptionsDto,
   MedicamentDto,
   ExamenPrescritDto,
-  RecommandationDto,
-  CreateRecommandationRequest,
-  RecommandationResponseDto,
   CreneauDisponible,
   CreerRdvSuiviRequest,
   CreneauAvecStatut,
   LaboratoireDto,
   SpecialiteDto,
   MedecinSpecialisteDto,
-  OrientationSpecialisteDto,
+  OrientationPreConsultationDto,
   CreateOrientationRequest,
-  CreateOrientationManuelleRequest
+  UpdateOrientationStatutRequest,
+  ExamenGynecologiqueDto,
+  TYPES_ORIENTATION,
+  STATUTS_ORIENTATION,
+  TypeOrientation,
+  CreneauMedecinDto,
+  CreerRdvOrientationRequest
 } from '../../../services/consultation-complete.service';
 import { QuestionsPredefiniesService, QuestionPredefinie } from '../../../services/questions-predefinies.service';
 import { HospitalisationService, OrdonnerHospitalisationRequest } from '../../../services/hospitalisation.service';
 import { HospitalisationMultiEtapesComponent, HospitalisationPatientInfo } from '../hospitalisation-multi-etapes/hospitalisation-multi-etapes.component';
 import { PrescriptionExamensComponent, ExamenPrescription } from '../prescription-examens/prescription-examens.component';
+import { CreneauxSelectorComponent, CreneauUnifie } from '../creneaux-selector/creneaux-selector.component';
 import { SpeechRecognitionService, SupportedLanguage } from '../../../services/speech-recognition.service';
-import { PharmacieStockService, MedicamentStock } from '../../../services/pharmacie-stock.service';
+import { PharmacieStockService, MedicamentStock, FormePharmaceutique, VoieAdministration } from '../../../services/pharmacie-stock.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
-type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
+const GYNECO_SPECIALITE_ID = 23;
+
+type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'examen_gynecologique' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
 
 @Component({
   selector: 'app-consultation-multi-etapes',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, HospitalisationMultiEtapesComponent, PrescriptionExamensComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, HospitalisationMultiEtapesComponent, PrescriptionExamensComponent, CreneauxSelectorComponent],
   templateUrl: './consultation-multi-etapes.component.html',
   styleUrl: './consultation-multi-etapes.component.scss'
 })
@@ -94,22 +100,38 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   showHospitalisationPanel = false;
   hospitalisationPatientInfo: HospitalisationPatientInfo | null = null;
 
-  // Recommandations structurées
-  recommandationsSauvegardees: RecommandationResponseDto[] = [];
-  showRecommandationForm = false;
-  recommandationType: 'hopital' | 'medecin' = 'medecin';
-  recommandationNomHopital = '';
-  recommandationNomMedecin = '';
-  recommandationIdMedecin: number | null = null;
-  recommandationSpecialite = '';
-  recommandationMotif = '';
-  recommandationPrioritaire = false;
-  recommandationIsSubmitting = false;
-  recommandationError: string | null = null;
+  // Orientations unifiées (remplace recommandations et orientations séparées)
+  orientationsSauvegardees: OrientationPreConsultationDto[] = [];
+  showOrientationForm = false;
+  
+  // Examens collapse state
+  examensCollapsed = true;
+  orientationType: TypeOrientation = TYPES_ORIENTATION.MEDECIN_INTERNE;
+  orientationNomDestinataire = '';
+  orientationIdMedecin: number | null = null;
+  orientationSpecialiteTexte = '';
+  orientationMotif = '';
+  orientationPrioritaire = false;
+  orientationUrgence = false;
+  orientationNotes = '';
+  orientationAdresse = '';
+  orientationTelephone = '';
+  orientationIsSubmitting = false;
+  orientationError: string | null = null;
   specialitesListe: SpecialiteDto[] = [];
   medecinsParSpecialite: MedecinSpecialisteDto[] = [];
   selectedSpecialiteId: number | null = null;
-  recommandationMedecinMode: 'interne' | 'externe' = 'interne';
+
+  // Créneaux pour orientation médecin interne
+  showOrientationCreneaux = false;
+  orientationCreneaux: CreneauMedecinDto[] = [];
+  orientationDateRdv: string = '';
+  orientationCreneauSelectionne: CreneauMedecinDto | null = null;
+  isLoadingOrientationCreneaux = false;
+  orientationMedecinDisponible = true;
+  orientationMessageIndispo = '';
+  orientationRdvCree = false;
+  orientationRdvInfo: { idRendezVous: number; dateHeure: string } | null = null;
 
   // Autocomplete médicaments
   medicamentSuggestions: MedicamentStock[] = [];
@@ -134,25 +156,19 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     'Autre'
   ];
 
-  formesPharmaceutiques = [
-    'Comprimé',
-    'Gélule',
-    'Sirop',
-    'Solution buvable',
-    'Ampoule injectable',
-    'Pommade',
-    'Crème',
-    'Gel',
-    'Suppositoire',
-    'Collyre',
-    'Spray nasal',
-    'Inhalateur',
-    'Patch',
-    'Sachet',
-    'Autre'
+  // Formes et voies par défaut (fallback)
+  formesPharmaceutiquesDefaut = [
+    'Comprimé', 'Gélule', 'Sirop', 'Solution buvable', 'Ampoule injectable',
+    'Pommade', 'Crème', 'Gel', 'Suppositoire', 'Collyre', 'Spray nasal',
+    'Inhalateur', 'Patch', 'Sachet', 'Autre'
   ];
 
-  voiesAdministration = [
+  // Formes et voies dynamiques par médicament (indexé par position dans le FormArray)
+  formesParMedicament: Map<number, FormePharmaceutique[]> = new Map();
+  voiesParMedicament: Map<number, VoieAdministration[]> = new Map();
+  loadingFormesVoies: Map<number, boolean> = new Map();
+
+  voiesAdministrationDefaut = [
     'Voie orale',
     'Voie intraveineuse (IV)',
     'Voie intramusculaire (IM)',
@@ -237,24 +253,23 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   // Laboratoires disponibles
   laboratoires: LaboratoireDto[] = [];
 
-  // Orientation spécialiste
+  // Orientation spécialiste (Plan de traitement - supprimé, centralisé dans Conclusion)
   specialites: SpecialiteDto[] = [];
   medecinsSpecialite: MedecinSpecialisteDto[] = [];
-  orientations: OrientationSpecialisteDto[] = [];
-  showOrientationForm = false;
-  orientationForm!: FormGroup;
-  orientationMode: 'liste' | 'manuel' = 'liste';
+  orientations: OrientationPreConsultationDto[] = [];
 
   // Questions libres
   showAddQuestion = false;
   newQuestionText = '';
 
-  // Réponses patient déjà remplies (lecture seule)
-  questionsDejaRepondues: { question: string; reponse: string }[] = [];
+  // Réponses patient (pour affichage indicateur et préremplissage)
+  reponsesPatientMap: Map<string, string> = new Map();
+  hasReponsesPatient = false;
 
   // Formulaires
   anamneseForm!: FormGroup;
   examenCliniqueForm!: FormGroup;
+  examenGynecologiqueForm!: FormGroup;
   diagnosticForm!: FormGroup;
   planTraitementForm!: FormGroup;
   conclusionForm!: FormGroup;
@@ -289,8 +304,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.loadConsultation();
     this.loadLaboratoires();
     this.loadSpecialites();
-    this.loadRecommandations();
-    this.initOrientationForm();
+    this.loadOrientations();
     this.setupVoiceRecognition();
     this.setupMedicamentAutocomplete();
     this.initMinDate();
@@ -310,140 +324,256 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     });
   }
 
-  private initOrientationForm(): void {
-    this.orientationForm = this.fb.group({
-      idSpecialite: [null],
-      idMedecinOriente: [null],
-      specialiteManuelle: [''],
-      medecinManuel: [''],
-      motif: ['', Validators.required],
-      urgence: [false],
-      notes: ['']
-    });
-  }
+  // ==================== ORIENTATIONS UNIFIÉES (Conclusion) ====================
 
-  onOrientationModeChange(): void {
-    this.orientationForm.patchValue({
-      idSpecialite: null,
-      idMedecinOriente: null,
-      specialiteManuelle: '',
-      medecinManuel: ''
+  loadOrientations(): void {
+    if (!this.consultationId) return;
+    this.consultationService.getOrientations(this.consultationId).subscribe({
+      next: (orientations: OrientationPreConsultationDto[]) => {
+        this.orientations = orientations;
+        this.orientationsSauvegardees = orientations;
+      },
+      error: (err) => console.error('Erreur chargement orientations:', err)
     });
-    this.medecinsSpecialite = [];
-  }
-
-  isOrientationFormValid(): boolean {
-    if (!this.orientationForm.get('motif')?.value) return false;
-    
-    if (this.orientationMode === 'liste') {
-      return !!this.orientationForm.get('idSpecialite')?.value;
-    } else {
-      return !!this.orientationForm.get('specialiteManuelle')?.value?.trim();
-    }
   }
 
   loadMedecinsSpecialite(idSpecialite: number): void {
     if (!idSpecialite) {
       this.medecinsSpecialite = [];
+      this.medecinsParSpecialite = [];
       return;
     }
     this.consultationService.getMedecinsParSpecialite(idSpecialite).subscribe({
-      next: (medecins) => this.medecinsSpecialite = medecins,
+      next: (medecins) => {
+        this.medecinsSpecialite = medecins;
+        this.medecinsParSpecialite = medecins;
+      },
       error: (err) => console.error('Erreur chargement médecins:', err)
     });
   }
 
-  loadOrientations(): void {
-    if (!this.consultationId) return;
-    this.consultationService.getOrientations(this.consultationId).subscribe({
-      next: (orientations) => this.orientations = orientations,
-      error: (err) => console.error('Erreur chargement orientations:', err)
-    });
+  onSpecialiteChange(): void {
+    const idSpecialite = this.selectedSpecialiteId;
+    if (idSpecialite) {
+      this.loadMedecinsSpecialite(idSpecialite);
+      // Mettre à jour le texte de spécialité
+      const spec = this.specialitesListe.find(s => s.idSpecialite === idSpecialite);
+      if (spec) this.orientationSpecialiteTexte = spec.nomSpecialite;
+    } else {
+      this.medecinsParSpecialite = [];
+      this.orientationSpecialiteTexte = '';
+    }
   }
 
   toggleOrientationForm(): void {
     this.showOrientationForm = !this.showOrientationForm;
-    if (!this.showOrientationForm) {
-      this.orientationForm.reset();
-      this.medecinsSpecialite = [];
-      this.orientationMode = 'liste';
+    if (this.showOrientationForm) {
+      this.resetOrientationForm();
     }
   }
 
-  onSpecialiteChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const idSpecialite = parseInt(select.value, 10);
-    this.loadMedecinsSpecialite(idSpecialite);
+  resetOrientationForm(): void {
+    this.orientationType = TYPES_ORIENTATION.MEDECIN_INTERNE;
+    this.orientationNomDestinataire = '';
+    this.orientationIdMedecin = null;
+    this.orientationSpecialiteTexte = '';
+    this.orientationMotif = '';
+    this.orientationPrioritaire = false;
+    this.orientationUrgence = false;
+    this.orientationNotes = '';
+    this.orientationAdresse = '';
+    this.orientationTelephone = '';
+    this.orientationError = null;
+    this.selectedSpecialiteId = null;
+    this.medecinsParSpecialite = [];
+    // Reset créneaux orientation
+    this.showOrientationCreneaux = false;
+    this.orientationCreneaux = [];
+    this.orientationDateRdv = '';
+    this.orientationCreneauSelectionne = null;
+    this.orientationRdvCree = false;
+    this.orientationRdvInfo = null;
   }
 
-  addOrientation(): void {
-    if (!this.isOrientationFormValid() || !this.consultationId) return;
+  // Méthode appelée quand un médecin est sélectionné pour l'orientation
+  onOrientationMedecinChange(): void {
+    this.showOrientationCreneaux = !!this.orientationIdMedecin;
+    this.orientationCreneaux = [];
+    this.orientationCreneauSelectionne = null;
+    this.orientationDateRdv = this.minDate;
+    if (this.orientationIdMedecin && this.orientationDateRdv) {
+      this.loadOrientationCreneaux();
+    }
+  }
 
-    if (this.orientationMode === 'liste') {
-      const request: CreateOrientationRequest = {
-        idConsultation: this.consultationId,
-        idSpecialite: this.orientationForm.value.idSpecialite,
-        idMedecinOriente: this.orientationForm.value.idMedecinOriente || undefined,
-        motif: this.orientationForm.value.motif,
-        urgence: this.orientationForm.value.urgence || false,
-        notes: this.orientationForm.value.notes || undefined
-      };
+  // Charger les créneaux disponibles du médecin sélectionné
+  loadOrientationCreneaux(): void {
+    if (!this.orientationIdMedecin || !this.orientationDateRdv) return;
 
-      this.consultationService.createOrientation(request).subscribe({
-        next: (orientation) => {
-          this.orientations.unshift(orientation);
-          this.toggleOrientationForm();
-        },
-        error: (err) => console.error('Erreur création orientation:', err)
-      });
-    } else {
-      // Mode manuel - créer une orientation locale sans ID spécialité BD
-      const specialiteManuelle = this.orientationForm.value.specialiteManuelle?.trim();
-      const medecinManuel = this.orientationForm.value.medecinManuel?.trim();
-      
-      const orientationManuelle: OrientationSpecialisteDto = {
-        idConsultation: this.consultationId,
-        idSpecialite: 0,
-        nomSpecialite: specialiteManuelle,
-        nomMedecinOriente: medecinManuel || undefined,
-        motif: this.orientationForm.value.motif,
-        urgence: this.orientationForm.value.urgence || false,
-        statut: 'en_attente',
-        dateOrientation: new Date(),
-        notes: this.orientationForm.value.notes || undefined
-      };
+    this.isLoadingOrientationCreneaux = true;
+    this.orientationCreneaux = [];
+    this.orientationCreneauSelectionne = null;
 
-      // Envoyer au backend avec spécialité manuelle
-      this.consultationService.createOrientationManuelle({
-        idConsultation: this.consultationId,
-        specialiteManuelle: specialiteManuelle,
-        medecinManuel: medecinManuel || undefined,
-        motif: this.orientationForm.value.motif,
-        urgence: this.orientationForm.value.urgence || false,
-        notes: this.orientationForm.value.notes || undefined
-      }).subscribe({
-        next: (orientation) => {
-          this.orientations.unshift(orientation);
-          this.toggleOrientationForm();
-        },
-        error: (err) => {
-          console.error('Erreur création orientation manuelle:', err);
-          // Fallback: ajouter localement si erreur
-          this.orientations.unshift(orientationManuelle);
-          this.toggleOrientationForm();
+    this.consultationService.getCreneauxMedecinDisponibles(this.orientationIdMedecin, this.orientationDateRdv).subscribe({
+      next: (response) => {
+        this.orientationCreneaux = response.creneaux;
+        this.orientationMedecinDisponible = response.medecinDisponible;
+        this.orientationMessageIndispo = response.messageIndisponibilite || '';
+        this.isLoadingOrientationCreneaux = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement créneaux orientation:', err);
+        this.orientationCreneaux = [];
+        this.isLoadingOrientationCreneaux = false;
+      }
+    });
+  }
+
+  // Changement de date pour les créneaux d'orientation
+  onOrientationDateChange(): void {
+    this.orientationCreneauSelectionne = null;
+    if (this.orientationIdMedecin && this.orientationDateRdv) {
+      this.loadOrientationCreneaux();
+    }
+  }
+
+  // Sélectionner un créneau pour l'orientation
+  selectOrientationCreneau(creneau: CreneauMedecinDto): void {
+    if (!creneau.selectionnable) return;
+    this.orientationCreneauSelectionne = creneau;
+  }
+
+  // Vérifier si un créneau est sélectionné
+  isOrientationCreneauSelected(creneau: CreneauMedecinDto): boolean {
+    return this.orientationCreneauSelectionne?.dateHeure === creneau.dateHeure;
+  }
+
+  // Obtenir la classe CSS pour un créneau d'orientation
+  getOrientationCreneauClass(creneau: CreneauMedecinDto): string {
+    switch (creneau.statut) {
+      case 'disponible': return 'creneau-disponible';
+      case 'occupe': return 'creneau-occupe';
+      case 'passe': return 'creneau-passe';
+      case 'indisponible': return 'creneau-indisponible';
+      default: return '';
+    }
+  }
+
+  get canSubmitOrientation(): boolean {
+    if (!this.orientationMotif.trim()) return false;
+    
+    switch (this.orientationType) {
+      case TYPES_ORIENTATION.MEDECIN_INTERNE:
+        return !!this.selectedSpecialiteId;
+      case TYPES_ORIENTATION.MEDECIN_EXTERNE:
+        return !!this.orientationNomDestinataire.trim() && !!this.orientationSpecialiteTexte.trim();
+      case TYPES_ORIENTATION.HOPITAL:
+        return !!this.orientationNomDestinataire.trim();
+      case TYPES_ORIENTATION.SERVICE_INTERNE:
+      case TYPES_ORIENTATION.LABORATOIRE:
+        return !!this.orientationSpecialiteTexte.trim();
+      default:
+        return false;
+    }
+  }
+
+  submitOrientation(): void {
+    if (!this.canSubmitOrientation || this.orientationIsSubmitting || !this.consultationId) return;
+
+    this.orientationIsSubmitting = true;
+    this.orientationError = null;
+
+    const request: CreateOrientationRequest = {
+      typeOrientation: this.orientationType,
+      idSpecialite: this.orientationType === TYPES_ORIENTATION.MEDECIN_INTERNE ? this.selectedSpecialiteId ?? undefined : undefined,
+      idMedecinOriente: this.orientationType === TYPES_ORIENTATION.MEDECIN_INTERNE ? this.orientationIdMedecin ?? undefined : undefined,
+      nomDestinataire: (this.orientationType === TYPES_ORIENTATION.MEDECIN_EXTERNE || this.orientationType === TYPES_ORIENTATION.HOPITAL) 
+        ? this.orientationNomDestinataire : undefined,
+      specialiteTexte: this.orientationSpecialiteTexte || undefined,
+      adresseDestinataire: this.orientationAdresse || undefined,
+      telephoneDestinataire: this.orientationTelephone || undefined,
+      motif: this.orientationMotif,
+      notes: this.orientationNotes || undefined,
+      urgence: this.orientationUrgence,
+      prioritaire: this.orientationPrioritaire
+    };
+
+    this.consultationService.createOrientation(this.consultationId, request).subscribe({
+      next: (orientation: OrientationPreConsultationDto) => {
+        // Si un créneau est sélectionné pour un médecin interne, créer le RDV
+        if (this.orientationType === TYPES_ORIENTATION.MEDECIN_INTERNE && 
+            this.orientationIdMedecin && 
+            this.orientationCreneauSelectionne) {
+          this.creerRdvPourOrientation(orientation);
+        } else {
+          this.finaliserOrientation(orientation);
         }
-      });
-    }
+      },
+      error: (err: any) => {
+        this.orientationError = err.error?.message || 'Erreur lors de la sauvegarde';
+        this.orientationIsSubmitting = false;
+      }
+    });
   }
 
-  removeOrientation(idOrientation: number): void {
+  // Créer un RDV lié à l'orientation
+  private creerRdvPourOrientation(orientation: OrientationPreConsultationDto): void {
+    if (!this.orientationCreneauSelectionne) {
+      this.finaliserOrientation(orientation);
+      return;
+    }
+
+    const rdvRequest: CreerRdvOrientationRequest = {
+      dateHeure: this.orientationCreneauSelectionne.dateHeure,
+      duree: this.orientationCreneauSelectionne.duree,
+      motif: this.orientationMotif,
+      notes: this.orientationNotes
+    };
+
+    this.consultationService.creerRdvOrientation(orientation.idOrientation, rdvRequest).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Mettre à jour l'orientation avec les infos du RDV
+          orientation.idRdvCree = response.idRendezVous;
+          // dateRdvPropose est de type Date dans le DTO
+          if (response.dateHeure) {
+            (orientation as any).dateRdvPropose = new Date(response.dateHeure);
+          }
+          orientation.statut = 'rdv_pris';
+          this.orientationRdvCree = true;
+          this.orientationRdvInfo = {
+            idRendezVous: response.idRendezVous!,
+            dateHeure: response.dateHeure!
+          };
+        }
+        this.finaliserOrientation(orientation);
+      },
+      error: (err) => {
+        console.error('Erreur création RDV orientation:', err);
+        // L'orientation est créée mais pas le RDV - on continue quand même
+        this.finaliserOrientation(orientation);
+      }
+    });
+  }
+
+  // Finaliser l'ajout de l'orientation à la liste
+  private finaliserOrientation(orientation: OrientationPreConsultationDto): void {
+    this.orientationsSauvegardees = [orientation, ...this.orientationsSauvegardees];
+    this.orientations = this.orientationsSauvegardees;
+    this.resetOrientationForm();
+    this.showOrientationForm = false;
+    this.orientationIsSubmitting = false;
+  }
+
+  deleteOrientation(id: number): void {
     if (!confirm('Supprimer cette orientation ?')) return;
     
-    this.consultationService.deleteOrientation(idOrientation).subscribe({
+    this.consultationService.deleteOrientation(id).subscribe({
       next: () => {
-        this.orientations = this.orientations.filter(o => o.idOrientation !== idOrientation);
+        this.orientationsSauvegardees = this.orientationsSauvegardees.filter(o => o.idOrientation !== id);
+        this.orientations = this.orientations.filter(o => o.idOrientation !== id);
       },
-      error: (err) => console.error('Erreur suppression orientation:', err)
+      error: () => console.error('Erreur suppression orientation')
     });
   }
 
@@ -452,9 +582,22 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       'en_attente': 'En attente',
       'acceptee': 'Acceptée',
       'refusee': 'Refusée',
-      'terminee': 'Terminée'
+      'rdv_pris': 'RDV pris',
+      'terminee': 'Terminée',
+      'annulee': 'Annulée'
     };
     return labels[statut] || statut;
+  }
+
+  getTypeOrientationLabel(type: string): string {
+    const labels: { [key: string]: string } = {
+      'medecin_interne': 'Médecin interne',
+      'medecin_externe': 'Médecin externe',
+      'hopital': 'Hôpital',
+      'service_interne': 'Service interne',
+      'laboratoire': 'Laboratoire'
+    };
+    return labels[type] || type;
   }
 
   private initMinDate(): void {
@@ -495,11 +638,79 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     if (control) {
       control.patchValue({
         nomMedicament: medicament.nom + (medicament.dosage ? ' ' + medicament.dosage : ''),
-        dosage: medicament.dosage || ''
+        dosage: medicament.dosage || '',
+        idMedicament: medicament.idMedicament
       });
+      // Charger les formes et voies spécifiques au médicament
+      this.loadFormesVoiesMedicament(index, medicament.idMedicament);
     }
     this.medicamentSuggestions = [];
     this.activeMedicamentIndex = null;
+  }
+
+  /**
+   * Charge les formes pharmaceutiques et voies d'administration pour un médicament
+   */
+  loadFormesVoiesMedicament(index: number, idMedicament: number): void {
+    this.loadingFormesVoies.set(index, true);
+    
+    this.pharmacieService.getFormesVoiesMedicament(idMedicament).subscribe({
+      next: (data) => {
+        this.formesParMedicament.set(index, data.formes);
+        this.voiesParMedicament.set(index, data.voies);
+        this.loadingFormesVoies.set(index, false);
+
+        // Si une forme/voie par défaut existe, la pré-sélectionner
+        const control = this.medicamentsArray.at(index);
+        if (control) {
+          const formeDefaut = data.formes.find(f => f.estDefaut);
+          const voieDefaut = data.voies.find(v => v.estDefaut);
+          
+          if (formeDefaut && !control.get('formePharmaceutique')?.value) {
+            control.patchValue({ formePharmaceutique: formeDefaut.libelle });
+          }
+          if (voieDefaut && !control.get('voieAdministration')?.value) {
+            control.patchValue({ voieAdministration: voieDefaut.libelle });
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Erreur chargement formes/voies:', err);
+        this.loadingFormesVoies.set(index, false);
+        // En cas d'erreur, utiliser les valeurs par défaut
+        this.formesParMedicament.delete(index);
+        this.voiesParMedicament.delete(index);
+      }
+    });
+  }
+
+  /**
+   * Retourne les formes pharmaceutiques pour un médicament à l'index donné
+   */
+  getFormesForMedicament(index: number): string[] {
+    const formes = this.formesParMedicament.get(index);
+    if (formes && formes.length > 0) {
+      return formes.map(f => f.libelle);
+    }
+    return this.formesPharmaceutiquesDefaut;
+  }
+
+  /**
+   * Retourne les voies d'administration pour un médicament à l'index donné
+   */
+  getVoiesForMedicament(index: number): string[] {
+    const voies = this.voiesParMedicament.get(index);
+    if (voies && voies.length > 0) {
+      return voies.map(v => v.libelle);
+    }
+    return this.voiesAdministrationDefaut;
+  }
+
+  /**
+   * Vérifie si les formes/voies sont en cours de chargement pour un médicament
+   */
+  isLoadingFormesVoies(index: number): boolean {
+    return this.loadingFormesVoies.get(index) || false;
   }
 
   hideMedicamentSuggestions(): void {
@@ -644,6 +855,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       } else {
         control = this.anamneseForm.get(controlPath);
       }
+    } else if (fieldName.startsWith('examenGynecologique.')) {
+      controlPath = fieldName.replace('examenGynecologique.', '');
+      control = this.examenGynecologiqueForm.get(controlPath);
     } else if (fieldName.startsWith('diagnostic.')) {
       controlPath = fieldName.replace('diagnostic.', '');
       control = this.diagnosticForm.get(controlPath);
@@ -656,7 +870,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
     if (control) {
       const currentValue = control.value || '';
-      const newValue = currentValue ? currentValue.trim() + ' ' + trimmedText : trimmedText;
+      const newValue = currentValue ? `${currentValue} ${trimmedText}`.trim() : trimmedText;
       console.log('[ConsultationVoice] Setting value:', { currentValue, newValue });
       control.setValue(newValue);
       control.markAsDirty();
@@ -695,6 +909,13 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       palpation: [''],
       auscultation: [''],
       percussion: [''],
+      autresObservations: ['']
+    });
+
+    this.examenGynecologiqueForm = this.fb.group({
+      inspectionExterne: [''],
+      examenSpeculum: [''],
+      toucherVaginal: [''],
       autresObservations: ['']
     });
 
@@ -741,20 +962,23 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.consultationService.getConsultation(this.consultationId).subscribe({
       next: (data) => {
         this.consultation = data;
-        
+
         // Restaurer l'étape actuelle si sauvegardée (reprise après pause)
         if (data.etapeActuelle && this.etapes.includes(data.etapeActuelle as EtapeConsultation)) {
           this.etapeActuelle = data.etapeActuelle as EtapeConsultation;
           console.log('[Consultation] Reprise à l\'étape:', this.etapeActuelle);
         }
-        
+
         // Vérifier si la consultation est en pause
         if (data.statut === 'en_pause') {
           this.isPaused = true;
         }
-        
-        this.loadQuestions();
+
+        this.updateEtapes();
+        // D'abord peupler les formulaires pour stocker les réponses patient dans reponsesPatientMap
         this.populateForms();
+        // Ensuite charger les questions prédéfinies (qui utilisera reponsesPatientMap pour préremplir)
+        this.loadQuestions();
         this.loadOrientations();
         this.isLoading = false;
       },
@@ -786,15 +1010,28 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     const questionsArray = this.anamneseForm.get('questionsReponses') as FormArray;
     questionsArray.clear();
     
+    let reponsesPreRemplies = 0;
     this.questionsPredefinies.forEach(q => {
+      // Chercher si le patient/médecin a déjà répondu à cette question
+      // Chercher par texte de question ou par ID
+      const reponsePatient = this.reponsesPatientMap.get(q.texte) || 
+                             this.reponsesPatientMap.get(q.id.toString()) || '';
+      
+      if (reponsePatient) {
+        reponsesPreRemplies++;
+      }
+      
       questionsArray.push(this.fb.group({
         questionId: [q.id],
         question: [q.texte],
         type: [q.type],
         options: [q.options || []],
-        reponse: ['', q.obligatoire ? Validators.required : null]
+        reponse: [reponsePatient, q.obligatoire ? Validators.required : null],
+        reponsePatientOriginale: [reponsePatient] // Pour traçabilité
       }));
     });
+    
+    console.log('[Anamnèse] FormArray initialisé:', this.questionsPredefinies.length, 'questions,', reponsesPreRemplies, 'préremplies');
   }
 
   populateForms(): void {
@@ -809,14 +1046,20 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         traitementsEnCours: a.traitementsEnCours
       });
 
-      // Stocker les réponses déjà fournies par le patient (lecture seule)
+      // Stocker les réponses du patient pour préremplissage du formulaire
+      // Note: initQuestionsFormArray() sera appelé par loadQuestions() après le chargement des questions prédéfinies
       if (a.questionsReponses && a.questionsReponses.length > 0) {
-        this.questionsDejaRepondues = a.questionsReponses
+        this.reponsesPatientMap.clear();
+        a.questionsReponses
           .filter(qr => qr.reponse && qr.reponse.trim() !== '')
-          .map(qr => ({
-            question: qr.question,
-            reponse: qr.reponse
-          }));
+          .forEach(qr => {
+            this.reponsesPatientMap.set(qr.question, qr.reponse);
+            if (qr.questionId) {
+              this.reponsesPatientMap.set(qr.questionId, qr.reponse);
+            }
+          });
+        this.hasReponsesPatient = this.reponsesPatientMap.size > 0;
+        console.log('[Anamnèse] Réponses patient chargées:', this.reponsesPatientMap.size, 'réponses');
       }
     }
 
@@ -842,6 +1085,11 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         percussion: ec.percussion,
         autresObservations: ec.autresObservations
       });
+    }
+
+    // Étape 2bis: Examen Gynécologique (si gynécologue)
+    if (this.isGynecoConsultation() && this.consultation.examenGynecologique) {
+      this.patchGynecologiqueForm(this.consultation.examenGynecologique);
     }
 
     // Étape 3: Diagnostic
@@ -899,7 +1147,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
           dureeTraitement: p.ordonnance.dureeTraitement
         });
       }
-      p.recommandations?.forEach(r => this.addRecommandation(r));
+      // Les orientations sont chargées séparément via loadOrientations()
     }
   }
 
@@ -980,113 +1228,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.examensPrescriptions = examens;
   }
 
-  // Recommandations structurées
-  loadRecommandations(): void {
-    this.consultationService.getRecommandations(this.consultationId).subscribe({
-      next: (data) => this.recommandationsSauvegardees = data,
-      error: () => console.error('Erreur chargement recommandations')
-    });
-  }
-
-  onRecommandationSpecialiteChange(): void {
-    this.medecinsParSpecialite = [];
-    this.recommandationIdMedecin = null;
-    if (this.selectedSpecialiteId) {
-      this.consultationService.getMedecinsParSpecialite(this.selectedSpecialiteId).subscribe({
-        next: (data) => this.medecinsParSpecialite = data,
-        error: () => console.error('Erreur chargement médecins')
-      });
-      const spec = this.specialitesListe.find(s => s.idSpecialite === this.selectedSpecialiteId);
-      if (spec) this.recommandationSpecialite = spec.nomSpecialite;
-    }
-  }
-
-  toggleRecommandationForm(): void {
-    this.showRecommandationForm = !this.showRecommandationForm;
-    if (this.showRecommandationForm) {
-      this.resetRecommandationForm();
-    }
-  }
-
-  resetRecommandationForm(): void {
-    this.recommandationType = 'medecin';
-    this.recommandationNomHopital = '';
-    this.recommandationNomMedecin = '';
-    this.recommandationIdMedecin = null;
-    this.recommandationSpecialite = '';
-    this.recommandationMotif = '';
-    this.recommandationPrioritaire = false;
-    this.recommandationError = null;
-    this.selectedSpecialiteId = null;
-    this.medecinsParSpecialite = [];
-    this.recommandationMedecinMode = 'interne';
-  }
-
-  get canSubmitRecommandation(): boolean {
-    if (!this.recommandationMotif.trim()) return false;
-    if (this.recommandationType === 'hopital' && !this.recommandationNomHopital.trim()) return false;
-    if (this.recommandationType === 'medecin') {
-      if (this.recommandationMedecinMode === 'interne' && !this.recommandationIdMedecin) return false;
-      if (this.recommandationMedecinMode === 'externe' && !this.recommandationNomMedecin.trim()) return false;
-    }
-    return true;
-  }
-
-  submitRecommandation(): void {
-    if (!this.canSubmitRecommandation || this.recommandationIsSubmitting) return;
-
-    this.recommandationIsSubmitting = true;
-    this.recommandationError = null;
-
-    const request: CreateRecommandationRequest = {
-      type: this.recommandationType,
-      nomHopital: this.recommandationType === 'hopital' ? this.recommandationNomHopital : undefined,
-      nomMedecinRecommande: this.recommandationType === 'medecin' && this.recommandationMedecinMode === 'externe'
-        ? this.recommandationNomMedecin : undefined,
-      idMedecinRecommande: this.recommandationType === 'medecin' && this.recommandationMedecinMode === 'interne'
-        ? (this.recommandationIdMedecin ?? undefined) : undefined,
-      specialite: this.recommandationSpecialite || undefined,
-      motif: this.recommandationMotif,
-      prioritaire: this.recommandationPrioritaire
-    };
-
-    this.consultationService.createRecommandation(this.consultationId, request).subscribe({
-      next: (rec) => {
-        this.recommandationsSauvegardees.unshift(rec);
-        this.resetRecommandationForm();
-        this.showRecommandationForm = false;
-        this.recommandationIsSubmitting = false;
-      },
-      error: (err) => {
-        this.recommandationError = err.error?.message || 'Erreur lors de la sauvegarde';
-        this.recommandationIsSubmitting = false;
-      }
-    });
-  }
-
-  deleteRecommandation(id: number): void {
-    this.consultationService.deleteRecommandation(id).subscribe({
-      next: () => {
-        this.recommandationsSauvegardees = this.recommandationsSauvegardees.filter(r => r.idRecommandation !== id);
-      },
-      error: () => console.error('Erreur suppression recommandation')
-    });
-  }
-
-  // Legacy compatibility
-  addRecommandation(rec?: RecommandationDto): void {
-    this.recommandationsArray.push(this.fb.group({
-      type: [rec?.type || 'conseil', Validators.required],
-      specialiteOrientee: [rec?.specialiteOrientee || ''],
-      motif: [rec?.motif || ''],
-      description: [rec?.description || ''],
-      urgence: [rec?.urgence || false]
-    }));
-  }
-
-  removeRecommandation(index: number): void {
-    this.recommandationsArray.removeAt(index);
-  }
+  // NOTE: Les recommandations sont maintenant gérées via le système d'orientations unifiées
+  // Voir les méthodes loadOrientations(), submitOrientation(), deleteOrientation() ci-dessus
 
   // Hospitalisation (nouveau workflow: médecin ne choisit pas de lit)
   toggleHospitalisationForm(): void {
@@ -1153,6 +1296,16 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.hospitalisationDateSortie = null;
   }
 
+  // Restaurer la réponse originale du patient
+  restorePatientResponse(index: number): void {
+    const questionsArray = this.anamneseForm.get('questionsReponses') as FormArray;
+    const control = questionsArray.at(index);
+    if (control) {
+      const originalResponse = control.get('reponsePatientOriginale')?.value;
+      control.get('reponse')?.setValue(originalResponse);
+    }
+  }
+
   // Questions libres
   toggleAddQuestion(): void {
     this.showAddQuestion = !this.showAddQuestion;
@@ -1190,11 +1343,13 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     switch (this.etapeActuelle) {
       case 'anamnese': 
         // Si le patient a déjà répondu aux questions, le formulaire est valide
-        if (this.questionsDejaRepondues.length > 0) {
+        if (this.hasReponsesPatient) {
           return true;
         }
         return this.anamneseForm.valid;
       case 'examen_clinique': return true; // Examen clinique optionnel
+      case 'examen_gynecologique':
+        return !this.isGynecoConsultation() || this.examenGynecologiqueForm.valid;
       case 'diagnostic': return this.diagnosticForm.valid;
       case 'plan_traitement': return true; // Plan de traitement optionnel
       case 'conclusion': return true;
@@ -1235,6 +1390,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         case 'examen_clinique':
           await this.saveExamenClinique();
           break;
+        case 'examen_gynecologique':
+          await this.saveExamenGynecologique();
+          break;
         case 'diagnostic':
           await this.saveDiagnostic();
           break;
@@ -1255,17 +1413,22 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     const form = this.anamneseForm.value;
     
     // Combiner questions prédéfinies et questions libres
+    // Filtrer les questions sans réponse pour éviter d'envoyer des données vides
     const allQuestions = [
-      ...form.questionsReponses.map((q: any) => ({
-        questionId: q.questionId,
-        question: q.question,
-        reponse: q.reponse
-      })),
-      ...form.questionsLibres.map((q: any) => ({
-        questionId: 'libre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-        question: q.question,
-        reponse: q.reponse
-      }))
+      ...form.questionsReponses
+        .filter((q: any) => q.reponse && q.reponse.trim() !== '')
+        .map((q: any) => ({
+          questionId: String(q.questionId),
+          question: q.question,
+          reponse: q.reponse
+        })),
+      ...form.questionsLibres
+        .filter((q: any) => q.question && q.reponse && q.question.trim() !== '' && q.reponse.trim() !== '')
+        .map((q: any) => ({
+          questionId: 'libre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+          question: q.question,
+          reponse: q.reponse
+        }))
     ];
     
     const anamnese: AnamneseDto = {
@@ -1274,6 +1437,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       traitementsEnCours: form.traitementsEnCours,
       questionsReponses: allQuestions
     };
+    
+    console.log('[Anamnèse] Sauvegarde:', allQuestions.length, 'questions avec réponses');
     await this.consultationService.saveAnamnese(this.consultationId, anamnese).toPromise();
   }
 
@@ -1297,6 +1462,62 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       autresObservations: form.autresObservations
     };
     await this.consultationService.saveExamenClinique(this.consultationId, examenClinique as any).toPromise();
+  }
+
+  private async saveExamenGynecologique(): Promise<void> {
+    if (!this.isGynecoConsultation()) {
+      return;
+    }
+    const form = this.examenGynecologiqueForm.value;
+    await this.consultationService.saveExamenGynecologique(this.consultationId, form).toPromise();
+  }
+
+  private updateEtapes(): void {
+    const newEtapes: EtapeConsultation[] = ['anamnese', 'examen_clinique'];
+    if (this.isGynecoConsultation()) {
+      newEtapes.push('examen_gynecologique');
+    }
+    newEtapes.push('diagnostic', 'plan_traitement', 'conclusion', 'suivi');
+
+    const current = this.etapeActuelle;
+    this.etapes = newEtapes;
+    if (!this.etapes.includes(current)) {
+      this.etapeActuelle = this.etapes[0];
+    }
+  }
+
+  public isGynecoConsultation(): boolean {
+    return (this.consultation?.specialiteId ?? 0) === GYNECO_SPECIALITE_ID;
+  }
+
+  private patchGynecologiqueForm(gyneco?: ExamenGynecologiqueDto): void {
+    if (!gyneco) {
+      this.examenGynecologiqueForm.reset();
+      return;
+    }
+    this.examenGynecologiqueForm.patchValue({
+      inspectionExterne: gyneco.inspectionExterne ?? '',
+      examenSpeculum: gyneco.examenSpeculum ?? '',
+      toucherVaginal: gyneco.toucherVaginal ?? '',
+      autresObservations: gyneco.autresObservations ?? ''
+    });
+  }
+
+  hasEtape(etape: EtapeConsultation): boolean {
+    return this.etapes.includes(etape);
+  }
+
+  hasExamenGynecoData(): boolean {
+    if (!this.isGynecoConsultation()) {
+      return false;
+    }
+    const form = this.examenGynecologiqueForm.value || {};
+    return !!(
+      form.inspectionExterne?.trim() ||
+      form.examenSpeculum?.trim() ||
+      form.toucherVaginal?.trim() ||
+      form.autresObservations?.trim()
+    );
   }
 
   private async saveDiagnostic(): Promise<void> {
@@ -1335,7 +1556,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         medicaments: form.medicaments
       } : undefined,
       examens: this.examensPrescriptions,
-      recommandations: form.recommandations
+      orientations: this.orientationsSauvegardees
     };
     await this.consultationService.savePrescriptions(this.consultationId, prescriptions).toPromise();
   }
@@ -1438,6 +1659,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
    */
   async cloturerConsultation(imprimer: boolean = false): Promise<void> {
     this.isSaving = true;
+    this.error = null;
     try {
       // Sauvegarder d'abord toutes les données
       await this.saveAnamnese();
@@ -1455,9 +1677,16 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       }
       
       this.completed.emit();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erreur clôture:', err);
-      this.error = 'Erreur lors de la clôture de la consultation';
+      // Extraire le message d'erreur détaillé du backend
+      if (err?.error?.erreurs && Array.isArray(err.error.erreurs)) {
+        this.error = err.error.erreurs.join('. ');
+      } else if (err?.error?.message) {
+        this.error = err.error.message;
+      } else {
+        this.error = 'Erreur lors de la clôture de la consultation';
+      }
     }
     this.isSaving = false;
   }
@@ -1707,6 +1936,92 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
    */
   isCreneauSelected(creneau: CreneauAvecStatut): boolean {
     return this.selectedCreneau?.dateHeure === creneau.dateHeure;
+  }
+
+  // ==================== CONVERSION CRÉNEAUX UNIFIÉS ====================
+
+  /**
+   * Convertir les créneaux de suivi vers le format unifié
+   */
+  get creneauxSuiviUnifies(): CreneauUnifie[] {
+    return this.creneauxAvecStatut.map(c => ({
+      dateHeure: c.dateHeure,
+      heureDebut: c.heureDebut,
+      heureFin: c.heureFin,
+      duree: c.duree,
+      statut: c.statut as 'disponible' | 'occupe' | 'passe' | 'indisponible',
+      selectionnable: c.statut === 'disponible'
+    }));
+  }
+
+  /**
+   * Créneau de suivi sélectionné au format unifié
+   */
+  get selectedCreneauUnifie(): CreneauUnifie | null {
+    if (!this.selectedCreneau) return null;
+    return {
+      dateHeure: this.selectedCreneau.dateHeure,
+      heureDebut: this.selectedCreneau.heureDebut,
+      heureFin: this.selectedCreneau.heureFin,
+      duree: this.selectedCreneau.duree,
+      statut: 'disponible',
+      selectionnable: true
+    };
+  }
+
+  /**
+   * Gérer la sélection d'un créneau unifié (suivi)
+   */
+  onCreneauSuiviSelected(creneau: CreneauUnifie): void {
+    this.selectedCreneau = {
+      heureDebut: creneau.heureDebut,
+      heureFin: creneau.heureFin,
+      dateHeure: creneau.dateHeure,
+      duree: creneau.duree
+    };
+  }
+
+  /**
+   * Convertir les créneaux d'orientation vers le format unifié
+   */
+  get creneauxOrientationUnifies(): CreneauUnifie[] {
+    return this.orientationCreneaux.map(c => ({
+      dateHeure: c.dateHeure,
+      heureDebut: c.heureDebut,
+      heureFin: c.heureFin,
+      duree: c.duree,
+      statut: c.statut,
+      selectionnable: c.selectionnable
+    }));
+  }
+
+  /**
+   * Créneau d'orientation sélectionné au format unifié
+   */
+  get selectedOrientationCreneauUnifie(): CreneauUnifie | null {
+    if (!this.orientationCreneauSelectionne) return null;
+    return {
+      dateHeure: this.orientationCreneauSelectionne.dateHeure,
+      heureDebut: this.orientationCreneauSelectionne.heureDebut,
+      heureFin: this.orientationCreneauSelectionne.heureFin,
+      duree: this.orientationCreneauSelectionne.duree,
+      statut: 'disponible',
+      selectionnable: true
+    };
+  }
+
+  /**
+   * Gérer la sélection d'un créneau unifié (orientation)
+   */
+  onCreneauOrientationSelected(creneau: CreneauUnifie): void {
+    this.orientationCreneauSelectionne = {
+      dateHeure: creneau.dateHeure,
+      heureDebut: creneau.heureDebut,
+      heureFin: creneau.heureFin,
+      duree: creneau.duree,
+      statut: creneau.statut as 'disponible' | 'occupe' | 'passe' | 'indisponible',
+      selectionnable: creneau.selectionnable
+    };
   }
 
   // ==================== PANNEAU HOSPITALISATION ====================

@@ -25,6 +25,12 @@ public class RendezVousDto
     public string? Notes { get; set; }
     public string TypeRdv { get; set; } = string.Empty;
     public DateTime DateCreation { get; set; }
+    
+    // Informations d'orientation (si RDV créé depuis une orientation)
+    public int? IdOrientation { get; set; }
+    public string? MotifOrientation { get; set; }
+    public string? MedecinOrienteur { get; set; }
+    public string? TypeOrientation { get; set; }
 }
 
 /// <summary>

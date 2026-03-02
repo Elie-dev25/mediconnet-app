@@ -262,10 +262,12 @@ CREATE TABLE `assurances` (
   `categorie_beneficiaires` VARCHAR(255) DEFAULT NULL COMMENT 'LEGACY: utiliser assurance_categorie_beneficiaire',
   `zone_couverture` VARCHAR(100) DEFAULT NULL COMMENT 'LEGACY: utiliser id_zone_couverture',
   `mode_paiement` VARCHAR(255) DEFAULT NULL COMMENT 'LEGACY: utiliser assurance_mode_paiement',
+  `email_facturation` VARCHAR(255) DEFAULT NULL COMMENT 'Email pour envoi des factures',
   PRIMARY KEY (`id_assurance`),
   KEY `IX_assurance_nom` (`nom`),
   KEY `IX_assurance_type` (`type_assurance`),
   KEY `IX_assurance_zone` (`id_zone_couverture`),
+  KEY `IX_assurance_email` (`email_facturation`),
   CONSTRAINT `fk_assurance_zone` FOREIGN KEY (`id_zone_couverture`) REFERENCES `zone_couverture` (`id_zone`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -420,6 +422,7 @@ CREATE TABLE `patient` (
   `dossier_cloture` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Dossier clôturé - prochaine consultation = première consultation',
   `date_cloture_dossier` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date de clôture du dossier',
   `id_medecin_cloture` INT DEFAULT NULL COMMENT 'Médecin ayant clôturé le dossier',
+  `taux_couverture_override` DECIMAL(5,2) DEFAULT NULL COMMENT 'Override manuel du taux de couverture assurance',
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `numero_dossier` (`numero_dossier`),
   KEY `fk_patient_assurance` (`id_assurance`)
@@ -450,14 +453,18 @@ CREATE TABLE `infirmier` (
   `statut` VARCHAR(20) NOT NULL DEFAULT 'actif',
   `is_major` BOOLEAN NOT NULL DEFAULT FALSE,
   `id_service_major` INT NULL,
+  `id_service` INT NOT NULL COMMENT 'Service de rattachement obligatoire',
   `date_nomination_major` TIMESTAMP NULL,
   `accreditations` VARCHAR(500) NULL,
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `matricule` (`matricule`),
   INDEX `IX_infirmier_statut` (`statut`),
   INDEX `IX_infirmier_is_major` (`is_major`),
+  INDEX `idx_infirmier_service` (`id_service`),
   CONSTRAINT `FK_infirmier_service_major` FOREIGN KEY (`id_service_major`) 
-    REFERENCES `service`(`id_service`) ON DELETE SET NULL
+    REFERENCES `service`(`id_service`) ON DELETE SET NULL,
+  CONSTRAINT `fk_infirmier_service` FOREIGN KEY (`id_service`) 
+    REFERENCES `service`(`id_service`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -626,6 +633,27 @@ CREATE TABLE `consultation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
+-- Table: consultation_gyneco (extension 1-1 pour Gynécologie)
+-- --------------------------------------------------------
+
+CREATE TABLE `consultation_gyneco` (
+  `id_consultation` INT NOT NULL,
+  `inspection_externe` TEXT DEFAULT NULL,
+  `examen_speculum` TEXT DEFAULT NULL,
+  `toucher_vaginal` TEXT DEFAULT NULL,
+  `autres_observations` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id_consultation`),
+  CONSTRAINT `fk_consultation_gyneco_consultation`
+    FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE UNIQUE INDEX `IX_consultation_gyneco_consultation`
+  ON `consultation_gyneco` (`id_consultation`);
+
+-- --------------------------------------------------------
 -- Table: hospitalisation
 -- --------------------------------------------------------
 
@@ -658,27 +686,40 @@ CREATE TABLE `hospitalisation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
--- Table: recommandation (recommandations médicales liées à une consultation)
+-- Table: orientation_pre_consultation (orientations unifiées - remplace recommandation et orientation_specialiste)
 -- --------------------------------------------------------
 
-CREATE TABLE `recommandation` (
-  `id_recommandation` INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE `orientation_pre_consultation` (
+  `id_orientation` INT NOT NULL AUTO_INCREMENT,
   `id_consultation` INT NOT NULL,
   `id_patient` INT NOT NULL,
-  `id_medecin` INT NOT NULL COMMENT 'Médecin prescripteur',
-  `type` VARCHAR(20) NOT NULL COMMENT 'Type: hopital, medecin',
-  `nom_hopital` VARCHAR(255) DEFAULT NULL COMMENT 'Nom hôpital recommandé (saisie libre ou interne)',
-  `nom_medecin_recommande` VARCHAR(255) DEFAULT NULL COMMENT 'Nom médecin recommandé (saisie libre)',
-  `id_medecin_recommande` INT DEFAULT NULL COMMENT 'Médecin interne recommandé (FK)',
-  `specialite` VARCHAR(100) DEFAULT NULL COMMENT 'Spécialité du médecin recommandé',
-  `motif` TEXT NOT NULL COMMENT 'Motif / commentaire obligatoire',
-  `prioritaire` TINYINT(1) DEFAULT 0 COMMENT 'Recommandation prioritaire',
+  `id_medecin_prescripteur` INT NOT NULL COMMENT 'Médecin prescripteur',
+  `type_orientation` VARCHAR(30) NOT NULL DEFAULT 'medecin_interne' COMMENT 'Type: medecin_interne, medecin_externe, hopital, service_interne, laboratoire',
+  `id_specialite` INT DEFAULT NULL COMMENT 'FK vers spécialité (pour médecin interne)',
+  `id_medecin_oriente` INT DEFAULT NULL COMMENT 'FK vers médecin interne orienté',
+  `nom_destinataire` VARCHAR(255) DEFAULT NULL COMMENT 'Nom du destinataire (médecin externe ou hôpital)',
+  `specialite_texte` VARCHAR(100) DEFAULT NULL COMMENT 'Spécialité en texte libre',
+  `adresse_destinataire` TEXT DEFAULT NULL COMMENT 'Adresse du destinataire externe',
+  `telephone_destinataire` VARCHAR(20) DEFAULT NULL COMMENT 'Téléphone du destinataire externe',
+  `motif` TEXT NOT NULL COMMENT 'Motif de l orientation (obligatoire)',
+  `notes` TEXT DEFAULT NULL COMMENT 'Notes complémentaires',
+  `urgence` TINYINT(1) DEFAULT 0 COMMENT 'Orientation urgente',
+  `prioritaire` TINYINT(1) DEFAULT 0 COMMENT 'Orientation prioritaire',
+  `statut` VARCHAR(30) DEFAULT 'en_attente' COMMENT 'Statut: en_attente, acceptee, refusee, rdv_pris, terminee, annulee',
+  `date_orientation` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date de création de l orientation',
+  `date_rdv_propose` DATETIME DEFAULT NULL COMMENT 'Date de RDV proposée',
+  `id_rdv_cree` INT DEFAULT NULL COMMENT 'FK vers le RDV créé suite à l orientation',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_recommandation`),
-  KEY `idx_recommandation_consultation` (`id_consultation`),
-  KEY `idx_recommandation_patient` (`id_patient`),
-  KEY `idx_recommandation_medecin` (`id_medecin`),
-  KEY `idx_recommandation_type` (`type`)
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_orientation`),
+  KEY `idx_orientation_consultation` (`id_consultation`),
+  KEY `idx_orientation_patient` (`id_patient`),
+  KEY `idx_orientation_medecin_prescripteur` (`id_medecin_prescripteur`),
+  KEY `idx_orientation_statut` (`statut`),
+  KEY `idx_orientation_type` (`type_orientation`),
+  KEY `fk_orientation_specialite` (`id_specialite`),
+  KEY `fk_orientation_medecin_oriente` (`id_medecin_oriente`),
+  KEY `fk_orientation_rdv` (`id_rdv_cree`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -745,15 +786,40 @@ CREATE TABLE `execution_soin` (
 
 -- --------------------------------------------------------
 -- Table: prescription (ordonnance)
+-- Enrichie pour supporter tous les contextes de prescription :
+-- - Consultation classique
+-- - Hospitalisation  
+-- - Prescription directe (hors consultation)
 -- --------------------------------------------------------
 
 CREATE TABLE `prescription` (
   `id_ord` INT NOT NULL AUTO_INCREMENT,
   `date` DATE NOT NULL,
-  `id_consultation` INT NOT NULL,
+  `id_patient` INT DEFAULT NULL COMMENT 'Lien direct au patient',
+  `id_medecin` INT DEFAULT NULL COMMENT 'Médecin prescripteur',
+  `id_consultation` INT DEFAULT NULL COMMENT 'Consultation de rattachement (optionnel)',
+  `id_hospitalisation` INT DEFAULT NULL COMMENT 'Hospitalisation si contexte hospitalier',
+  `type_contexte` VARCHAR(50) DEFAULT 'consultation' COMMENT 'consultation, hospitalisation, directe',
+  `statut` VARCHAR(50) DEFAULT 'active' COMMENT 'active, dispensee, partielle, annulee, expiree',
   `commentaire` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `date_expiration` DATETIME DEFAULT NULL COMMENT 'Date d expiration de l ordonnance',
+  `renouvelable` TINYINT(1) DEFAULT 0 COMMENT 'Ordonnance renouvelable',
+  `nombre_renouvellements` INT DEFAULT NULL COMMENT 'Nombre de renouvellements autorises',
+  `renouvellements_restants` INT DEFAULT NULL COMMENT 'Nombre de renouvellements restants',
+  `id_ordonnance_originale` INT DEFAULT NULL COMMENT 'ID ordonnance originale si renouvellement',
   PRIMARY KEY (`id_ord`),
-  KEY `id_consultation` (`id_consultation`)
+  KEY `id_consultation` (`id_consultation`),
+  KEY `idx_prescription_patient` (`id_patient`),
+  KEY `idx_prescription_medecin` (`id_medecin`),
+  KEY `idx_prescription_hospitalisation` (`id_hospitalisation`),
+  KEY `idx_prescription_type_contexte` (`type_contexte`),
+  KEY `idx_prescription_statut` (`statut`),
+  KEY `idx_prescription_date` (`date` DESC),
+  KEY `idx_prescription_expiration` (`date_expiration`),
+  KEY `idx_prescription_renouvelable` (`renouvelable`),
+  KEY `idx_prescription_originale` (`id_ordonnance_originale`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -799,12 +865,16 @@ INSERT INTO `medicament` (`nom`, `dosage`, `stock`, `prix`, `seuil_stock`, `labo
 
 -- --------------------------------------------------------
 -- Table: prescription_medicament
+-- Supporte les médicaments de la BD ET les médicaments en saisie libre
 -- --------------------------------------------------------
 
 CREATE TABLE `prescription_medicament` (
   `id_prescription_med` INT NOT NULL AUTO_INCREMENT,
   `id_ord` INT NOT NULL,
-  `id_medicament` INT NOT NULL,
+  `id_medicament` INT DEFAULT NULL COMMENT 'Référence au catalogue (NULL si saisie libre)',
+  `nom_medicament_libre` VARCHAR(255) DEFAULT NULL COMMENT 'Nom du médicament en saisie libre',
+  `dosage_libre` VARCHAR(100) DEFAULT NULL COMMENT 'Dosage en saisie libre',
+  `est_hors_catalogue` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 si médicament non référencé',
   `quantite` INT DEFAULT 1,
   `duree_traitement` VARCHAR(100) DEFAULT NULL,
   `posologie` VARCHAR(200) DEFAULT NULL,
@@ -814,7 +884,8 @@ CREATE TABLE `prescription_medicament` (
   `instructions` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_prescription_med`),
   KEY `id_ord` (`id_ord`),
-  KEY `id_medicament` (`id_medicament`)
+  KEY `id_medicament` (`id_medicament`),
+  KEY `idx_prescription_hors_catalogue` (`est_hors_catalogue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1029,29 +1100,7 @@ INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitair
 INSERT INTO `examens` (`id_specialite`, `nom_exam`, `description`, `prix_unitaire`, `disponible`, `duree_estimee_minutes`) VALUES
 (14, 'ECG', 'Electrocardiogramme', 10000, 1, 15);
 
--- --------------------------------------------------------
--- Table: orientation_specialiste
--- --------------------------------------------------------
-
-CREATE TABLE `orientation_specialiste` (
-  `id_orientation` INT NOT NULL AUTO_INCREMENT,
-  `id_consultation` INT NOT NULL,
-  `id_specialite` INT DEFAULT NULL,
-  `specialite_manuelle` VARCHAR(255) DEFAULT NULL,
-  `id_medecin_oriente` INT DEFAULT NULL,
-  `medecin_manuel` VARCHAR(255) DEFAULT NULL,
-  `motif` TEXT NOT NULL,
-  `urgence` TINYINT(1) DEFAULT 0,
-  `statut` ENUM('en_attente', 'acceptee', 'refusee', 'terminee') DEFAULT 'en_attente',
-  `date_orientation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_rdv_propose` DATETIME DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `id_rdv_cree` INT DEFAULT NULL,
-  PRIMARY KEY (`id_orientation`),
-  KEY `fk_orientation_consultation` (`id_consultation`),
-  KEY `fk_orientation_specialite` (`id_specialite`),
-  KEY `fk_orientation_medecin` (`id_medecin_oriente`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- NOTE: orientation_specialiste a été supprimée et remplacée par orientation_pre_consultation (voir plus haut)
 
 -- --------------------------------------------------------
 -- Table: bulletin_examen
@@ -1142,7 +1191,11 @@ CREATE TABLE `facture` (
   `id_assurance` INT DEFAULT NULL,
   `taux_couverture` DECIMAL(5,2) DEFAULT NULL,
   `montant_assurance` DECIMAL(12,2) DEFAULT NULL,
+  `montant_patient` DECIMAL(12,2) DEFAULT 0 COMMENT 'Montant a payer par le patient',
+  `date_envoi_assurance` DATETIME DEFAULT NULL COMMENT 'Date envoi facture a assurance',
   PRIMARY KEY (`id_facture`),
+  KEY `IX_facture_statut` (`statut`),
+  KEY `IX_facture_assurance` (`id_assurance`),
   KEY `id_patient` (`id_patient`),
   KEY `id_caissier` (`id_caissier`),
   KEY `id_hospit` (`id_hospit`)
@@ -1580,8 +1633,12 @@ CREATE TABLE `echeancier` (
   `id_facture` INT NOT NULL,
   `montant_total` DECIMAL(12,2) NOT NULL,
   `nombre_echeances` INT NOT NULL,
+  `montant_par_echeance` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `date_debut` DATE NOT NULL,
+  `frequence` VARCHAR(20) NOT NULL DEFAULT 'mensuel',
   `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `statut` VARCHAR(50) DEFAULT 'actif',
+  `cree_par` INT DEFAULT NULL,
   PRIMARY KEY (`id_echeancier`),
   KEY `fk_ech_facture` (`id_facture`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -1598,8 +1655,11 @@ CREATE TABLE `echeance` (
   `date_echeance` DATE NOT NULL,
   `date_paiement` TIMESTAMP NULL DEFAULT NULL,
   `statut` VARCHAR(50) DEFAULT 'en_attente',
+  `id_transaction` INT DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
   PRIMARY KEY (`id_echeance`),
-  KEY `fk_echeance_echeancier` (`id_echeancier`)
+  KEY `fk_echeance_echeancier` (`id_echeancier`),
+  KEY `fk_echeance_transaction` (`id_transaction`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1608,17 +1668,25 @@ CREATE TABLE `echeance` (
 
 CREATE TABLE `demande_remboursement` (
   `id_demande` INT NOT NULL AUTO_INCREMENT,
+  `numero_demande` VARCHAR(50) NOT NULL DEFAULT '',
   `id_facture` INT NOT NULL,
   `id_assurance` INT NOT NULL,
+  `id_patient` INT NOT NULL,
   `montant_demande` DECIMAL(12,2) NOT NULL,
+  `montant_approuve` DECIMAL(12,2) DEFAULT NULL,
   `montant_rembourse` DECIMAL(12,2) DEFAULT NULL,
   `date_demande` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `date_reponse` TIMESTAMP NULL DEFAULT NULL,
+  `date_traitement` DATETIME DEFAULT NULL,
   `statut` VARCHAR(50) DEFAULT 'en_attente',
+  `motif_rejet` VARCHAR(500) DEFAULT NULL,
+  `justificatif` VARCHAR(500) DEFAULT NULL,
+  `traite_par` INT DEFAULT NULL,
   `reference` VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (`id_demande`),
   KEY `fk_dr_facture` (`id_facture`),
-  KEY `fk_dr_assurance` (`id_assurance`)
+  KEY `fk_dr_assurance` (`id_assurance`),
+  KEY `fk_dr_patient` (`id_patient`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1877,11 +1945,15 @@ ALTER TABLE `soin_hospitalisation`
   ADD CONSTRAINT `fk_soin_prescripteur` FOREIGN KEY (`id_prescripteur`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL;
 
 ALTER TABLE `prescription`
-  ADD CONSTRAINT `prescription_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE;
+  ADD CONSTRAINT `prescription_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_prescription_patient` FOREIGN KEY (`id_patient`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_prescription_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_prescription_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_prescription_originale` FOREIGN KEY (`id_ordonnance_originale`) REFERENCES `prescription` (`id_ord`) ON DELETE SET NULL;
 
 ALTER TABLE `prescription_medicament`
   ADD CONSTRAINT `prescription_medicament_ibfk_1` FOREIGN KEY (`id_ord`) REFERENCES `prescription` (`id_ord`) ON DELETE CASCADE,
-  ADD CONSTRAINT `prescription_medicament_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`);
+  ADD CONSTRAINT `prescription_medicament_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`) ON DELETE SET NULL;
 
 ALTER TABLE `bulletin_examen`
   ADD CONSTRAINT `bulletin_examen_ibfk_1` FOREIGN KEY (`id_labo`) REFERENCES `laboratoire` (`id_labo`) ON DELETE SET NULL,
@@ -1930,6 +2002,18 @@ ALTER TABLE `inventaire`
 ALTER TABLE `inventaire_ligne`
   ADD CONSTRAINT `inventaire_ligne_ibfk_1` FOREIGN KEY (`id_inventaire`) REFERENCES `inventaire` (`id_inventaire`) ON DELETE CASCADE,
   ADD CONSTRAINT `inventaire_ligne_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`);
+
+ALTER TABLE `echeancier`
+  ADD CONSTRAINT `fk_echeancier_facture` FOREIGN KEY (`id_facture`) REFERENCES `facture` (`id_facture`) ON DELETE CASCADE;
+
+ALTER TABLE `echeance`
+  ADD CONSTRAINT `fk_echeance_echeancier` FOREIGN KEY (`id_echeancier`) REFERENCES `echeancier` (`id_echeancier`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_echeance_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `transaction_paiement` (`id_transaction`) ON DELETE SET NULL;
+
+ALTER TABLE `demande_remboursement`
+  ADD CONSTRAINT `fk_demande_facture` FOREIGN KEY (`id_facture`) REFERENCES `facture` (`id_facture`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_demande_assurance` FOREIGN KEY (`id_assurance`) REFERENCES `assurances` (`id_assurance`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_demande_patient` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`) ON DELETE CASCADE;
 
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
@@ -2519,6 +2603,371 @@ CREATE TABLE `question_libre` (
   CONSTRAINT `fk_question_libre_medecin` FOREIGN KEY (`id_medecin`) 
     REFERENCES `medecin` (`id_user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: forme_pharmaceutique
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `forme_pharmaceutique` (
+  `id_forme` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `ordre` INT NOT NULL DEFAULT 0,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_forme`),
+  UNIQUE KEY `uq_forme_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: voie_administration
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `voie_administration` (
+  `id_voie` INT NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `libelle` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `ordre` INT NOT NULL DEFAULT 0,
+  `actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_voie`),
+  UNIQUE KEY `uq_voie_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table de liaison: medicament_forme (many-to-many)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `medicament_forme` (
+  `id_medicament` INT NOT NULL,
+  `id_forme` INT NOT NULL,
+  `est_defaut` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_medicament`, `id_forme`),
+  KEY `fk_med_forme_forme` (`id_forme`),
+  CONSTRAINT `fk_med_forme_medicament` FOREIGN KEY (`id_medicament`) 
+    REFERENCES `medicament` (`id_medicament`) ON DELETE CASCADE,
+  CONSTRAINT `fk_med_forme_forme` FOREIGN KEY (`id_forme`) 
+    REFERENCES `forme_pharmaceutique` (`id_forme`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table de liaison: medicament_voie (many-to-many)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `medicament_voie` (
+  `id_medicament` INT NOT NULL,
+  `id_voie` INT NOT NULL,
+  `est_defaut` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_medicament`, `id_voie`),
+  KEY `fk_med_voie_voie` (`id_voie`),
+  CONSTRAINT `fk_med_voie_medicament` FOREIGN KEY (`id_medicament`) 
+    REFERENCES `medicament` (`id_medicament`) ON DELETE CASCADE,
+  CONSTRAINT `fk_med_voie_voie` FOREIGN KEY (`id_voie`) 
+    REFERENCES `voie_administration` (`id_voie`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Données par défaut: Formes pharmaceutiques
+-- --------------------------------------------------------
+
+INSERT INTO `forme_pharmaceutique` (`code`, `libelle`, `description`, `ordre`) VALUES
+('comprime', 'Comprimé', 'Forme solide à avaler ou à croquer', 1),
+('gelule', 'Gélule', 'Capsule contenant une poudre ou un liquide', 2),
+('sirop', 'Sirop', 'Solution sucrée pour administration orale', 3),
+('solution_buvable', 'Solution buvable', 'Liquide à boire', 4),
+('ampoule_injectable', 'Ampoule injectable', 'Solution pour injection', 5),
+('pommade', 'Pommade', 'Préparation semi-solide pour application cutanée', 6),
+('creme', 'Crème', 'Émulsion pour application cutanée', 7),
+('gel', 'Gel', 'Préparation semi-solide transparente', 8),
+('suppositoire', 'Suppositoire', 'Forme solide pour administration rectale', 9),
+('collyre', 'Collyre', 'Solution pour application ophtalmique', 10),
+('spray_nasal', 'Spray nasal', 'Solution pour pulvérisation nasale', 11),
+('inhalateur', 'Inhalateur', 'Dispositif pour inhalation', 12),
+('patch', 'Patch', 'Dispositif transdermique', 13),
+('sachet', 'Sachet', 'Poudre ou granulés en sachet', 14),
+('gouttes', 'Gouttes', 'Solution en gouttes', 15),
+('ovule', 'Ovule', 'Forme solide pour administration vaginale', 16),
+('suspension', 'Suspension', 'Particules solides dispersées dans un liquide', 17),
+('poudre', 'Poudre', 'Forme solide à reconstituer', 18);
+
+-- --------------------------------------------------------
+-- Données par défaut: Voies d'administration
+-- --------------------------------------------------------
+
+INSERT INTO `voie_administration` (`code`, `libelle`, `description`, `ordre`) VALUES
+('orale', 'Voie orale', 'Administration par la bouche', 1),
+('intraveineuse', 'Voie intraveineuse (IV)', 'Injection directe dans une veine', 2),
+('intramusculaire', 'Voie intramusculaire (IM)', 'Injection dans un muscle', 3),
+('sous_cutanee', 'Voie sous-cutanée (SC)', 'Injection sous la peau', 4),
+('rectale', 'Voie rectale', 'Administration par le rectum', 5),
+('cutanee', 'Voie cutanée', 'Application sur la peau', 6),
+('ophtalmique', 'Voie ophtalmique', 'Application dans l''œil', 7),
+('nasale', 'Voie nasale', 'Administration par le nez', 8),
+('inhalee', 'Voie inhalée', 'Inhalation par les voies respiratoires', 9),
+('sublinguale', 'Voie sublinguale', 'Sous la langue', 10),
+('vaginale', 'Voie vaginale', 'Administration par le vagin', 11),
+('transdermique', 'Voie transdermique', 'À travers la peau (patch)', 12),
+('auriculaire', 'Voie auriculaire', 'Application dans l''oreille', 13),
+('intradermique', 'Voie intradermique', 'Injection dans le derme', 14),
+('intrathecale', 'Voie intrathécale', 'Injection dans l''espace sous-arachnoïdien', 15);
+
+-- --------------------------------------------------------
+-- Association des médicaments existants avec formes et voies par défaut
+-- --------------------------------------------------------
+
+-- Paracetamol (comprimé, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Paracetamol' AND f.code = 'comprime';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Paracetamol' AND v.code = 'orale';
+
+-- Ibuprofene (comprimé, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Ibuprofene' AND f.code = 'comprime';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Ibuprofene' AND v.code = 'orale';
+
+-- Amoxicilline (gélule + suspension, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Amoxicilline' AND f.code = 'gelule';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Amoxicilline' AND f.code = 'suspension';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Amoxicilline' AND v.code = 'orale';
+
+-- Metronidazole (comprimé + injectable, voie orale + IV)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Metronidazole' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Metronidazole' AND f.code = 'ampoule_injectable';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Metronidazole' AND v.code = 'orale';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Metronidazole' AND v.code = 'intraveineuse';
+
+-- Omeprazole (gélule, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Omeprazole' AND f.code = 'gelule';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Omeprazole' AND v.code = 'orale';
+
+-- Tramadol (gélule + injectable, voie orale + IV + IM)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Tramadol' AND f.code = 'gelule';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Tramadol' AND f.code = 'ampoule_injectable';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Tramadol' AND v.code = 'orale';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Tramadol' AND v.code = 'intraveineuse';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Tramadol' AND v.code = 'intramusculaire';
+
+-- Diclofenac (comprimé + gel + injectable, voie orale + cutanée + IM)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Diclofenac' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Diclofenac' AND f.code = 'gel';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Diclofenac' AND f.code = 'ampoule_injectable';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Diclofenac' AND v.code = 'orale';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Diclofenac' AND v.code = 'cutanee';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Diclofenac' AND v.code = 'intramusculaire';
+
+-- Ciprofloxacine (comprimé + injectable, voie orale + IV)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Ciprofloxacine' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Ciprofloxacine' AND f.code = 'ampoule_injectable';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Ciprofloxacine' AND v.code = 'orale';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Ciprofloxacine' AND v.code = 'intraveineuse';
+
+-- Cotrimoxazole (comprimé + suspension, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Cotrimoxazole' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Cotrimoxazole' AND f.code = 'suspension';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Cotrimoxazole' AND v.code = 'orale';
+
+-- Metformine (comprimé, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Metformine' AND f.code = 'comprime';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Metformine' AND v.code = 'orale';
+
+-- Amlodipine (comprimé, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Amlodipine' AND f.code = 'comprime';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Amlodipine' AND v.code = 'orale';
+
+-- Losartan (comprimé, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Losartan' AND f.code = 'comprime';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Losartan' AND v.code = 'orale';
+
+-- Salbutamol (inhalateur + sirop, voie inhalée + orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Salbutamol' AND f.code = 'inhalateur';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Salbutamol' AND f.code = 'sirop';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Salbutamol' AND v.code = 'inhalee';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 0 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Salbutamol' AND v.code = 'orale';
+
+-- Prednisolone (comprimé + sirop, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Prednisolone' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Prednisolone' AND f.code = 'sirop';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Prednisolone' AND v.code = 'orale';
+
+-- Cefixime (comprimé + suspension, voie orale)
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 1 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Cefixime' AND f.code = 'comprime';
+
+INSERT INTO `medicament_forme` (`id_medicament`, `id_forme`, `est_defaut`) 
+SELECT m.id_medicament, f.id_forme, 0 
+FROM `medicament` m, `forme_pharmaceutique` f 
+WHERE m.nom = 'Cefixime' AND f.code = 'suspension';
+
+INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`) 
+SELECT m.id_medicament, v.id_voie, 1 
+FROM `medicament` m, `voie_administration` v 
+WHERE m.nom = 'Cefixime' AND v.code = 'orale';
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

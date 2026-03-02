@@ -92,23 +92,21 @@
             <p>Aucun RDV en attente</p>
           </div>
 
-          <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length > 0" class="pending-list-compact">
+          <div *ngIf="!isLoadingPending && !pendingError && rdvEnAttente.length > 0" class="pending-list-inline">
             <div class="pending-row" *ngFor="let rdv of rdvEnAttente">
-              <div class="pending-datetime">
-                <span class="pending-date">{{ formatDateShort(rdv.dateHeure) }}</span>
-                <span class="pending-time">{{ formatTime(rdv.dateHeure) }}</span>
-              </div>
-              <div class="pending-patient" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0)" title="Voir fiche patient">
+              <span class="pending-datetime">{{ formatDateShort(rdv.dateHeure) }} <strong>{{ formatTime(rdv.dateHeure) }}</strong></span>
+              <span class="pending-patient" (click)="openFichePatient(rdv.idPatient || rdv.patientId || 0, rdv)" title="Voir fiche patient">
+                <lucide-icon name="user" [size]="12"></lucide-icon>
                 {{ rdv.patientPrenom }} {{ rdv.patientNom }}
-              </div>
-              <div class="pending-actions">
-                <button class="btn-mini btn-mini-success" type="button" (click)="validerRdv(rdv)" [disabled]="isProcessing" title="Valider">
+              </span>
+              <div class="pending-actions-inline">
+                <button class="btn-icon success" type="button" (click)="validerRdv(rdv)" [disabled]="isProcessing" title="Valider">
                   <lucide-icon name="check" [size]="14"></lucide-icon>
                 </button>
-                <button class="btn-mini btn-mini-warning" type="button" (click)="openSuggererModal(rdv)" [disabled]="isProcessing" title="Suggérer">
+                <button class="btn-icon warning" type="button" (click)="openSuggererModal(rdv)" [disabled]="isProcessing" title="Suggérer">
                   <lucide-icon name="calendar-clock" [size]="14"></lucide-icon>
                 </button>
-                <button class="btn-mini btn-mini-danger" type="button" (click)="openAnnulerModal(rdv)" [disabled]="isProcessing" title="Refuser">
+                <button class="btn-icon danger" type="button" (click)="openAnnulerModal(rdv)" [disabled]="isProcessing" title="Refuser">
                   <lucide-icon name="x" [size]="14"></lucide-icon>
                 </button>
               </div>
@@ -191,7 +189,8 @@
           [(ngModel)]="motifAnnulation" 
           rows="3" 
           placeholder="Indiquez la raison de l'annulation..."
-          class="form-control"></textarea>
+          class="form-control"
+          appVoiceInput></textarea>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="closeAnnulerModal()">Annuler</button>
@@ -231,43 +230,17 @@
           class="form-control">
       </div>
 
-      <!-- Chargement des créneaux -->
-      <div class="creneaux-loading" *ngIf="isLoadingCreneaux">
-        <lucide-icon name="loader-2" [size]="20" class="spinner"></lucide-icon>
-        <span>Chargement des créneaux...</span>
-      </div>
-
-      <!-- Légende des créneaux -->
-      <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length > 0">
-        <span class="legende-item disponible"><span class="dot"></span> Disponible</span>
-        <span class="legende-item occupe"><span class="dot"></span> Occupé</span>
-        <span class="legende-item passe"><span class="dot"></span> Passé</span>
-      </div>
-
-      <!-- Grille des créneaux avec statut -->
-      <div class="creneaux-grid-statut" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length > 0">
-        <button type="button" 
-                *ngFor="let creneau of creneauxSuggestion"
-                class="creneau-btn-statut"
-                [ngClass]="getCreneauClass(creneau)"
-                [class.selected]="isCreneauSelected(creneau)"
-                [disabled]="creneau.statut !== 'disponible'"
-                (click)="selectCreneauSuggestion(creneau)">
-          {{ creneau.heureDebut }}
-        </button>
-      </div>
-
-      <!-- Aucun créneau -->
-      <div class="no-creneaux" *ngIf="!isLoadingCreneaux && creneauxSuggestion.length === 0 && suggestionDate">
-        <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
-        <p>Aucun créneau configuré pour cette date.</p>
-      </div>
-
-      <!-- Créneau sélectionné -->
-      <div class="selected-creneau-info" *ngIf="selectedCreneauSuggestion">
-        <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-        <span>Créneau sélectionné : <strong>{{ selectedCreneauSuggestion.heureDebut }} - {{ selectedCreneauSuggestion.heureFin }}</strong></span>
-      </div>
+      <!-- Composant créneaux unifié -->
+      <app-creneaux-selector
+        [creneaux]="creneauxSuggestionUnifies"
+        [selectedCreneau]="selectedCreneauSuggestionUnifie"
+        [isLoading]="isLoadingCreneaux"
+        [showLegend]="true"
+        [showSelectedInfo]="true"
+        [emptyMessage]="'Aucun créneau configuré pour cette date.'"
+        [variant]="'card'"
+        (creneauSelected)="onCreneauSuggestionSelected($event)">
+      </app-creneaux-selector>
 
       <div class="form-group">
         <label for="messageSuggestion">Message au patient (optionnel)</label>
@@ -276,7 +249,8 @@
           [(ngModel)]="messageSuggestion" 
           rows="2" 
           placeholder="Message complémentaire..."
-          class="form-control"></textarea>
+          class="form-control"
+          appVoiceInput></textarea>
       </div>
       <p class="modal-warning">Le patient sera notifié par email du nouveau créneau proposé.</p>
       <div class="modal-actions">
@@ -294,6 +268,7 @@
   <app-fiche-patient-panel
     [patientId]="selectedPatientId"
     [isOpen]="isFichePanelOpen"
+    [rdvContext]="selectedRdvContext"
     (close)="closeFichePanel()">
   </app-fiche-patient-panel>
 

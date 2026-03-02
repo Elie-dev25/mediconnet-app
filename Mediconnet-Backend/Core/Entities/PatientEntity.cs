@@ -100,6 +100,7 @@ public class Patient
     /// Si défini, ce taux prend priorité sur la configuration AssuranceCouverture.
     /// Utilisé pour les cas exceptionnels (négociations spéciales, contrats particuliers).
     /// </summary>
+    [Column("taux_couverture_override")]
     public decimal? TauxCouvertureOverride { get; set; }
     
     /// <summary>

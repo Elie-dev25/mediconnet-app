@@ -39,7 +39,8 @@
             [formControlName]="controlName(q.id)"
             rows="3"
             placeholder="Votre réponse"
-            [class.invalid]="form.get(controlName(q.id))?.invalid && form.get(controlName(q.id))?.touched">
+            [class.invalid]="form.get(controlName(q.id))?.invalid && form.get(controlName(q.id))?.touched"
+            appVoiceInput>
           </textarea>
 
           <!-- Type choix -->
@@ -66,7 +67,8 @@
           <textarea
             [formControlName]="controlName(q.id)"
             rows="3"
-            placeholder="Votre réponse">
+            placeholder="Votre réponse"
+            appVoiceInput>
           </textarea>
         </div>
       </div>
@@ -85,7 +87,7 @@
       <div class="add-panel" *ngIf="addQuestionOpen">
         <div class="row">
           <label>Question</label>
-          <input type="text" [(ngModel)]="newQuestionText" [ngModelOptions]="{ standalone: true }" name="newQuestionText" placeholder="Texte de la question" />
+          <input type="text" [(ngModel)]="newQuestionText" [ngModelOptions]="{ standalone: true }" name="newQuestionText" placeholder="Texte de la question" appVoiceInput />
         </div>
         <div class="row">
           <label>Type</label>

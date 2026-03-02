@@ -237,55 +237,16 @@
             </span>
           </div>
 
-          <!-- Loading créneaux -->
-          <div class="loading-container small" *ngIf="isLoadingCreneaux">
-            <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
-            <p>Chargement des créneaux...</p>
-          </div>
-
-          <!-- Légende -->
-          <div class="creneaux-legende" *ngIf="!isLoadingCreneaux && creneauxMedecin.length > 0">
-            <div class="legende-item">
-              <span class="legende-dot disponible"></span>
-              Disponible
-            </div>
-            <div class="legende-item">
-              <span class="legende-dot occupe"></span>
-              Occupé
-            </div>
-            <div class="legende-item">
-              <span class="legende-dot passe"></span>
-              Passé
-            </div>
-          </div>
-
-          <!-- Grille des créneaux -->
-          <div class="creneaux-grid" *ngIf="!isLoadingCreneaux && creneauxMedecin.length > 0">
-            <button 
-              *ngFor="let creneau of creneauxMedecin"
-              type="button"
-              class="creneau-slot"
-              [class.disponible]="creneau.statut === 'disponible'"
-              [class.occupe]="creneau.statut === 'occupe'"
-              [class.passe]="creneau.statut === 'passe'"
-              [class.selected]="selectedCreneau?.heureDebut === creneau.heureDebut"
-              [disabled]="!creneau.selectionnable"
-              (click)="selectCreneau(creneau)">
-              {{ creneau.heureDebut }}
-            </button>
-          </div>
-
-          <!-- Aucun créneau -->
-          <div class="empty-creneaux" *ngIf="!isLoadingCreneaux && creneauxMedecin.length === 0">
-            <lucide-icon name="calendar-x" [size]="32"></lucide-icon>
-            <p>Aucun créneau disponible aujourd'hui</p>
-          </div>
-
-          <!-- Créneau sélectionné -->
-          <div class="creneau-selected-info" *ngIf="selectedCreneau">
-            <lucide-icon name="check-circle-2" [size]="18"></lucide-icon>
-            <span>Créneau sélectionné : <strong>{{ selectedCreneau.heureDebut }} - {{ selectedCreneau.heureFin }}</strong></span>
-          </div>
+          <!-- Composant créneaux unifié -->
+          <app-creneaux-selector
+            [creneaux]="creneauxUnifies"
+            [selectedCreneau]="selectedCreneauUnifie"
+            [isLoading]="isLoadingCreneaux"
+            [showLegend]="true"
+            [showSelectedInfo]="true"
+            [emptyMessage]="'Aucun créneau disponible aujourd\'hui'"
+            (creneauSelected)="onCreneauUnifieSelected($event)">
+          </app-creneaux-selector>
         </div>
 
         <div class="step-actions" *ngIf="!isLoadingMedecins">
@@ -388,7 +349,8 @@
               id="motif"
               formControlName="motif"
               rows="3"
-              placeholder="Décrivez le motif de la consultation...">
+              placeholder="Décrivez le motif de la consultation..."
+              appVoiceInput>
             </textarea>
             <div class="error-message" *ngIf="consultationForm.get('motif')?.invalid && consultationForm.get('motif')?.touched">
               <span *ngIf="consultationForm.get('motif')?.errors?.['required']">Le motif est obligatoire</span>

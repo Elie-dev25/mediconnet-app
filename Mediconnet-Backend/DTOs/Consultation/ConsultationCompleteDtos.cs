@@ -90,6 +90,14 @@ public class HistoriqueExamenDto
     public string? Resultats { get; set; }
 }
 
+public class ExamenGynecologiqueDto
+{
+    public string? InspectionExterne { get; set; }
+    public string? ExamenSpeculum { get; set; }
+    public string? ToucherVaginal { get; set; }
+    public string? AutresObservations { get; set; }
+}
+
 // ==================== CONSULTATION MULTI-ETAPES ====================
 
 public class ConsultationEnCoursDto
@@ -110,6 +118,7 @@ public class ConsultationEnCoursDto
     // Données de la consultation (workflow mis à jour)
     public AnamneseDto? Anamnese { get; set; }
     public ExamenCliniqueDto? ExamenClinique { get; set; }
+    public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
     public DiagnosticDto? Diagnostic { get; set; }
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? Conclusion { get; set; }
@@ -251,7 +260,7 @@ public class PrescriptionsDto
 {
     public OrdonnanceDto? Ordonnance { get; set; }
     public List<ExamenPrescritDto> Examens { get; set; } = new();
-    public List<RecommandationDto> Recommandations { get; set; } = new();
+    public List<OrientationPreConsultationDto> Orientations { get; set; } = new();
 }
 
 public class OrdonnanceDto
@@ -301,52 +310,93 @@ public class LaboratoireDto
     public string? Type { get; set; }
 }
 
-public class RecommandationDto
-{
-    public int? IdRecommandation { get; set; }
-    public string Type { get; set; } = "conseil";
-    public string? SpecialiteOrientee { get; set; }
-    public int? IdMedecinOriente { get; set; }
-    public string? Motif { get; set; }
-    public string? Description { get; set; }
-    public bool Urgence { get; set; }
-}
+// ==================== ORIENTATION PRE-CONSULTATION (UNIFIÉ) ====================
 
-public class OrientationSpecialisteDto
+/// <summary>
+/// DTO pour afficher une orientation (lecture)
+/// </summary>
+public class OrientationPreConsultationDto
 {
-    public int? IdOrientation { get; set; }
+    public int IdOrientation { get; set; }
     public int IdConsultation { get; set; }
-    public int IdSpecialite { get; set; }
+    public int IdPatient { get; set; }
+    
+    /// <summary>Type: medecin_interne, medecin_externe, hopital, service_interne, laboratoire</summary>
+    public string TypeOrientation { get; set; } = "medecin_interne";
+    
+    // Destination
+    public int? IdSpecialite { get; set; }
     public string? NomSpecialite { get; set; }
     public int? IdMedecinOriente { get; set; }
     public string? NomMedecinOriente { get; set; }
+    public string? NomDestinataire { get; set; }
+    public string? SpecialiteTexte { get; set; }
+    public string? AdresseDestinataire { get; set; }
+    public string? TelephoneDestinataire { get; set; }
+    
+    // Détails
     public string Motif { get; set; } = "";
-    public bool Urgence { get; set; } = false;
+    public string? Notes { get; set; }
+    public bool Urgence { get; set; }
+    public bool Prioritaire { get; set; }
+    
+    // Suivi
     public string Statut { get; set; } = "en_attente";
     public DateTime DateOrientation { get; set; }
     public DateTime? DateRdvPropose { get; set; }
-    public string? Notes { get; set; }
     public int? IdRdvCree { get; set; }
+    
+    // Métadonnées
+    public string? MedecinPrescripteur { get; set; }
+    public DateTime? CreatedAt { get; set; }
 }
 
+/// <summary>
+/// Requête pour créer une orientation
+/// </summary>
 public class CreateOrientationRequest
 {
-    public int IdConsultation { get; set; }
-    public int IdSpecialite { get; set; }
+    /// <summary>Type: medecin_interne, medecin_externe, hopital, service_interne, laboratoire</summary>
+    public string TypeOrientation { get; set; } = "medecin_interne";
+    
+    // Pour médecin interne
+    public int? IdSpecialite { get; set; }
     public int? IdMedecinOriente { get; set; }
+    
+    // Pour médecin externe / hôpital
+    public string? NomDestinataire { get; set; }
+    public string? SpecialiteTexte { get; set; }
+    public string? AdresseDestinataire { get; set; }
+    public string? TelephoneDestinataire { get; set; }
+    
+    // Détails (obligatoires)
     public string Motif { get; set; } = "";
-    public bool Urgence { get; set; } = false;
+    public string? Notes { get; set; }
+    public bool Urgence { get; set; }
+    public bool Prioritaire { get; set; }
+    
     public DateTime? DateRdvPropose { get; set; }
+}
+
+/// <summary>
+/// Requête pour mettre à jour le statut d'une orientation
+/// </summary>
+public class UpdateOrientationStatutRequest
+{
+    public string Statut { get; set; } = "en_attente";
+    public DateTime? DateRdvPropose { get; set; }
+    public int? IdRdvCree { get; set; }
     public string? Notes { get; set; }
 }
 
-public class CreateOrientationManuelleRequest
+/// <summary>
+/// Requête pour créer un RDV lié à une orientation
+/// </summary>
+public class CreerRdvOrientationRequest
 {
-    public int IdConsultation { get; set; }
-    public string SpecialiteManuelle { get; set; } = "";
-    public string? MedecinManuel { get; set; }
-    public string Motif { get; set; } = "";
-    public bool Urgence { get; set; } = false;
+    public string DateHeure { get; set; } = "";
+    public int? Duree { get; set; }
+    public string? Motif { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -379,6 +429,12 @@ public class SaveExamenCliniqueRequest
 {
     public int IdConsultation { get; set; }
     public ExamenCliniqueDto ExamenClinique { get; set; } = new();
+}
+
+public class SaveExamenGynecologiqueRequest
+{
+    public int IdConsultation { get; set; }
+    public ExamenGynecologiqueDto ExamenGynecologique { get; set; } = new();
 }
 
 public class SaveDiagnosticRequest
@@ -439,6 +495,11 @@ public class ConsultationDetailDto
     public OrdonnanceDto? Ordonnance { get; set; }
     public List<ExamenPrescritDetailDto> ExamensPrescrits { get; set; } = new();
     public List<QuestionReponseDto> Questionnaire { get; set; } = new();
+    public ParametresVitauxDto? ParametresVitaux { get; set; }
+    public ExamenCliniqueDto? ExamenClinique { get; set; }
+    public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
+    public PlanTraitementDto? PlanTraitement { get; set; }
+    public ConclusionDto? ConclusionDetaillee { get; set; }
 }
 
 public class ExamenPrescritDetailDto

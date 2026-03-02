@@ -113,8 +113,8 @@
                 <span class="info-label">Nom complet</span>
                 <span *ngIf="!isEditing" class="info-value">{{ getFullName() }}</span>
                 <div *ngIf="isEditing" class="edit-fields">
-                  <input type="text" [(ngModel)]="editedProfile.prenom" placeholder="Prénom">
-                  <input type="text" [(ngModel)]="editedProfile.nom" placeholder="Nom">
+                  <input type="text" [(ngModel)]="editedProfile.prenom" placeholder="Prénom" appVoiceInput>
+                  <input type="text" [(ngModel)]="editedProfile.nom" placeholder="Nom" appVoiceInput>
                 </div>
               </div>
             </div>

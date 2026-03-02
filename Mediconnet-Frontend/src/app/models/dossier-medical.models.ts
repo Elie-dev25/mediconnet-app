@@ -4,7 +4,7 @@
  */
 
 export type ViewMode = 'patient' | 'medecin';
-export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents' | 'hospitalisations' | 'recommandations';
+export type TabType = 'resume' | 'infos' | 'consultations' | 'ordonnances' | 'examens' | 'antecedents' | 'hospitalisations' | 'recommandations' | 'orientations';
 
 /**
  * Informations du patient dans le dossier médical
@@ -104,12 +104,15 @@ export interface MedicamentItem {
 
 /**
  * Item d'examen dans l'historique
+ * Note: Le backend retourne 'categorie' et 'specialite', le frontend utilise 'typeExamen'
  */
 export interface ExamenItem {
   idExamen: number;
   dateExamen?: string;
   datePrescription?: string;
-  typeExamen: string;
+  typeExamen?: string;
+  categorie?: string;
+  specialite?: string;
   nomExamen: string;
   resultat?: string;
   resultats?: string;
@@ -160,19 +163,33 @@ export interface HospitalisationItem {
 }
 
 /**
- * Item de recommandation dans l'historique
+ * Item de recommandation/orientation dans l'historique
+ * Supporte les anciens types (hopital, medecin) et les nouveaux (medecin_interne, medecin_externe, etc.)
  */
 export interface RecommandationItem {
-  idRecommandation: number;
-  type: string;
+  idRecommandation?: number;
+  idOrientation?: number;
+  type?: string;
+  typeOrientation?: string;
   nomHopital?: string;
   nomMedecinRecommande?: string;
+  nomDestinataire?: string;
+  nomMedecinOriente?: string;
+  nomSpecialite?: string;
   specialite?: string;
+  specialiteTexte?: string;
   motif: string;
   prioritaire: boolean;
+  urgence?: boolean;
+  statut?: string;
   createdAt: string;
   medecinPrescripteur?: string;
   idConsultation?: number;
+  // Champs pour le RDV lié
+  idRdvCree?: number;
+  dateRdvPropose?: string;
+  adresseDestinataire?: string;
+  telephoneDestinataire?: string;
 }
 
 /**

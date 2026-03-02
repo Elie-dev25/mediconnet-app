@@ -1,0 +1,119 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-content">
+        <lucide-icon name="file-text" [size]="24"></lucide-icon>
+        <div class="header-text">
+          <h2>Nouvelle Ordonnance</h2>
+          <p class="patient-name">{{ patientPrenom }} {{ patientNom }}</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="panel-body">
+      <!-- Message de succès -->
+      <div class="success-message" *ngIf="success">
+        <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+        <span>Ordonnance créée avec succès!</span>
+      </div>
+
+      <!-- Message d'erreur -->
+      <div class="error-message" *ngIf="error">
+        <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- Formulaire -->
+      <div class="form-content" *ngIf="!success">
+        <!-- Section Médicaments -->
+        <div class="section">
+          <h3>
+            <lucide-icon name="pill" [size]="18"></lucide-icon>
+            Médicaments prescrits
+          </h3>
+          <app-prescription-medicaments
+            [medicaments]="medicaments"
+            (medicamentsChange)="onMedicamentsChange($event)">
+          </app-prescription-medicaments>
+        </div>
+
+        <!-- Section Options -->
+        <div class="section options-section">
+          <h3>
+            <lucide-icon name="settings" [size]="18"></lucide-icon>
+            Options de l'ordonnance
+          </h3>
+
+          <div class="options-grid">
+            <!-- Durée de validité -->
+            <div class="form-group">
+              <label for="dureeValidite">Durée de validité (jours)</label>
+              <input 
+                type="number" 
+                id="dureeValidite" 
+                [(ngModel)]="dureeValiditeJours"
+                min="1" 
+                max="365"
+                class="form-input">
+            </div>
+
+            <!-- Renouvelable -->
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  [(ngModel)]="renouvelable"
+                  class="checkbox-input">
+                <span>Ordonnance renouvelable</span>
+              </label>
+            </div>
+
+            <!-- Nombre de renouvellements -->
+            <div class="form-group" *ngIf="renouvelable">
+              <label for="nbRenouvellements">Nombre de renouvellements</label>
+              <input 
+                type="number" 
+                id="nbRenouvellements" 
+                [(ngModel)]="nombreRenouvellements"
+                min="1" 
+                max="12"
+                placeholder="Ex: 3"
+                class="form-input">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Notes -->
+        <div class="section">
+          <h3>
+            <lucide-icon name="message-square" [size]="18"></lucide-icon>
+            Notes / Instructions
+          </h3>
+          <textarea 
+            [(ngModel)]="notes" 
+            placeholder="Instructions particulières, recommandations..."
+            rows="3"
+            class="form-textarea">
+          </textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer" *ngIf="!success">
+      <button class="btn btn-secondary" (click)="onClose()" [disabled]="isSubmitting">
+        Annuler
+      </button>
+      <button class="btn btn-primary" (click)="submit()" [disabled]="isSubmitting">
+        <lucide-icon name="loader-2" [size]="18" *ngIf="isSubmitting" class="spin"></lucide-icon>
+        <lucide-icon name="save" [size]="18" *ngIf="!isSubmitting"></lucide-icon>
+        {{ isSubmitting ? 'Création...' : 'Créer l\'ordonnance' }}
+      </button>
+    </div>
+  </div>
+</div>

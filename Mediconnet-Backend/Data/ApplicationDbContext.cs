@@ -4,7 +4,6 @@ using Mediconnet_Backend.Core.Entities.Pharmacie;
 using Mediconnet_Backend.Core.Entities.Facturation;
 using Mediconnet_Backend.Core.Entities.Medical;
 using Mediconnet_Backend.Core.Entities.GestionLits;
-using Mediconnet_Backend.Core.Entities.Prescription;
 using Mediconnet_Backend.Core.Entities.DMP;
 using Mediconnet_Backend.Core.Entities.Documents;
 
@@ -51,6 +50,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Entités Consultation et Paramètres
     public DbSet<Consultation> Consultations { get; set; }
     public DbSet<Parametre> Parametres { get; set; }
+    public DbSet<ConsultationGynecologique> ConsultationsGynecologiques { get; set; }
 
     // Entités Questions/Réponses (questionnaire consultation)
     public DbSet<Question> Questions { get; set; }
@@ -77,8 +77,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SpecialiteExamen> SpecialitesExamens { get; set; }
     public DbSet<ExamenCatalogue> ExamensCatalogue { get; set; }
     public DbSet<Laboratoire> Laboratoires { get; set; }
-    public DbSet<OrientationSpecialiste> OrientationsSpecialiste { get; set; }
-    public DbSet<Recommandation> Recommandations { get; set; }
+    // Orientation unifiée (remplace OrientationSpecialiste et Recommandation)
+    public DbSet<OrientationPreConsultation> OrientationsPreConsultation { get; set; }
 
     // Entités Hospitalisation
     public DbSet<StandardChambre> StandardsChambres { get; set; }
@@ -115,15 +115,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ContreIndication> ContreIndications { get; set; }
     public DbSet<AlerteMedicale> AlertesMedicales { get; set; }
 
+    // Entités Formes Pharmaceutiques et Voies d'Administration
+    public DbSet<FormePharmaceutique> FormesPharmaceutiques { get; set; }
+    public DbSet<VoieAdministration> VoiesAdministration { get; set; }
+    public DbSet<MedicamentForme> MedicamentFormes { get; set; }
+    public DbSet<MedicamentVoie> MedicamentVoies { get; set; }
+
     // Entités Gestion des Lits
     public DbSet<ReservationLit> ReservationsLits { get; set; }
     public DbSet<TransfertLit> TransfertsLits { get; set; }
     public DbSet<MaintenanceLit> MaintenancesLits { get; set; }
-
-    // Entités Prescriptions Électroniques
-    public DbSet<OrdonnanceElectronique> OrdonnancesElectroniques { get; set; }
-    public DbSet<LignePrescription> LignesPrescription { get; set; }
-    public DbSet<PharmacieExterne> PharmaciesExternes { get; set; }
 
     // Entités DMP
     public DbSet<DossierMedicalPartage> DossiersMP { get; set; }
@@ -713,6 +714,29 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne(e => e.RendezVous).WithMany().HasForeignKey(e => e.IdRendezVous);
             entity.HasOne(e => e.Parametre).WithOne(p => p.Consultation)
                 .HasForeignKey<Parametre>(p => p.IdConsultation);
+        });
+
+        modelBuilder.Entity<ConsultationGynecologique>(entity =>
+        {
+            entity.HasKey(e => e.IdConsultation);
+            entity.ToTable("consultation_gyneco");
+
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation");
+            entity.Property(e => e.InspectionExterne).HasColumnName("inspection_externe");
+            entity.Property(e => e.ExamenSpeculum).HasColumnName("examen_speculum");
+            entity.Property(e => e.ToucherVaginal).HasColumnName("toucher_vaginal");
+            entity.Property(e => e.AutresObservations).HasColumnName("autres_observations");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Consultation)
+                .WithOne(c => c.ConsultationGynecologique)
+                .HasForeignKey<ConsultationGynecologique>(e => e.IdConsultation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.IdConsultation)
+                .IsUnique()
+                .HasDatabaseName("IX_consultation_gyneco_consultation");
         });
 
         // Parametre Configuration - Paramètres vitaux
@@ -1316,5 +1340,148 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .WithMany(z => z.Assurances)
             .HasForeignKey(a => a.IdZoneCouverture)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ==================== ORIENTATION PRE-CONSULTATION ====================
+        modelBuilder.Entity<OrientationPreConsultation>(entity =>
+        {
+            entity.HasKey(e => e.IdOrientation);
+            entity.ToTable("orientation_pre_consultation");
+
+            entity.Property(e => e.IdOrientation).HasColumnName("id_orientation").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation").IsRequired();
+            entity.Property(e => e.IdPatient).HasColumnName("id_patient").IsRequired();
+            entity.Property(e => e.IdMedecinPrescripteur).HasColumnName("id_medecin_prescripteur").IsRequired();
+            entity.Property(e => e.TypeOrientation).HasColumnName("type_orientation").HasMaxLength(30).IsRequired();
+            entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite");
+            entity.Property(e => e.IdMedecinOriente).HasColumnName("id_medecin_oriente");
+            entity.Property(e => e.NomDestinataire).HasColumnName("nom_destinataire").HasMaxLength(255);
+            entity.Property(e => e.SpecialiteTexte).HasColumnName("specialite_texte").HasMaxLength(100);
+            entity.Property(e => e.AdresseDestinataire).HasColumnName("adresse_destinataire");
+            entity.Property(e => e.TelephoneDestinataire).HasColumnName("telephone_destinataire").HasMaxLength(20);
+            entity.Property(e => e.Motif).HasColumnName("motif").IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.Urgence).HasColumnName("urgence");
+            entity.Property(e => e.Prioritaire).HasColumnName("prioritaire");
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(30);
+            entity.Property(e => e.DateOrientation).HasColumnName("date_orientation");
+            entity.Property(e => e.DateRdvPropose).HasColumnName("date_rdv_propose");
+            entity.Property(e => e.IdRdvCree).HasColumnName("id_rdv_cree");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            // Relations
+            entity.HasOne(e => e.Consultation)
+                .WithMany(c => c.OrientationsPreConsultation)
+                .HasForeignKey(e => e.IdConsultation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.IdPatient)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.MedecinPrescripteur)
+                .WithMany()
+                .HasForeignKey(e => e.IdMedecinPrescripteur)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Specialite)
+                .WithMany()
+                .HasForeignKey(e => e.IdSpecialite)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.MedecinOriente)
+                .WithMany()
+                .HasForeignKey(e => e.IdMedecinOriente)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.RendezVousCree)
+                .WithMany()
+                .HasForeignKey(e => e.IdRdvCree)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Index
+            entity.HasIndex(e => e.IdConsultation);
+            entity.HasIndex(e => e.IdPatient);
+            entity.HasIndex(e => e.Statut);
+        });
+
+        // ==================== FORMES PHARMACEUTIQUES ====================
+        modelBuilder.Entity<FormePharmaceutique>(entity =>
+        {
+            entity.HasKey(e => e.IdForme);
+            entity.ToTable("forme_pharmaceutique");
+
+            entity.Property(e => e.IdForme).HasColumnName("id_forme").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Icone).HasColumnName("icone").HasMaxLength(50);
+            entity.Property(e => e.Ordre).HasColumnName("ordre");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ==================== VOIES D'ADMINISTRATION ====================
+        modelBuilder.Entity<VoieAdministration>(entity =>
+        {
+            entity.HasKey(e => e.IdVoie);
+            entity.ToTable("voie_administration");
+
+            entity.Property(e => e.IdVoie).HasColumnName("id_voie").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Libelle).HasColumnName("libelle").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(e => e.Icone).HasColumnName("icone").HasMaxLength(50);
+            entity.Property(e => e.Ordre).HasColumnName("ordre");
+            entity.Property(e => e.Actif).HasColumnName("actif");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // ==================== MEDICAMENT-FORME (Many-to-Many) ====================
+        modelBuilder.Entity<MedicamentForme>(entity =>
+        {
+            entity.HasKey(e => new { e.IdMedicament, e.IdForme });
+            entity.ToTable("medicament_forme");
+
+            entity.Property(e => e.IdMedicament).HasColumnName("id_medicament");
+            entity.Property(e => e.IdForme).HasColumnName("id_forme");
+            entity.Property(e => e.EstDefaut).HasColumnName("est_defaut");
+
+            entity.HasOne(e => e.Medicament)
+                .WithMany(m => m.MedicamentFormes)
+                .HasForeignKey(e => e.IdMedicament)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.FormePharmaceutique)
+                .WithMany(f => f.MedicamentFormes)
+                .HasForeignKey(e => e.IdForme)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ==================== MEDICAMENT-VOIE (Many-to-Many) ====================
+        modelBuilder.Entity<MedicamentVoie>(entity =>
+        {
+            entity.HasKey(e => new { e.IdMedicament, e.IdVoie });
+            entity.ToTable("medicament_voie");
+
+            entity.Property(e => e.IdMedicament).HasColumnName("id_medicament");
+            entity.Property(e => e.IdVoie).HasColumnName("id_voie");
+            entity.Property(e => e.EstDefaut).HasColumnName("est_defaut");
+
+            entity.HasOne(e => e.Medicament)
+                .WithMany(m => m.MedicamentVoies)
+                .HasForeignKey(e => e.IdMedicament)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.VoieAdministration)
+                .WithMany(v => v.MedicamentVoies)
+                .HasForeignKey(e => e.IdVoie)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

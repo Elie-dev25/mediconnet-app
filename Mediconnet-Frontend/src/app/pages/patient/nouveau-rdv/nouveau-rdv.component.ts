@@ -13,6 +13,7 @@ import {
   RendezVousDto
 } from '../../../services/rendez-vous.service';
 import { PatientProfileService, ProfileStatus, UpdateProfileRequest } from '../../../services/patient-profile.service';
+import { CreneauxSelectorComponent, CreneauUnifie } from '../../../shared/components/creneaux-selector/creneaux-selector.component';
 
 @Component({
   selector: 'app-patient-nouveau-rdv',
@@ -22,7 +23,8 @@ import { PatientProfileService, ProfileStatus, UpdateProfileRequest } from '../.
     FormsModule,
     ReactiveFormsModule,
     LucideAngularModule,
-    DashboardLayoutComponent
+    DashboardLayoutComponent,
+    CreneauxSelectorComponent
   ],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './nouveau-rdv.component.html',
@@ -54,6 +56,7 @@ export class PatientNouveauRdvComponent implements OnInit {
   // Disponibilité médecin
   medecinDisponible = true;
   messageIndisponibilite = '';
+  isLoadingCreneaux = false;
   
   // Formulaire
   rdvForm!: FormGroup;
@@ -370,6 +373,7 @@ export class PatientNouveauRdvComponent implements OnInit {
     const dateFin = new Date(this.selectedDate);
     dateFin.setHours(23, 59, 59, 999);
 
+    this.isLoadingCreneaux = true;
     this.rdvService.getCreneaux(
       this.selectedMedecin.idMedecin,
       formatLocalDate(dateDebut),
@@ -379,8 +383,12 @@ export class PatientNouveauRdvComponent implements OnInit {
         this.medecinDisponible = response.medecinDisponible;
         this.messageIndisponibilite = response.messageIndisponibilite || '';
         this.creneaux = response.creneaux;
+        this.isLoadingCreneaux = false;
       },
-      error: (err) => console.error('Erreur créneaux:', err)
+      error: (err) => {
+        console.error('Erreur créneaux:', err);
+        this.isLoadingCreneaux = false;
+      }
     });
   }
 
@@ -524,5 +532,56 @@ export class PatientNouveauRdvComponent implements OnInit {
 
   get monthName(): string {
     return this.currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  // ==================== CRÉNEAUX UNIFIÉS ====================
+
+  /**
+   * Convertir les créneaux vers le format unifié
+   */
+  get creneauxUnifies(): CreneauUnifie[] {
+    return this.creneaux.map(c => {
+      const date = new Date(c.dateHeure);
+      const heureDebut = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const dateFin = new Date(date.getTime() + (c.duree || 30) * 60000);
+      const heureFin = dateFin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return {
+        dateHeure: c.dateHeure,
+        heureDebut,
+        heureFin,
+        duree: c.duree || 30,
+        statut: c.statut as 'disponible' | 'occupe' | 'passe' | 'indisponible',
+        selectionnable: c.disponible
+      };
+    });
+  }
+
+  /**
+   * Créneau sélectionné au format unifié
+   */
+  get selectedCreneauUnifie(): CreneauUnifie | null {
+    if (!this.selectedCreneau) return null;
+    const date = new Date(this.selectedCreneau.dateHeure);
+    const heureDebut = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateFin = new Date(date.getTime() + (this.selectedCreneau.duree || 30) * 60000);
+    const heureFin = dateFin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return {
+      dateHeure: this.selectedCreneau.dateHeure,
+      heureDebut,
+      heureFin,
+      duree: this.selectedCreneau.duree || 30,
+      statut: 'disponible',
+      selectionnable: true
+    };
+  }
+
+  /**
+   * Gérer la sélection d'un créneau unifié
+   */
+  onCreneauUnifieSelected(creneau: CreneauUnifie): void {
+    const creneauOriginal = this.creneaux.find(c => c.dateHeure === creneau.dateHeure);
+    if (creneauOriginal) {
+      this.selectCreneau(creneauOriginal);
+    }
   }
 }

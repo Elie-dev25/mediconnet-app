@@ -112,6 +112,10 @@ import {
   BarChart3,
   BarChart,
   
+  // Planning & Idées
+  Route,
+  Lightbulb,
+  
   // Actions
   Plus,
   Minus,
@@ -342,6 +346,10 @@ export const ALL_ICONS = {
   TrendingDown,
   BarChart3,
   BarChart,
+  
+  // Planning & Idées
+  Route,
+  Lightbulb,
   
   // Actions
   Plus,

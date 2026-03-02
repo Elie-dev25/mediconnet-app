@@ -73,7 +73,23 @@
             <span class="info-value">{{ selectedPatient.ethnie || 'Non renseigné' }}</span>
           </div>
         </div>
+      </section>
 
+      <!-- Section Motif de consultation (format compact) -->
+      <section class="detail-section consultation-context-compact" *ngIf="rdvContext && (rdvContext.motif || rdvContext.idOrientation)">
+        <!-- Patient orienté -->
+        <div class="context-line orientation" *ngIf="rdvContext.idOrientation">
+          <lucide-icon name="send" [size]="14"></lucide-icon>
+          <span>Orienté par <strong>{{ rdvContext.medecinOrienteur || 'un médecin' }}</strong></span>
+        </div>
+        <!-- Motif unique (priorité: motifOrientation si orienté, sinon motif consultation) -->
+        <div class="context-line motif">
+          <lucide-icon name="clipboard" [size]="14"></lucide-icon>
+          <span><strong>Motif :</strong> {{ rdvContext.idOrientation ? (rdvContext.motifOrientation || rdvContext.motif || 'Non renseigné') : (rdvContext.motif || 'Non renseigné') }}</span>
+        </div>
+      </section>
+
+      <section class="detail-section">
         <!-- Boutons d'actions rapides -->
         <div class="quick-actions">
           <button class="action-btn hospitaliser" (click)="onHospitaliser()" title="Hospitaliser ce patient">
