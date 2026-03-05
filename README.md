@@ -1,146 +1,106 @@
-# Mediconnet App
+# Mediconnet
 
 [![Frontend CI](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/frontend-ci.yml)
 [![Backend CI](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/backend-ci.yml)
 [![Docker Build](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/docker-build.yml)
 [![Security Scan](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/security.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/security.yml)
 
->  **Mon projet phare** - Une application de gestion médicale complète que j'ai développée pour les établissements de santé au Cameroun
+Mediconnet est une application de gestion médicale développée par **[[Elie NJINE]]**  pour **[Saaje Engineering & Consulting]** pour les établissements de santé au Cameroun.
 
-Après avoir observé les défis quotidiens des hôpitaux et cliniques camerounais, j'ai créé **Mediconnet** pour digitaliser et simplifier la gestion médicale. C'est ma solution concrète aux problèmes de papier, de perte d'informations et de coordination que j'ai pu constater.
+Le constat de départ était simple : des dossiers patients éparpillés, des médecins qui cherchent des ordonnances perdues, des caissiers qui refont des calculs à la main. Des problèmes du quotidien, mais qui coûtent du temps — et parfois plus. Mediconnet est la réponse concrète à ça : une application pensée pour le contexte local, pas adaptée d'un template générique.
 
-## 🚀 Ce que j'ai intégré
+## Ce que ça fait concrètement
 
-### Le quotidien de l'hôpital ✨
-- **👥 Gestion des patients** : Fini les dossiers papier ! Tout est digitalisé, de l'inscription à l'historique complet
-- **📅 Rendez-vous** : Prise de RDV en ligne et planning intelligent des médecins 
-- **🩺 Consultations** : Un workflow complet qui suit le vrai parcours médical
-- **💊 Pharmacie** : Gestion des stocks en temps réel et ordonnances digitalisées
-- **💰 Caisse** : Facturation automatique et suivi des paiements
-- **⚙️ Administration** : Tableau de bord complet pour gérer tout l'établissement
+**Côté soins :**
+- Les dossiers patients sont centralisés et accessibles en quelques secondes
+- Les médecins ont un vrai workflow de consultation, pas juste un formulaire
+- Les ordonnances sont digitalisées et liées directement à la pharmacie
+- Le laboratoire et l'imagerie remontent leurs résultats dans le même système
 
-### Les fonctionnalités puissantes 🔥
-- **🏥 Hospitalisation** : Gestion complète des lits, chambres et services médicaux
-- **🔬 Examens** : Laboratoire et imagerie avec résultats intégrés
-- **📊 Facturation avancée** : Échéanciers, remboursements assurances, tout est géré
-- **🔔 Notifications** : Alertes temps réel avec SignalR pour ne rien manquer
-- **📁 Documents** : Stockage sécurisé de tous les dossiers médicaux
+**Côté gestion :**
+- La pharmacie suit ses stocks en temps réel, avec les mouvements tracés
+- La caisse génère les factures automatiquement, gère les échéanciers et les remboursements assurance
+- Les lits, chambres et services d'hospitalisation sont visualisés et mis à jour en direct
+- Les notifications passent par SignalR — quand quelque chose change, les bonnes personnes sont alertées immédiatement
 
-## Stack Technique
+**Côté admin :**
+- Tableau de bord global pour les responsables d'établissement
+- Gestion des utilisateurs avec rôles distincts (voir plus bas)
+- Tous les documents (prescriptions, résultats, factures) sont stockés et liés aux bons dossiers
 
-### Frontend
-- **Angular 19** avec standalone components
-- **TailwindCSS** pour le styling
-- **Lucide Icons** pour les icônes
-- **SCSS** avec architecture modulaire
+## Stack technique
 
-### Backend
-- **.NET 8** Web API
-- **MySQL 8** base de données
-- **JWT** authentification
-- **Entity Framework Core**
+**Frontend** — Angular 19 en standalone components, TailwindCSS, SCSS modulaire, Lucide Icons
 
-### DevOps
-- **Docker & Docker Compose**
-- **GitHub Actions** CI/CD complet
-- **GitHub Container Registry** pour les images Docker
-- **Nginx** reverse proxy
+**Backend** — .NET 8 Web API, MySQL 8, Entity Framework Core, JWT avec refresh tokens
 
-## Prérequis
+**DevOps** — Docker + Docker Compose, GitHub Actions, GitHub Container Registry, Nginx en reverse proxy
 
-- Docker & Docker Compose
-- Node.js 20+ (pour développement local)
-- .NET 8 SDK (pour développement local)
+## Lancer le projet
 
-## 🚀 Lancez-le en 2 minutes !
-
-### La méthode simple (Docker) 🐳
+### Avec Docker (recommandé)
 
 ```bash
-# Clonez mon projet
 git clone https://github.com/Elie-dev25/mediconnet-app.git
 cd mediconnet-app
-
-# Uniquement cette commande et c'est parti !
 docker-compose up -d --build
-
-# Voilà ! L'application est accessible :
-# 🌐 Frontend: http://localhost:4200
-# ⚙️ Backend API: http://localhost:8080
-# 🗄️ Adminer (DB): http://localhost:8081
-# 📧 MailHog: http://localhost:8025
 ```
 
-### Pour les développeurs 👨‍💻
+Une fois lancé :
+- Frontend → http://localhost:4200
+- API → http://localhost:8080
+- Adminer (base de données) → http://localhost:8081
+- MailHog → http://localhost:8025
 
-#### Frontend (Angular)
+### En local pour développer
+
+**Frontend :**
 ```bash
 cd Mediconnet-Frontend
 npm install
 npm start
-# C'est parti sur http://localhost:4200
 ```
 
-#### Backend (.NET)
+**Backend :**
 ```bash
 cd Mediconnet-Backend
 dotnet restore
 dotnet run
-# API dispo sur http://localhost:8080
 ```
 
 ## CI/CD
 
-Le projet utilise GitHub Actions pour l'intégration et le déploiement continus avec une pipeline complète.
-
-### Workflows disponibles
-
-| Workflow | Déclencheur | Description |
-|----------|-------------|-------------|
-| **Frontend CI** | Push sur `main`/`develop`, PR | Build, lint, tests unitaires avec couverture |
-| **Backend CI** | Push sur `main`/`develop`, PR | Build, tests .NET avec couverture |
-| **Docker Build** | Push sur `main`, Release | Build et push des images vers GHCR |
-| **Security** | Push, PR, Planifié (lundi 9h) | Scan de sécurité CodeQL, Trivy, npm audit |
-| **Deploy** | Push sur `main`/`develop` | Déploiement staging/production |
-| **Release** | Tag `v*.*.*`, Manuel | Création de releases GitHub |
-
-### Pipeline CI/CD
+| Workflow | Déclencheur | Ce qu'il fait |
+|----------|-------------|---------------|
+| **Frontend CI** | Push `main`/`develop`, PR | Build, lint, tests unitaires avec couverture |
+| **Backend CI** | Push `main`/`develop`, PR | Build, tests .NET avec couverture |
+| **Docker Build** | Push `main`, Release | Build et push vers GHCR |
+| **Security** | Push, PR, chaque lundi 9h | CodeQL, Trivy, npm audit |
+| **Deploy** | Push `main`/`develop` | Déploiement staging/production |
+| **Release** | Tag `v*.*.*` ou manuel | Création de release GitHub |
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Commit    │────▶│   Build &   │────▶│   Docker    │────▶│   Deploy    │
-│   & Push    │     │   Tests     │     │   Build     │     │   Staging   │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                           │                   │                   │
-                           ▼                   ▼                   ▼
-                    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-                    │  Coverage   │     │  Security   │     │   Deploy    │
-                    │   Report    │     │    Scan     │     │ Production  │
-                    └─────────────┘     └─────────────┘     └─────────────┘
+Commit → Build & Tests → Docker Build → Deploy Staging
+              │                │               │
+         Coverage          Security        Deploy Prod
+          Report             Scan
 ```
 
-### Images Docker
-
-Les images sont publiées sur GitHub Container Registry :
+**Images Docker :**
 ```bash
-# Frontend
 docker pull ghcr.io/elie-dev25/mediconnet-app-frontend:latest
-
-# Backend
 docker pull ghcr.io/elie-dev25/mediconnet-app-backend:latest
 ```
 
-### Configuration des secrets (pour le déploiement)
+**Secrets à configurer pour le déploiement automatique :**
 
-Pour activer le déploiement automatique, configurez ces secrets dans GitHub :
-
-| Secret | Description |
-|--------|-------------|
-| `STAGING_SSH_KEY` | Clé SSH pour le serveur staging |
-| `STAGING_HOST` | Adresse du serveur staging |
+| Secret | Rôle |
+|--------|------|
+| `STAGING_SSH_KEY` | Clé SSH serveur staging |
+| `STAGING_HOST` | Adresse serveur staging |
 | `STAGING_USER` | Utilisateur SSH staging |
-| `PRODUCTION_SSH_KEY` | Clé SSH pour le serveur production |
-| `PRODUCTION_HOST` | Adresse du serveur production |
+| `PRODUCTION_SSH_KEY` | Clé SSH serveur production |
+| `PRODUCTION_HOST` | Adresse serveur production |
 | `PRODUCTION_USER` | Utilisateur SSH production |
 
 ## Structure du projet
@@ -148,104 +108,83 @@ Pour activer le déploiement automatique, configurez ces secrets dans GitHub :
 ```
 mediconnet-app/
 ├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
-│       ├── frontend-ci.yml  # Tests et build Angular
-│       ├── backend-ci.yml   # Tests et build .NET
-│       ├── docker-build.yml # Build images Docker
-│       ├── security.yml     # Scans de sécurité
-│       ├── deploy.yml       # Déploiement staging/prod
-│       └── release.yml      # Gestion des releases
-├── Mediconnet-Frontend/     # Application Angular
+│   └── workflows/
+│       ├── frontend-ci.yml
+│       ├── backend-ci.yml
+│       ├── docker-build.yml
+│       ├── security.yml
+│       ├── deploy.yml
+│       └── release.yml
+├── Mediconnet-Frontend/
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── pages/       # Pages par rôle (patient, medecin, admin...)
+│   │   │   ├── pages/       # Pages par rôle
 │   │   │   ├── shared/      # Composants partagés
 │   │   │   └── services/    # Services Angular
-│   │   └── styles/          # SCSS globaux
+│   │   └── styles/
 │   └── Dockerfile
-├── Mediconnet-Backend/      # API .NET
+├── Mediconnet-Backend/
 │   ├── Controllers/
 │   ├── Services/
 │   ├── DTOs/
 │   └── Dockerfile
 ├── database/
-│   └── migrations/          # Scripts SQL
+│   └── migrations/
 ├── docker-compose.yml
 └── README.md
 ```
 
 ## Rôles utilisateurs
 
-| Rôle | Description |
-|------|-------------|
-| **Patient** | Prise de RDV, consultation dossier médical |
+| Rôle | Accès |
+|------|-------|
+| **Patient** | Prise de RDV, consultation de son dossier |
 | **Médecin** | Consultations, prescriptions, planning |
-| **Infirmier** | Prise de paramètres vitaux |
+| **Infirmier** | Paramètres vitaux |
 | **Caissier** | Facturation, encaissements |
-| **Pharmacien** | Gestion stock, délivrance médicaments |
+| **Pharmacien** | Stock, délivrance médicaments |
 | **Accueil** | Enregistrement patients, gestion RDV |
 | **Admin** | Configuration système, gestion utilisateurs |
 
 ## Base de données
 
-### MySQL 8
-- **Structure** : Schéma normalisé avec 50+ tables
-- **Migrations** : Scripts SQL versionnés dans `database/migrations/`
-- **Stockage** : Volume Docker persistant pour les documents
-- **Backup** : Scripts de sauvegarde automatique
+MySQL 8 avec une cinquantaine de tables, migrations versionnées dans `database/migrations/`. Volume Docker persistant pour les documents, scripts de sauvegarde automatique.
 
-### Tables principales
-- `users`, `patients`, `personnel` - Utilisateurs et profils
-- `consultations`, `ordonnance`, `ordonnance_medicament` - Workflow médical
-- `hospitalisation`, `lit`, `chambre` - Gestion hospitalière
-- `facture`, `ligne_facture`, `echeancier` - Facturation avancée
-- `examen`, `bulletin_examen`, `resultat_examen` - Laboratoire/Imagerie
-- `mouvement_stock`, `medicament` - Gestion pharmacie
+**Tables principales :**
+- `users`, `patients`, `personnel` — Utilisateurs et profils
+- `consultations`, `ordonnance`, `ordonnance_medicament` — Workflow médical
+- `hospitalisation`, `lit`, `chambre` — Gestion hospitalière
+- `facture`, `ligne_facture`, `echeancier` — Facturation
+- `examen`, `bulletin_examen`, `resultat_examen` — Laboratoire / Imagerie
+- `mouvement_stock`, `medicament` — Pharmacie
 
-## Stockage des documents
+## Documents et stockage
 
-Les documents médicaux sont stockés dans le volume Docker `./storage/` :
-- **Prescriptions** : PDF générés automatiquement
-- **Résultats examens** : PDF et images médicales
-- **Factures** : PDF officiels
-- **Documents patients** : Scans et formulaires
+Les fichiers sont dans `./storage/` (volume Docker). Prescriptions, résultats d'examens, factures et documents patients sont générés en PDF et rattachés automatiquement aux bons dossiers.
 
 ## Sécurité
 
-- **Authentification** : JWT avec refresh tokens
-- **Mots de passe** : Validation (8+ caractères, majuscule, minuscule, chiffre)
-- **CORS** : Protection configurée
-- **Hashage** : bcrypt pour les mots de passe
-- **CI/CD** : Scans automatiques avec CodeQL et Trivy
-- **Dépendances** : Audit npm et NuGet automatique
+JWT avec refresh tokens, bcrypt pour les mots de passe, validation forte à l'inscription (8+ caractères, maj/min/chiffre), CORS configuré. Les pipelines CI/CD font tourner CodeQL, Trivy et les audits npm/NuGet à chaque push.
+
+## Licence
+
+Propriété de **Saaje Engineering & Consulting**. Tous droits réservés.
 
 ## Créer une release
 
 ```bash
-# Via GitHub Actions (recommandé)
-# 1. Allez dans Actions > Release > Run workflow
-# 2. Entrez le numéro de version (ex: 1.0.0)
-# 3. Sélectionnez le type (patch/minor/major)
+# Via GitHub Actions : Actions > Release > Run workflow
+# Renseigner le numéro de version (ex: 1.0.0) et le type (patch/minor/major)
 
-# Ou via tag Git
+# Ou directement via un tag Git
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-## Licence
-
-Ce projet est sous licence privée. Tous droits réservés.
-
-## À propos
-
-Je suis **Elie Njine**, développeur passionné par la transformation digitale du secteur médical en Afrique. 
-
-**Mediconnet** n'est pas juste un projet technique, c'est ma contribution concrète pour améliorer les soins de santé au Cameroun. Chaque ligne de code a été pensée pour résoudre de vrais problèmes que j'ai observés sur le terrain.
-
-📧 **Discutons-en** : elienjiedev [arobase] gmail [point] com  
-**Connectons-nous** : [LinkedIn](https://www.linkedin.com/in/elie-njine-736b04274)  
-**Suivez mon travail** : [GitHub](https://github.com/Elie-dev25)
-
 ---
 
-*Prêt à transformer la gestion médicale ensemble ?*
+Mediconnet est un produit de **Saaje Engineering & Consulting**.
+
+Développé par **Elie Njine** — pour toute question technique ou collaboration, n'hésitez pas à nous contacter.
+
+🔗 [LinkedIn](https://www.linkedin.com/in/elie-njine-736b04274) · [GitHub](https://github.com/Elie-dev25)
