@@ -242,7 +242,7 @@ Je suis **Elie Njine**, développeur passionné par la transformation digitale d
 
 **Mediconnet** n'est pas juste un projet technique, c'est ma contribution concrète pour améliorer les soins de santé au Cameroun. Chaque ligne de code a été pensée pour résoudre de vrais problèmes que j'ai observés sur le terrain.
 
-**Discutons-en** : [elienjiedev@gmail.com](mailto:elienjiedev@gmail.com)  
+📧 **Discutons-en** : elienjiedev [arobase] gmail [point] com  
 **Connectons-nous** : [LinkedIn](https://www.linkedin.com/in/elie-njine-736b04274)  
 **Suivez mon travail** : [GitHub](https://github.com/Elie-dev25)
 
