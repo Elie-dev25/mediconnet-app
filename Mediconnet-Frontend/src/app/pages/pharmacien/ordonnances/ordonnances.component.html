@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <!-- Search -->
+    <!-- Filters -->
     <div class="filters-bar">
       <div class="search-box">
         <lucide-icon name="search" [size]="18"></lucide-icon>
@@ -25,66 +25,97 @@
       </button>
     </div>
 
-    <!-- Ordonnances List -->
-    <div class="ordonnances-list">
+    <!-- Table -->
+    <div class="table-container">
       <div class="loading-overlay" *ngIf="isLoading">
         <div class="spinner"></div>
       </div>
 
-      <div class="ordonnance-card" *ngFor="let ord of ordonnances">
-        <div class="card-header">
-          <div class="patient-info">
-            <lucide-icon name="user" [size]="20"></lucide-icon>
-            <div>
-              <strong>{{ ord.nomPatient }}</strong>
-              <span class="date">{{ formatDate(ord.date) }}</span>
-            </div>
-          </div>
-          <span class="badge" [ngClass]="getStatutBadgeClass(ord.statut)">
-            {{ getStatutLabel(ord.statut) }}
-          </span>
-        </div>
-
-        <div class="card-meta">
-          <span><lucide-icon name="stethoscope" [size]="14"></lucide-icon> {{ ord.nomMedecin }}</span>
-          <span *ngIf="ord.commentaire"><lucide-icon name="message-square" [size]="14"></lucide-icon> {{ ord.commentaire }}</span>
-        </div>
-
-        <div class="medicaments-list">
-          <div class="med-item" *ngFor="let med of ord.medicaments" [class.unavailable]="!canDispense(med)">
-            <div class="med-info">
-              <span class="med-name">{{ med.nomMedicament }}</span>
-              <span class="med-details" *ngIf="med.dosage">{{ med.dosage }}</span>
-            </div>
-            <div class="med-quantities">
-              <span class="qty">
-                <strong>{{ med.quantiteDispensee }}</strong>/{{ med.quantitePrescrite }}
-              </span>
-              <span class="stock" [class.low]="(med.stockDisponible || 0) < getRestant(med)">
-                Stock: {{ med.stockDisponible ?? 0 }}
-              </span>
-            </div>
-            <span class="price">{{ formatPrice(med.prixUnitaire) }}</span>
-          </div>
-        </div>
-
-        <div class="card-actions">
-          <button 
-            class="btn btn-primary" 
-            (click)="openDispensationModal(ord)"
-            [disabled]="ord.statut === 'complete'"
-          >
-            <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
-            Dispenser
-          </button>
-        </div>
-      </div>
-
-      <div class="empty-state" *ngIf="ordonnances.length === 0 && !isLoading">
-        <lucide-icon name="clipboard-check" [size]="64"></lucide-icon>
-        <h3>Aucune ordonnance en attente</h3>
-        <p>Toutes les ordonnances ont été dispensées</p>
-      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Médecin</th>
+            <th>Date</th>
+            <th>Médicaments</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ord of ordonnances">
+            <td>
+              <div class="patient-cell">
+                <lucide-icon name="user" [size]="16"></lucide-icon>
+                <strong>{{ ord.nomPatient }}</strong>
+              </div>
+            </td>
+            <td>{{ ord.nomMedecin }}</td>
+            <td>{{ formatDate(ord.date) }}</td>
+            <td>
+              <div class="meds-cell">
+                <span class="meds-count">{{ ord.medicaments?.length || 0 }} médicament(s)</span>
+                <div class="meds-preview">
+                  <span *ngFor="let med of ord.medicaments?.slice(0, 2)" class="med-tag">
+                    {{ med.nomMedicament }}
+                  </span>
+                  <span *ngIf="(ord.medicaments?.length || 0) > 2" class="more-tag">
+                    +{{ (ord.medicaments?.length || 0) - 2 }}
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="montant" *ngIf="ord.montantTotal">{{ formatPrice(ord.montantTotal) }}</span>
+              <span class="montant-na" *ngIf="!ord.montantTotal">-</span>
+            </td>
+            <td>
+              <div class="status-badges">
+                <span class="badge" [ngClass]="getStatutBadgeClass(ord.statut)">
+                  {{ getStatutLabel(ord.statut) }}
+                </span>
+                <span class="badge badge-info" *ngIf="ord.estValidee && !ord.estPayee">Facturée</span>
+                <span class="badge badge-success" *ngIf="ord.estPayee && !ord.estDelivree">Payée</span>
+                <span class="badge badge-success" *ngIf="ord.estDelivree">Délivrée</span>
+              </div>
+            </td>
+            <td>
+              <div class="actions">
+                <button 
+                  class="btn btn-sm btn-secondary" 
+                  (click)="validerOrdonnance(ord)"
+                  *ngIf="!ord.estValidee && ord.statut === 'active'"
+                  [disabled]="isProcessing"
+                  title="Valider et facturer"
+                >
+                  <lucide-icon name="file-check" [size]="14"></lucide-icon>
+                  Facturer
+                </button>
+                <button 
+                  class="btn btn-sm btn-primary" 
+                  (click)="delivrerOrdonnance(ord)"
+                  *ngIf="(ord.estValidee || ord.statut === 'validee' || ord.statut === 'payee') && !ord.estDelivree"
+                  [disabled]="!ord.estPayee || isProcessing"
+                  [title]="!ord.estPayee ? 'En attente de paiement' : 'Délivrer'"
+                >
+                  <lucide-icon name="package" [size]="14"></lucide-icon>
+                  {{ ord.estPayee ? 'Délivrer' : 'Attente' }}
+                </button>
+                <span class="completed-badge" *ngIf="ord.estDelivree">
+                  <lucide-icon name="check-circle" [size]="14"></lucide-icon>
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="ordonnances.length === 0 && !isLoading">
+            <td colspan="7" class="empty-state">
+              <lucide-icon name="clipboard-check" [size]="48"></lucide-icon>
+              <p>Aucune ordonnance en attente</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Pagination -->

@@ -180,6 +180,25 @@ public class Hospitalisation
     public DateTime? DateSortiePrevue { get; set; }
 
     /// <summary>
+    /// Identifie l'utilisateur (major ou médecin) ayant attribué le lit
+    /// </summary>
+    [Column("id_lit_attribue_par")]
+    public int? IdLitAttribuePar { get; set; }
+
+    /// <summary>
+    /// Rôle de l'utilisateur ayant attribué le lit (major ou medecin)
+    /// </summary>
+    [Column("role_lit_attribue_par")]
+    [MaxLength(20)]
+    public string? RoleLitAttribuePar { get; set; }
+
+    /// <summary>
+    /// Date/heure d'attribution effective du lit
+    /// </summary>
+    [Column("date_lit_attribue")]
+    public DateTime? DateLitAttribue { get; set; }
+
+    /// <summary>
     /// Motif de sortie (rempli à la fin de l'hospitalisation)
     /// </summary>
     [Column("motif_sortie")]

@@ -596,3 +596,161 @@ $caisse-info: $info-color;
     }
   }
 }
+
+// ==================== DÉTAILS FACTURE ====================
+.facture-details-section {
+  margin-top: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+.facture-details-table {
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #475569;
+      text-align: left;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+
+    .ligne-description {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .description-text {
+        color: #1e293b;
+      }
+
+      .categorie-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 0.125rem 0.5rem;
+        background: #e0e7ff;
+        color: #3730a3;
+        border-radius: 9999px;
+        width: fit-content;
+      }
+    }
+
+    tfoot {
+      .total-row {
+        background: #f1f5f9;
+        td { border-bottom: none; }
+      }
+
+      .assurance-row {
+        td {
+          color: #059669;
+          border-bottom: none;
+          padding-top: 0.25rem;
+          padding-bottom: 0.25rem;
+        }
+        .assurance-amount {
+          color: #059669;
+          font-weight: 500;
+        }
+      }
+
+      .patient-row {
+        td {
+          border-bottom: none;
+          padding-top: 0.25rem;
+        }
+        .patient-amount {
+          color: #0369a1;
+        }
+      }
+    }
+  }
+}
+
+.loading-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ==================== RECAP LIGNES ====================
+.recap-lignes {
+  background: white;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e2e8f0;
+
+  .recap-ligne-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 0.85rem;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .ligne-desc {
+      color: #475569;
+      flex: 1;
+
+      .ligne-qty {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        margin-left: 0.25rem;
+      }
+    }
+
+    .ligne-montant {
+      font-weight: 500;
+      color: #1e293b;
+      margin-left: 1rem;
+    }
+  }
+}

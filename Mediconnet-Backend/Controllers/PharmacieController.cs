@@ -389,4 +389,80 @@ public class PharmacieController : BaseApiController
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
+
+    // ==================== NOUVEAU WORKFLOW PHARMACIE ====================
+    // Prescription → Validation (Facture) → Paiement → Délivrance (Stock)
+
+    /// <summary>
+    /// Récupère le détail d'une ordonnance avec son statut de paiement
+    /// </summary>
+    [HttpGet("ordonnances/{idOrdonnance}")]
+    public async Task<ActionResult<OrdonnancePharmacieDetailDto>> GetOrdonnanceDetail(int idOrdonnance)
+    {
+        try
+        {
+            var result = await _stockService.GetOrdonnanceDetailAsync(idOrdonnance);
+            if (result == null)
+                return NotFound(new { message = "Ordonnance non trouvée" });
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération détail ordonnance {Id}", idOrdonnance);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Valide une ordonnance : crée la facture associée SANS impact sur le stock.
+    /// Le patient peut ensuite aller payer à la caisse.
+    /// </summary>
+    [HttpPost("ordonnances/{idOrdonnance}/valider")]
+    public async Task<ActionResult<ValidationOrdonnanceResult>> ValiderOrdonnance(int idOrdonnance)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return Unauthorized();
+
+            var result = await _stockService.ValiderOrdonnanceAsync(idOrdonnance, userId.Value);
+            
+            if (!result.Success)
+                return BadRequest(result);
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur validation ordonnance {Id}", idOrdonnance);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Délivre les médicaments d'une ordonnance PAYÉE.
+    /// Décrémente le stock et enregistre la dispensation.
+    /// Ce bouton n'est actif que si la facture est payée.
+    /// </summary>
+    [HttpPost("ordonnances/{idOrdonnance}/delivrer")]
+    public async Task<ActionResult<DelivranceResult>> DelivrerOrdonnance(int idOrdonnance)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return Unauthorized();
+
+            var result = await _stockService.DelivrerOrdonnanceAsync(idOrdonnance, userId.Value);
+            
+            if (!result.Success)
+                return BadRequest(result);
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur délivrance ordonnance {Id}", idOrdonnance);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
 }

@@ -62,7 +62,10 @@ public interface IPrescriptionService
         int idPatient, 
         List<MedicamentPrescriptionRequest> medicaments, 
         string? notes, 
-        int medecinId);
+        int medecinId,
+        int? dureeValiditeJours = null,
+        bool? renouvelable = null,
+        int? nombreRenouvellements = null);
 
     // ==================== Lecture ====================
 

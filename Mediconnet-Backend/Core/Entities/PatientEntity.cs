@@ -103,17 +103,6 @@ public class Patient
     [Column("taux_couverture_override")]
     public decimal? TauxCouvertureOverride { get; set; }
     
-    /// <summary>
-    /// Ancien champ - conservé pour compatibilité, mappé vers taux_couverture_override en DB.
-    /// Utiliser TauxCouvertureOverride à la place.
-    /// </summary>
-    [Obsolete("Utiliser TauxCouvertureOverride à la place")]
-    public decimal? CouvertureAssurance 
-    { 
-        get => TauxCouvertureOverride; 
-        set => TauxCouvertureOverride = value; 
-    }
-    
     // Relations
     public virtual Utilisateur? Utilisateur { get; set; }
     public virtual Assurance? Assurance { get; set; }

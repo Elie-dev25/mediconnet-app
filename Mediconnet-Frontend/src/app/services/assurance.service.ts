@@ -131,6 +131,42 @@ export interface AssuranceFilter {
   pageSize?: number;
 }
 
+// ==================== PATIENT INSURANCE STATUS INTERFACES ====================
+
+export interface PatientInsuranceStatus {
+  idPatient: number;
+  nomComplet: string;
+  telephone?: string;
+  email?: string;
+  assuranceId?: number;
+  nomAssurance?: string;
+  numeroCarteAssurance?: string;
+  dateDebutValidite?: string;
+  dateFinValidite?: string;
+  statutAssurance: 'non_assure' | 'valide' | 'expire_bientot' | 'expiree';
+  joursRestants?: number;
+  joursExpires?: number;
+  estValide: boolean;
+}
+
+export interface PatientInsuranceStatusListResponse {
+  success: boolean;
+  data: PatientInsuranceStatus[];
+  total: number;
+  totalExpirees: number;
+  totalExpirantBientot: number;
+  totalNonAssures: number;
+}
+
+export interface PatientInsuranceFilter {
+  statutAssurance?: string;
+  assuranceId?: number;
+  recherche?: string;
+  joursAvertissement?: number;
+  page?: number;
+  pageSize?: number;
+}
+
 // ==================== COUVERTURE INTERFACES ====================
 
 export interface AssuranceCouverture {
@@ -333,5 +369,23 @@ export class AssuranceService {
    */
   deleteCouverture(idCouverture: number): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${this.couvertureUrl}/couvertures/${idCouverture}`);
+  }
+
+  // ==================== PATIENT INSURANCE STATUS ====================
+
+  /**
+   * Récupérer la liste des patients avec leur statut d'assurance
+   */
+  getPatientsInsuranceStatus(filter?: PatientInsuranceFilter): Observable<PatientInsuranceStatusListResponse> {
+    let params = new HttpParams();
+    if (filter) {
+      if (filter.statutAssurance) params = params.set('statutAssurance', filter.statutAssurance);
+      if (filter.assuranceId) params = params.set('assuranceId', filter.assuranceId.toString());
+      if (filter.recherche) params = params.set('recherche', filter.recherche);
+      if (filter.joursAvertissement) params = params.set('joursAvertissement', filter.joursAvertissement.toString());
+      if (filter.page) params = params.set('page', filter.page.toString());
+      if (filter.pageSize) params = params.set('pageSize', filter.pageSize.toString());
+    }
+    return this.http.get<PatientInsuranceStatusListResponse>(`${this.apiUrl}/patients/status`, { params });
   }
 }

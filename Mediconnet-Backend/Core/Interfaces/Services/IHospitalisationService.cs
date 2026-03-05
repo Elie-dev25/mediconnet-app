@@ -28,16 +28,6 @@ public interface IHospitalisationService
     Task<HospitalisationDto?> GetHospitalisationByIdAsync(int idAdmission);
 
     /// <summary>
-    /// Crée une nouvelle hospitalisation (workflow legacy avec lit)
-    /// </summary>
-    Task<HospitalisationResponse> CreerHospitalisationAsync(CreerHospitalisationRequest request);
-
-    /// <summary>
-    /// Demande une hospitalisation depuis une consultation (workflow legacy)
-    /// </summary>
-    Task<HospitalisationResponse> DemanderHospitalisationAsync(DemandeHospitalisationRequest request, int medecinId);
-
-    /// <summary>
     /// Termine une hospitalisation et libère le lit
     /// </summary>
     Task<HospitalisationResponse> TerminerHospitalisationAsync(TerminerHospitalisationRequest request);
@@ -59,9 +49,9 @@ public interface IHospitalisationService
     Task<HospitalisationResponse> OrdonnerHospitalisationCompleteAsync(OrdonnerHospitalisationCompleteRequest request, int medecinId);
 
     /// <summary>
-    /// Attribue un lit à une hospitalisation en attente (action du Major)
+    /// Attribue un lit à une hospitalisation en attente
     /// </summary>
-    Task<HospitalisationResponse> AttribuerLitAsync(AttribuerLitRequest request, int majorId);
+    Task<HospitalisationResponse> AttribuerLitAsync(AttribuerLitRequest request, int userId, string role);
 
     /// <summary>
     /// Récupère les hospitalisations en attente de lit, optionnellement filtrées par service

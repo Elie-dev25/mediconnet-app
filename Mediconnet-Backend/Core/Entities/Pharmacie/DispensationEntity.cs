@@ -17,7 +17,7 @@ public class Dispensation
     public int IdPrescription { get; set; }
 
     [Column("id_pharmacien")]
-    public int IdPharmacien { get; set; }
+    public int? IdPharmacien { get; set; }
 
     [Column("id_patient")]
     public int IdPatient { get; set; }
@@ -26,16 +26,10 @@ public class Dispensation
     public DateTime DateDispensation { get; set; } = DateTime.UtcNow;
 
     [Column("statut")]
-    public string Statut { get; set; } = "en_attente";
+    public string Statut { get; set; } = "en_cours";
 
     [Column("notes")]
     public string? Notes { get; set; }
-
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime? UpdatedAt { get; set; }
 
     // Navigation
     [ForeignKey("IdPrescription")]

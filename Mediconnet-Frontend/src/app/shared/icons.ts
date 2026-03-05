@@ -221,6 +221,9 @@ import {
   UploadCloud,
   FileCheck,
   FileClock,
+  Cloud,
+  Clock8,
+  Wand2,
   
   // Missing icons for consultation
   ScanLine,
@@ -463,6 +466,12 @@ export const ALL_ICONS = {
   'file-check': FileCheck,
   FileClock,
   'file-clock': FileClock,
+  Cloud,
+  'cloud': Cloud,
+  Clock8,
+  'clock-8': Clock8,
+  Wand2,
+  'wand-2': Wand2,
   
   // Consultation icons
   ScanLine,

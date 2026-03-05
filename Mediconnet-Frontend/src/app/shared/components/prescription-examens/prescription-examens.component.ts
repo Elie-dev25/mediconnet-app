@@ -1,8 +1,13 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { ConsultationCompleteService, LaboratoireDto } from '../../../services/consultation-complete.service';
+import { 
+  CategorieExamenDefinition, 
+  getExamensFromTitreAffiche, 
+  getExamensForSpecialite 
+} from '../../data/examens-par-specialite';
 
 export interface ExamenPrescription {
   typeExamen: string;
@@ -36,9 +41,20 @@ export interface CategorieExamen {
   templateUrl: './prescription-examens.component.html',
   styleUrl: './prescription-examens.component.scss'
 })
-export class PrescriptionExamensComponent implements OnInit {
+export class PrescriptionExamensComponent implements OnInit, OnChanges {
   @Input() examens: ExamenPrescription[] = [];
   @Input() collapsed = true;
+  /**
+   * Spécialité du médecin (ex: "gynecologie", "chirurgie_generale")
+   * Si non fourni, utilise titreAffiche ou médecine générale par défaut
+   */
+  @Input() specialite?: string;
+  /**
+   * Titre affiché de l'utilisateur (ex: "Médecin - Gynécologie")
+   * Utilisé pour extraire la spécialité si specialite n'est pas fourni
+   */
+  @Input() titreAffiche?: string;
+  
   @Output() examensChange = new EventEmitter<ExamenPrescription[]>();
   @Output() collapsedChange = new EventEmitter<boolean>();
 
@@ -49,66 +65,8 @@ export class PrescriptionExamensComponent implements OnInit {
   customExamenType = '';
   customExamenNom = '';
 
-  typesExamen = [
-    { value: 'biologie', label: 'Biologie / Analyses', icon: 'test-tube' },
-    { value: 'imagerie', label: 'Imagerie médicale', icon: 'scan-line' },
-    { value: 'cardiologie', label: 'Cardiologie', icon: 'heart-pulse' },
-    { value: 'neurologie', label: 'Neurologie', icon: 'brain-circuit' }
-  ];
-
-  examensParType: { [key: string]: string[] } = {
-    biologie: [
-      'NFS (Numération Formule Sanguine)',
-      'Glycémie à jeun',
-      'HbA1c',
-      'Bilan lipidique complet',
-      'Bilan rénal (Urée, Créatinine)',
-      'Bilan hépatique',
-      'Ionogramme sanguin',
-      'CRP (Protéine C-Réactive)',
-      'VS (Vitesse de Sédimentation)',
-      'TSH / T3 / T4',
-      'Bilan martial (Fer, Ferritine)',
-      'Groupe sanguin / Rhésus',
-      'TP / INR',
-      'D-Dimères',
-      'Troponine',
-      'BNP / NT-proBNP',
-      'ECBU',
-      'Hémocultures',
-      'Sérologies'
-    ],
-    imagerie: [
-      'Radiographie thoracique',
-      'Radiographie osseuse',
-      'Échographie abdominale',
-      'Échographie pelvienne',
-      'Échographie cardiaque',
-      'Scanner thoracique',
-      'Scanner abdomino-pelvien',
-      'Scanner cérébral',
-      'IRM cérébrale',
-      'IRM lombaire',
-      'IRM articulaire',
-      'Mammographie',
-      'Doppler veineux',
-      'Doppler artériel'
-    ],
-    cardiologie: [
-      'ECG (Électrocardiogramme)',
-      'Holter ECG 24h',
-      'Holter tensionnel (MAPA)',
-      'Échocardiographie',
-      'Épreuve d\'effort',
-      'Coronarographie'
-    ],
-    neurologie: [
-      'EEG (Électroencéphalogramme)',
-      'EMG (Électromyogramme)',
-      'Potentiels évoqués',
-      'Ponction lombaire'
-    ]
-  };
+  // Types d'examens dynamiques (chargés selon la spécialité)
+  typesExamen: { value: string; label: string; icon: string }[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -116,10 +74,22 @@ export class PrescriptionExamensComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.initCategories();
+    this.initCategoriesFromSpecialite();
     this.loadLaboratoires();
     if (this.examens.length > 0) {
       this.populateFromInput();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Réinitialiser les catégories si la spécialité ou le titreAffiche change
+    if (changes['specialite'] || changes['titreAffiche']) {
+      if (!changes['specialite']?.firstChange && !changes['titreAffiche']?.firstChange) {
+        this.initCategoriesFromSpecialite();
+        if (this.examens.length > 0) {
+          this.populateFromInput();
+        }
+      }
     }
   }
 
@@ -134,14 +104,37 @@ export class PrescriptionExamensComponent implements OnInit {
     return this.laboratoires.filter(lab => lab.type === type);
   }
 
-  private initCategories(): void {
-    this.categories = this.typesExamen.map(type => ({
-      type: type.value,
-      label: type.label,
-      icon: type.icon,
+  /**
+   * Initialise les catégories d'examens en fonction de la spécialité du médecin
+   */
+  private initCategoriesFromSpecialite(): void {
+    // Récupérer les définitions d'examens selon la spécialité
+    let categoriesDefinition: CategorieExamenDefinition[];
+    
+    if (this.specialite) {
+      categoriesDefinition = getExamensForSpecialite(this.specialite);
+    } else if (this.titreAffiche) {
+      categoriesDefinition = getExamensFromTitreAffiche(this.titreAffiche);
+    } else {
+      // Fallback: médecine générale
+      categoriesDefinition = getExamensForSpecialite('default');
+    }
+
+    // Mettre à jour les types d'examens pour le dropdown personnalisé
+    this.typesExamen = categoriesDefinition.map(cat => ({
+      value: cat.type,
+      label: cat.label,
+      icon: cat.icon
+    }));
+
+    // Construire les catégories avec les examens
+    this.categories = categoriesDefinition.map(catDef => ({
+      type: catDef.type,
+      label: catDef.label,
+      icon: catDef.icon,
       expanded: false,
-      examens: (this.examensParType[type.value] || []).map(nom => ({
-        nom,
+      examens: catDef.examens.map(exam => ({
+        nom: exam.nom,
         selected: false,
         urgence: false,
         notes: '',

@@ -503,8 +503,13 @@ CREATE TABLE `accueil` (
 CREATE TABLE `pharmacien` (
   `id_user` INT NOT NULL,
   `numero_ordre` VARCHAR(50) DEFAULT NULL,
+  `matricule` VARCHAR(50) DEFAULT NULL,
+  `date_embauche` DATETIME DEFAULT NULL,
+  `actif` BOOLEAN DEFAULT TRUE,
+  `created_at` DATETIME DEFAULT NULL,
+  `updated_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id_user`),
-  UNIQUE KEY `numero_ordre` (`numero_ordre`)
+  CONSTRAINT `pharmacien_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -785,15 +790,15 @@ CREATE TABLE `execution_soin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: prescription (ordonnance)
--- Enrichie pour supporter tous les contextes de prescription :
+-- Table: ordonnance (remplace prescription)
+-- Supporte tous les contextes de prescription :
 -- - Consultation classique
 -- - Hospitalisation  
 -- - Prescription directe (hors consultation)
 -- --------------------------------------------------------
 
-CREATE TABLE `prescription` (
-  `id_ord` INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE `ordonnance` (
+  `id_ordonnance` INT NOT NULL AUTO_INCREMENT,
   `date` DATE NOT NULL,
   `id_patient` INT DEFAULT NULL COMMENT 'Lien direct au patient',
   `id_medecin` INT DEFAULT NULL COMMENT 'Médecin prescripteur',
@@ -809,17 +814,17 @@ CREATE TABLE `prescription` (
   `nombre_renouvellements` INT DEFAULT NULL COMMENT 'Nombre de renouvellements autorises',
   `renouvellements_restants` INT DEFAULT NULL COMMENT 'Nombre de renouvellements restants',
   `id_ordonnance_originale` INT DEFAULT NULL COMMENT 'ID ordonnance originale si renouvellement',
-  PRIMARY KEY (`id_ord`),
+  PRIMARY KEY (`id_ordonnance`),
   KEY `id_consultation` (`id_consultation`),
-  KEY `idx_prescription_patient` (`id_patient`),
-  KEY `idx_prescription_medecin` (`id_medecin`),
-  KEY `idx_prescription_hospitalisation` (`id_hospitalisation`),
-  KEY `idx_prescription_type_contexte` (`type_contexte`),
-  KEY `idx_prescription_statut` (`statut`),
-  KEY `idx_prescription_date` (`date` DESC),
-  KEY `idx_prescription_expiration` (`date_expiration`),
-  KEY `idx_prescription_renouvelable` (`renouvelable`),
-  KEY `idx_prescription_originale` (`id_ordonnance_originale`)
+  KEY `idx_ordonnance_patient` (`id_patient`),
+  KEY `idx_ordonnance_medecin` (`id_medecin`),
+  KEY `idx_ordonnance_hospitalisation` (`id_hospitalisation`),
+  KEY `idx_ordonnance_type_contexte` (`type_contexte`),
+  KEY `idx_ordonnance_statut` (`statut`),
+  KEY `idx_ordonnance_date` (`date` DESC),
+  KEY `idx_ordonnance_expiration` (`date_expiration`),
+  KEY `idx_ordonnance_renouvelable` (`renouvelable`),
+  KEY `idx_ordonnance_originale` (`id_ordonnance_originale`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -864,13 +869,13 @@ INSERT INTO `medicament` (`nom`, `dosage`, `stock`, `prix`, `seuil_stock`, `labo
 ('Cefixime', '200mg', 35, 2200, 10, 'Cipla', 1);
 
 -- --------------------------------------------------------
--- Table: prescription_medicament
+-- Table: ordonnance_medicament (remplace prescription_medicament)
 -- Supporte les médicaments de la BD ET les médicaments en saisie libre
 -- --------------------------------------------------------
 
-CREATE TABLE `prescription_medicament` (
+CREATE TABLE `ordonnance_medicament` (
   `id_prescription_med` INT NOT NULL AUTO_INCREMENT,
-  `id_ord` INT NOT NULL,
+  `id_ordonnance` INT NOT NULL,
   `id_medicament` INT DEFAULT NULL COMMENT 'Référence au catalogue (NULL si saisie libre)',
   `nom_medicament_libre` VARCHAR(255) DEFAULT NULL COMMENT 'Nom du médicament en saisie libre',
   `dosage_libre` VARCHAR(100) DEFAULT NULL COMMENT 'Dosage en saisie libre',
@@ -883,9 +888,9 @@ CREATE TABLE `prescription_medicament` (
   `forme_pharmaceutique` VARCHAR(100) DEFAULT NULL,
   `instructions` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_prescription_med`),
-  KEY `id_ord` (`id_ord`),
+  KEY `id_ordonnance` (`id_ordonnance`),
   KEY `id_medicament` (`id_medicament`),
-  KEY `idx_prescription_hors_catalogue` (`est_hors_catalogue`)
+  KEY `idx_ordonnance_hors_catalogue` (`est_hors_catalogue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1374,20 +1379,6 @@ CREATE TABLE `pharmacie_externe` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
--- Table: ordonnance
--- --------------------------------------------------------
-
-CREATE TABLE `ordonnance` (
-  `id_ordonnance` INT NOT NULL AUTO_INCREMENT,
-  `id_consultation` INT NOT NULL,
-  `date_creation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `notes` TEXT DEFAULT NULL,
-  `statut` VARCHAR(50) DEFAULT 'active',
-  PRIMARY KEY (`id_ordonnance`),
-  KEY `fk_ordonnance_consultation` (`id_consultation`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
 -- Table: ordonnance_electronique
 -- --------------------------------------------------------
 
@@ -1413,14 +1404,14 @@ CREATE TABLE `ordonnance_electronique` (
 
 CREATE TABLE `dispensation` (
   `id_dispensation` INT NOT NULL AUTO_INCREMENT,
-  `id_ordonnance` INT DEFAULT NULL,
+  `id_prescription` INT DEFAULT NULL,
   `id_patient` INT NOT NULL,
   `id_pharmacien` INT DEFAULT NULL,
   `date_dispensation` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `statut` VARCHAR(50) DEFAULT 'en_cours',
   `notes` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_dispensation`),
-  KEY `fk_disp_ordonnance` (`id_ordonnance`),
+  KEY `fk_disp_prescription` (`id_prescription`),
   KEY `fk_disp_patient` (`id_patient`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1944,16 +1935,16 @@ ALTER TABLE `soin_hospitalisation`
   ADD CONSTRAINT `fk_soin_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_soin_prescripteur` FOREIGN KEY (`id_prescripteur`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL;
 
-ALTER TABLE `prescription`
-  ADD CONSTRAINT `prescription_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_prescription_patient` FOREIGN KEY (`id_patient`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_prescription_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_prescription_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_prescription_originale` FOREIGN KEY (`id_ordonnance_originale`) REFERENCES `prescription` (`id_ord`) ON DELETE SET NULL;
+ALTER TABLE `ordonnance`
+  ADD CONSTRAINT `ordonnance_ibfk_1` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_ordonnance_patient` FOREIGN KEY (`id_patient`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_ordonnance_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_ordonnance_hospitalisation` FOREIGN KEY (`id_hospitalisation`) REFERENCES `hospitalisation` (`id_admission`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_ordonnance_originale` FOREIGN KEY (`id_ordonnance_originale`) REFERENCES `ordonnance` (`id_ordonnance`) ON DELETE SET NULL;
 
-ALTER TABLE `prescription_medicament`
-  ADD CONSTRAINT `prescription_medicament_ibfk_1` FOREIGN KEY (`id_ord`) REFERENCES `prescription` (`id_ord`) ON DELETE CASCADE,
-  ADD CONSTRAINT `prescription_medicament_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`) ON DELETE SET NULL;
+ALTER TABLE `ordonnance_medicament`
+  ADD CONSTRAINT `ordonnance_medicament_ibfk_1` FOREIGN KEY (`id_ordonnance`) REFERENCES `ordonnance` (`id_ordonnance`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ordonnance_medicament_ibfk_2` FOREIGN KEY (`id_medicament`) REFERENCES `medicament` (`id_medicament`) ON DELETE SET NULL;
 
 ALTER TABLE `bulletin_examen`
   ADD CONSTRAINT `bulletin_examen_ibfk_1` FOREIGN KEY (`id_labo`) REFERENCES `laboratoire` (`id_labo`) ON DELETE SET NULL,
@@ -2017,6 +2008,10 @@ ALTER TABLE `demande_remboursement`
 
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+
+ALTER TABLE `dispensation`
+  ADD CONSTRAINT `dispensation_ibfk_1` FOREIGN KEY (`id_prescription`) REFERENCES `ordonnance` (`id_ordonnance`) ON DELETE SET NULL,
+  ADD CONSTRAINT `dispensation_ibfk_2` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`) ON DELETE CASCADE;
 
 ALTER TABLE `acces_verification`
   ADD CONSTRAINT `acces_verification_ibfk_1` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`),

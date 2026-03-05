@@ -92,10 +92,6 @@ public class ParametreService : IParametreService
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Paramètres mis à jour pour consultation {request.IdConsultation} par user {userId}");
 
-            consultation.Statut = "pret_consultation";
-            consultation.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
             await _notificationService.NotifyVitalsRecordedAsync(
                 consultation.IdMedecin,
                 consultation.IdConsultation,
@@ -125,10 +121,6 @@ public class ParametreService : IParametreService
 
         // Recharger avec les relations
         await _context.Entry(parametre).Reference(p => p.UtilisateurEnregistrant).LoadAsync();
-
-        consultation.Statut = "pret_consultation";
-        consultation.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
 
         await _notificationService.NotifyVitalsRecordedAsync(
             consultation.IdMedecin,
@@ -224,11 +216,6 @@ public class ParametreService : IParametreService
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Paramètres mis à jour pour consultation {consultation.IdConsultation} par user {userId}");
 
-            // Mettre à jour le statut de la consultation
-            consultation.Statut = "pret_consultation";
-            consultation.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
             // Notifier le médecin
             await _notificationService.NotifyVitalsRecordedAsync(
                 consultation.IdMedecin,
@@ -257,11 +244,6 @@ public class ParametreService : IParametreService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation($"Paramètres créés pour consultation {consultation.IdConsultation} (patient {request.IdPatient}) par user {userId}");
-
-        // Mettre à jour le statut de la consultation
-        consultation.Statut = "pret_consultation";
-        consultation.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
 
         // Notifier le médecin
         await _notificationService.NotifyVitalsRecordedAsync(

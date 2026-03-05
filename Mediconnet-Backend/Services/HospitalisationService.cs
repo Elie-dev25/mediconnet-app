@@ -140,268 +140,6 @@ public class HospitalisationService : IHospitalisationService
         return hospitalisation != null ? MapToDto(hospitalisation) : null;
     }
 
-    public async Task<HospitalisationResponse> CreerHospitalisationAsync(CreerHospitalisationRequest request)
-    {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
-        try
-        {
-            // Vérifier que le lit existe et est disponible avec Standard
-            var lit = await _context.Lits
-                .Include(l => l.Chambre)
-                .ThenInclude(c => c!.Standard)
-                .FirstOrDefaultAsync(l => l.IdLit == request.IdLit);
-
-            if (lit == null)
-            {
-                return new HospitalisationResponse
-                {
-                    Success = false,
-                    Message = "Lit non trouvé"
-                };
-            }
-
-            if (lit.Statut != "libre")
-            {
-                return new HospitalisationResponse
-                {
-                    Success = false,
-                    Message = "Ce lit n'est plus disponible"
-                };
-            }
-
-            // Vérifier que le patient existe
-            var patient = await _context.Patients
-                .Include(p => p.Utilisateur)
-                .Include(p => p.Assurance)
-                .FirstOrDefaultAsync(p => p.IdUser == request.IdPatient);
-
-            if (patient == null)
-            {
-                return new HospitalisationResponse
-                {
-                    Success = false,
-                    Message = "Patient non trouvé"
-                };
-            }
-
-            // Vérifier que le médecin est fourni
-            if (!request.IdMedecin.HasValue)
-            {
-                return new HospitalisationResponse
-                {
-                    Success = false,
-                    Message = "Un médecin doit être assigné à l'hospitalisation"
-                };
-            }
-
-            // Récupérer les infos du médecin
-            var medecin = await _context.Medecins
-                .Include(m => m.Utilisateur)
-                .FirstOrDefaultAsync(m => m.IdUser == request.IdMedecin.Value);
-
-            if (medecin == null)
-            {
-                return new HospitalisationResponse
-                {
-                    Success = false,
-                    Message = "Médecin non trouvé"
-                };
-            }
-
-            // Créer l'hospitalisation
-            var dateEntree = request.DateEntreePrevue ?? DateTime.Now;
-            var hospitalisation = new Hospitalisation
-            {
-                IdPatient = request.IdPatient,
-                IdLit = request.IdLit,
-                IdMedecin = request.IdMedecin.Value,
-                DateEntree = dateEntree,
-                DateSortie = request.DateSortiePrevue,
-                Motif = request.Motif,
-                Statut = HospitalisationStatut.EnCours.ToDbString()
-            };
-
-            _context.Hospitalisations.Add(hospitalisation);
-
-            // Marquer le lit comme occupé
-            lit.Statut = LitStatuts.Occupe;
-
-            await _context.SaveChangesAsync();
-
-            // ==================== FACTURATION ====================
-            var prixJournalier = lit.Chambre?.Standard?.PrixJournalier ?? 0;
-            var dureeEstimee = request.DateSortiePrevue.HasValue 
-                ? (int)(request.DateSortiePrevue.Value - dateEntree).TotalDays 
-                : 1;
-            if (dureeEstimee < 1) dureeEstimee = 1;
-            var montantEstime = prixJournalier * dureeEstimee;
-
-            var numeroFacture = $"HOSP-{DateTime.Now:yyyyMMdd}-{hospitalisation.IdAdmission:D4}";
-            var couverture = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "hospitalisation", montantEstime);
-            var facture = new Facture
-            {
-                NumeroFacture = numeroFacture,
-                IdPatient = request.IdPatient,
-                IdMedecin = request.IdMedecin.Value,
-                MontantTotal = montantEstime,
-                MontantPaye = 0,
-                MontantRestant = couverture.MontantPatient,
-                Statut = FactureStatuts.EnAttente,
-                TypeFacture = FactureTypes.Hospitalisation,
-                DateCreation = DateTime.UtcNow,
-                DateEcheance = request.DateSortiePrevue ?? DateTime.Now.AddDays(BusinessRules.FactureHospitalisationEcheanceDays),
-                CouvertureAssurance = couverture.EstAssure,
-                IdAssurance = couverture.IdAssurance,
-                TauxCouverture = couverture.EstAssure ? couverture.TauxCouverture : (decimal?)null,
-                MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null,
-                Notes = $"Hospitalisation - Chambre {lit.Chambre?.Numero}, Lit {lit.Numero}"
-            };
-
-            _context.Factures.Add(facture);
-            await _context.SaveChangesAsync();
-
-            // Ajouter la ligne de facture
-            var ligneFacture = new LigneFacture
-            {
-                IdFacture = facture.IdFacture,
-                Description = $"Hospitalisation {lit.Chambre?.Standard?.Nom ?? "Standard"} - Chambre {lit.Chambre?.Numero}",
-                Quantite = dureeEstimee,
-                PrixUnitaire = prixJournalier,
-                Categorie = "hospitalisation"
-            };
-
-            _context.LignesFacture.Add(ligneFacture);
-            await _context.SaveChangesAsync();
-
-            await transaction.CommitAsync();
-
-            // ==================== NOTIFICATIONS ====================
-            var patientNom = $"{patient.Utilisateur?.Prenom} {patient.Utilisateur?.Nom}";
-            var medecinNom = $"Dr. {medecin.Utilisateur?.Prenom} {medecin.Utilisateur?.Nom}";
-            var standardNom = lit.Chambre?.Standard?.Nom ?? "Standard";
-            var numeroChambre = lit.Chambre?.Numero ?? "N/A";
-            var numeroLit = lit.Numero ?? "N/A";
-
-            // Notification cloche au patient
-            await _notificationService.CreateAsync(new CreateNotificationRequest
-            {
-                IdUser = request.IdPatient,
-                Type = NotificationType.Alerte,
-                Titre = "🏥 Hospitalisation ordonnée",
-                Message = $"Vous êtes hospitalisé(e) en chambre {numeroChambre}, lit {numeroLit} ({standardNom}). " +
-                          $"Prix: {prixJournalier:N0} FCFA/jour. Durée estimée: {dureeEstimee} jour(s). " +
-                          $"Montant estimé: {montantEstime:N0} FCFA. Médecin: {medecinNom}",
-                Lien = "/patient/factures",
-                Priorite = NotificationPriority.Haute,
-                SendRealTime = true
-            });
-
-            // Email au patient
-            if (!string.IsNullOrEmpty(patient.Utilisateur?.Email))
-            {
-                var emailHtml = GetHospitalisationEmailTemplate(
-                    patientNom,
-                    medecinNom,
-                    standardNom,
-                    numeroChambre,
-                    numeroLit,
-                    dateEntree,
-                    request.DateSortiePrevue,
-                    request.Motif ?? "Non spécifié",
-                    prixJournalier,
-                    dureeEstimee,
-                    montantEstime,
-                    numeroFacture
-                );
-
-                await _emailService.SendEmailAsync(
-                    patient.Utilisateur.Email,
-                    "🏥 Confirmation d'hospitalisation - MediConnect",
-                    emailHtml
-                );
-            }
-
-            _logger.LogInformation("Hospitalisation créée: Patient {PatientId}, Lit {LitId}, Médecin {MedecinId}, Facture {NumeroFacture}", 
-                request.IdPatient, request.IdLit, request.IdMedecin, numeroFacture);
-
-            // Construire la réponse avec toutes les données
-            var responseData = new HospitalisationCreatedData
-            {
-                IdAdmission = hospitalisation.IdAdmission,
-                IdPatient = hospitalisation.IdPatient,
-                IdLit = hospitalisation.IdLit ?? 0,
-                NumeroChambre = numeroChambre,
-                NumeroLit = numeroLit,
-                StandardNom = standardNom,
-                PrixJournalier = prixJournalier,
-                DateEntree = hospitalisation.DateEntree,
-                DateSortiePrevue = hospitalisation.DateSortie,
-                Motif = hospitalisation.Motif,
-                Statut = hospitalisation.Statut,
-                IdFacture = facture.IdFacture,
-                NumeroFacture = facture.NumeroFacture,
-                MontantEstime = montantEstime,
-                DureeEstimeeJours = dureeEstimee
-            };
-
-            return new HospitalisationResponse
-            {
-                Success = true,
-                Message = "Hospitalisation créée avec succès",
-                IdAdmission = hospitalisation.IdAdmission,
-                Data = responseData
-            };
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Erreur lors de la création de l'hospitalisation");
-            return new HospitalisationResponse
-            {
-                Success = false,
-                Message = "Erreur lors de la création de l'hospitalisation"
-            };
-        }
-    }
-
-    public async Task<HospitalisationResponse> DemanderHospitalisationAsync(DemandeHospitalisationRequest request, int medecinId)
-    {
-        // Vérifier que le lit est fourni (sélection manuelle obligatoire)
-        if (request.IdLit <= 0)
-        {
-            return new HospitalisationResponse
-            {
-                Success = false,
-                Message = "Veuillez sélectionner un lit pour l'hospitalisation"
-            };
-        }
-
-        // Construire le motif complet avec urgence et notes si présentes
-        var motifComplet = request.Motif;
-        if (!string.IsNullOrEmpty(request.Urgence))
-        {
-            motifComplet = $"[{request.Urgence.ToUpper()}] {motifComplet}";
-        }
-        if (!string.IsNullOrEmpty(request.Notes))
-        {
-            motifComplet = $"{motifComplet}\nNotes: {request.Notes}";
-        }
-
-        // Créer la demande d'hospitalisation via la méthode centralisée
-        var creerRequest = new CreerHospitalisationRequest
-        {
-            IdPatient = request.IdPatient,
-            IdLit = request.IdLit,
-            IdMedecin = medecinId,
-            Motif = motifComplet,
-            DateSortiePrevue = request.DateSortiePrevue,
-            IdConsultation = request.IdConsultation
-        };
-
-        return await CreerHospitalisationAsync(creerRequest);
-    }
-
     public async Task<HospitalisationResponse> TerminerHospitalisationAsync(TerminerHospitalisationRequest request)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -928,22 +666,26 @@ public class HospitalisationService : IHospitalisationService
     }
 
     /// <summary>
-    /// Major attribue un lit à une hospitalisation en attente
-    /// Le Major est identifié via Service.IdMajor
+    /// Attribuer un lit à une hospitalisation en attente (Major ou Médecin)
     /// </summary>
-    public async Task<HospitalisationResponse> AttribuerLitAsync(AttribuerLitRequest request, int majorId)
+    public async Task<HospitalisationResponse> AttribuerLitAsync(AttribuerLitRequest request, int userId, string role)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
-            // Vérifier que l'utilisateur est Major d'un service (via Service.IdMajor)
-            var serviceMajor = await _context.Services
-                .FirstOrDefaultAsync(s => s.IdMajor == majorId);
+            var normalizedRole = role?.ToLowerInvariant() ?? string.Empty;
+            Service? serviceMajor = null;
 
-            if (serviceMajor == null)
+            if (normalizedRole == "infirmier" || normalizedRole == "major")
             {
-                return new HospitalisationResponse { Success = false, Message = "Vous n'êtes pas autorisé à attribuer des lits (non Major)" };
+                serviceMajor = await _context.Services
+                    .FirstOrDefaultAsync(s => s.IdMajor == userId);
+
+                if (serviceMajor == null)
+                {
+                    return new HospitalisationResponse { Success = false, Message = "Vous devez être Major d'un service pour attribuer un lit" };
+                }
             }
 
             // Récupérer l'hospitalisation
@@ -951,6 +693,7 @@ public class HospitalisationService : IHospitalisationService
                 .Include(h => h.Patient).ThenInclude(p => p!.Utilisateur)
                 .Include(h => h.Patient).ThenInclude(p => p!.Assurance)
                 .Include(h => h.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(h => h.Service)
                 .FirstOrDefaultAsync(h => h.IdAdmission == request.IdAdmission);
 
             if (hospitalisation == null)
@@ -964,10 +707,20 @@ public class HospitalisationService : IHospitalisationService
                 return new HospitalisationResponse { Success = false, Message = $"Cette hospitalisation n'est pas en attente (statut actuel: {hospitalisation.Statut})" };
             }
 
-            // Vérifier que le Major est bien du même service que l'hospitalisation
-            if (serviceMajor.IdService != hospitalisation.IdService)
+            if (normalizedRole == "medecin")
             {
-                return new HospitalisationResponse { Success = false, Message = "Vous ne pouvez attribuer des lits que pour votre service" };
+                if (hospitalisation.IdMedecin != userId)
+                {
+                    return new HospitalisationResponse { Success = false, Message = "Seul le médecin ayant ordonné cette hospitalisation peut attribuer un lit en urgence" };
+                }
+            }
+            else
+            {
+                // Vérifier que le Major est bien du même service que l'hospitalisation
+                if (serviceMajor == null || serviceMajor.IdService != hospitalisation.IdService)
+                {
+                    return new HospitalisationResponse { Success = false, Message = "Vous ne pouvez attribuer des lits que pour votre service" };
+                }
             }
 
             // Vérifier le lit
@@ -989,6 +742,9 @@ public class HospitalisationService : IHospitalisationService
             // Attribuer le lit
             hospitalisation.IdLit = request.IdLit;
             hospitalisation.Statut = HospitalisationStatut.EnCours.ToDbString();
+            hospitalisation.IdLitAttribuePar = userId;
+            hospitalisation.RoleLitAttribuePar = normalizedRole == "medecin" ? "medecin" : "major";
+            hospitalisation.DateLitAttribue = DateTime.UtcNow;
 
             // Marquer le lit comme occupé
             lit.Statut = LitStatuts.Occupe;
@@ -1084,6 +840,7 @@ public class HospitalisationService : IHospitalisationService
             var numeroChambre = lit.Chambre?.Numero ?? "N/A";
             var numeroLit = lit.Numero ?? "N/A";
             var standardNom = lit.Chambre?.Standard?.Nom ?? "Standard";
+            var roleAttribuant = hospitalisation.RoleLitAttribuePar ?? "major";
 
             // Notifier le patient que le lit est attribué
             await _notificationService.CreateAsync(new CreateNotificationRequest
@@ -1097,6 +854,21 @@ public class HospitalisationService : IHospitalisationService
                 Priorite = NotificationPriority.Haute,
                 SendRealTime = true
             });
+
+            // Si le lit est attribué par le médecin, prévenir le Major du service
+            if (normalizedRole == "medecin" && hospitalisation.Service?.IdMajor != null)
+            {
+                await _notificationService.CreateAsync(new CreateNotificationRequest
+                {
+                    IdUser = hospitalisation.Service.IdMajor.Value,
+                    Type = NotificationType.Alerte,
+                    Titre = "⚠️ Attribution de lit par un médecin",
+                    Message = $"Le Dr. {hospitalisation.Medecin?.Utilisateur?.Prenom} {hospitalisation.Medecin?.Utilisateur?.Nom} a attribué le lit {numeroLit} (Chambre {numeroChambre}) au patient {patientNom}.",
+                    Lien = "/infirmier/patients?tab=hospitalises",
+                    Priorite = NotificationPriority.Haute,
+                    SendRealTime = true
+                });
+            }
 
             // Email au patient avec les détails complets
             if (!string.IsNullOrEmpty(hospitalisation.Patient?.Utilisateur?.Email))
@@ -1117,7 +889,7 @@ public class HospitalisationService : IHospitalisationService
             }
 
             _logger.LogInformation("Lit attribué: Hospitalisation {IdAdmission}, Lit {IdLit}, Major {MajorId}", 
-                request.IdAdmission, request.IdLit, majorId);
+                request.IdAdmission, request.IdLit, userId);
 
             return new HospitalisationResponse
             {
@@ -1140,7 +912,10 @@ public class HospitalisationService : IHospitalisationService
                     IdFacture = facture.IdFacture,
                     NumeroFacture = facture.NumeroFacture,
                     MontantEstime = montantEstime,
-                    DureeEstimeeJours = dureeEstimee
+                    DureeEstimeeJours = dureeEstimee,
+                    IdLitAttribuePar = hospitalisation.IdLitAttribuePar,
+                    RoleLitAttribuePar = hospitalisation.RoleLitAttribuePar,
+                    DateLitAttribue = hospitalisation.DateLitAttribue
                 }
             };
         }

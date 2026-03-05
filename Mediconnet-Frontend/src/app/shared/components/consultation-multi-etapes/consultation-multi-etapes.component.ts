@@ -34,6 +34,7 @@ import { PrescriptionExamensComponent, ExamenPrescription } from '../prescriptio
 import { CreneauxSelectorComponent, CreneauUnifie } from '../creneaux-selector/creneaux-selector.component';
 import { SpeechRecognitionService, SupportedLanguage } from '../../../services/speech-recognition.service';
 import { PharmacieStockService, MedicamentStock, FormePharmaceutique, VoieAdministration } from '../../../services/pharmacie-stock.service';
+import { AuthService } from '../../../services/auth.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
@@ -288,19 +289,24 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   hideVoiceBanner = false;
   private voiceSubscriptions: Subscription[] = [];
 
+  // Titre affiché de l'utilisateur (pour filtrer les examens par spécialité)
+  userTitreAffiche: string = '';
+
   constructor(
     private fb: FormBuilder,
     private consultationService: ConsultationCompleteService,
     private questionsPredefiniesService: QuestionsPredefiniesService,
     private hospitalisationService: HospitalisationService,
     private speechService: SpeechRecognitionService,
-    private pharmacieService: PharmacieStockService
+    private pharmacieService: PharmacieStockService,
+    private authService: AuthService
   ) {
     this.initForms();
     this.isVoiceSupported = this.speechService.isSupported;
   }
 
   ngOnInit(): void {
+    this.loadUserTitreAffiche();
     this.loadConsultation();
     this.loadLaboratoires();
     this.loadSpecialites();
@@ -308,6 +314,11 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.setupVoiceRecognition();
     this.setupMedicamentAutocomplete();
     this.initMinDate();
+  }
+
+  private loadUserTitreAffiche(): void {
+    const user = this.authService.getCurrentUser();
+    this.userTitreAffiche = user?.titreAffiche || '';
   }
 
   private loadLaboratoires(): void {
@@ -532,7 +543,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
     this.consultationService.creerRdvOrientation(orientation.idOrientation, rdvRequest).subscribe({
       next: (response) => {
-        if (response.success) {
+        if (response.success && response.idRendezVous) {
           // Mettre à jour l'orientation avec les infos du RDV
           orientation.idRdvCree = response.idRendezVous;
           // dateRdvPropose est de type Date dans le DTO
@@ -542,8 +553,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
           orientation.statut = 'rdv_pris';
           this.orientationRdvCree = true;
           this.orientationRdvInfo = {
-            idRendezVous: response.idRendezVous!,
-            dateHeure: response.dateHeure!
+            idRendezVous: response.idRendezVous,
+            dateHeure: response.dateHeure ?? this.orientationCreneauSelectionne?.dateHeure ?? ''
           };
         }
         this.finaliserOrientation(orientation);
@@ -1857,11 +1868,11 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
     this.consultationService.creerRdvSuivi(this.consultationId, request).subscribe({
       next: (response) => {
-        if (response.success) {
+        if (response.success && response.idRendezVous) {
           this.rdvSuiviCree = true;
           this.rdvSuiviInfo = {
-            dateHeure: response.dateHeure || this.selectedCreneau!.dateHeure,
-            idRendezVous: response.idRendezVous || 0
+            dateHeure: response.dateHeure ?? this.selectedCreneau?.dateHeure ?? '',
+            idRendezVous: response.idRendezVous
           };
         } else {
           this.error = response.message || 'Erreur lors de la création du RDV';

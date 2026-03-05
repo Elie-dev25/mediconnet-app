@@ -1,0 +1,95 @@
+<div class="panel-overlay" *ngIf="isOpen" (click)="closePanel()"></div>
+
+<div class="panel-container" [class.open]="isOpen">
+  <div class="panel-header">
+    <div class="header-title">
+      <lucide-icon name="Shield" [size]="24"></lucide-icon>
+      <h2>Assurance Patient</h2>
+    </div>
+    <button class="close-btn" (click)="closePanel()">
+      <lucide-icon name="X" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <div class="panel-content" *ngIf="patient">
+    <div class="patient-info-card">
+      <div class="patient-avatar">
+        <lucide-icon name="User" [size]="32"></lucide-icon>
+      </div>
+      <div class="patient-details">
+        <h3>{{ patient.nomComplet }}</h3>
+        <p *ngIf="patient.telephone">
+          <lucide-icon name="Phone" [size]="14"></lucide-icon>
+          {{ patient.telephone }}
+        </p>
+      </div>
+      <div class="status-badge" [ngClass]="getStatutClass()">
+        {{ getStatutLabel() }}
+      </div>
+    </div>
+
+    <div class="loading-state" *ngIf="isLoading">
+      <lucide-icon name="Loader2" [size]="32" class="spin"></lucide-icon>
+      <p>Chargement...</p>
+    </div>
+
+    <div class="alert alert-error" *ngIf="error">
+      <lucide-icon name="AlertCircle" [size]="18"></lucide-icon>
+      {{ error }}
+    </div>
+
+    <div class="alert alert-success" *ngIf="successMessage">
+      <lucide-icon name="CheckCircle" [size]="18"></lucide-icon>
+      {{ successMessage }}
+    </div>
+
+    <form class="assurance-form" *ngIf="!isLoading" (ngSubmit)="save()">
+      <div class="form-group">
+        <label for="assurance">Compagnie d'assurance</label>
+        <select id="assurance" [(ngModel)]="formData.assuranceId" name="assuranceId" (change)="onAssuranceChange()" class="form-select">
+          <option [ngValue]="undefined">-- Non assuré --</option>
+          <option *ngFor="let a of assurances" [ngValue]="a.idAssurance">{{ a.nom }}</option>
+        </select>
+      </div>
+
+      <ng-container *ngIf="formData.assuranceId">
+        <div class="form-group">
+          <label for="numeroCarte">Numéro de carte</label>
+          <input type="text" id="numeroCarte" [(ngModel)]="formData.numeroCarteAssurance" name="numeroCarteAssurance" placeholder="Ex: ASS-2024-12345" class="form-input">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dateDebut">Date début</label>
+            <input type="date" id="dateDebut" [(ngModel)]="formData.dateDebutValidite" name="dateDebutValidite" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dateFin">Date fin</label>
+            <input type="date" id="dateFin" [(ngModel)]="formData.dateFinValidite" name="dateFinValidite" class="form-input" [class.warning]="isExpiringSoon()">
+          </div>
+        </div>
+
+        <div class="expiry-warning" *ngIf="isExpiringSoon()">
+          <lucide-icon name="AlertTriangle" [size]="16"></lucide-icon>
+          Expire dans {{ getDaysUntilExpiry() }} jour(s)
+        </div>
+
+        <div class="form-group">
+          <label for="tauxOverride">Taux couverture override (%)</label>
+          <input type="number" id="tauxOverride" [(ngModel)]="formData.tauxCouvertureOverride" name="tauxCouvertureOverride" min="0" max="100" placeholder="Laisser vide pour utiliser le taux par défaut" class="form-input">
+          <small class="form-hint">Optionnel: remplace le taux configuré pour l'assurance</small>
+        </div>
+      </ng-container>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="closePanel()">Annuler</button>
+        <button type="button" class="btn btn-danger" *ngIf="currentAssurance?.estAssure" (click)="removeAssurance()" [disabled]="isSaving">Retirer</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+          <lucide-icon name="Save" [size]="16" *ngIf="!isSaving"></lucide-icon>
+          <lucide-icon name="Loader2" [size]="16" class="spin" *ngIf="isSaving"></lucide-icon>
+          {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

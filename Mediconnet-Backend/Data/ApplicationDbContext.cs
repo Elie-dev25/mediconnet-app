@@ -247,7 +247,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.NumeroCarteAssurance).HasColumnName("numero_carte_assurance").HasMaxLength(100);
             entity.Property(e => e.DateDebutValidite).HasColumnName("date_debut_validite");
             entity.Property(e => e.DateFinValidite).HasColumnName("date_fin_validite");
-            entity.Property(e => e.CouvertureAssurance).HasColumnName("couverture_assurance").HasColumnType("decimal(5,2)");
             
             entity.HasOne(e => e.Assurance)
                   .WithMany(a => a.Patients)
@@ -317,10 +316,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         // Pharmacien Configuration
         modelBuilder.Entity<Pharmacien>(entity =>
         {
-            entity.HasKey(e => e.IdPharmacien);
-            entity.ToTable("pharmaciens");
-            entity.Property(e => e.IdPharmacien).HasColumnName("id_pharmacien").ValueGeneratedOnAdd();
+            entity.HasKey(e => e.IdUser);
+            entity.ToTable("pharmacien");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
+            entity.Ignore(e => e.IdPharmacien); // Ignorer cette propriété qui n'existe pas dans la table
             entity.Property(e => e.Matricule).HasColumnName("matricule").HasMaxLength(50);
             entity.Property(e => e.NumeroOrdre).HasColumnName("numero_ordre").HasMaxLength(50);
             entity.Property(e => e.DateEmbauche).HasColumnName("date_embauche");
@@ -799,13 +798,21 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<PrescriptionMedicament>(entity =>
         {
             entity.HasKey(e => new { e.IdOrdonnance, e.IdMedicament });
-            entity.ToTable("prescription_medicament");
+            entity.ToTable("ordonnance_medicament");
 
-            entity.Property(e => e.IdOrdonnance).HasColumnName("id_ord");
+            entity.Property(e => e.IdPrescriptionMed).HasColumnName("id_prescription_med").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdOrdonnance).HasColumnName("id_ordonnance");
             entity.Property(e => e.IdMedicament).HasColumnName("id_medicament");
+            entity.Property(e => e.NomMedicamentLibre).HasColumnName("nom_medicament_libre");
+            entity.Property(e => e.DosageLibre).HasColumnName("dosage_libre");
+            entity.Property(e => e.EstHorsCatalogue).HasColumnName("est_hors_catalogue");
             entity.Property(e => e.Quantite).HasColumnName("quantite");
             entity.Property(e => e.DureeTraitement).HasColumnName("duree_traitement");
             entity.Property(e => e.Posologie).HasColumnName("posologie");
+            entity.Property(e => e.Frequence).HasColumnName("frequence");
+            entity.Property(e => e.VoieAdministration).HasColumnName("voie_administration");
+            entity.Property(e => e.FormePharmaceutique).HasColumnName("forme_pharmaceutique");
+            entity.Property(e => e.Instructions).HasColumnName("instructions");
 
             entity.HasOne(e => e.Ordonnance)
                 .WithMany(o => o.Medicaments)
@@ -820,12 +827,24 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Ordonnance>(entity =>
         {
             entity.HasKey(e => e.IdOrdonnance);
-            entity.ToTable("prescription");
+            entity.ToTable("ordonnance");
 
-            entity.Property(e => e.IdOrdonnance).HasColumnName("id_ord").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdOrdonnance).HasColumnName("id_ordonnance").ValueGeneratedOnAdd();
             entity.Property(e => e.Date).HasColumnName("date");
             entity.Property(e => e.IdConsultation).HasColumnName("id_consultation");
+            entity.Property(e => e.IdPatient).HasColumnName("id_patient");
+            entity.Property(e => e.IdMedecin).HasColumnName("id_medecin");
+            entity.Property(e => e.IdHospitalisation).HasColumnName("id_hospitalisation");
+            entity.Property(e => e.TypeContexte).HasColumnName("type_contexte");
+            entity.Property(e => e.Statut).HasColumnName("statut");
             entity.Property(e => e.Commentaire).HasColumnName("commentaire");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.DateExpiration).HasColumnName("date_expiration");
+            entity.Property(e => e.Renouvelable).HasColumnName("renouvelable");
+            entity.Property(e => e.NombreRenouvellements).HasColumnName("nombre_renouvellements");
+            entity.Property(e => e.RenouvellementRestants).HasColumnName("renouvellements_restants");
+            entity.Property(e => e.IdOrdonnanceOriginale).HasColumnName("id_ordonnance_originale");
 
             entity.HasOne(e => e.Consultation)
                 .WithOne(c => c.Ordonnance)

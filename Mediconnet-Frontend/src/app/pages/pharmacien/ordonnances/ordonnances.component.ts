@@ -9,7 +9,9 @@ import {
   MedicamentPrescrit,
   CreateDispensationRequest,
   DispensationLigneRequest,
-  PagedResult 
+  PagedResult,
+  ValidationOrdonnanceResult,
+  DelivranceResult
 } from '../../../services/pharmacie-stock.service';
 
 @Component({
@@ -33,6 +35,7 @@ export class PharmacienOrdonnancesComponent implements OnInit {
 
   searchTerm = '';
   isLoading = false;
+  isProcessing = false;
 
   showDispensationModal = false;
   selectedOrdonnance: OrdonnancePharmacie | null = null;
@@ -131,19 +134,84 @@ export class PharmacienOrdonnancesComponent implements OnInit {
     });
   }
 
+  // ==================== Nouveau Workflow Pharmacie ====================
+
+  validerOrdonnance(ord: OrdonnancePharmacie): void {
+    if (this.isProcessing) return;
+    
+    this.isProcessing = true;
+    this.stockService.validerOrdonnance(ord.idOrdonnance).subscribe({
+      next: (result) => {
+        this.isProcessing = false;
+        if (result.success) {
+          alert(`Ordonnance validée avec succès!\n\nFacture: ${result.numeroFacture}\nMontant total: ${this.formatPrice(result.montantTotal)}\nPart assurance: ${this.formatPrice(result.montantAssurance)}\nPart patient: ${this.formatPrice(result.montantPatient)}\n\nLe patient peut maintenant aller payer à la caisse.`);
+          this.loadOrdonnances();
+        } else {
+          alert(`Erreur: ${result.message}`);
+        }
+      },
+      error: (error) => {
+        this.isProcessing = false;
+        console.error('Erreur validation ordonnance', error);
+        alert(error.error?.message || 'Erreur lors de la validation de l\'ordonnance');
+      }
+    });
+  }
+
+  delivrerOrdonnance(ord: OrdonnancePharmacie): void {
+    if (this.isProcessing) return;
+    
+    if (!ord.estPayee) {
+      alert('La facture n\'est pas encore payée. Le patient doit d\'abord payer à la caisse.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.stockService.delivrerOrdonnance(ord.idOrdonnance).subscribe({
+      next: (result) => {
+        this.isProcessing = false;
+        if (result.success) {
+          const lignesInfo = result.lignesDelivrees
+            .map(l => `- ${l.nomMedicament}: ${l.quantiteDelivree} unités (stock restant: ${l.stockRestant})`)
+            .join('\n');
+          alert(`Médicaments délivrés avec succès!\n\n${lignesInfo}`);
+          this.loadOrdonnances();
+        } else {
+          const erreurs = result.erreurs?.join('\n') || result.message;
+          alert(`Erreur: ${erreurs}`);
+        }
+      },
+      error: (error) => {
+        this.isProcessing = false;
+        console.error('Erreur délivrance ordonnance', error);
+        alert(error.error?.message || 'Erreur lors de la délivrance des médicaments');
+      }
+    });
+  }
+
   getStatutBadgeClass(statut: string): string {
     switch (statut) {
-      case 'complete': return 'badge-success';
+      case 'dispensee': return 'badge-success';
+      case 'payee': return 'badge-success';
+      case 'validee': return 'badge-info';
       case 'partielle': return 'badge-warning';
-      default: return 'badge-info';
+      case 'active': return 'badge-primary';
+      case 'annulee': return 'badge-danger';
+      case 'expiree': return 'badge-danger';
+      default: return 'badge-secondary';
     }
   }
 
   getStatutLabel(statut: string): string {
     switch (statut) {
-      case 'complete': return 'Complète';
+      case 'dispensee': return 'Délivrée';
+      case 'payee': return 'Payée';
+      case 'validee': return 'Validée';
       case 'partielle': return 'Partielle';
-      default: return 'En attente';
+      case 'active': return 'Active';
+      case 'annulee': return 'Annulée';
+      case 'expiree': return 'Expirée';
+      default: return statut;
     }
   }
 

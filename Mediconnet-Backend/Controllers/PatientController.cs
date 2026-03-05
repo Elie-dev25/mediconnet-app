@@ -362,7 +362,7 @@ public class PatientController : BaseApiController
                 AssuranceId = patient.AssuranceId,
                 NomAssurance = patient.Assurance?.Nom,
                 NumeroCarteAssurance = patient.NumeroCarteAssurance,
-                CouvertureAssurance = patient.CouvertureAssurance,
+                TauxCouvertureOverride = patient.TauxCouvertureOverride,
                 DateDebutValidite = patient.DateDebutValidite,
                 DateFinValidite = patient.DateFinValidite
             };

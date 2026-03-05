@@ -7,6 +7,7 @@ import { PrescriptionExamensComponent, ExamenPrescription } from '../prescriptio
 import { SoinsComplementairesComponent, SoinComplementaire } from '../soins-complementaires/soins-complementaires.component';
 import { HospitalisationService, HospitalisationResponse, OrdonnerHospitalisationCompleteRequest } from '../../../services/hospitalisation.service';
 import { ConsultationCompleteService, MedicamentDto, ExamenPrescritDto } from '../../../services/consultation-complete.service';
+import { AuthService } from '../../../services/auth.service';
 
 type EtapeHospitalisation = 'hospitalisation' | 'examens' | 'medicaments';
 
@@ -70,15 +71,25 @@ export class HospitalisationMultiEtapesComponent implements OnInit {
   error: string | null = null;
   success = false;
 
+  // Titre affiché de l'utilisateur (pour filtrer les examens par spécialité)
+  userTitreAffiche: string = '';
+
   constructor(
     private hospitalisationService: HospitalisationService,
-    private consultationService: ConsultationCompleteService
+    private consultationService: ConsultationCompleteService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.loadUserTitreAffiche();
     if (this.idConsultation) {
       this.loadConsultationData();
     }
+  }
+
+  private loadUserTitreAffiche(): void {
+    const user = this.authService.getCurrentUser();
+    this.userTitreAffiche = user?.titreAffiche || '';
   }
 
   /**

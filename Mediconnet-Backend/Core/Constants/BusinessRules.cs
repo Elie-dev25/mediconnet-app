@@ -46,6 +46,11 @@ public static class BusinessRules
     /// Délai avant échéance d'une facture d'hospitalisation (en jours)
     /// </summary>
     public const int FactureHospitalisationEcheanceDays = 30;
+
+    /// <summary>
+    /// Durée de validité par défaut d'une ordonnance (en jours)
+    /// </summary>
+    public const int OrdonnanceDefaultValidityDays = 90;
 }
 
 /// <summary>

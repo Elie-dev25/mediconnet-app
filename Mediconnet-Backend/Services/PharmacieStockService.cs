@@ -39,6 +39,22 @@ public interface IPharmacieStockService
     Task<PagedResult<OrdonnancePharmacieDto>> GetOrdonnancesEnAttenteAsync(string? search, int page, int pageSize);
     Task<DispensationDto> DispenserOrdonnanceAsync(CreateDispensationRequest request, int pharmacienId);
     Task<PagedResult<DispensationDto>> GetDispensationsAsync(DateTime? dateDebut, DateTime? dateFin, int page, int pageSize);
+    
+    // Nouveau workflow pharmacie : Validation → Paiement → Délivrance
+    /// <summary>
+    /// Valide une ordonnance et crée la facture associée (sans impact sur le stock)
+    /// </summary>
+    Task<ValidationOrdonnanceResult> ValiderOrdonnanceAsync(int idOrdonnance, int pharmacienId);
+    
+    /// <summary>
+    /// Délivre les médicaments d'une ordonnance payée (décrémente le stock)
+    /// </summary>
+    Task<DelivranceResult> DelivrerOrdonnanceAsync(int idOrdonnance, int pharmacienId);
+    
+    /// <summary>
+    /// Récupère le détail d'une ordonnance avec son statut de paiement
+    /// </summary>
+    Task<OrdonnancePharmacieDetailDto?> GetOrdonnanceDetailAsync(int idOrdonnance);
 }
 
 public class PharmacieStockService : IPharmacieStockService
@@ -69,9 +85,7 @@ public class PharmacieStockService : IPharmacieStockService
             MedicamentsEnAlerte = medicaments.Count(m => m.Stock <= m.SeuilStock && m.Stock > 0),
             MedicamentsEnRupture = medicaments.Count(m => m.Stock == 0 || m.Stock == null),
             MedicamentsPerimesProches = medicaments.Count(m => m.DatePeremption.HasValue && m.DatePeremption.Value <= dans30Jours),
-            OrdonnancesEnAttente = await _context.Ordonnances
-                .Where(o => !_context.Dispensations.Any(d => d.IdPrescription == o.IdOrdonnance && d.Statut == "complete"))
-                .CountAsync(),
+            OrdonnancesEnAttente = await GetOrdonnancesEnAttenteCountAsync(),
             DispensationsJour = await _context.Dispensations
                 .Where(d => d.DateDispensation.Date == aujourdhui)
                 .CountAsync(),
@@ -564,27 +578,47 @@ public class PharmacieStockService : IPharmacieStockService
         return true;
     }
 
+    private async Task<int> GetOrdonnancesEnAttenteCountAsync()
+    {
+        var ordonnancesDispenseesIds = _context.Dispensations
+            .Where(d => d.Statut == "complete")
+            .Select(d => d.IdPrescription)
+            .ToList();
+        
+        return await _context.Ordonnances
+            .Where(o => o.Medicaments != null && o.Medicaments.Any())
+            .Where(o => !ordonnancesDispenseesIds.Contains(o.IdOrdonnance))
+            .CountAsync();
+    }
+
     // ==================== Ordonnances/Dispensations ====================
 
     public async Task<PagedResult<OrdonnancePharmacieDto>> GetOrdonnancesEnAttenteAsync(string? search, int page, int pageSize)
     {
         var query = _context.Ordonnances
-            .Include(o => o.Consultation!)
-                .ThenInclude(c => c.Patient!)
-                    .ThenInclude(p => p.Utilisateur)
-            .Include(o => o.Consultation!)
-                .ThenInclude(c => c.Medecin!)
-                    .ThenInclude(m => m.Utilisateur)
+            // Relations directes uniquement
+            .Include(o => o.Patient!)
+                .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Medecin!)
+                .ThenInclude(m => m.Utilisateur)
             .Include(o => o.Medicaments!)
                 .ThenInclude(pm => pm.Medicament)
-            .Where(o => !_context.Dispensations.Any(d => d.IdPrescription == o.IdOrdonnance && d.Statut == "complete"))
+            .Where(o => o.Medicaments != null && o.Medicaments.Any())
             .AsQueryable();
+
+        // Filtrer les ordonnances déjà dispensées (séparer pour éviter les problèmes EF Core)
+        var ordonnancesDispenseesIds = _context.Dispensations
+            .Where(d => d.Statut == "complete")
+            .Select(d => d.IdPrescription)
+            .ToList();
+        
+        query = query.Where(o => !ordonnancesDispenseesIds.Contains(o.IdOrdonnance));
 
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(o => 
-                o.Consultation!.Patient!.Utilisateur!.Nom.Contains(search) ||
-                o.Consultation!.Patient!.Utilisateur!.Prenom.Contains(search));
+                o.Patient != null && o.Patient.Utilisateur != null && 
+                (o.Patient.Utilisateur.Nom.Contains(search) || o.Patient.Utilisateur.Prenom.Contains(search)));
         }
 
         var total = await query.CountAsync();
@@ -594,12 +628,22 @@ public class PharmacieStockService : IPharmacieStockService
             .Take(pageSize)
             .ToListAsync();
 
-        var result = items.Select(o => {
-            var dispensation = _context.Dispensations
+        var result = new List<OrdonnancePharmacieDto>();
+        foreach (var o in items)
+        {
+            var dispensation = await _context.Dispensations
                 .Include(d => d.Lignes)
-                .FirstOrDefault(d => d.IdPrescription == o.IdOrdonnance);
+                .FirstOrDefaultAsync(d => d.IdPrescription == o.IdOrdonnance);
 
-            return new OrdonnancePharmacieDto
+            // Chercher la facture associée pour déterminer le statut de paiement
+            var facture = await _context.Factures
+                .FirstOrDefaultAsync(f => f.Notes != null && f.Notes.Contains($"Ordonnance #{o.IdOrdonnance}") && f.TypeFacture == "pharmacie");
+
+            var estValidee = o.Statut == "validee" || o.Statut == "payee" || o.Statut == "dispensee";
+            var estPayee = facture != null && (facture.Statut == "payee" || facture.MontantRestant <= 0);
+            var estDelivree = o.Statut == "dispensee";
+
+            result.Add(new OrdonnancePharmacieDto
             {
                 IdOrdonnance = o.IdOrdonnance,
                 Date = o.Date,
@@ -613,14 +657,22 @@ public class PharmacieStockService : IPharmacieStockService
                     : (o.Consultation?.Medecin?.Utilisateur != null 
                         ? $"Dr. {o.Consultation.Medecin.Utilisateur.Prenom} {o.Consultation.Medecin.Utilisateur.Nom}" : ""),
                 Commentaire = o.Commentaire,
-                Statut = dispensation?.Statut ?? "en_attente",
+                Statut = o.Statut ?? "active",
                 DateExpiration = o.DateExpiration,
                 Renouvelable = o.Renouvelable,
+                // Nouveau workflow
+                EstValidee = estValidee,
+                EstPayee = estPayee,
+                EstDelivree = estDelivree,
+                IdFacture = facture?.IdFacture,
+                MontantTotal = facture?.MontantTotal,
+                MontantRestant = facture?.MontantRestant,
                 Medicaments = o.Medicaments?.Select(pm => new MedicamentPrescritDto
                 {
                     IdMedicament = pm.IdMedicament,
-                    NomMedicament = pm.Medicament?.Nom ?? "",
-                    Dosage = pm.Medicament?.Dosage,
+                    NomMedicament = pm.Medicament?.Nom ?? pm.NomMedicamentLibre ?? "",
+                    Dosage = pm.Medicament?.Dosage ?? pm.DosageLibre,
+                    EstHorsCatalogue = pm.EstHorsCatalogue,
                     QuantitePrescrite = pm.Quantite,
                     QuantiteDispensee = dispensation?.Lignes?.FirstOrDefault(l => l.IdMedicament == pm.IdMedicament)?.QuantiteDispensee ?? 0,
                     Posologie = pm.Posologie,
@@ -628,8 +680,8 @@ public class PharmacieStockService : IPharmacieStockService
                     StockDisponible = pm.Medicament?.Stock,
                     PrixUnitaire = pm.Medicament?.Prix
                 }).ToList() ?? new List<MedicamentPrescritDto>()
-            };
-        }).ToList();
+            });
+        }
 
         return new PagedResult<OrdonnancePharmacieDto>
         {
@@ -670,7 +722,6 @@ public class PharmacieStockService : IPharmacieStockService
                 DateDispensation = DateTime.UtcNow,
                 Statut = "en_attente",
                 Notes = request.Notes,
-                CreatedAt = DateTime.UtcNow,
                 Lignes = new List<DispensationLigne>()
             };
             _context.Dispensations.Add(dispensation);
@@ -737,7 +788,6 @@ public class PharmacieStockService : IPharmacieStockService
             dispensation.Lignes!.Any(l => l.IdMedicament == pm.IdMedicament && l.QuantiteDispensee >= pm.Quantite));
 
         dispensation.Statut = toutDispense ? "complete" : "partielle";
-        dispensation.UpdatedAt = DateTime.UtcNow;
 
         // ==================== FACTURATION PHARMACIE ====================
         var patient = prescription.Consultation?.Patient;
@@ -975,6 +1025,454 @@ public class PharmacieStockService : IPharmacieStockService
                 MontantTotal = l.MontantTotal,
                 NumeroLot = l.NumeroLot
             }).ToList() ?? new List<DispensationLigneDto>()
+        };
+    }
+
+    // ==================== NOUVEAU WORKFLOW PHARMACIE ====================
+    // Prescription → Validation (Facture) → Paiement → Délivrance (Stock)
+
+    /// <summary>
+    /// Valide une ordonnance : crée la facture associée SANS impact sur le stock.
+    /// Le patient peut ensuite aller payer à la caisse.
+    /// </summary>
+    public async Task<ValidationOrdonnanceResult> ValiderOrdonnanceAsync(int idOrdonnance, int pharmacienId)
+    {
+        var ordonnance = await _context.Ordonnances
+            // Relations directes
+            .Include(o => o.Patient!)
+                .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Patient!)
+                .ThenInclude(p => p.Assurance)
+            // Fallback via consultation
+            .Include(o => o.Consultation!)
+                .ThenInclude(c => c.Patient!)
+                    .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Consultation!)
+                .ThenInclude(c => c.Patient!)
+                    .ThenInclude(p => p.Assurance)
+            .Include(o => o.Medicaments!)
+                .ThenInclude(pm => pm.Medicament)
+            .FirstOrDefaultAsync(o => o.IdOrdonnance == idOrdonnance);
+
+        if (ordonnance == null)
+        {
+            return new ValidationOrdonnanceResult
+            {
+                Success = false,
+                Message = "Ordonnance non trouvée"
+            };
+        }
+
+        // Vérifier que l'ordonnance n'est pas déjà validée ou délivrée
+        if (ordonnance.Statut != "active")
+        {
+            return new ValidationOrdonnanceResult
+            {
+                Success = false,
+                Message = $"L'ordonnance ne peut pas être validée (statut actuel: {ordonnance.Statut})"
+            };
+        }
+
+        // Vérifier qu'il n'existe pas déjà une facture pour cette ordonnance
+        var factureExistante = await _context.Factures
+            .FirstOrDefaultAsync(f => f.Notes != null && f.Notes.Contains($"Ordonnance #{idOrdonnance}") && f.TypeFacture == "pharmacie");
+
+        if (factureExistante != null)
+        {
+            return new ValidationOrdonnanceResult
+            {
+                Success = false,
+                Message = "Une facture existe déjà pour cette ordonnance",
+                IdFacture = factureExistante.IdFacture,
+                NumeroFacture = factureExistante.NumeroFacture
+            };
+        }
+
+        // Récupérer le patient (relation directe ou via consultation)
+        var patient = ordonnance.Patient ?? ordonnance.Consultation?.Patient;
+        if (patient == null)
+        {
+            return new ValidationOrdonnanceResult
+            {
+                Success = false,
+                Message = "Patient non trouvé pour cette ordonnance"
+            };
+        }
+
+        // Calculer le montant total (médicaments du catalogue ET hors catalogue)
+        decimal montantTotal = 0;
+        var medicamentsFacturables = new List<(PrescriptionMedicament med, string nom, decimal prix)>();
+        
+        foreach (var med in ordonnance.Medicaments ?? Enumerable.Empty<PrescriptionMedicament>())
+        {
+            decimal prixUnitaire = 0;
+            string nomMedicament = med.NomMedicamentEffectif;
+            
+            if (med.IdMedicament.HasValue && med.Medicament != null)
+            {
+                // Médicament du catalogue
+                prixUnitaire = (decimal)(med.Medicament.Prix ?? 0);
+            }
+            else if (med.EstHorsCatalogue || !string.IsNullOrEmpty(med.NomMedicamentLibre))
+            {
+                // Médicament hors catalogue - chercher un prix par défaut ou utiliser 0
+                // On peut facturer même sans prix (le pharmacien ajustera)
+                prixUnitaire = 0; // Prix à définir par le pharmacien lors de la délivrance
+            }
+            
+            // Ajouter à la liste des médicaments facturables (même si prix = 0)
+            if (!string.IsNullOrEmpty(nomMedicament))
+            {
+                medicamentsFacturables.Add((med, nomMedicament, prixUnitaire));
+                montantTotal += prixUnitaire * med.Quantite;
+            }
+        }
+
+        if (medicamentsFacturables.Count == 0)
+        {
+            return new ValidationOrdonnanceResult
+            {
+                Success = false,
+                Message = "Aucun médicament dans cette ordonnance"
+            };
+        }
+
+        // Calculer la couverture assurance
+        var couverture = await _assuranceService.CalculerCouvertureAsync(patient, "pharmacie", montantTotal);
+
+        // Créer la facture
+        var now = DateTime.UtcNow;
+        var numeroFacture = $"PHA-{now:yyyyMMdd}-{now:HHmmss}-{patient.IdUser}";
+        var facture = new Facture
+        {
+            NumeroFacture = numeroFacture,
+            IdPatient = patient.IdUser,
+            MontantTotal = montantTotal,
+            MontantPaye = 0,
+            MontantRestant = couverture.MontantPatient,
+            Statut = "en_attente",
+            TypeFacture = "pharmacie",
+            DateCreation = now,
+            DateEcheance = now.AddDays(30),
+            CouvertureAssurance = couverture.EstAssure,
+            IdAssurance = couverture.IdAssurance,
+            TauxCouverture = couverture.EstAssure ? couverture.TauxCouverture : (decimal?)null,
+            MontantAssurance = couverture.EstAssure ? couverture.MontantAssurance : (decimal?)null,
+            Notes = $"Ordonnance #{idOrdonnance}"
+        };
+
+        _context.Factures.Add(facture);
+        await _context.SaveChangesAsync();
+
+        // Ajouter les lignes de facture (tous les médicaments facturables)
+        foreach (var (med, nom, prix) in medicamentsFacturables)
+        {
+            _context.LignesFacture.Add(new LigneFacture
+            {
+                IdFacture = facture.IdFacture,
+                Description = nom,
+                Code = med.IdMedicament?.ToString() ?? $"HC-{med.IdPrescriptionMed}",
+                Quantite = med.Quantite,
+                PrixUnitaire = prix,
+                Categorie = "medicament" // Valeur ENUM valide: consultation, medicament, hospitalisation, examen
+            });
+        }
+
+        // Mettre à jour le statut de l'ordonnance
+        ordonnance.Statut = "validee";
+        ordonnance.UpdatedAt = now;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Ordonnance {IdOrdonnance} validée par pharmacien {PharmacienId}. Facture {NumeroFacture} créée. Montant: {Montant}",
+            idOrdonnance, pharmacienId, numeroFacture, montantTotal);
+
+        return new ValidationOrdonnanceResult
+        {
+            Success = true,
+            Message = "Ordonnance validée et facture créée. Le patient peut aller payer à la caisse.",
+            IdOrdonnance = idOrdonnance,
+            IdFacture = facture.IdFacture,
+            NumeroFacture = numeroFacture,
+            MontantTotal = montantTotal,
+            MontantAssurance = couverture.MontantAssurance,
+            MontantPatient = couverture.MontantPatient,
+            StatutOrdonnance = "validee"
+        };
+    }
+
+    /// <summary>
+    /// Délivre les médicaments d'une ordonnance PAYÉE.
+    /// Décrémente le stock et enregistre la dispensation.
+    /// </summary>
+    public async Task<DelivranceResult> DelivrerOrdonnanceAsync(int idOrdonnance, int pharmacienId)
+    {
+        var ordonnance = await _context.Ordonnances
+            // Relations directes uniquement
+            .Include(o => o.Patient!)
+                .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Medicaments!)
+                .ThenInclude(pm => pm.Medicament)
+            .FirstOrDefaultAsync(o => o.IdOrdonnance == idOrdonnance);
+
+        if (ordonnance == null)
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Ordonnance non trouvée"
+            };
+        }
+
+        // Vérifier que l'ordonnance est validée ou payée
+        if (ordonnance.Statut != "validee" && ordonnance.Statut != "payee")
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = $"L'ordonnance doit être validée et payée avant délivrance (statut actuel: {ordonnance.Statut})"
+            };
+        }
+
+        // Vérifier que la facture est payée
+        var facture = await _context.Factures
+            .FirstOrDefaultAsync(f => f.Notes != null && f.Notes.Contains($"Ordonnance #{idOrdonnance}") && f.TypeFacture == "pharmacie");
+
+        if (facture == null)
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Aucune facture trouvée pour cette ordonnance. Veuillez d'abord valider l'ordonnance."
+            };
+        }
+
+        if (facture.Statut != "payee" && facture.MontantRestant > 0)
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = $"La facture n'est pas entièrement payée. Montant restant: {facture.MontantRestant:N0} FCFA"
+            };
+        }
+
+        var pharmacien = await _context.Pharmaciens.FirstOrDefaultAsync(p => p.IdUser == pharmacienId);
+        if (pharmacien == null)
+        {
+            _logger.LogError("Pharmacien non trouvé pour IdUser {PharmacienId}", pharmacienId);
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Pharmacien non trouvé"
+            };
+        }
+
+        // Vérifier le stock pour tous les médicaments
+        var erreurs = new List<string>();
+        foreach (var med in ordonnance.Medicaments ?? Enumerable.Empty<PrescriptionMedicament>())
+        {
+            if (med.IdMedicament.HasValue && med.Medicament != null)
+            {
+                var stock = med.Medicament.Stock ?? 0;
+                if (stock < med.Quantite)
+                {
+                    erreurs.Add($"Stock insuffisant pour {med.Medicament.Nom}: {stock} disponibles, {med.Quantite} demandés");
+                }
+            }
+        }
+
+        if (erreurs.Any())
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Stock insuffisant pour certains médicaments",
+                Erreurs = erreurs
+            };
+        }
+
+        // Récupérer l'ID patient
+        var idPatient = ordonnance.IdPatient ?? ordonnance.Consultation?.IdPatient;
+        if (!idPatient.HasValue || idPatient.Value == 0)
+        {
+            _logger.LogError("Ordonnance {IdOrdonnance}: IdPatient non trouvé", idOrdonnance);
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Patient non trouvé pour cette ordonnance"
+            };
+        }
+
+        // Vérifier si une dispensation existe déjà
+        var existingDispensation = await _context.Dispensations
+            .FirstOrDefaultAsync(d => d.IdPrescription == idOrdonnance && d.Statut == "complete");
+        
+        if (existingDispensation != null)
+        {
+            return new DelivranceResult
+            {
+                Success = false,
+                Message = "Cette ordonnance a déjà été délivrée"
+            };
+        }
+
+        // Créer la dispensation
+        var dispensation = new Dispensation
+        {
+            IdPrescription = idOrdonnance,
+            IdPharmacien = pharmacien.IdUser,
+            IdPatient = idPatient.Value,
+            DateDispensation = DateTime.UtcNow,
+            Statut = "complete",
+            Notes = $"Délivrance après paiement facture #{facture.NumeroFacture}",
+            Lignes = new List<DispensationLigne>()
+        };
+        _context.Dispensations.Add(dispensation);
+        await _context.SaveChangesAsync();
+
+        var lignesDelivrees = new List<LigneDelivranceDto>();
+
+        // Décrémenter le stock et créer les lignes de dispensation
+        foreach (var med in ordonnance.Medicaments ?? Enumerable.Empty<PrescriptionMedicament>())
+        {
+            if (med.IdMedicament.HasValue && med.Medicament != null)
+            {
+                var medicament = await _context.Medicaments.FindAsync(med.IdMedicament.Value);
+                if (medicament == null) continue;
+
+                var stockAvant = medicament.Stock ?? 0;
+                medicament.Stock = stockAvant - med.Quantite;
+
+                // Créer la ligne de dispensation
+                var ligne = new DispensationLigne
+                {
+                    IdDispensation = dispensation.IdDispensation,
+                    IdMedicament = med.IdMedicament.Value,
+                    QuantitePrescrite = med.Quantite,
+                    QuantiteDispensee = med.Quantite,
+                    PrixUnitaire = (decimal?)(medicament.Prix),
+                    MontantTotal = (decimal?)(med.Quantite * medicament.Prix)
+                };
+                dispensation.Lignes!.Add(ligne);
+
+                // Créer le mouvement de stock
+                _context.MouvementsStock.Add(new MouvementStock
+                {
+                    IdMedicament = med.IdMedicament.Value,
+                    TypeMouvement = "sortie",
+                    Quantite = med.Quantite,
+                    Motif = $"Délivrance ordonnance #{idOrdonnance}",
+                    ReferenceId = dispensation.IdDispensation,
+                    ReferenceType = "dispensation",
+                    IdUser = pharmacienId,
+                    StockApresMouvement = medicament.Stock ?? 0,
+                    DateMouvement = DateTime.UtcNow
+                });
+
+                lignesDelivrees.Add(new LigneDelivranceDto
+                {
+                    IdMedicament = med.IdMedicament.Value,
+                    NomMedicament = medicament.Nom,
+                    QuantiteDelivree = med.Quantite,
+                    StockRestant = medicament.Stock ?? 0
+                });
+            }
+        }
+
+        // Mettre à jour le statut de l'ordonnance
+        ordonnance.Statut = "dispensee";
+        ordonnance.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Ordonnance {IdOrdonnance} délivrée par pharmacien {PharmacienId}. {NbMedicaments} médicaments délivrés.",
+            idOrdonnance, pharmacienId, lignesDelivrees.Count);
+
+        return new DelivranceResult
+        {
+            Success = true,
+            Message = "Médicaments délivrés avec succès",
+            IdOrdonnance = idOrdonnance,
+            IdDispensation = dispensation.IdDispensation,
+            StatutOrdonnance = "dispensee",
+            LignesDelivrees = lignesDelivrees
+        };
+    }
+
+    /// <summary>
+    /// Récupère le détail d'une ordonnance avec son statut de paiement
+    /// </summary>
+    public async Task<OrdonnancePharmacieDetailDto?> GetOrdonnanceDetailAsync(int idOrdonnance)
+    {
+        var ordonnance = await _context.Ordonnances
+            // Relations directes
+            .Include(o => o.Patient!)
+                .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Medecin!)
+                .ThenInclude(m => m.Utilisateur)
+            // Fallback via consultation
+            .Include(o => o.Consultation!)
+                .ThenInclude(c => c.Patient!)
+                    .ThenInclude(p => p.Utilisateur)
+            .Include(o => o.Consultation!)
+                .ThenInclude(c => c.Medecin!)
+                    .ThenInclude(m => m.Utilisateur)
+            .Include(o => o.Medicaments!)
+                .ThenInclude(pm => pm.Medicament)
+            .FirstOrDefaultAsync(o => o.IdOrdonnance == idOrdonnance);
+
+        if (ordonnance == null) return null;
+
+        // Chercher la facture associée
+        var facture = await _context.Factures
+            .FirstOrDefaultAsync(f => f.Notes != null && f.Notes.Contains($"Ordonnance #{idOrdonnance}") && f.TypeFacture == "pharmacie");
+
+        var estValidee = ordonnance.Statut == "validee" || ordonnance.Statut == "payee" || ordonnance.Statut == "dispensee";
+        var estPayee = facture != null && (facture.Statut == "payee" || facture.MontantRestant <= 0);
+        var estDelivree = ordonnance.Statut == "dispensee";
+
+        return new OrdonnancePharmacieDetailDto
+        {
+            IdOrdonnance = ordonnance.IdOrdonnance,
+            Date = ordonnance.Date,
+            IdPatient = ordonnance.IdPatient ?? ordonnance.Consultation?.IdPatient ?? 0,
+            NomPatient = ordonnance.Patient?.Utilisateur != null
+                ? $"{ordonnance.Patient.Utilisateur.Prenom} {ordonnance.Patient.Utilisateur.Nom}"
+                : (ordonnance.Consultation?.Patient?.Utilisateur != null
+                    ? $"{ordonnance.Consultation.Patient.Utilisateur.Prenom} {ordonnance.Consultation.Patient.Utilisateur.Nom}"
+                    : ""),
+            NomMedecin = ordonnance.Medecin?.Utilisateur != null
+                ? $"Dr. {ordonnance.Medecin.Utilisateur.Prenom} {ordonnance.Medecin.Utilisateur.Nom}"
+                : (ordonnance.Consultation?.Medecin?.Utilisateur != null
+                    ? $"Dr. {ordonnance.Consultation.Medecin.Utilisateur.Prenom} {ordonnance.Consultation.Medecin.Utilisateur.Nom}"
+                    : ""),
+            Commentaire = ordonnance.Commentaire,
+            StatutOrdonnance = ordonnance.Statut,
+            EstValidee = estValidee,
+            EstPayee = estPayee,
+            EstDelivree = estDelivree,
+            IdFacture = facture?.IdFacture,
+            NumeroFacture = facture?.NumeroFacture,
+            MontantTotal = facture?.MontantTotal,
+            MontantRestant = facture?.MontantRestant,
+            StatutFacture = facture?.Statut,
+            DateExpiration = ordonnance.DateExpiration,
+            Renouvelable = ordonnance.Renouvelable,
+            Medicaments = ordonnance.Medicaments?.Select(pm => new MedicamentPrescritDto
+            {
+                IdMedicament = pm.IdMedicament,
+                NomMedicament = pm.Medicament?.Nom ?? pm.NomMedicamentLibre ?? "",
+                Dosage = pm.Medicament?.Dosage ?? pm.DosageLibre,
+                EstHorsCatalogue = pm.EstHorsCatalogue,
+                QuantitePrescrite = pm.Quantite,
+                QuantiteDispensee = 0, // Sera mis à jour si dispensation existe
+                Posologie = pm.Posologie,
+                DureeTraitement = pm.DureeTraitement,
+                StockDisponible = pm.Medicament?.Stock,
+                PrixUnitaire = pm.Medicament?.Prix
+            }).ToList() ?? new List<MedicamentPrescritDto>()
         };
     }
 }

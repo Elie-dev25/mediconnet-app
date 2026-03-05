@@ -243,3 +243,63 @@ public class AssuranceFilterDto
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
+
+// ==================== PATIENT INSURANCE STATUS DTOs ====================
+
+/// <summary>
+/// DTO pour un patient avec statut d'assurance
+/// </summary>
+public class PatientInsuranceStatusDto
+{
+    public int IdPatient { get; set; }
+    public string NomComplet { get; set; } = string.Empty;
+    public string? Telephone { get; set; }
+    public string? Email { get; set; }
+    
+    // Informations assurance
+    public int? AssuranceId { get; set; }
+    public string? NomAssurance { get; set; }
+    public string? NumeroCarteAssurance { get; set; }
+    public DateTime? DateDebutValidite { get; set; }
+    public DateTime? DateFinValidite { get; set; }
+    
+    // Statut calculé
+    public string StatutAssurance { get; set; } = "non_assure"; // non_assure, valide, expire_bientot, expiree
+    public int? JoursRestants { get; set; }
+    public int? JoursExpires { get; set; }
+    public bool EstValide { get; set; }
+}
+
+/// <summary>
+/// Résultat de la liste des patients avec statut d'assurance
+/// </summary>
+public class PatientInsuranceStatusListResponse
+{
+    public bool Success { get; set; } = true;
+    public List<PatientInsuranceStatusDto> Data { get; set; } = new();
+    public int Total { get; set; }
+    public int TotalExpirees { get; set; }
+    public int TotalExpirantBientot { get; set; }
+    public int TotalNonAssures { get; set; }
+}
+
+/// <summary>
+/// Filtre pour les patients par statut d'assurance
+/// </summary>
+public class PatientInsuranceFilterDto
+{
+    /// <summary>Filtrer par statut: all, valide, expire_bientot, expiree, non_assure</summary>
+    public string? StatutAssurance { get; set; }
+    
+    /// <summary>Filtrer par assurance spécifique</summary>
+    public int? AssuranceId { get; set; }
+    
+    /// <summary>Recherche par nom/prénom/téléphone</summary>
+    public string? Recherche { get; set; }
+    
+    /// <summary>Nombre de jours pour "expire bientôt" (défaut: 30)</summary>
+    public int JoursAvertissement { get; set; } = 30;
+    
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
+}

@@ -14,11 +14,13 @@ public class FactureAvanceeService : IFactureService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<FactureAvanceeService> _logger;
+    private readonly IAssuranceCouvertureService _assuranceCouvertureService;
 
-    public FactureAvanceeService(ApplicationDbContext context, ILogger<FactureAvanceeService> logger)
+    public FactureAvanceeService(ApplicationDbContext context, ILogger<FactureAvanceeService> logger, IAssuranceCouvertureService assuranceCouvertureService)
     {
         _context = context;
         _logger = logger;
+        _assuranceCouvertureService = assuranceCouvertureService;
     }
 
     public async Task<byte[]> GenerateFacturePdfAsync(int idFacture)
@@ -302,15 +304,12 @@ public class FactureAvanceeService : IFactureService
             .Include(p => p.Assurance)
             .FirstOrDefaultAsync(p => p.IdUser == idPatient);
 
-        if (patient?.Assurance == null || patient.CouvertureAssurance == null)
+        if (patient?.Assurance == null)
             return 0;
 
-        // Vérifier validité de l'assurance
-        if (patient.DateFinValidite.HasValue && patient.DateFinValidite.Value < DateTime.UtcNow)
-            return 0;
-
-        var tauxCouverture = patient.CouvertureAssurance.Value / 100;
-        return Math.Round(montantTotal * tauxCouverture, 2);
+        // Utiliser le service de couverture unifié
+        var couvertureResult = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "facture", montantTotal);
+        return couvertureResult.MontantAssurance;
     }
 
     private static string GenerateFactureHtml(Facture facture)

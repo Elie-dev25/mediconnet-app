@@ -485,7 +485,7 @@ public class MedecinDataController : BaseApiController
                 NumeroCarteAssurance = patient.NumeroCarteAssurance,
                 DateDebutValidite = patient.DateDebutValidite,
                 DateFinValidite = patient.DateFinValidite,
-                CouvertureAssurance = patient.CouvertureAssurance,
+                TauxCouvertureOverride = patient.TauxCouvertureOverride,
                 // Dates
                 DateCreation = patient.DateCreation,
                 // Historique

@@ -16,7 +16,8 @@ import {
   Inbox, Eye, EyeOff, XCircle, Save, RefreshCw, Download, Upload,
   Syringe, BedDouble, Activity,
   Microscope, FilePlus, UploadCloud,
-  FileCheck, FileClock
+  FileCheck, FileClock,
+  Cloud
 } from 'lucide-angular';
 
 export interface MenuItem {
@@ -52,7 +53,8 @@ export interface MenuItem {
         FilePlus, 'file-plus': FilePlus,
         UploadCloud, 'upload-cloud': UploadCloud,
         FileCheck, 'file-check': FileCheck,
-        FileClock, 'file-clock': FileClock
+        FileClock, 'file-clock': FileClock,
+        Cloud, 'cloud': Cloud
       })
     }
   ],

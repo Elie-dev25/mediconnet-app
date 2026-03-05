@@ -198,6 +198,69 @@
                 }
               </div>
 
+              <!-- Détails des éléments facturés -->
+              @if (selectedFactureDetails) {
+                <div class="facture-details-section">
+                  <div class="section-header">
+                    <lucide-icon name="file-text" [size]="18"></lucide-icon>
+                    <span>Détails de la facture {{ selectedFactureDetails.numeroFacture }}</span>
+                  </div>
+                  <div class="facture-details-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Description</th>
+                          <th class="text-center">Qté</th>
+                          <th class="text-right">P.U.</th>
+                          <th class="text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (ligne of selectedFactureDetails.lignes; track ligne.idLigne) {
+                          <tr>
+                            <td>
+                              <div class="ligne-description">
+                                <span class="description-text">{{ ligne.description }}</span>
+                                @if (ligne.categorie) {
+                                  <span class="categorie-badge">{{ getCategorieLabel(ligne.categorie) }}</span>
+                                }
+                              </div>
+                            </td>
+                            <td class="text-center">{{ ligne.quantite }}</td>
+                            <td class="text-right">{{ formatMontant(ligne.prixUnitaire) }}</td>
+                            <td class="text-right">{{ formatMontant(ligne.montant) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                      <tfoot>
+                        <tr class="total-row">
+                          <td colspan="3" class="text-right"><strong>Total</strong></td>
+                          <td class="text-right"><strong>{{ formatMontant(selectedFactureDetails.montantTotal) }}</strong></td>
+                        </tr>
+                        @if (selectedFactureDetails.couvertureAssurance && selectedFactureDetails.montantAssurance) {
+                          <tr class="assurance-row">
+                            <td colspan="3" class="text-right">
+                              <lucide-icon name="shield-check" [size]="14"></lucide-icon>
+                              Part Assurance ({{ selectedFactureDetails.tauxCouverture }}%)
+                            </td>
+                            <td class="text-right assurance-amount">- {{ formatMontant(selectedFactureDetails.montantAssurance) }}</td>
+                          </tr>
+                          <tr class="patient-row">
+                            <td colspan="3" class="text-right"><strong>Reste à payer</strong></td>
+                            <td class="text-right patient-amount"><strong>{{ formatMontant(selectedFactureDetails.montantRestant) }}</strong></td>
+                          </tr>
+                        }
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              } @else if (isLoadingFactureDetails) {
+                <div class="loading-details">
+                  <lucide-icon name="loader-2" [size]="20" class="spin"></lucide-icon>
+                  <span>Chargement des détails...</span>
+                </div>
+              }
+
               <!-- Récapitulatif avec détails assurance -->
               @if (selectedFactures.length > 0) {
                 <div class="payment-summary">
@@ -205,6 +268,24 @@
                     <lucide-icon name="calculator" [size]="18"></lucide-icon>
                     Récapitulatif
                   </h4>
+                  
+                  <!-- Liste des éléments facturés -->
+                  @if (selectedFactureDetails && selectedFactureDetails.lignes && selectedFactureDetails.lignes.length > 0) {
+                    <div class="recap-lignes">
+                      @for (ligne of selectedFactureDetails.lignes; track $index) {
+                        <div class="recap-ligne-item">
+                          <span class="ligne-desc">
+                            {{ ligne.description }}
+                            @if (ligne.quantite > 1) {
+                              <span class="ligne-qty">x{{ ligne.quantite }}</span>
+                            }
+                          </span>
+                          <span class="ligne-montant">{{ formatMontant(ligne.montant) }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  
                   <div class="summary-details">
                     <div class="summary-row">
                       <span>Montant total</span>

@@ -5,6 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { PrescriptionExamensComponent, ExamenPrescription } from '../prescription-examens/prescription-examens.component';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-examen-hospitalisation-panel',
@@ -31,11 +32,24 @@ export class ExamenHospitalisationPanelComponent implements OnInit {
   error: string | null = null;
   success = false;
 
+  // Titre affiché de l'utilisateur (pour filtrer les examens par spécialité)
+  userTitreAffiche: string = '';
+
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.loadUserTitreAffiche();
+  }
+
+  private loadUserTitreAffiche(): void {
+    const user = this.authService.getCurrentUser();
+    this.userTitreAffiche = user?.titreAffiche || '';
+  }
 
   onExamensChange(examens: ExamenPrescription[]): void {
     this.examens = examens;

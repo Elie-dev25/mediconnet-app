@@ -287,7 +287,8 @@ public class InfirmierController : BaseApiController
             if (!userId.HasValue)
                 return Unauthorized(new { message = "Utilisateur non authentifié" });
 
-            var result = await _hospitalisationService.AttribuerLitAsync(request, userId.Value);
+            var role = GetCurrentUserRole() ?? "infirmier";
+            var result = await _hospitalisationService.AttribuerLitAsync(request, userId.Value, role);
 
             if (!result.Success)
             {
@@ -672,6 +673,13 @@ public class InfirmierController : BaseApiController
                 return NotFound(new { success = false, message = "Hospitalisation non trouvée" });
             }
 
+            Utilisateur? utilisateurAttribuant = null;
+            if (hospitalisation.IdLitAttribuePar.HasValue)
+            {
+                utilisateurAttribuant = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.IdUser == hospitalisation.IdLitAttribuePar.Value);
+            }
+
             // Récupérer les soins liés à cette hospitalisation
             var soins = await _context.SoinsHospitalisation
                 .Include(s => s.Prescripteur)
@@ -751,6 +759,14 @@ public class InfirmierController : BaseApiController
                     numero = hospitalisation.Lit.Numero,
                     chambre = hospitalisation.Lit.Chambre?.Numero ?? "",
                     standard = hospitalisation.Lit.Chambre?.Standard?.Nom
+                } : null,
+                litAttribuePar = hospitalisation.IdLitAttribuePar.HasValue ? new
+                {
+                    idUser = hospitalisation.IdLitAttribuePar,
+                    nom = utilisateurAttribuant?.Nom,
+                    prenom = utilisateurAttribuant?.Prenom,
+                    role = hospitalisation.RoleLitAttribuePar,
+                    date = hospitalisation.DateLitAttribue
                 } : null,
                 soins = soins,
                 examens = examens,

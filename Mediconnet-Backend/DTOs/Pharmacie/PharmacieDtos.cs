@@ -196,7 +196,12 @@ public class OrdonnancePharmacieDto
     public string NomPatient { get; set; } = "";
     public string NomMedecin { get; set; } = "";
     public string? Commentaire { get; set; }
-    public string Statut { get; set; } = "en_attente"; // en_attente, partielle, complete
+    
+    /// <summary>
+    /// Statut de l'ordonnance : active, validee, payee, dispensee, partielle, annulee, expiree
+    /// </summary>
+    public string Statut { get; set; } = "active";
+    
     public List<MedicamentPrescritDto> Medicaments { get; set; } = new();
     
     /// <summary>
@@ -213,6 +218,38 @@ public class OrdonnancePharmacieDto
     /// Indique si l'ordonnance est renouvelable
     /// </summary>
     public bool Renouvelable { get; set; }
+    
+    // ==================== Nouveau workflow ====================
+    
+    /// <summary>
+    /// Indique si l'ordonnance a été validée (facture créée)
+    /// </summary>
+    public bool EstValidee { get; set; }
+    
+    /// <summary>
+    /// Indique si la facture est payée (délivrance possible)
+    /// </summary>
+    public bool EstPayee { get; set; }
+    
+    /// <summary>
+    /// Indique si les médicaments ont été délivrés
+    /// </summary>
+    public bool EstDelivree { get; set; }
+    
+    /// <summary>
+    /// ID de la facture associée (si validée)
+    /// </summary>
+    public int? IdFacture { get; set; }
+    
+    /// <summary>
+    /// Montant total de la facture
+    /// </summary>
+    public decimal? MontantTotal { get; set; }
+    
+    /// <summary>
+    /// Montant restant à payer
+    /// </summary>
+    public decimal? MontantRestant { get; set; }
 }
 
 public class MedicamentPrescritDto
@@ -301,6 +338,110 @@ public class AlerteStockDto
     public DateTime? DatePeremption { get; set; }
     public int? JoursRestants { get; set; }
     public string Priorite { get; set; } = "medium"; // high, medium, low
+}
+
+// ==================== Nouveau Workflow Pharmacie ====================
+
+/// <summary>
+/// Résultat de la validation d'une ordonnance (création de facture)
+/// </summary>
+public class ValidationOrdonnanceResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
+    public int? IdOrdonnance { get; set; }
+    public int? IdFacture { get; set; }
+    public string? NumeroFacture { get; set; }
+    public decimal MontantTotal { get; set; }
+    public decimal MontantAssurance { get; set; }
+    public decimal MontantPatient { get; set; }
+    public string StatutOrdonnance { get; set; } = "";
+}
+
+/// <summary>
+/// Résultat de la délivrance d'une ordonnance
+/// </summary>
+public class DelivranceResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
+    public int? IdOrdonnance { get; set; }
+    public int? IdDispensation { get; set; }
+    public string StatutOrdonnance { get; set; } = "";
+    public List<LigneDelivranceDto> LignesDelivrees { get; set; } = new();
+    public List<string> Erreurs { get; set; } = new();
+}
+
+public class LigneDelivranceDto
+{
+    public int IdMedicament { get; set; }
+    public string NomMedicament { get; set; } = "";
+    public int QuantiteDelivree { get; set; }
+    public int StockRestant { get; set; }
+}
+
+/// <summary>
+/// Détail complet d'une ordonnance pour la pharmacie avec statut de paiement
+/// </summary>
+public class OrdonnancePharmacieDetailDto
+{
+    public int IdOrdonnance { get; set; }
+    public DateTime Date { get; set; }
+    public int IdPatient { get; set; }
+    public string NomPatient { get; set; } = "";
+    public string NomMedecin { get; set; } = "";
+    public string? Commentaire { get; set; }
+    
+    /// <summary>
+    /// Statut de l'ordonnance : active, validee, payee, dispensee, partielle, annulee, expiree
+    /// </summary>
+    public string StatutOrdonnance { get; set; } = "active";
+    
+    /// <summary>
+    /// Indique si l'ordonnance a été validée (facture créée)
+    /// </summary>
+    public bool EstValidee { get; set; }
+    
+    /// <summary>
+    /// Indique si la facture est payée (délivrance possible)
+    /// </summary>
+    public bool EstPayee { get; set; }
+    
+    /// <summary>
+    /// Indique si les médicaments ont été délivrés
+    /// </summary>
+    public bool EstDelivree { get; set; }
+    
+    /// <summary>
+    /// ID de la facture associée (si validée)
+    /// </summary>
+    public int? IdFacture { get; set; }
+    
+    /// <summary>
+    /// Numéro de la facture associée
+    /// </summary>
+    public string? NumeroFacture { get; set; }
+    
+    /// <summary>
+    /// Montant total de la facture
+    /// </summary>
+    public decimal? MontantTotal { get; set; }
+    
+    /// <summary>
+    /// Montant restant à payer
+    /// </summary>
+    public decimal? MontantRestant { get; set; }
+    
+    /// <summary>
+    /// Statut de la facture
+    /// </summary>
+    public string? StatutFacture { get; set; }
+    
+    public DateTime? DateExpiration { get; set; }
+    public bool EstExpiree => DateExpiration.HasValue && DateExpiration.Value < DateTime.UtcNow;
+    public bool Renouvelable { get; set; }
+    
+    public List<MedicamentPrescritDto> Medicaments { get; set; } = new();
 }
 
 // ==================== Pagination ====================

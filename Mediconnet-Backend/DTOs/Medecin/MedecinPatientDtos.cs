@@ -69,7 +69,7 @@ public class MedecinPatientDetailDto
     public string? NumeroCarteAssurance { get; set; }
     public DateTime? DateDebutValidite { get; set; }
     public DateTime? DateFinValidite { get; set; }
-    public decimal? CouvertureAssurance { get; set; }
+    public decimal? TauxCouvertureOverride { get; set; }
     
     // Dates système
     public DateTime? DateCreation { get; set; }

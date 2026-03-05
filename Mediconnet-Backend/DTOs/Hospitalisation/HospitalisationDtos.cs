@@ -52,26 +52,15 @@ public class HospitalisationDto
     public int IdLit { get; set; }
     public string? NumeroLit { get; set; }
     public string? NumeroChambre { get; set; }
+    public int? IdLitAttribuePar { get; set; }
+    public string? RoleLitAttribuePar { get; set; }
+    public DateTime? DateLitAttribue { get; set; }
     public int? IdService { get; set; }
     public string? ServiceNom { get; set; }
     public int? IdMedecin { get; set; }
     public string? MedecinNom { get; set; }
     public int? IdConsultation { get; set; }
     public int? DureeJours { get; set; }
-}
-
-/// <summary>
-/// Requête pour créer une demande d'hospitalisation
-/// </summary>
-public class CreerHospitalisationRequest
-{
-    public int IdPatient { get; set; }
-    public int IdLit { get; set; }
-    public string? Motif { get; set; }
-    public DateTime? DateEntreePrevue { get; set; }
-    public DateTime? DateSortiePrevue { get; set; }
-    public int? IdConsultation { get; set; }
-    public int? IdMedecin { get; set; }
 }
 
 /// <summary>
@@ -165,21 +154,6 @@ public class OrdonnerHospitalisationCompleteRequest
 }
 
 /// <summary>
-/// DEPRECATED: Ancienne requête avec sélection du lit par le médecin
-/// Conservée pour rétrocompatibilité
-/// </summary>
-public class DemandeHospitalisationRequest
-{
-    public int IdConsultation { get; set; }
-    public int IdPatient { get; set; }
-    public int IdLit { get; set; }
-    public string Motif { get; set; } = string.Empty;
-    public string? Urgence { get; set; }
-    public string? Notes { get; set; }
-    public DateTime? DateSortiePrevue { get; set; }
-}
-
-/// <summary>
 /// Réponse après création d'une hospitalisation (enrichie avec détails facturation)
 /// </summary>
 public class HospitalisationResponse
@@ -211,6 +185,9 @@ public class HospitalisationCreatedData
     public string? NumeroFacture { get; set; }
     public decimal MontantEstime { get; set; }
     public int DureeEstimeeJours { get; set; }
+    public int? IdLitAttribuePar { get; set; }
+    public string? RoleLitAttribuePar { get; set; }
+    public DateTime? DateLitAttribue { get; set; }
 }
 
 /// <summary>

@@ -6,11 +6,12 @@ import { finalize } from 'rxjs/operators';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
 import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto } from '../../../services/user.service';
 import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
+import { PatientAssurancePanelComponent, PatientBasicInfo } from '../../../shared/components/patient-assurance-panel/patient-assurance-panel.component';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, LucideAngularModule, DashboardLayoutComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, LucideAngularModule, DashboardLayoutComponent, PatientAssurancePanelComponent],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
@@ -68,6 +69,10 @@ export class UsersComponent implements OnInit {
 
   // Actions en cours
   isUpdatingStatut = false;
+
+  // Sidebar assurance patient
+  showAssurancePanel = false;
+  selectedPatientForAssurance: PatientBasicInfo | null = null;
 
   // Rôles du personnel (sans patient)
   personnelRoles = [
@@ -463,5 +468,26 @@ export class UsersComponent implements OnInit {
       case 'suspendu': return 'Suspendu';
       default: return statut;
     }
+  }
+
+  // ==================== ASSURANCE PATIENT ====================
+
+  openAssurancePanel(user: UserDto): void {
+    this.selectedPatientForAssurance = {
+      idPatient: user.idUser,
+      nomComplet: `${user.prenom} ${user.nom}`,
+      telephone: user.telephone,
+      email: user.email
+    };
+    this.showAssurancePanel = true;
+  }
+
+  closeAssurancePanel(): void {
+    this.showAssurancePanel = false;
+    this.selectedPatientForAssurance = null;
+  }
+
+  onAssuranceSaved(): void {
+    this.loadUsers();
   }
 }

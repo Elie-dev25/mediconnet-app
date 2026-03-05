@@ -208,7 +208,7 @@
           <div class="question-item question-libre" *ngFor="let q of questionsLibresArray.controls; let i = index" [formGroupName]="i">
             <div class="question-header">
               <label>
-                <lucide-icon name="message-circle" [size]="14"></lucide-icon>
+                <lucide-icon name="FileText" [size]="14"></lucide-icon>
                 {{ q.get('question')?.value }}
               </label>
               <div class="question-actions">
@@ -879,6 +879,7 @@
         <app-prescription-examens
           [examens]="examensPrescriptions"
           [collapsed]="examensCollapsed"
+          [titreAffiche]="userTitreAffiche"
           (examensChange)="onExamensChange($event)"
           (collapsedChange)="examensCollapsed = $event">
         </app-prescription-examens>

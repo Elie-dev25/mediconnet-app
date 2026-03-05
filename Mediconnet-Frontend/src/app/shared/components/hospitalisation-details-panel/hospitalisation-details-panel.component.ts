@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideAngularModule, ALL_ICONS_PROVIDER } from '../../icons';
 import { environment } from '../../../../environments/environment';
 
 export interface ExecutionSoin {
@@ -93,6 +93,13 @@ export interface HospitalisationDetails {
     chambre: string;
     standard?: string;
   };
+  litAttribuePar?: {
+    idUser?: number;
+    nom?: string;
+    prenom?: string;
+    role?: string;
+    date?: string;
+  };
   soins?: SoinDetail[];
   examens?: ExamenDetail[];
   prescriptions?: PrescriptionDetail[];
@@ -105,6 +112,7 @@ import { ResultatExamenSidebarComponent } from '../resultat-examen-sidebar/resul
   selector: 'app-hospitalisation-details-panel',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule, SoinExecutionsPopupComponent, ResultatExamenSidebarComponent],
+  providers: [ALL_ICONS_PROVIDER],
   templateUrl: './hospitalisation-details-panel.component.html',
   styleUrls: ['./hospitalisation-details-panel.component.scss']
 })
@@ -247,9 +255,41 @@ export class HospitalisationDetailsPanelComponent implements OnChanges {
     return this.hospitalisation?.statut?.toLowerCase() === 'termine';
   }
 
-  get canAttribuerLit(): boolean {
+  private isEnAttenteLit(): boolean {
     const statut = this.hospitalisation?.statut?.toLowerCase();
-    return this.isMajor && (statut === 'en_attente' || statut === 'en_attente_lit');
+    return statut === 'en_attente' || statut === 'en_attente_lit';
+  }
+
+  get canAttribuerLitInfirmier(): boolean {
+    return this.isMajor && this.isEnAttenteLit();
+  }
+
+  get canAttribuerLitMedecin(): boolean {
+    return this.isMedecin && this.isEnAttenteLit();
+  }
+
+  get hasLitAttribution(): boolean {
+    return !!this.hospitalisation?.litAttribuePar;
+  }
+
+  formatAttributionName(): string {
+    if (!this.hospitalisation?.litAttribuePar) return 'Inconnu';
+    const { prenom, nom } = this.hospitalisation.litAttribuePar;
+    if (prenom || nom) {
+      return `${prenom ?? ''} ${nom ?? ''}`.trim();
+    }
+    return 'Utilisateur non identifié';
+  }
+
+  getRoleLabel(role?: string): string {
+    switch ((role ?? '').toLowerCase()) {
+      case 'medecin':
+        return 'Médecin (urgence)';
+      case 'major':
+        return 'Major / Infirmier référent';
+      default:
+        return role ?? '—';
+    }
   }
 
   getMotifSortieLabel(motif?: string): string {

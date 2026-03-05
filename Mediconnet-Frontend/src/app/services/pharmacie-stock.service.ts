@@ -185,6 +185,47 @@ export interface OrdonnancePharmacie {
   commentaire?: string;
   statut: string;
   medicaments: MedicamentPrescrit[];
+  dateExpiration?: string;
+  estExpiree?: boolean;
+  renouvelable?: boolean;
+  // Nouveau workflow
+  estValidee?: boolean;
+  estPayee?: boolean;
+  estDelivree?: boolean;
+  idFacture?: number;
+  montantTotal?: number;
+  montantRestant?: number;
+}
+
+// ==================== Nouveau Workflow Pharmacie ====================
+
+export interface ValidationOrdonnanceResult {
+  success: boolean;
+  message: string;
+  idOrdonnance?: number;
+  idFacture?: number;
+  numeroFacture?: string;
+  montantTotal: number;
+  montantAssurance: number;
+  montantPatient: number;
+  statutOrdonnance: string;
+}
+
+export interface DelivranceResult {
+  success: boolean;
+  message: string;
+  idOrdonnance?: number;
+  idDispensation?: number;
+  statutOrdonnance: string;
+  lignesDelivrees: LigneDelivrance[];
+  erreurs: string[];
+}
+
+export interface LigneDelivrance {
+  idMedicament: number;
+  nomMedicament: string;
+  quantiteDelivree: number;
+  stockRestant: number;
 }
 
 export interface MedicamentPrescrit {
@@ -398,6 +439,33 @@ export class PharmacieStockService {
     if (dateFin) params = params.set('dateFin', dateFin);
 
     return this.http.get<PagedResult<Dispensation>>(`${this.apiUrl}/dispensations`, { params });
+  }
+
+  // ==================== Nouveau Workflow Pharmacie ====================
+  // Prescription → Validation (Facture) → Paiement → Délivrance (Stock)
+
+  /**
+   * Valide une ordonnance : crée la facture associée SANS impact sur le stock.
+   * Le patient peut ensuite aller payer à la caisse.
+   */
+  validerOrdonnance(idOrdonnance: number): Observable<ValidationOrdonnanceResult> {
+    return this.http.post<ValidationOrdonnanceResult>(`${this.apiUrl}/ordonnances/${idOrdonnance}/valider`, {});
+  }
+
+  /**
+   * Délivre les médicaments d'une ordonnance PAYÉE.
+   * Décrémente le stock et enregistre la dispensation.
+   * Ce bouton n'est actif que si la facture est payée.
+   */
+  delivrerOrdonnance(idOrdonnance: number): Observable<DelivranceResult> {
+    return this.http.post<DelivranceResult>(`${this.apiUrl}/ordonnances/${idOrdonnance}/delivrer`, {});
+  }
+
+  /**
+   * Récupère le détail d'une ordonnance avec son statut de paiement
+   */
+  getOrdonnanceDetail(idOrdonnance: number): Observable<OrdonnancePharmacie> {
+    return this.http.get<OrdonnancePharmacie>(`${this.apiUrl}/ordonnances/${idOrdonnance}`);
   }
 
   // ==================== Formes Pharmaceutiques et Voies d'Administration ====================

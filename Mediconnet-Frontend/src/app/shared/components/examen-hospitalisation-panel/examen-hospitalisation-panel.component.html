@@ -34,6 +34,7 @@
         <!-- Composant examens réutilisé -->
         <app-prescription-examens
           [examens]="examens"
+          [titreAffiche]="userTitreAffiche"
           (examensChange)="onExamensChange($event)">
         </app-prescription-examens>
 

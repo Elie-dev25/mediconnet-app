@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
-import { CaisseService, CaisseKpi, FactureListItem, Transaction, PatientSearchResult, SessionCaisse, RepartitionPaiement, FactureRetard } from '../../../services/caisse.service';
+import { CaisseService, CaisseKpi, FactureListItem, Transaction, PatientSearchResult, SessionCaisse, RepartitionPaiement, FactureRetard, Facture, LigneFacture } from '../../../services/caisse.service';
 import { SignalRService } from '../../../services/signalr.service';
 import { DashboardLayoutComponent, ModalComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
 import { CAISSIER_MENU_ITEMS, CAISSIER_SIDEBAR_TITLE } from '../shared';
@@ -64,6 +64,10 @@ export class CaissierDashboardComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   paiementError = '';
   paiementSuccess = '';
+
+  // Détails facture sélectionnée
+  selectedFactureDetails: Facture | null = null;
+  isLoadingFactureDetails = false;
 
   // Statistiques
   repartitionPaiements: RepartitionPaiement[] = [];
@@ -271,6 +275,7 @@ export class CaissierDashboardComponent implements OnInit, OnDestroy {
     this.patientResults = [];
     this.patientFactures = [];
     this.selectedFactures = [];
+    this.selectedFactureDetails = null;
     this.paiementForm.patchValue({ montant: 0 });
   }
 
@@ -298,6 +303,41 @@ export class CaissierDashboardComponent implements OnInit, OnDestroy {
     this.patientFactures = [facture];
     this.selectedFactures = [facture.idFacture];
     this.updateMontantTotal();
+    
+    // Charger les détails de la facture (lignes)
+    this.loadFactureDetails(facture.idFacture);
+  }
+
+  /**
+   * Charge les détails complets d'une facture (avec lignes)
+   */
+  loadFactureDetails(idFacture: number): void {
+    this.isLoadingFactureDetails = true;
+    this.selectedFactureDetails = null;
+    
+    this.caisseService.getFacture(idFacture).subscribe({
+      next: (facture) => {
+        this.selectedFactureDetails = facture;
+        this.isLoadingFactureDetails = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement détails facture:', err);
+        this.isLoadingFactureDetails = false;
+      }
+    });
+  }
+
+  /**
+   * Retourne le libellé de la catégorie
+   */
+  getCategorieLabel(categorie?: string): string {
+    const labels: { [key: string]: string } = {
+      'consultation': 'Consultation',
+      'medicament': 'Médicament',
+      'hospitalisation': 'Hospitalisation',
+      'examen': 'Examen'
+    };
+    return labels[categorie || ''] || categorie || 'Autre';
   }
 
   // ==================== SÉLECTION FACTURES ====================

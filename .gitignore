@@ -1,7 +1,66 @@
-﻿.vs/
+﻿# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
 *.log
+logs/
 
 # Storage des documents médicaux (bind mount)
 storage/
 !storage/.gitkeep
+
+# Ignorer tous les fichiers .md sauf README.md
+*.md
+!README.md
+
+# Fichiers de test
+test_*.ps1
+test_*.py
+test_*.js
+test_*.sh
+*.test.ps1
+*.test.py
+
+# Fichiers temporaires et de build
+*.tmp
+*.temp
+*.bak
+*.backup
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Coverage et rapports
+coverage/
+*.lcov
+reports/
+
+# IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Configuration locale
+appsettings.Development.json
+appsettings.Local.json

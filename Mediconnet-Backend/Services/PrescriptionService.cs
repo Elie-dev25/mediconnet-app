@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
+using Mediconnet_Backend.Core.Constants;
 using Mediconnet_Backend.DTOs.Prescription;
 
 namespace Mediconnet_Backend.Services;
@@ -26,8 +27,10 @@ public class PrescriptionService : IPrescriptionService
     // Constantes pour les statuts d'ordonnance
     public static class StatutOrdonnance
     {
-        public const string Active = "active";
-        public const string Dispensee = "dispensee";
+        public const string Active = "active";           // Ordonnance créée par le médecin
+        public const string Validee = "validee";         // Validée par pharmacie, facture créée
+        public const string Payee = "payee";             // Facture payée, prête pour délivrance
+        public const string Dispensee = "dispensee";     // Médicaments délivrés, stock décrémenté
         public const string PartielleDispensee = "partielle";
         public const string Annulee = "annulee";
         public const string Expiree = "expiree";
@@ -262,13 +265,19 @@ public class PrescriptionService : IPrescriptionService
         int idPatient,
         List<MedicamentPrescriptionRequest> medicaments,
         string? notes,
-        int medecinId)
+        int medecinId,
+        int? dureeValiditeJours = null,
+        bool? renouvelable = null,
+        int? nombreRenouvellements = null)
     {
         var request = new CreateOrdonnanceRequest
         {
             IdPatient = idPatient,
             Notes = notes,
-            Medicaments = medicaments
+            Medicaments = medicaments,
+            DureeValiditeJours = dureeValiditeJours ?? BusinessRules.OrdonnanceDefaultValidityDays,
+            Renouvelable = renouvelable ?? false,
+            NombreRenouvellements = nombreRenouvellements
         };
 
         return await CreerOrdonnanceAsync(request, medecinId);

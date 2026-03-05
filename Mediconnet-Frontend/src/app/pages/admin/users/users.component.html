@@ -90,6 +90,9 @@
               <button class="btn-icon" title="Voir la fiche" (click)="openUserSidebar(user)">
                 <lucide-icon name="eye" [size]="16"></lucide-icon>
               </button>
+              <button class="btn-icon" title="Gérer l'assurance" (click)="openAssurancePanel(user)" *ngIf="user.role === 'patient'">
+                <lucide-icon name="Shield" [size]="16"></lucide-icon>
+              </button>
               <button class="btn-icon danger" title="Supprimer" disabled>
                 <lucide-icon name="trash-2" [size]="16"></lucide-icon>
               </button>
@@ -583,3 +586,11 @@
     </div>
   </div>
 </div>
+
+<!-- Panel Assurance Patient -->
+<app-patient-assurance-panel
+  [isOpen]="showAssurancePanel"
+  [patient]="selectedPatientForAssurance"
+  (close)="closeAssurancePanel()"
+  (saved)="onAssuranceSaved()">
+</app-patient-assurance-panel>

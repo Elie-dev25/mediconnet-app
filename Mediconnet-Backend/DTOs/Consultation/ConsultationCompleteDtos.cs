@@ -46,7 +46,7 @@ public class DossierPatientDto
     // Assurance
     public string? NomAssurance { get; set; }
     public string? NumeroCarteAssurance { get; set; }
-    public decimal? CouvertureAssurance { get; set; }
+    public decimal? TauxCouvertureOverride { get; set; }
     public DateTime? DateDebutValidite { get; set; }
     public DateTime? DateFinValidite { get; set; }
     

@@ -262,4 +262,26 @@ public class AssuranceController : ControllerBase
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
+
+    // ==================== PATIENT INSURANCE STATUS ====================
+
+    /// <summary>
+    /// Récupérer la liste des patients avec leur statut d'assurance
+    /// Permet de filtrer par statut: all, valide, expire_bientot, expiree, non_assure
+    /// </summary>
+    [HttpGet("patients/status")]
+    [Authorize(Roles = "admin,administrateur,accueil")]
+    public async Task<IActionResult> GetPatientsInsuranceStatus([FromQuery] PatientInsuranceFilterDto filter)
+    {
+        try
+        {
+            var result = await _assuranceService.GetPatientsInsuranceStatusAsync(filter);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des statuts d'assurance patients");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
 }

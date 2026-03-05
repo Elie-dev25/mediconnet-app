@@ -22,7 +22,8 @@ import { NotificationService, Notification, NotificationFilter } from '../../ser
       useValue: new LucideIconProvider({ 
         Bell, BellRing, Check, CheckCheck, Trash2, X, ArrowLeft,
         Calendar, CreditCard, Stethoscope, AlertTriangle, HeartPulse,
-        Package, Settings, MessageCircle, CheckCircle, Filter
+        Package, Settings, MessageCircle, CheckCircle, Filter,
+        'check-circle-2': CheckCircle
       })
     }
   ],

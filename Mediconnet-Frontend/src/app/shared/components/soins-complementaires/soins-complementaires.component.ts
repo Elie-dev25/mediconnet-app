@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideAngularModule, ALL_ICONS_PROVIDER } from '../../icons';
 
 export interface SoinComplementaire {
   typeSoin: string;
@@ -21,6 +21,7 @@ export interface SoinComplementaire {
   selector: 'app-soins-complementaires',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule],
+  providers: [ALL_ICONS_PROVIDER],
   templateUrl: './soins-complementaires.component.html',
   styleUrl: './soins-complementaires.component.scss'
 })

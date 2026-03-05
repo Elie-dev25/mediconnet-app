@@ -634,7 +634,8 @@ public class MedecinController : BaseApiController
             if (!userId.HasValue)
                 return Unauthorized(new { message = "Utilisateur non authentifié" });
 
-            var result = await _hospitalisationService.AttribuerLitAsync(request, userId.Value);
+            var role = GetCurrentUserRole() ?? "medecin";
+            var result = await _hospitalisationService.AttribuerLitAsync(request, userId.Value, role);
 
             if (!result.Success)
             {
@@ -655,47 +656,6 @@ public class MedecinController : BaseApiController
         {
             _logger.LogError($"Erreur AttribuerLit (médecin): {ex.Message}");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
-        }
-    }
-
-    /// <summary>
-    /// Créer une nouvelle hospitalisation (utilise le service centralisé)
-    /// DEPRECATED: Utiliser OrdonnerHospitalisation à la place
-    /// </summary>
-    [HttpPost("hospitalisation")]
-    public async Task<IActionResult> CreateHospitalisation([FromBody] CreerHospitalisationRequest request)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            if (!userId.HasValue)
-                return Unauthorized(new { message = "Utilisateur non authentifié" });
-
-            // Assigner le médecin connecté à la requête
-            request.IdMedecin = userId.Value;
-
-            // Utiliser le service centralisé
-            var result = await _hospitalisationService.CreerHospitalisationAsync(request);
-
-            if (!result.Success)
-            {
-                return BadRequest(new { success = false, message = result.Message });
-            }
-
-            _logger.LogInformation("Hospitalisation créée via MedecinController: Patient {PatientId}, Lit {LitId}", 
-                request.IdPatient, request.IdLit);
-
-            return Ok(new
-            {
-                success = true,
-                message = result.Message,
-                data = result.Data
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error creating hospitalisation: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la création de l'hospitalisation" });
         }
     }
 
@@ -927,6 +887,13 @@ public class MedecinController : BaseApiController
                 return NotFound(new { success = false, message = "Hospitalisation non trouvée" });
             }
 
+            Utilisateur? utilisateurAttribuant = null;
+            if (hospitalisation.IdLitAttribuePar.HasValue)
+            {
+                utilisateurAttribuant = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.IdUser == hospitalisation.IdLitAttribuePar.Value);
+            }
+
             // Récupérer les soins liés à cette hospitalisation avec progression
             var soins = await _context.SoinsHospitalisation
                 .Include(s => s.Prescripteur)
@@ -1052,6 +1019,14 @@ public class MedecinController : BaseApiController
                     numero = hospitalisation.Lit.Numero,
                     chambre = hospitalisation.Lit.Chambre?.Numero ?? "",
                     standard = hospitalisation.Lit.Chambre?.Standard?.Nom
+                } : null,
+                litAttribuePar = hospitalisation.IdLitAttribuePar.HasValue ? new
+                {
+                    idUser = hospitalisation.IdLitAttribuePar,
+                    nom = utilisateurAttribuant?.Nom,
+                    prenom = utilisateurAttribuant?.Prenom,
+                    role = hospitalisation.RoleLitAttribuePar,
+                    date = hospitalisation.DateLitAttribue
                 } : null,
                 soins = soins,
                 examens = examens,

@@ -96,6 +96,31 @@
                 <span class="info-value">{{ formatDateTime(hospitalisation.dateSortie) }}</span>
               </div>
             </div>
+            <div class="attribution-block" *ngIf="hasLitAttribution">
+              <div class="attribution-header">
+                <lucide-icon name="shield-check" [size]="16"></lucide-icon>
+                <div>
+                  <span class="attribution-label">Lit attribué par</span>
+                  <strong class="attribution-name">{{ formatAttributionName() }}</strong>
+                </div>
+                <span class="role-chip">{{ getRoleLabel(hospitalisation.litAttribuePar?.role) }}</span>
+              </div>
+              <div class="attribution-date" *ngIf="hospitalisation.litAttribuePar?.date">
+                <lucide-icon name="clock-8" [size]="14"></lucide-icon>
+                <span>{{ formatDateTime(hospitalisation.litAttribuePar?.date) }}</span>
+              </div>
+            </div>
+            <div class="attribution-empty" *ngIf="!hasLitAttribution && isMedecin">
+              <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+              <div>
+                <strong>Aucun lit attribué</strong>
+                <p>Vous pouvez déclencher l'installation en urgence.</p>
+              </div>
+              <button class="btn btn-link" (click)="onAttribuerLit()" *ngIf="canAttribuerLitMedecin">
+                <lucide-icon name="bed" [size]="16"></lucide-icon>
+                Attribuer maintenant
+              </button>
+            </div>
           </div>
 
           <div class="info-section">
@@ -401,9 +426,16 @@
     <div class="panel-footer" *ngIf="hospitalisation && !isLoading && !error">
       <!-- Major Actions -->
       <ng-container *ngIf="isMajor">
-        <button class="btn btn-primary" *ngIf="canAttribuerLit" (click)="onAttribuerLit()">
+        <button class="btn btn-primary" *ngIf="canAttribuerLitInfirmier" (click)="onAttribuerLit()">
           <lucide-icon name="bed" [size]="18"></lucide-icon>
           Attribuer un lit
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="isMedecin && canAttribuerLitMedecin">
+        <button class="btn btn-primary" (click)="onAttribuerLit()">
+          <lucide-icon name="zap" [size]="16"></lucide-icon>
+          Attribuer en urgence
         </button>
       </ng-container>
 

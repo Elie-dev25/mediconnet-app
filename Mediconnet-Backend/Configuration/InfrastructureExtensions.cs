@@ -59,6 +59,7 @@ public static class InfrastructureExtensions
         services.AddScoped<CleanupJob>();
         services.AddScoped<ExpiredAppointmentJob>();
         services.AddScoped<MissedCareJob>();
+        services.AddScoped<ExpiredInsuranceJob>();
         
         // Service hébergé pour exécuter les jobs périodiquement
         services.AddHostedService<BackgroundJobHostedService>();

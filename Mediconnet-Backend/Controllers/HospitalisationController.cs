@@ -169,57 +169,6 @@ public class HospitalisationController : ControllerBase
     }
 
     /// <summary>
-    /// Créer une nouvelle hospitalisation
-    /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<HospitalisationResponse>> CreerHospitalisation([FromBody] CreerHospitalisationRequest request)
-    {
-        try
-        {
-            var result = await _hospitalisationService.CreerHospitalisationAsync(request);
-            if (!result.Success)
-            {
-                return BadRequest(result);
-            }
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erreur lors de la création de l'hospitalisation");
-            return StatusCode(500, new { message = "Erreur serveur" });
-        }
-    }
-
-    /// <summary>
-    /// Demander une hospitalisation depuis une consultation (médecin)
-    /// </summary>
-    [HttpPost("demande")]
-    [Authorize(Roles = "medecin")]
-    public async Task<ActionResult<HospitalisationResponse>> DemanderHospitalisation([FromBody] DemandeHospitalisationRequest request)
-    {
-        try
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var medecinId))
-            {
-                return Unauthorized(new { message = "Utilisateur non authentifié" });
-            }
-
-            var result = await _hospitalisationService.DemanderHospitalisationAsync(request, medecinId);
-            if (!result.Success)
-            {
-                return BadRequest(result);
-            }
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erreur lors de la demande d'hospitalisation");
-            return StatusCode(500, new { message = "Erreur serveur" });
-        }
-    }
-
-    /// <summary>
     /// Terminer une hospitalisation
     /// </summary>
     [HttpPost("{id}/terminer")]

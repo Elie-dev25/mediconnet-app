@@ -57,4 +57,11 @@ public interface IAssuranceService
     /// Retirer l'assurance d'un patient
     /// </summary>
     Task<PatientAssuranceResponse> RemovePatientAssuranceAsync(int idPatient);
+
+    // ==================== PATIENT INSURANCE STATUS ====================
+
+    /// <summary>
+    /// Récupérer la liste des patients avec leur statut d'assurance
+    /// </summary>
+    Task<PatientInsuranceStatusListResponse> GetPatientsInsuranceStatusAsync(PatientInsuranceFilterDto? filter = null);
 }

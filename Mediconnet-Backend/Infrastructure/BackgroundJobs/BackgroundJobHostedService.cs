@@ -19,6 +19,7 @@ public class BackgroundJobHostedService : BackgroundService
     private static readonly TimeSpan ReminderInterval = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan DailyReportTime = TimeSpan.FromHours(24);
     private static readonly TimeSpan MissedCareInterval = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan ExpiredInsuranceInterval = TimeSpan.FromHours(6); // Vérification toutes les 6h
 
     public BackgroundJobHostedService(
         IServiceProvider serviceProvider,
@@ -39,7 +40,8 @@ public class BackgroundJobHostedService : BackgroundService
             RunCleanupJobAsync(stoppingToken),
             RunReminderJobAsync(stoppingToken),
             RunDailyReportsAsync(stoppingToken),
-            RunMissedCareJobAsync(stoppingToken)
+            RunMissedCareJobAsync(stoppingToken),
+            RunExpiredInsuranceJobAsync(stoppingToken)
         };
 
         await Task.WhenAll(tasks);
@@ -188,6 +190,35 @@ public class BackgroundJobHostedService : BackgroundService
             }
 
             await Task.Delay(MissedCareInterval, stoppingToken);
+        }
+    }
+
+    /// <summary>
+    /// Exécute le job de vérification des assurances expirées toutes les 6 heures
+    /// </summary>
+    private async Task RunExpiredInsuranceJobAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("[BackgroundJobHostedService] Job ExpiredInsurance configuré (intervalle: 6h)");
+
+        // Attendre 5 minutes au démarrage pour laisser le temps aux autres services de s'initialiser
+        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var job = scope.ServiceProvider.GetRequiredService<ExpiredInsuranceJob>();
+
+                await job.ProcessExpiredInsurancesAsync();
+                await job.GenerateExpiredInsuranceReportAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[BackgroundJobHostedService] Erreur dans ExpiredInsuranceJob");
+            }
+
+            await Task.Delay(ExpiredInsuranceInterval, stoppingToken);
         }
     }
 

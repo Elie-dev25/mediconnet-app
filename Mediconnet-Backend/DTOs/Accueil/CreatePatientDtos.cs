@@ -101,7 +101,18 @@ public class CreatePatientByReceptionRequest
     
     /// <summary>Taux de couverture propre au patient (0-100)</summary>
     [Range(0, 100)]
-    public decimal? CouvertureAssurance { get; set; }
+    public decimal? TauxCouvertureOverride { get; set; }
+
+    /// <summary>
+    /// Alias pour compatibilité avec l'ancien champ CouvertureAssurance.
+    /// Permet aux anciens formulaires de continuer à envoyer la valeur.
+    /// </summary>
+    [Range(0, 100)]
+    public decimal? CouvertureAssurance
+    {
+        get => TauxCouvertureOverride;
+        set => TauxCouvertureOverride = value;
+    }
 }
 
 /// <summary>

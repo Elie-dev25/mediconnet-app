@@ -369,4 +369,166 @@ public class AssuranceService : IAssuranceService
 
         return new PatientAssuranceResponse { Success = true, Message = "Assurance retirée du patient" };
     }
+
+    // ==================== PATIENT INSURANCE STATUS ====================
+
+    public async Task<PatientInsuranceStatusListResponse> GetPatientsInsuranceStatusAsync(PatientInsuranceFilterDto? filter = null)
+    {
+        var today = DateTime.UtcNow.Date;
+        var joursAvertissement = filter?.JoursAvertissement ?? 30;
+        var warningDate = today.AddDays(joursAvertissement);
+
+        var query = _context.Patients
+            .Include(p => p.Utilisateur)
+            .Include(p => p.Assurance)
+            .Where(p => p.Utilisateur != null && p.Utilisateur.Role == "patient")
+            .AsQueryable();
+
+        // Appliquer les filtres
+        if (filter != null)
+        {
+            if (filter.AssuranceId.HasValue)
+            {
+                query = query.Where(p => p.AssuranceId == filter.AssuranceId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(filter.Recherche))
+            {
+                var search = filter.Recherche.ToLower();
+                query = query.Where(p => 
+                    (p.Utilisateur != null && (
+                        p.Utilisateur.Nom.ToLower().Contains(search) ||
+                        p.Utilisateur.Prenom.ToLower().Contains(search) ||
+                        (p.Utilisateur.Telephone != null && p.Utilisateur.Telephone.Contains(search))
+                    )) ||
+                    (p.NumeroCarteAssurance != null && p.NumeroCarteAssurance.ToLower().Contains(search))
+                );
+            }
+
+            // Filtrer par statut d'assurance
+            if (!string.IsNullOrEmpty(filter.StatutAssurance) && filter.StatutAssurance != "all")
+            {
+                switch (filter.StatutAssurance)
+                {
+                    case "non_assure":
+                        query = query.Where(p => !p.AssuranceId.HasValue);
+                        break;
+                    case "expiree":
+                        query = query.Where(p => p.AssuranceId.HasValue && 
+                            p.DateFinValidite.HasValue && 
+                            p.DateFinValidite.Value.Date < today);
+                        break;
+                    case "expire_bientot":
+                        query = query.Where(p => p.AssuranceId.HasValue && 
+                            p.DateFinValidite.HasValue && 
+                            p.DateFinValidite.Value.Date >= today &&
+                            p.DateFinValidite.Value.Date <= warningDate);
+                        break;
+                    case "valide":
+                        query = query.Where(p => p.AssuranceId.HasValue && 
+                            (!p.DateFinValidite.HasValue || p.DateFinValidite.Value.Date > warningDate));
+                        break;
+                }
+            }
+        }
+
+        // Compter les totaux par statut
+        var allPatients = await _context.Patients
+            .Include(p => p.Utilisateur)
+            .Where(p => p.Utilisateur != null && p.Utilisateur.Role == "patient")
+            .ToListAsync();
+
+        var totalExpirees = allPatients.Count(p => 
+            p.AssuranceId.HasValue && 
+            p.DateFinValidite.HasValue && 
+            p.DateFinValidite.Value.Date < today);
+
+        var totalExpirantBientot = allPatients.Count(p => 
+            p.AssuranceId.HasValue && 
+            p.DateFinValidite.HasValue && 
+            p.DateFinValidite.Value.Date >= today &&
+            p.DateFinValidite.Value.Date <= warningDate);
+
+        var totalNonAssures = allPatients.Count(p => !p.AssuranceId.HasValue);
+
+        // Pagination
+        var total = await query.CountAsync();
+        var page = filter?.Page ?? 1;
+        var pageSize = filter?.PageSize ?? 20;
+
+        var patients = await query
+            .OrderBy(p => p.DateFinValidite ?? DateTime.MaxValue) // Expirées en premier
+            .ThenBy(p => p.Utilisateur!.Nom)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var result = patients.Select(p => {
+            var estAssure = p.AssuranceId.HasValue;
+            var dateExpiration = p.DateFinValidite;
+            
+            string statut;
+            int? joursRestants = null;
+            int? joursExpires = null;
+            bool estValide = false;
+
+            if (!estAssure)
+            {
+                statut = "non_assure";
+            }
+            else if (dateExpiration.HasValue)
+            {
+                var diff = (dateExpiration.Value.Date - today).Days;
+                if (diff < 0)
+                {
+                    statut = "expiree";
+                    joursExpires = Math.Abs(diff);
+                }
+                else if (diff <= joursAvertissement)
+                {
+                    statut = "expire_bientot";
+                    joursRestants = diff;
+                    estValide = true;
+                }
+                else
+                {
+                    statut = "valide";
+                    joursRestants = diff;
+                    estValide = true;
+                }
+            }
+            else
+            {
+                statut = "valide";
+                estValide = true;
+            }
+
+            return new PatientInsuranceStatusDto
+            {
+                IdPatient = p.IdUser,
+                NomComplet = p.Utilisateur != null ? $"{p.Utilisateur.Prenom} {p.Utilisateur.Nom}" : "Inconnu",
+                Telephone = p.Utilisateur?.Telephone,
+                Email = p.Utilisateur?.Email,
+                AssuranceId = p.AssuranceId,
+                NomAssurance = p.Assurance?.Nom,
+                NumeroCarteAssurance = p.NumeroCarteAssurance,
+                DateDebutValidite = p.DateDebutValidite,
+                DateFinValidite = p.DateFinValidite,
+                StatutAssurance = statut,
+                JoursRestants = joursRestants,
+                JoursExpires = joursExpires,
+                EstValide = estValide
+            };
+        }).ToList();
+
+        return new PatientInsuranceStatusListResponse
+        {
+            Success = true,
+            Data = result,
+            Total = total,
+            TotalExpirees = totalExpirees,
+            TotalExpirantBientot = totalExpirantBientot,
+            TotalNonAssures = totalNonAssures
+        };
+    }
 }

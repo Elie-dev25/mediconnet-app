@@ -189,7 +189,7 @@ public class ReceptionPatientService : IReceptionPatientService
                 NumeroCarteAssurance = request.NumeroCarteAssurance,
                 DateDebutValidite = request.DateDebutValidite,
                 DateFinValidite = request.DateFinValidite,
-                CouvertureAssurance = request.CouvertureAssurance
+                TauxCouvertureOverride = request.TauxCouvertureOverride
             };
             
             _context.Patients.Add(patient);

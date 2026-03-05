@@ -41,6 +41,9 @@ export interface HospitalisationDto {
   idLit: number;
   numeroLit?: string;
   numeroChambre?: string;
+  idLitAttribuePar?: number;
+  roleLitAttribuePar?: string;
+  dateLitAttribue?: string;
   idService?: number;
   serviceNom?: string;
   idMedecin?: number;
@@ -53,26 +56,6 @@ export interface TerminerHospitalisationRequest {
   motifSortie?: string;
   resumeMedical: string;
   dateSortie?: string;
-}
-
-export interface CreerHospitalisationRequest {
-  idPatient: number;
-  idLit: number;
-  motif?: string;
-  dateEntreePrevue?: string;
-  dateSortiePrevue?: string;
-  idConsultation?: number;
-  idMedecin?: number;
-}
-
-export interface DemandeHospitalisationRequest {
-  idConsultation: number;
-  idPatient: number;
-  idLit: number;
-  motif: string;
-  urgence?: string;
-  notes?: string;
-  dateSortiePrevue?: string;
 }
 
 /**
@@ -144,18 +127,22 @@ export interface AttribuerLitRequest {
   notes?: string;
 }
 
-export interface HospitalisationCreatedData {
-  idAdmission: number;
-  idPatient: number;
-  idLit: number;
-  numeroChambre?: string;
-  numeroLit?: string;
+export interface HospitalisationCreatedData extends Pick<HospitalisationDto,
+  'idAdmission' |
+  'idPatient' |
+  'idLit' |
+  'numeroChambre' |
+  'numeroLit' |
+  'dateEntree' |
+  'dateSortiePrevue' |
+  'motif' |
+  'statut' |
+  'idLitAttribuePar' |
+  'roleLitAttribuePar' |
+  'dateLitAttribue'
+> {
   standardNom?: string;
   prixJournalier: number;
-  dateEntree: string;
-  dateSortiePrevue?: string;
-  motif?: string;
-  statut?: string;
   idFacture?: number;
   numeroFacture?: string;
   montantEstime: number;
@@ -236,21 +223,6 @@ export class HospitalisationService {
    */
   getHospitalisationsPatient(idPatient: number): Observable<HospitalisationDto[]> {
     return this.http.get<HospitalisationDto[]>(`${this.apiUrl}/patient/${idPatient}`);
-  }
-
-  /**
-   * Créer une nouvelle hospitalisation
-   */
-  creerHospitalisation(request: CreerHospitalisationRequest): Observable<HospitalisationResponse> {
-    return this.http.post<HospitalisationResponse>(this.apiUrl, request);
-  }
-
-  /**
-   * Demander une hospitalisation depuis une consultation (médecin)
-   * @deprecated Utiliser ordonnerHospitalisation à la place
-   */
-  demanderHospitalisation(request: DemandeHospitalisationRequest): Observable<HospitalisationResponse> {
-    return this.http.post<HospitalisationResponse>(`${this.apiUrl}/demande`, request);
   }
 
   /**

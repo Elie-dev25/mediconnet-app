@@ -4,11 +4,13 @@ import { Subscription } from 'rxjs';
 import { IdleService } from '../../../core/services/idle.service';
 import { AuthService } from '../../../services/auth.service';
 import { LucideAngularModule } from 'lucide-angular';
+import { ALL_ICONS_PROVIDER } from '../../icons';
 
 @Component({
   selector: 'app-idle-warning-modal',
   standalone: true,
   imports: [CommonModule, LucideAngularModule],
+  providers: [ALL_ICONS_PROVIDER],
   template: `
     <div class="idle-modal-overlay" *ngIf="showWarning" (click)="stayActive()">
       <div class="idle-modal" (click)="$event.stopPropagation()">

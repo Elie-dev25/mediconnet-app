@@ -39,6 +39,15 @@ public abstract class BaseApiController : ControllerBase
     }
 
     /// <summary>
+    /// Récupère le rôle de l'utilisateur courant
+    /// </summary>
+    protected string? GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value
+            ?? User.FindFirst("role")?.Value;
+    }
+
+    /// <summary>
     /// Vérifie si l'utilisateur courant est patient
     /// </summary>
     protected bool IsPatient() => HasRole("patient");

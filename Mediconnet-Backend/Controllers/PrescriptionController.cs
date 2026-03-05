@@ -158,7 +158,10 @@ public class PrescriptionController : ControllerBase
             request.IdPatient, 
             request.Medicaments, 
             request.Notes, 
-            medecinId.Value);
+            medecinId.Value,
+            request.DureeValiditeJours,
+            request.Renouvelable,
+            request.NombreRenouvellements);
 
         if (!result.Success)
         {
@@ -361,6 +364,9 @@ public class CreateOrdonnanceDirecteRequest
     public int IdPatient { get; set; }
     public string? Notes { get; set; }
     public List<MedicamentPrescriptionRequest> Medicaments { get; set; } = new();
+    public int? DureeValiditeJours { get; set; }
+    public bool? Renouvelable { get; set; }
+    public int? NombreRenouvellements { get; set; }
 }
 
 /// <summary>

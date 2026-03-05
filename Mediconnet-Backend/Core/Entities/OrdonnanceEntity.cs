@@ -4,17 +4,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Mediconnet_Backend.Core.Entities;
 
 /// <summary>
-/// Entité Prescription (Ordonnance) - Mappe à la table 'prescription'
-/// Enrichie pour supporter tous les contextes de prescription :
+/// Entité Ordonnance - Mappe à la table 'ordonnance'
+/// Supporte tous les contextes de prescription :
 /// - Consultation classique
 /// - Hospitalisation
 /// - Prescription directe (hors consultation)
 /// </summary>
-[Table("prescription")]
+[Table("ordonnance")]
 public class Ordonnance
 {
     [Key]
-    [Column("id_ord")]
+    [Column("id_ordonnance")]
     public int IdOrdonnance { get; set; }
 
     [Column("date")]
@@ -133,17 +133,17 @@ public class Ordonnance
 }
 
 /// <summary>
-/// Entité PrescriptionMedicament - Mappe à la table 'prescription_medicament'
+/// Entité PrescriptionMedicament - Mappe à la table 'ordonnance_medicament'
 /// Supporte les médicaments du catalogue ET les médicaments en saisie libre (hors catalogue)
 /// </summary>
-[Table("prescription_medicament")]
+[Table("ordonnance_medicament")]
 public class PrescriptionMedicament
 {
     [Key]
     [Column("id_prescription_med")]
     public int IdPrescriptionMed { get; set; }
 
-    [Column("id_ord")]
+    [Column("id_ordonnance")]
     public int IdOrdonnance { get; set; }
 
     /// <summary>
