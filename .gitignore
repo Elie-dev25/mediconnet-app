@@ -30,8 +30,15 @@ test_*.ps1
 test_*.py
 test_*.js
 test_*.sh
+test_*.html
 *.test.ps1
 *.test.py
+*.test.html
+
+# Scripts temporaires
+fix_*.sql
+rebuild.ps1
+tash*
 
 # Fichiers temporaires et de build
 *.tmp
