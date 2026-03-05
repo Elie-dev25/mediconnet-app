@@ -5,16 +5,26 @@
 [![Docker Build](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/docker-build.yml)
 [![Security Scan](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/security.yml/badge.svg)](https://github.com/Elie-dev25/mediconnet-app/actions/workflows/security.yml)
 
-Application de gestion médicale complète pour les établissements de santé au Cameroun.
+>  **Mon projet phare** - Une application de gestion médicale complète que j'ai développée pour les établissements de santé au Cameroun
 
-## Fonctionnalités
+Après avoir observé les défis quotidiens des hôpitaux et cliniques camerounais, j'ai créé **Mediconnet** pour digitaliser et simplifier la gestion médicale. C'est ma solution concrète aux problèmes de papier, de perte d'informations et de coordination que j'ai pu constater.
 
-- **Gestion des patients** : Inscription, dossiers médicaux, historique
-- **Rendez-vous** : Prise de RDV en ligne, planning médecins
-- **Consultations** : Workflow complet de consultation
-- **Pharmacie** : Gestion des stocks et ordonnances
-- **Caisse** : Facturation et paiements
-- **Administration** : Gestion des utilisateurs, services, assurances
+## 🚀 Ce que j'ai intégré
+
+### Le quotidien de l'hôpital ✨
+- **👥 Gestion des patients** : Fini les dossiers papier ! Tout est digitalisé, de l'inscription à l'historique complet
+- **📅 Rendez-vous** : Prise de RDV en ligne et planning intelligent des médecins 
+- **🩺 Consultations** : Un workflow complet qui suit le vrai parcours médical
+- **💊 Pharmacie** : Gestion des stocks en temps réel et ordonnances digitalisées
+- **💰 Caisse** : Facturation automatique et suivi des paiements
+- **⚙️ Administration** : Tableau de bord complet pour gérer tout l'établissement
+
+### Les fonctionnalités puissantes 🔥
+- **🏥 Hospitalisation** : Gestion complète des lits, chambres et services médicaux
+- **🔬 Examens** : Laboratoire et imagerie avec résultats intégrés
+- **📊 Facturation avancée** : Échéanciers, remboursements assurances, tout est géré
+- **🔔 Notifications** : Alertes temps réel avec SignalR pour ne rien manquer
+- **📁 Documents** : Stockage sécurisé de tous les dossiers médicaux
 
 ## Stack Technique
 
@@ -42,41 +52,41 @@ Application de gestion médicale complète pour les établissements de santé au
 - Node.js 20+ (pour développement local)
 - .NET 8 SDK (pour développement local)
 
-## Démarrage rapide
+## 🚀 Lancez-le en 2 minutes !
 
-### Avec Docker (recommandé)
+### La méthode simple (Docker) 🐳
 
 ```bash
-# Clonez le dépôt
+# Clonez mon projet
 git clone https://github.com/Elie-dev25/mediconnet-app.git
 cd mediconnet-app
 
-# Démarrez tous les services
+# Uniquement cette commande et c'est parti !
 docker-compose up -d --build
 
-# Accédez à l'application
-# Frontend: http://localhost:4200
-# Backend API: http://localhost:5000
-# Adminer (DB): http://localhost:8080
-# MailHog: http://localhost:8025
+# Voilà ! L'application est accessible :
+# 🌐 Frontend: http://localhost:4200
+# ⚙️ Backend API: http://localhost:8080
+# 🗄️ Adminer (DB): http://localhost:8081
+# 📧 MailHog: http://localhost:8025
 ```
 
-### Développement local
+### Pour les développeurs 👨‍💻
 
-#### Frontend
+#### Frontend (Angular)
 ```bash
 cd Mediconnet-Frontend
 npm install
 npm start
-# Accessible sur http://localhost:4200
+# C'est parti sur http://localhost:4200
 ```
 
-#### Backend
+#### Backend (.NET)
 ```bash
 cd Mediconnet-Backend
 dotnet restore
 dotnet run
-# API accessible sur http://localhost:5000
+# API dispo sur http://localhost:8080
 ```
 
 ## CI/CD
@@ -176,6 +186,30 @@ mediconnet-app/
 | **Accueil** | Enregistrement patients, gestion RDV |
 | **Admin** | Configuration système, gestion utilisateurs |
 
+## Base de données
+
+### MySQL 8
+- **Structure** : Schéma normalisé avec 50+ tables
+- **Migrations** : Scripts SQL versionnés dans `database/migrations/`
+- **Stockage** : Volume Docker persistant pour les documents
+- **Backup** : Scripts de sauvegarde automatique
+
+### Tables principales
+- `users`, `patients`, `personnel` - Utilisateurs et profils
+- `consultations`, `ordonnance`, `ordonnance_medicament` - Workflow médical
+- `hospitalisation`, `lit`, `chambre` - Gestion hospitalière
+- `facture`, `ligne_facture`, `echeancier` - Facturation avancée
+- `examen`, `bulletin_examen`, `resultat_examen` - Laboratoire/Imagerie
+- `mouvement_stock`, `medicament` - Gestion pharmacie
+
+## Stockage des documents
+
+Les documents médicaux sont stockés dans le volume Docker `./storage/` :
+- **Prescriptions** : PDF générés automatiquement
+- **Résultats examens** : PDF et images médicales
+- **Factures** : PDF officiels
+- **Documents patients** : Scans et formulaires
+
 ## Sécurité
 
 - **Authentification** : JWT avec refresh tokens
@@ -202,6 +236,16 @@ git push origin v1.0.0
 
 Ce projet est sous licence privée. Tous droits réservés.
 
-## Auteur
+## À propos
 
-**Elie** - [GitHub](https://github.com/Elie-dev25)
+Je suis **Elie Njine**, développeur passionné par la transformation digitale du secteur médical en Afrique. 
+
+**Mediconnet** n'est pas juste un projet technique, c'est ma contribution concrète pour améliorer les soins de santé au Cameroun. Chaque ligne de code a été pensée pour résoudre de vrais problèmes que j'ai observés sur le terrain.
+
+**Discutons-en** : [elienjiedev@gmail.com](mailto:elienjiedev@gmail.com)  
+**Connectons-nous** : [LinkedIn](https://www.linkedin.com/in/elie-njine-736b04274)  
+**Suivez mon travail** : [GitHub](https://github.com/Elie-dev25)
+
+---
+
+*Prêt à transformer la gestion médicale ensemble ?*
