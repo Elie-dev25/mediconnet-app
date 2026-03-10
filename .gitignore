@@ -21,9 +21,10 @@ logs/
 storage/
 !storage/.gitkeep
 
-# Ignorer tous les fichiers .md sauf README.md
+# Ignorer tous les fichiers .md sauf README.md et README-ROUTES.md
 *.md
 !README.md
+!README-ROUTES.md
 
 # Fichiers de test
 test_*.ps1
@@ -52,9 +53,8 @@ Thumbs.db
 docker-compose.override.yml
 
 # Environment
-.env
-.env.local
-.env.production
+.env*
+!.env.example
 
 # Coverage et rapports
 coverage/
@@ -71,3 +71,5 @@ reports/
 # Configuration locale
 appsettings.Development.json
 appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
