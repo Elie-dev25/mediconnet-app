@@ -13,8 +13,9 @@
 - [Facturation](#facturation)
 - [Documents](#documents)
 - [Administrateur](#administrateur)
-
----
+- [🎯 Routes Critiques pour Tests de Charge](#-routes-critiques-pour-tests-de-charge)
+- [📊 Métriques de Performance Attendues](#-métriques-de-performance-attendues)
+- [🧪 Stratégie de Test de Charge](#-stratégie-de-test-de-charge)
 
 ## 🔐 Authentification
 
@@ -464,5 +465,114 @@ Une collection Postman est disponible dans `/tests/postman/mediconnect-api.json`
 
 ---
 
-**Dernière mise à jour :** 10/03/2026  
+## 🎯 Routes Critiques pour Tests de Charge
+
+> **⚠️ Note** : Section ajoutée pour identifier les routes les plus sollicitées lors des tests de performance.
+
+---
+
+## 📊 Métriques de Performance Attendues
+
+| Route Critique | P95 Response Time | P99 Response Time | Error Rate | CPU Impact |
+|----------------|------------------|------------------|------------|------------|
+| `POST /api/auth/login` | < 300ms | < 500ms | < 1% | Medium |
+| `GET /api/patient/profile` | < 200ms | < 400ms | < 0.5% | Low |
+| `GET /api/rendez-vous/creneaux/{id}` | < 250ms | < 450ms | < 0.5% | Medium |
+| `POST /api/rendez-vous` | < 400ms | < 600ms | < 2% | High |
+| `GET /api/pharmacie/medicaments` | < 200ms | < 350ms | < 0.5% | Low |
+| `POST /api/pharmacie/dispensations` | < 500ms | < 800ms | < 2% | High |
+| `POST /api/medecin/consultations` | < 400ms | < 700ms | < 2% | High |
+
+---
+
+## 🧪 Stratégie de Test de Charge
+
+### 🎯 Objectifs
+- **Utilisateurs simultanés** : 200 utilisateurs
+- **Durée** : 10 minutes sustained
+- **Montée** : 50 → 200 users en 2 minutes
+- **Taux d'erreur** : < 2%
+- **P95 Response Time** : < 500ms
+
+### 📈 Scénarios Critiques
+
+#### **Scénario 1 : Pic de connexion (9h)**
+```javascript
+// 50 users se connectent simultanément
+POST /api/auth/login
+GET /api/patient/profile
+```
+
+#### **Scénario 2 : Prise massive de RDV**
+```javascript
+// 100 users consultent créneaux et prennent RDV
+GET /api/rendez-vous/creneaux/{medecinId}
+POST /api/rendez-vous
+```
+
+#### **Scénario 3 : Activité pharmacie**
+```javascript
+// 50 pharmaciens consultent stock et dispensent
+GET /api/pharmacie/medicaments
+POST /api/pharmacie/dispensations
+```
+
+#### **Scénario 4 : Consultations médecins**
+```javascript
+// 30 médecins avec activité normale
+GET /api/medecin/patients
+POST /api/medecin/consultations
+```
+
+### 🔍 Points de surveillance
+
+#### **CPU & Mémoire**
+- **Backend** : < 75% CPU sustained
+- **Database** : < 80% CPU
+- **Nginx** : < 50% CPU
+
+#### **Database**
+- **Connections** : < 100 simultanées
+- **Query time** : < 200ms P95
+- **Deadlocks** : 0
+
+#### **Network**
+- **Bandwidth** : < 100 Mbps
+- **Latency** : < 50ms intra-container
+
+---
+
+## 🚨 Routes à éviter pendant tests de charge
+
+### ⚠️ **Opérations lourdes**
+- `GET /api/patient/dossier-medical` - Requêtes complexes
+- `POST /api/medecin/hospitalisations` - Transactions multi-tables
+- `POST /api/documents/upload` - Upload fichiers
+
+### ⚠️ **Routes admin**
+- `GET /api/admin/statistiques` - Agrégations lourdes
+- `POST /api/admin/assurances` - Création entités
+
+---
+
+## 📝 Notes d'optimisation
+
+### **Cache recommandé**
+- `GET /api/rendez-vous/creneaux/{id}` - 30 secondes
+- `GET /api/pharmacie/medicaments` - 60 secondes
+- `GET /api/medecin/patients` - 15 secondes
+
+### **Database indexing**
+- `email` sur `users` (login)
+- `id_medecin, date` sur `rendez_vous`
+- `id_medicament` sur `stock_medicaments`
+
+### **Rate limiting**
+- Auth : 10 req/s par IP
+- Consultation : 5 req/s par user
+- Upload : 2 req/s par user
+
+---
+
+**Dernière mise à jour :** 11/03/2026  
 **Version API :** v1.0.0
