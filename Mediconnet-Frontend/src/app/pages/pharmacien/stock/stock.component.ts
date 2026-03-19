@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, SidebarComponent, MenuItem, ALL_ICONS_PROVIDER } from '../../../shared';
+import { LucideAngularModule, DashboardLayoutComponent, MenuItem, ALL_ICONS_PROVIDER } from '../../../shared';
 import { PHARMACIEN_MENU_ITEMS, PHARMACIEN_SIDEBAR_TITLE } from '../shared';
 import { 
   PharmacieStockService, 
@@ -11,16 +11,19 @@ import {
   AjustementStockRequest,
   PagedResult 
 } from '../../../services/pharmacie-stock.service';
+import { FormatService } from '../../../shared/services/format.service';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ModalManagerBase } from '../../../shared/base/modal-manager.base';
 
 @Component({
   selector: 'app-pharmacien-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SidebarComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DashboardLayoutComponent, PaginationComponent],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './stock.component.html',
   styleUrls: ['./stock.component.scss']
 })
-export class PharmacienStockComponent implements OnInit {
+export class PharmacienStockComponent extends ModalManagerBase implements OnInit {
   menuItems: MenuItem[] = PHARMACIEN_MENU_ITEMS;
   sidebarTitle = PHARMACIEN_SIDEBAR_TITLE;
 
@@ -34,11 +37,19 @@ export class PharmacienStockComponent implements OnInit {
   selectedStatut = '';
   isLoading = false;
 
-  // Modal states
-  showCreateModal = false;
-  showEditModal = false;
-  showAjustementModal = false;
-  showDeleteModal = false;
+  // Modal names constants
+  readonly MODALS = {
+    CREATE: 'create',
+    EDIT: 'edit',
+    AJUSTEMENT: 'ajustement',
+    DELETE: 'delete'
+  };
+
+  // Modal states (getters for template)
+  get showCreateModal(): boolean { return this.isModalOpen(this.MODALS.CREATE); }
+  get showEditModal(): boolean { return this.isModalOpen(this.MODALS.EDIT); }
+  get showAjustementModal(): boolean { return this.isModalOpen(this.MODALS.AJUSTEMENT); }
+  get showDeleteModal(): boolean { return this.isModalOpen(this.MODALS.DELETE); }
 
   selectedMedicament: MedicamentStock | null = null;
 
@@ -69,7 +80,12 @@ export class PharmacienStockComponent implements OnInit {
     'suppositoire', 'capsule', 'sachet', 'solution', 'suspension'
   ];
 
-  constructor(private stockService: PharmacieStockService) {}
+  constructor(
+    private stockService: PharmacieStockService,
+    public formatService: FormatService
+  ) {
+    super();
+  }
 
   ngOnInit(): void {
     this.loadMedicaments();
@@ -106,28 +122,19 @@ export class PharmacienStockComponent implements OnInit {
     this.loadMedicaments();
   }
 
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.loadMedicaments();
-    }
-  }
-
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.loadMedicaments();
-    }
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadMedicaments();
   }
 
   // Create modal
   openCreateModal(): void {
     this.resetForm();
-    this.showCreateModal = true;
+    this.openModal(this.MODALS.CREATE);
   }
 
   closeCreateModal(): void {
-    this.showCreateModal = false;
+    this.closeModal(this.MODALS.CREATE);
     this.resetForm();
   }
 
@@ -160,11 +167,11 @@ export class PharmacienStockComponent implements OnInit {
       conditionnement: med.conditionnement || '',
       temperatureConservation: med.temperatureConservation || ''
     };
-    this.showEditModal = true;
+    this.openModal(this.MODALS.EDIT);
   }
 
   closeEditModal(): void {
-    this.showEditModal = false;
+    this.closeModal(this.MODALS.EDIT);
     this.selectedMedicament = null;
     this.resetForm();
   }
@@ -204,11 +211,11 @@ export class PharmacienStockComponent implements OnInit {
       typeMouvement: 'entree',
       motif: ''
     };
-    this.showAjustementModal = true;
+    this.openModal(this.MODALS.AJUSTEMENT);
   }
 
   closeAjustementModal(): void {
-    this.showAjustementModal = false;
+    this.closeModal(this.MODALS.AJUSTEMENT);
     this.selectedMedicament = null;
   }
 
@@ -227,11 +234,11 @@ export class PharmacienStockComponent implements OnInit {
   // Delete modal
   openDeleteModal(med: MedicamentStock): void {
     this.selectedMedicament = med;
-    this.showDeleteModal = true;
+    this.openModal(this.MODALS.DELETE);
   }
 
   closeDeleteModal(): void {
-    this.showDeleteModal = false;
+    this.closeModal(this.MODALS.DELETE);
     this.selectedMedicament = null;
   }
 
@@ -279,13 +286,4 @@ export class PharmacienStockComponent implements OnInit {
     }
   }
 
-  formatDate(date?: string): string {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('fr-FR');
-  }
-
-  formatPrice(price?: number): string {
-    if (price === undefined || price === null) return '-';
-    return price.toLocaleString('fr-FR') + ' FCFA';
-  }
 }

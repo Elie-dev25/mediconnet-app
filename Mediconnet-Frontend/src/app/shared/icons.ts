@@ -132,9 +132,9 @@ import {
   Play,
   Pause,
   PauseCircle,
-  Square,
   ToggleLeft,
   ToggleRight,
+  Square,
   Power,
   Zap,
   
@@ -158,6 +158,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LayoutList,
+  ShoppingCart,
   Settings,
   Settings2,
   Building2,
@@ -229,7 +230,11 @@ import {
   ScanLine,
   CirclePlus,
   BrainCircuit,
-  FolderCheck
+  FolderCheck,
+  
+  // Icons for history view
+  ArrowUpDown,
+  Layers
 } from 'lucide-angular';
 
 // Export du module et des utilitaires Lucide
@@ -373,7 +378,9 @@ export const ALL_ICONS = {
   'pause-circle': PauseCircle,
   Square,
   ToggleLeft,
+  'toggle-left': ToggleLeft,
   ToggleRight,
+  'toggle-right': ToggleRight,
   Power,
   Zap,
   
@@ -398,6 +405,7 @@ export const ALL_ICONS = {
   LayoutDashboard,
   LayoutGrid,
   LayoutList,
+  ShoppingCart,
   Settings,
   Settings2,
   Building2,
@@ -481,7 +489,13 @@ export const ALL_ICONS = {
   BrainCircuit,
   'brain-circuit': BrainCircuit,
   FolderCheck,
-  'folder-check': FolderCheck
+  'folder-check': FolderCheck,
+  
+  // History view icons
+  ArrowUpDown,
+  'arrow-up-down': ArrowUpDown,
+  Layers,
+  'layers': Layers
 };
 
 /**

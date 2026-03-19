@@ -2,11 +2,11 @@
 
 ## ?? Vue d'Ensemble
 
-Backend .NET 10 pour la plateforme hospitaliËre MediConnect avec systËme multi-rÙles et authentification JWT.
+Backend .NET 10 pour la plateforme hospitali√®re MediConnect avec syst√®me multi-r√¥les et authentification JWT.
 
-## ?? DÈmarrage Rapide
+## ?? D√©marrage Rapide
 
-### PrÈrequis
+### Pr√©requis
 - .NET 10 SDK
 - SQL Server (ou LocalDB)
 - Visual Studio 2022 ou VS Code
@@ -20,18 +20,42 @@ git clone ...
 # 2. Restaurer les packages
 dotnet restore
 
-# 3. Configurer la chaÓne de connexion
-# …diter appsettings.json et modifier DefaultConnection
+# 3. Configurer la cha√Æne de connexion
+# √âditer appsettings.json et modifier DefaultConnection
 
-# 4. CrÈer et appliquer les migrations
+# 4. Cr√©er et appliquer les migrations
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 
-# 5. DÈmarrer l'application
+# 5. D√©marrer l'application
 dotnet run
 ```
 
-### VÈrification
+### Cr√©er un administrateur (CLI)
+
+Pour cr√©er un compte administrateur sans le coder en dur, utilisez le mode CLI pr√©vu :
+
+```bash
+# Exemple avec mot de passe g√©n√©r√© automatiquement
+dotnet run --seed-admin --email admin@votre-clinique.com --nom "Admin" --prenom "Principal"
+
+# Exemple avec mot de passe fourni
+dotnet run --seed-admin --email admin@votre-clinique.com --password "MonMot2PasseFort!" --telephone 699112233
+```
+
+Options disponibles :
+
+| Option | Obligatoire | Description |
+|--------|-------------|-------------|
+| `--email` | ‚úÖ Oui | Email de connexion de l'admin |
+| `--nom` | ‚ùå Non (d√©faut `Admin`) | Nom |
+| `--prenom` | ‚ùå Non (d√©faut `Systeme`) | Pr√©nom |
+| `--telephone` | ‚ùå Non (d√©faut `000000000`) | T√©l√©phone |
+| `--password` | ‚ùå Non | Mot de passe. S'il n'est pas fourni, un mot de passe s√©curis√© est g√©n√©r√© et affich√© dans la console |
+
+> ‚ÑπÔ∏è Le script utilise le m√™me service de cr√©ation d'utilisateur que l'API (`IUserManagementService`), donc toutes les validations habituelles s'appliquent (email unique, etc.).
+
+### V√©rification
 ```
 Swagger UI: https://localhost:5001/swagger
 Health Check: https://localhost:5001/health
@@ -81,15 +105,15 @@ Validators/         ? Input validation
 ### Roles Disponibles
 | Role | ID | Permissions |
 |------|-----|-----------|
-| Patient | 1 | Voir appointments, dossier mÈdical |
-| Doctor | 2 | GÈrer patients, crÈer ordonnances |
+| Patient | 1 | Voir appointments, dossier m√©dical |
+| Doctor | 2 | G√©rer patients, cr√©er ordonnances |
 | Nurse | 3 | Enregistrer vitals, assister patients |
-| Cashier | 4 | GÈrer factures, paiements |
-| Administrator | 5 | AccËs complet au systËme |
+| Cashier | 4 | G√©rer factures, paiements |
+| Administrator | 5 | Acc√®s complet au syst√®me |
 
 ### Dashboards Redirection
 
-AprËs login, les utilisateurs sont redirigÈs vers leur dashboard :
+Apr√®s login, les utilisateurs sont redirig√©s vers leur dashboard :
 
 ```csharp
 {
@@ -105,11 +129,11 @@ AprËs login, les utilisateurs sont redirigÈs vers leur dashboard :
 
 ### Authentification
 
-| Endpoint | MÈthode | Description | Auth |
+| Endpoint | M√©thode | Description | Auth |
 |----------|---------|-------------|------|
 | `/auth/login` | POST | Connexion | ? |
 | `/auth/register` | POST | Enregistrement | ? |
-| `/auth/logout` | POST | DÈconnexion | ? |
+| `/auth/logout` | POST | D√©connexion | ? |
 | `/auth/profile` | GET | Profil utilisateur | ? |
 | `/auth/refresh-token` | POST | Renouveler token | ? |
 | `/auth/validate` | POST | Valider token | ? |
@@ -155,9 +179,9 @@ POST /api/auth/login
 ### Avec Insomnia/Postman
 
 1. Importer `test-api.http`
-2. ExÈcuter les requÍtes dans l'ordre
-3. Copier le token de la rÈponse login
-4. Utiliser le token pour les requÍtes protÈgÈes
+2. Ex√©cuter les requ√™tes dans l'ordre
+3. Copier le token de la r√©ponse login
+4. Utiliser le token pour les requ√™tes prot√©g√©es
 
 ### Avec curl
 
@@ -172,24 +196,24 @@ curl -X GET https://localhost:5001/api/auth/profile \
   -H "Authorization: Bearer TOKEN"
 ```
 
-## ?? Base de DonnÈes
+## ?? Base de Donn√©es
 
-### EntitÈs Principales
+### Entit√©s Principales
 
-- **User** - Utilisateurs du systËme
-- **Role** - RÙles et leurs permissions
+- **User** - Utilisateurs du syst√®me
+- **Role** - R√¥les et leurs permissions
 - **UserAuditLog** - Logs des actions utilisateurs
 
 ### Migrations
 
 ```bash
-# CrÈer une migration
+# Cr√©er une migration
 dotnet ef migrations add NomMigration
 
 # Appliquer les migrations
 dotnet ef database update
 
-# RÈinitialiser la DB
+# R√©initialiser la DB
 dotnet ef database drop --force
 ```
 
@@ -215,7 +239,7 @@ dotnet ef database drop --force
 
 ### Configuration Serilog
 
-Les logs sont sauvegardÈs dans `/logs/` :
+Les logs sont sauvegard√©s dans `/logs/` :
 
 ```
 logs/
@@ -225,13 +249,13 @@ logs/
 ```
 
 ### Niveaux de Log
-- **Debug** - DÈveloppement
+- **Debug** - D√©veloppement
 - **Information** - Action importantes
-- **Warning** - ProblËmes potentiels
+- **Warning** - Probl√®mes potentiels
 - **Error** - Erreurs
 - **Fatal** - Erreurs critiques
 
-## ?? DÈploiement
+## ?? D√©ploiement
 
 ### Production
 
@@ -249,23 +273,23 @@ docker build -t mediconnect-backend .
 docker run -p 5000:5000 mediconnect-backend
 ```
 
-## ?? DÈpannage
+## ?? D√©pannage
 
-### ProblËme: "Migrations" not found
+### Probl√®me: "Migrations" not found
 ```bash
 dotnet tool install --global dotnet-ef
 dotnet ef migrations add InitialCreate
 ```
 
-### ProblËme: Connexion base de donnÈes Èchoue
-- VÈrifier SQL Server est dÈmarrÈ
-- VÈrifier ConnectionString dans appsettings.json
-- VÈrifier credentials DB
+### Probl√®me: Connexion base de donn√©es √©choue
+- V√©rifier SQL Server est d√©marr√©
+- V√©rifier ConnectionString dans appsettings.json
+- V√©rifier credentials DB
 
-### ProblËme: JWT Token invalide
-- VÈrifier le Jwt:Secret dans appsettings.json
-- VÈrifier l'expiration du token
-- VÈrifier le format Authorization header: `Bearer <token>`
+### Probl√®me: JWT Token invalide
+- V√©rifier le Jwt:Secret dans appsettings.json
+- V√©rifier l'expiration du token
+- V√©rifier le format Authorization header: `Bearer <token>`
 
 ## ?? Ressources
 
@@ -278,10 +302,10 @@ dotnet ef migrations add InitialCreate
 
 Pour contribuer au projet:
 
-1. CrÈer une branche feature
+1. Cr√©er une branche feature
 2. Faire les changements
 3. Commiter avec messages clairs
-4. Pousser et crÈer une Pull Request
+4. Pousser et cr√©er une Pull Request
 
 ## ?? Licence
 
@@ -289,5 +313,5 @@ MIT
 
 ---
 
-**Questions? Consultez la documentation complËte dans le dossier projet.**
+**Questions? Consultez la documentation compl√®te dans le dossier projet.**
 

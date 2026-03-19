@@ -4,7 +4,6 @@
     <div class="page-header">
       <div class="header-content">
         <h1><lucide-icon name="settings" [size]="28"></lucide-icon> Paramètres</h1>
-        <p>Configuration du système et gestion des ressources</p>
       </div>
     </div>
 
@@ -287,7 +286,7 @@
 
               <div class="standard-actions">
                 <button class="btn-icon" (click)="toggleStandardActif(standard)" [title]="standard.actif ? 'Désactiver' : 'Activer'">
-                  <lucide-icon [name]="standard.actif ? 'toggle-right' : 'toggle-left'" [size]="18"></lucide-icon>
+                  <lucide-icon [name]="standard.actif ? 'check-circle' : 'circle'" [size]="18"></lucide-icon>
                 </button>
                 <button class="btn-icon" (click)="openStandardModal(standard)" title="Modifier">
                   <lucide-icon name="edit" [size]="18"></lucide-icon>

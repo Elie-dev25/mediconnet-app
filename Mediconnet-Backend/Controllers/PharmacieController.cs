@@ -37,6 +37,67 @@ public class PharmacieController : BaseApiController
         }
     }
 
+    [HttpGet("profile")]
+    public async Task<ActionResult<PharmacieProfileDto>> GetProfile()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var profile = await _stockService.GetProfileAsync(userId.Value);
+            return Ok(profile);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération profile pharmacie");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<PharmacieDashboardDto>> GetDashboard()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var dashboard = await _stockService.GetDashboardAsync(userId.Value);
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération dashboard pharmacie");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpPut("profile")]
+    public async Task<ActionResult<PharmacieProfileDto>> UpdateProfile([FromBody] UpdatePharmacieProfileRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var updatedProfile = await _stockService.UpdateProfileAsync(userId.Value, request);
+            return Ok(updatedProfile);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur mise à jour profile pharmacie");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
     [HttpGet("alertes")]
     public async Task<ActionResult<List<AlerteStockDto>>> GetAlertes()
     {
@@ -86,6 +147,36 @@ public class PharmacieController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur récupération médicament {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpGet("medicaments/{id}/fournisseurs")]
+    public async Task<ActionResult<List<FournisseurMedicamentDto>>> GetFournisseursByMedicament(int id)
+    {
+        try
+        {
+            var fournisseurs = await _stockService.GetFournisseursByMedicamentAsync(id);
+            return Ok(fournisseurs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération fournisseurs du médicament {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpGet("medicaments/{id}/historique")]
+    public async Task<ActionResult<List<HistoriqueFournisseurMedicamentDto>>> GetHistoriqueFournisseurMedicament(int id)
+    {
+        try
+        {
+            var historique = await _stockService.GetHistoriqueFournisseurMedicamentAsync(id);
+            return Ok(historique);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération historique du médicament {Id}", id);
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -219,13 +310,51 @@ public class PharmacieController : BaseApiController
             var fournisseur = await _stockService.UpdateFournisseurAsync(id, request);
             return Ok(fournisseur);
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
+            _logger.LogWarning(ex, "Fournisseur non trouvé: {Id}", id);
             return NotFound(new { message = "Fournisseur non trouvé" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur mise à jour fournisseur {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpPatch("fournisseurs/{id}/toggle-statut")]
+    public async Task<ActionResult<FournisseurDto>> ToggleFournisseurStatut(int id)
+    {
+        try
+        {
+            var fournisseur = await _stockService.ToggleFournisseurStatutAsync(id);
+            return Ok(fournisseur);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Fournisseur non trouvé: {Id}", id);
+            return NotFound(new { message = "Fournisseur non trouvé" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur changement statut fournisseur {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    [HttpDelete("fournisseurs/{id}")]
+    public async Task<ActionResult> DeleteFournisseur(int id)
+    {
+        try
+        {
+            var success = await _stockService.DeleteFournisseurAsync(id);
+            if (!success)
+                return NotFound(new { message = "Fournisseur non trouvé" });
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur suppression fournisseur {Id}", id);
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

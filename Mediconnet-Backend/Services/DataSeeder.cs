@@ -24,7 +24,6 @@ public class DataSeeder
     public async Task SeedAsync()
     {
         await SeedServicesAsync();
-        await SeedAdminAsync();
     }
 
     /// <summary>
@@ -52,51 +51,4 @@ public class DataSeeder
         }
     }
 
-    /// <summary>
-    /// Cree l'administrateur par defaut si il n'existe pas
-    /// </summary>
-    private async Task SeedAdminAsync()
-    {
-        const string adminEmail = "admin@gmail.com";
-        const string adminPassword = "admin00";
-
-        // Verifier si l'admin existe deja
-        var existingAdmin = await _context.Utilisateurs
-            .FirstOrDefaultAsync(u => u.Email == adminEmail);
-
-        if (existingAdmin != null)
-        {
-            // Mettre a jour le mot de passe si necessaire
-            existingAdmin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Admin mot de passe mis a jour");
-            return;
-        }
-
-        // Creer l'utilisateur admin
-        var admin = new Utilisateur
-        {
-            Nom = "Admin",
-            Prenom = "System",
-            Email = adminEmail,
-            Telephone = "000000000",
-            Role = "administrateur",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Utilisateurs.Add(admin);
-        await _context.SaveChangesAsync();
-
-        // Creer l'entree dans la table administrateur
-        var administrateur = new Administrateur
-        {
-            IdUser = admin.IdUser
-        };
-
-        _context.Administrateurs.Add(administrateur);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation($"Admin cree avec succes: {adminEmail}");
-    }
 }

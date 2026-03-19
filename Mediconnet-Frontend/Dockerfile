@@ -16,15 +16,16 @@ COPY . .
 # Builder l'application avec la syntaxe Angular 21
 RUN npm run build -- --configuration=production --output-hashing=all
 
-# Étape de production
+# Étape de production - Servir les fichiers statiques
 FROM nginx:alpine
-
-# Copier la configuration Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copier les fichiers buildés vers nginx
 COPY --from=build /app/dist/mediconnet-frontend /usr/share/nginx/html
 
+# Utiliser notre configuration nginx SPA (fallback Angular)
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Configuration nginx minimale (le reverse proxy principal gère le routage)
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -9,7 +9,7 @@ import {
   LayoutDashboard, FolderOpen, UserCog, User, Users, Building2, BarChart3, Shield, ShieldCheck,
   Stethoscope, HeartPulse, ClipboardList, FileText, UserPlus, CheckCircle, Clock,
   CreditCard, Wallet, PiggyBank, Banknote, TrendingUp, TrendingDown, DollarSign,
-  ArrowDownRight, ArrowUpRight,
+  ArrowDownRight, ArrowUpRight, ArrowUpDown,
   Package, History, Search, Plus, Pencil, Trash2, SlidersHorizontal, Filter,
   AlertCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, Loader2,
   PackageX, Sparkles, Truck, ClipboardCheck, RotateCcw, ArrowDownCircle, ArrowUpCircle,
@@ -17,7 +17,7 @@ import {
   Syringe, BedDouble, Activity,
   Microscope, FilePlus, UploadCloud,
   FileCheck, FileClock,
-  Cloud
+  Cloud, Layers
 } from 'lucide-angular';
 
 export interface MenuItem {
@@ -43,7 +43,7 @@ export interface MenuItem {
         'shield-check': ShieldCheck,
         Stethoscope, HeartPulse, ClipboardList, FileText, UserPlus, CheckCircle, Clock,
         CreditCard, Wallet, PiggyBank, Banknote, TrendingUp, TrendingDown, DollarSign,
-        ArrowDownRight, ArrowUpRight,
+        ArrowDownRight, ArrowUpRight, ArrowUpDown, 'arrow-up-down': ArrowUpDown,
         Package, History, Search, Plus, Pencil, Trash2, SlidersHorizontal, Filter,
         AlertCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, Loader2,
         PackageX, Sparkles, Truck, ClipboardCheck, RotateCcw, ArrowDownCircle, ArrowUpCircle,
@@ -54,7 +54,8 @@ export interface MenuItem {
         UploadCloud, 'upload-cloud': UploadCloud,
         FileCheck, 'file-check': FileCheck,
         FileClock, 'file-clock': FileClock,
-        Cloud, 'cloud': Cloud
+        Cloud, 'cloud': Cloud,
+        Layers, 'layers': Layers
       })
     }
   ],

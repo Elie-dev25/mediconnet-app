@@ -216,8 +216,20 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/pharmacien/ordonnances/ordonnances.component').then(m => m.PharmacienOrdonnancesComponent)
       },
       { 
+        path: 'profile', 
+        loadComponent: () => import('./pages/pharmacien/profile/profile.component').then(m => m.PharmacienProfileComponent)
+      },
+      { 
+        path: 'commandes', 
+        loadComponent: () => import('./pages/pharmacien/commandes/commandes.component').then(m => m.PharmacienCommandesComponent)
+      },
+      { 
         path: 'historique', 
         loadComponent: () => import('./pages/pharmacien/historique/historique.component').then(m => m.PharmacienHistoriqueComponent)
+      },
+      { 
+        path: 'fournisseurs', 
+        loadComponent: () => import('./pages/pharmacien/fournisseurs/fournisseurs.component').then(m => m.PharmacienFournisseursComponent)
       }
     ]
   },

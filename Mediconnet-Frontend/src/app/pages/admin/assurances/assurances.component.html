@@ -11,7 +11,6 @@
           <lucide-icon name="shield-check" [size]="28"></lucide-icon>
           Assurances
         </h1>
-        <p class="subtitle">Gérez le catalogue des compagnies d'assurance</p>
       </div>
       <button class="btn-primary" (click)="openCreateModal()">
         <lucide-icon name="plus" [size]="18"></lucide-icon>
@@ -68,7 +67,7 @@
               <lucide-icon name="edit" [size]="16"></lucide-icon>
             </button>
             <button class="btn-icon-sm" (click)="toggleStatus(assurance)" [title]="assurance.isActive ? 'Désactiver' : 'Activer'">
-              <lucide-icon [name]="assurance.isActive ? 'toggle-right' : 'toggle-left'" [size]="16"></lucide-icon>
+              <lucide-icon [name]="assurance.isActive ? 'check-circle' : 'circle'" [size]="16"></lucide-icon>
             </button>
             <button class="btn-icon-sm danger" (click)="deleteAssurance(assurance)" title="Supprimer">
               <lucide-icon name="trash-2" [size]="16"></lucide-icon>

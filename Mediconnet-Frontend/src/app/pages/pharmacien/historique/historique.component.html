@@ -1,102 +1,493 @@
-<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
   <div class="historique-page">
-    <!-- Header -->
+    <!-- Header unifié -->
     <div class="page-header">
       <div class="header-content">
-        <h1><lucide-icon name="history" [size]="28"></lucide-icon> Historique des mouvements</h1>
-        <p>Consultez l'historique des entrées et sorties de stock</p>
+        <div class="header-title">
+          <h1><lucide-icon name="history" [size]="24"></lucide-icon> Historique</h1>
+        </div>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="filter-group">
-        <label>Du</label>
-        <input type="date" [(ngModel)]="dateDebut" (change)="onFilterChange()">
+    <!-- Onglets -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === HistoriqueTab.MOUVEMENTS"
+          (click)="switchTab(HistoriqueTab.MOUVEMENTS)">
+          <lucide-icon name="arrow-up-down" [size]="16"></lucide-icon>
+          Mouvements
+          <span class="tab-count">{{ totalItems }}</span>
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === HistoriqueTab.COMMANDES"
+          (click)="switchTab(HistoriqueTab.COMMANDES)">
+          <lucide-icon name="package" [size]="16"></lucide-icon>
+          Commandes
+          <span class="tab-count">{{ totalCommandes }}</span>
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === HistoriqueTab.DISPENSATIONS"
+          (click)="switchTab(HistoriqueTab.DISPENSATIONS)">
+          <lucide-icon name="pill" [size]="16"></lucide-icon>
+          Dispensations
+          <span class="tab-count">{{ totalDispensations }}</span>
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === HistoriqueTab.CONSOLIDE"
+          (click)="switchTab(HistoriqueTab.CONSOLIDE)">
+          <lucide-icon name="layers" [size]="16"></lucide-icon>
+          Vue consolidée
+          <span class="tab-count">{{ totalConsolide }}</span>
+        </button>
       </div>
-      <div class="filter-group">
-        <label>Au</label>
-        <input type="date" [(ngModel)]="dateFin" (change)="onFilterChange()">
-      </div>
-      <div class="filter-group">
-        <label>Type</label>
-        <select [(ngModel)]="typeMouvement" (change)="onFilterChange()">
-          <option *ngFor="let type of typesMouvement" [value]="type.value">{{ type.label }}</option>
-        </select>
-      </div>
-      <button class="btn btn-secondary" (click)="clearFilters()">
-        <lucide-icon name="x" [size]="16"></lucide-icon>
-        Réinitialiser
-      </button>
     </div>
 
-    <!-- Stats summary -->
-    <div class="stats-summary">
-      <span class="stat-item">
-        <strong>{{ totalItems }}</strong> mouvements trouvés
-      </span>
-    </div>
-
-    <!-- Table -->
-    <div class="table-container">
-      <div class="loading-overlay" *ngIf="isLoading">
-        <div class="spinner"></div>
+    <!-- Onglet Mouvements -->
+    <div *ngIf="activeTab === HistoriqueTab.MOUVEMENTS" class="tab-content">
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="dateDebut" (change)="onFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" [(ngModel)]="dateFin" (change)="onFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Type</label>
+          <select [(ngModel)]="typeMouvement" (change)="onFilterChange()">
+            <option *ngFor="let type of typesMouvement" [value]="type.value">{{ type.label }}</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" (click)="clearFilters()">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+          Réinitialiser
+        </button>
       </div>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Médicament</th>
-            <th>Quantité</th>
-            <th>Stock après</th>
-            <th>Motif</th>
-            <th>Par</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let mvt of mouvements">
-            <td class="date-cell">{{ formatDate(mvt.dateMouvement) }}</td>
-            <td>
-              <div class="type-badge" [ngClass]="getTypeClass(mvt.typeMouvement)">
-                <lucide-icon [name]="getTypeIcon(mvt.typeMouvement)" [size]="14"></lucide-icon>
-                {{ getTypeLabel(mvt.typeMouvement) }}
-              </div>
-            </td>
-            <td>
-              <strong>{{ mvt.nomMedicament }}</strong>
-            </td>
-            <td>
-              <span class="quantity" [ngClass]="getTypeClass(mvt.typeMouvement)">
-                {{ getQuantitySign(mvt.typeMouvement) }}{{ mvt.quantite }}
-              </span>
-            </td>
-            <td>{{ mvt.stockApresMouvement }}</td>
-            <td class="motif-cell">{{ mvt.motif || '-' }}</td>
-            <td>{{ mvt.nomUtilisateur }}</td>
-          </tr>
-          <tr *ngIf="mouvements.length === 0 && !isLoading">
-            <td colspan="7" class="empty-state">
-              <lucide-icon name="inbox" [size]="48"></lucide-icon>
-              <p>Aucun mouvement trouvé</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- Stats summary -->
+      <div class="stats-summary">
+        <div class="export-dropdown">
+          <button class="btn btn-primary" (click)="toggleExportDropdown('mouvements')">
+            <lucide-icon name="download" [size]="16"></lucide-icon>
+            Exporter
+            <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+          </button>
+          <div class="dropdown-menu" [class.show]="activeExportDropdown === 'mouvements'" @fadeOut>
+            <button class="dropdown-item" (click)="exportMouvements()">
+              <lucide-icon name="file-text" [size]="14"></lucide-icon>
+              Exporter en CSV
+            </button>
+            <button class="dropdown-item" (click)="exportMouvementsPdf()">
+              <lucide-icon name="file" [size]="14"></lucide-icon>
+              Exporter en PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table mouvements -->
+      <div class="table-container">
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="spinner"></div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Médicament</th>
+              <th>Quantité</th>
+              <th>Stock après</th>
+              <th>Motif</th>
+              <th>Par</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let mvt of mouvements">
+              <td class="date-cell">{{ formatService.formatDate(mvt.dateMouvement) }}</td>
+              <td>
+                <div class="type-badge" [ngClass]="getTypeClass(mvt.typeMouvement)">
+                  <lucide-icon [name]="getTypeIcon(mvt.typeMouvement)" [size]="14"></lucide-icon>
+                  {{ getTypeLabel(mvt.typeMouvement) }}
+                </div>
+              </td>
+              <td>
+                <strong>{{ mvt.nomMedicament }}</strong>
+              </td>
+              <td>
+                <span class="quantity" [ngClass]="getTypeClass(mvt.typeMouvement)">
+                  {{ getQuantitySign(mvt.typeMouvement) }}{{ mvt.quantite }}
+                </span>
+              </td>
+              <td>{{ mvt.stockApresMouvement }}</td>
+              <td class="motif-cell">{{ mvt.motif || '-' }}</td>
+              <td>{{ mvt.nomUtilisateur }}</td>
+            </tr>
+            <tr *ngIf="mouvements.length === 0 && !isLoading">
+              <td colspan="7" class="empty-state">
+                <lucide-icon name="inbox" [size]="48"></lucide-icon>
+                <p>Aucun mouvement trouvé</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination mouvements -->
+      <app-pagination
+        [currentPage]="currentPage"
+        [totalPages]="totalPages"
+        [totalItems]="totalItems"
+        [pageSize]="pageSize"
+        [loading]="isLoading"
+        (pageChange)="onPageChangeMouvements($event)">
+      </app-pagination>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
-        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
-        Précédent
-      </button>
-      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
-      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Suivant
-        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
-      </button>
+    <!-- Onglet Commandes -->
+    <div *ngIf="activeTab === HistoriqueTab.COMMANDES" class="tab-content">
+      <!-- Filters commandes -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="dateDebutCommande" (change)="onCommandesFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" [(ngModel)]="dateFinCommande" (change)="onCommandesFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="statutCommande" (change)="onCommandesFilterChange()">
+            <option value="">Tous</option>
+            <option value="brouillon">Brouillon</option>
+            <option value="envoyee">Envoyée</option>
+            <option value="partiellement_recue">Partiellement reçue</option>
+            <option value="recue">Reçue</option>
+            <option value="annulee">Annulée</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Fournisseur</label>
+          <input type="text" [(ngModel)]="fournisseurFilter" (change)="onCommandesFilterChange()" placeholder="Nom fournisseur">
+        </div>
+        <button class="btn btn-secondary" (click)="statutCommande=''; fournisseurFilter=''; dateDebutCommande=''; dateFinCommande=''; onCommandesFilterChange()">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+          Réinitialiser
+        </button>
+      </div>
+
+      <!-- Stats commandes -->
+      <div class="stats-summary">
+        <div class="export-dropdown">
+          <button class="btn btn-primary" (click)="toggleExportDropdown('commandes')">
+            <lucide-icon name="download" [size]="16"></lucide-icon>
+            Exporter
+            <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+          </button>
+          <div class="dropdown-menu" [class.show]="activeExportDropdown === 'commandes'" @fadeOut>
+            <button class="dropdown-item" (click)="exportCommandes()">
+              <lucide-icon name="file-text" [size]="14"></lucide-icon>
+              Exporter en CSV
+            </button>
+            <button class="dropdown-item" (click)="exportCommandesPdf()">
+              <lucide-icon name="file" [size]="14"></lucide-icon>
+              Exporter en PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table commandes -->
+      <div class="table-container">
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="spinner"></div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>N° Commande</th>
+              <th>Fournisseur</th>
+              <th>Montant</th>
+              <th>Statut</th>
+              <th>Réception</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cmd of commandes">
+              <td class="date-cell">{{ formatService.formatDate(cmd.dateCommande) }}</td>
+              <td><strong>#{{ cmd.idCommande }}</strong></td>
+              <td>{{ cmd.nomFournisseur }}</td>
+              <td>{{ cmd.montantTotal.toLocaleString('fr-FR') }} FCFA</td>
+              <td>
+                <div class="type-badge" [ngClass]="getStatutCommandeClass(cmd.statut)">
+                  <lucide-icon [name]="getStatutCommandeIcon(cmd.statut)" [size]="14"></lucide-icon>
+                  {{ getStatutCommandeLabel(cmd.statut) }}
+                </div>
+              </td>
+              <td>{{ cmd.dateReceptionReelle ? formatService.formatDate(cmd.dateReceptionReelle) : '-' }}</td>
+            </tr>
+            <tr *ngIf="commandes.length === 0 && !isLoading">
+              <td colspan="6" class="empty-state">
+                <lucide-icon name="inbox" [size]="48"></lucide-icon>
+                <p>Aucune commande trouvée</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination commandes -->
+      <app-pagination
+        [currentPage]="currentPageCommandes"
+        [totalPages]="totalPagesCommandes"
+        [totalItems]="totalCommandes"
+        [pageSize]="pageSize"
+        [loading]="isLoading"
+        (pageChange)="onPageChangeCommandes($event)">
+      </app-pagination>
+    </div>
+
+    <!-- Onglet Dispensations -->
+    <div *ngIf="activeTab === HistoriqueTab.DISPENSATIONS" class="tab-content">
+      <!-- Filters dispensations -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="dateDebutDispensation" (change)="onDispensationsFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" [(ngModel)]="dateFinDispensation" (change)="onDispensationsFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label>Patient</label>
+          <input type="text" [(ngModel)]="patientFilter" (change)="onDispensationsFilterChange()" placeholder="Nom patient">
+        </div>
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="statutDispensation" (change)="onDispensationsFilterChange()">
+            <option value="">Tous</option>
+            <option value="en_attente">En attente</option>
+            <option value="en_cours">En cours</option>
+            <option value="complete">Complète</option>
+            <option value="annulee">Annulée</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" (click)="patientFilter=''; statutDispensation=''; dateDebutDispensation=''; dateFinDispensation=''; onDispensationsFilterChange()">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+          Réinitialiser
+        </button>
+      </div>
+
+      <!-- Stats dispensations -->
+      <div class="stats-summary">
+        <div class="export-dropdown">
+          <button class="btn btn-primary" (click)="toggleExportDropdown('dispensations')">
+            <lucide-icon name="download" [size]="16"></lucide-icon>
+            Exporter
+            <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+          </button>
+          <div class="dropdown-menu" [class.show]="activeExportDropdown === 'dispensations'" @fadeOut>
+            <button class="dropdown-item" (click)="exportDispensations()">
+              <lucide-icon name="file-text" [size]="14"></lucide-icon>
+              Exporter en CSV
+            </button>
+            <button class="dropdown-item" (click)="exportDispensationsPdf()">
+              <lucide-icon name="file" [size]="14"></lucide-icon>
+              Exporter en PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table dispensations -->
+      <div class="table-container">
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="spinner"></div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Ordonnance</th>
+              <th>Médicaments</th>
+              <th>Statut</th>
+              <th>Pharmacien</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let disp of dispensations">
+              <td class="date-cell">{{ formatService.formatDate(disp.dateDispensation) }}</td>
+              <td>{{ disp.nomPatient }}</td>
+              <td><strong>#{{ disp.idPrescription }}</strong></td>
+              <td>{{ disp.lignes?.length || 0 }} médicaments</td>
+              <td>
+                <div class="type-badge" [ngClass]="getStatutDispensationClass(disp.statut)">
+                  <lucide-icon [name]="getStatutDispensationIcon(disp.statut)" [size]="14"></lucide-icon>
+                  {{ getStatutDispensationLabel(disp.statut) }}
+                </div>
+              </td>
+              <td>{{ disp.nomPharmacien }}</td>
+            </tr>
+            <tr *ngIf="dispensations.length === 0 && !isLoading">
+              <td colspan="6" class="empty-state">
+                <lucide-icon name="inbox" [size]="48"></lucide-icon>
+                <p>Aucune dispensation trouvée</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination dispensations -->
+      <app-pagination
+        [currentPage]="currentPageDispensations"
+        [totalPages]="totalPagesDispensations"
+        [totalItems]="totalDispensations"
+        [pageSize]="pageSize"
+        [loading]="isLoading"
+        (pageChange)="onPageChangeDispensations($event)">
+      </app-pagination>
+    </div>
+
+    <!-- Onglet Vue consolidée -->
+    <div *ngIf="activeTab === HistoriqueTab.CONSOLIDE" class="tab-content">
+      <!-- Filters consolidés -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="dateDebutConsolide" (change)="onConsolideDateChange()">
+        </div>
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" [(ngModel)]="dateFinConsolide" (change)="onConsolideDateChange()">
+        </div>
+        <div class="filter-group">
+          <label>Type</label>
+          <select [(ngModel)]="typeActivite" (change)="onConsolideFilterChange()">
+            <option value="">Tous</option>
+            <option value="mouvement">Mouvements</option>
+            <option value="commande">Commandes</option>
+            <option value="dispensation">Dispensations</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Recherche</label>
+          <input type="text" [(ngModel)]="rechercheTexte" (change)="onConsolideFilterChange()" placeholder="Médicament, patient, fournisseur...">
+        </div>
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="statutGlobal" (change)="onConsolideFilterChange()">
+            <option value="">Tous</option>
+            <option value="entree">Entrée</option>
+            <option value="sortie">Sortie</option>
+            <option value="brouillon">Brouillon</option>
+            <option value="envoyee">Envoyée</option>
+            <option value="recue">Reçue</option>
+            <option value="en_attente">En attente</option>
+            <option value="complete">Complète</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-icon" (click)="clearConsolideFilters()" aria-label="Réinitialiser les filtres">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Stats consolidées -->
+      <div class="stats-summary">
+        <div class="export-dropdown">
+          <button class="btn btn-primary" (click)="toggleExportDropdown('consolide')">
+            <lucide-icon name="download" [size]="16"></lucide-icon>
+            Exporter
+            <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+          </button>
+          <div class="dropdown-menu" [class.show]="activeExportDropdown === 'consolide'" @fadeOut>
+            <button class="dropdown-item" (click)="exportConsolide()">
+              <lucide-icon name="file-text" [size]="14"></lucide-icon>
+              Exporter en CSV
+            </button>
+            <button class="dropdown-item" (click)="exportConsolidePdf()">
+              <lucide-icon name="file" [size]="14"></lucide-icon>
+              Exporter en PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table consolidé -->
+      <div class="table-container">
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="spinner"></div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Utilisateur</th>
+              <th>Montant</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of historiqueConsolide">
+              <td class="date-cell">{{ formatService.formatDate(item.date) }}</td>
+              <td>
+                <div class="type-badge" [ngClass]="getConsolideClass(item.type)">
+                  <lucide-icon [name]="getConsolideIcon(item.type)" [size]="14"></lucide-icon>
+                  {{ getConsolideLabel(item.type) }}
+                </div>
+              </td>
+              <td>
+                <strong>{{ item.description }}</strong>
+                <div class="item-details" *ngIf="item.type === 'mouvement'">
+                  <small>{{ item.details.quantite }} {{ item.details.nomMedicament }}</small>
+                </div>
+                <div class="item-details" *ngIf="item.type === 'commande'">
+                  <small>{{ item.details.lignes?.length || 0 }} médicaments</small>
+                </div>
+                <div class="item-details" *ngIf="item.type === 'dispensation'">
+                  <small>{{ item.details.lignes?.length || 0 }} médicaments</small>
+                </div>
+              </td>
+              <td>{{ item.utilisateur }}</td>
+              <td>
+                <span *ngIf="item.montant" class="montant">
+                  {{ item.montant.toLocaleString('fr-FR') }} FCFA
+                </span>
+                <span *ngIf="!item.montant">-</span>
+              </td>
+              <td>
+                <div class="type-badge" [ngClass]="getStatutBadgeClass(item.type, item.statut || '')">
+                  <lucide-icon [name]="getStatutBadgeIcon(item.type, item.statut || '')" [size]="14"></lucide-icon>
+                  {{ getStatutBadgeLabel(item.type, item.statut || '') }}
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="historiqueConsolide.length === 0 && !isLoading">
+              <td colspan="6" class="empty-state">
+                <lucide-icon name="inbox" [size]="48"></lucide-icon>
+                <p>Aucune activité trouvée</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</app-sidebar>
+</app-dashboard-layout>

@@ -1,28 +1,22 @@
-<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
   <div class="ordonnances-page">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1><lucide-icon name="pill" [size]="28"></lucide-icon> Ordonnances à dispenser</h1>
-        <p>Gérez les prescriptions en attente de dispensation</p>
+    <!-- Barre de recherche -->
+    <div class="search-bar">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher par nom de patient..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="onSearch()"
+          >
+        </div>
+        <button class="btn-search" (click)="onSearch()">
+          <lucide-icon name="search" [size]="16"></lucide-icon>
+          <span class="btn-text">Rechercher</span>
+        </button>
       </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="search-box">
-        <lucide-icon name="search" [size]="18"></lucide-icon>
-        <input 
-          type="text" 
-          placeholder="Rechercher par nom de patient..."
-          [(ngModel)]="searchTerm"
-          (keyup.enter)="onSearch()"
-        >
-      </div>
-      <button class="btn btn-secondary" (click)="onSearch()">
-        <lucide-icon name="search" [size]="16"></lucide-icon>
-        Rechercher
-      </button>
     </div>
 
     <!-- Table -->
@@ -31,7 +25,8 @@
         <div class="spinner"></div>
       </div>
 
-      <table class="data-table">
+      <div class="table-wrapper">
+        <table class="data-table">
         <thead>
           <tr>
             <th>Patient</th>
@@ -52,7 +47,7 @@
               </div>
             </td>
             <td>{{ ord.nomMedecin }}</td>
-            <td>{{ formatDate(ord.date) }}</td>
+            <td>{{ formatService.formatDate(ord.date) }}</td>
             <td>
               <div class="meds-cell">
                 <span class="meds-count">{{ ord.medicaments?.length || 0 }} médicament(s)</span>
@@ -67,7 +62,7 @@
               </div>
             </td>
             <td>
-              <span class="montant" *ngIf="ord.montantTotal">{{ formatPrice(ord.montantTotal) }}</span>
+              <span class="montant" *ngIf="ord.montantTotal">{{ formatService.formatPrice(ord.montantTotal) }}</span>
               <span class="montant-na" *ngIf="!ord.montantTotal">-</span>
             </td>
             <td>
@@ -116,22 +111,20 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Pagination -->
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
-        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
-        Précédent
-      </button>
-      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
-      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Suivant
-        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
-      </button>
-    </div>
+    <app-pagination
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      [totalItems]="totalItems"
+      [pageSize]="pageSize"
+      [loading]="isLoading"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
-</app-sidebar>
+</app-dashboard-layout>
 
 <!-- Dispensation Modal -->
 <div class="modal-overlay" *ngIf="showDispensationModal" (click)="closeDispensationModal()">
@@ -191,13 +184,13 @@
                   class="qty-input"
                 >
               </td>
-              <td>{{ formatPrice(ligne.quantite * (ligne.med.prixUnitaire || 0)) }}</td>
+              <td>{{ formatService.formatPrice(ligne.quantite * (ligne.med.prixUnitaire || 0)) }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
               <td colspan="6" class="total-label">Total</td>
-              <td class="total-value">{{ formatPrice(getTotalDispensation()) }}</td>
+              <td class="total-value">{{ formatService.formatPrice(getTotalDispensation()) }}</td>
             </tr>
           </tfoot>
         </table>

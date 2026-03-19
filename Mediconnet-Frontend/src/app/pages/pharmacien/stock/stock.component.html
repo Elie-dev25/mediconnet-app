@@ -1,41 +1,29 @@
-<app-sidebar [menuItems]="menuItems" [title]="sidebarTitle">
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
   <div class="stock-page">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1><lucide-icon name="package" [size]="28"></lucide-icon> Gestion du Stock</h1>
-        <p>Gérez votre inventaire de médicaments</p>
-      </div>
-      <button class="btn btn-primary" (click)="openCreateModal()">
-        <lucide-icon name="plus" [size]="18"></lucide-icon>
-        Nouveau médicament
-      </button>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="search-box">
-        <lucide-icon name="search" [size]="18"></lucide-icon>
-        <input 
-          type="text" 
-          placeholder="Rechercher un médicament..."
-          [(ngModel)]="searchTerm"
-          (keyup.enter)="onSearch()"
-        >
-      </div>
-      <div class="filter-group">
-        <select [(ngModel)]="selectedStatut" (change)="onStatutChange()">
+    <!-- Barre de recherche -->
+    <div class="search-bar">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher un médicament..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="onSearch()"
+          >
+        </div>
+        <select class="filter-select" [(ngModel)]="selectedStatut" (change)="onStatutChange()">
           <option value="">Tous les statuts</option>
           <option value="normal">Stock normal</option>
           <option value="alerte">Stock bas</option>
           <option value="rupture">Rupture</option>
           <option value="inactif">Inactifs</option>
         </select>
+        <button class="btn-search" (click)="onSearch()">
+          <lucide-icon name="filter" [size]="16"></lucide-icon>
+          <span class="btn-text">Filtrer</span>
+        </button>
       </div>
-      <button class="btn btn-secondary" (click)="onSearch()">
-        <lucide-icon name="filter" [size]="16"></lucide-icon>
-        Filtrer
-      </button>
     </div>
 
     <!-- Table -->
@@ -44,7 +32,8 @@
         <div class="spinner"></div>
       </div>
 
-      <table class="data-table">
+      <div class="table-wrapper">
+        <table class="data-table">
         <thead>
           <tr>
             <th>Médicament</th>
@@ -72,10 +61,10 @@
               </span>
             </td>
             <td>{{ med.seuilStock ?? '-' }}</td>
-            <td>{{ formatPrice(med.prix) }}</td>
+            <td>{{ formatService.formatPrice(med.prix) }}</td>
             <td>
               <span [class.expiring]="med.joursAvantPeremption != null && med.joursAvantPeremption <= 30">
-                {{ formatDate(med.datePeremption) }}
+                {{ formatService.formatDate(med.datePeremption) }}
               </span>
             </td>
             <td>
@@ -105,22 +94,20 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Pagination -->
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">
-        <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
-        Précédent
-      </button>
-      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
-      <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Suivant
-        <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
-      </button>
-    </div>
+    <app-pagination
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      [totalItems]="totalItems"
+      [pageSize]="pageSize"
+      [loading]="isLoading"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
-</app-sidebar>
+</app-dashboard-layout>
 
 <!-- Create/Edit Modal -->
 <div class="modal-overlay" *ngIf="showCreateModal || showEditModal" (click)="showCreateModal ? closeCreateModal() : closeEditModal()">

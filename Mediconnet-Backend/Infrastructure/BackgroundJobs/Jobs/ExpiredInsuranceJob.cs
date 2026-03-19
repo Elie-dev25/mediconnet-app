@@ -95,7 +95,8 @@ public class ExpiredInsuranceJob
         catch (Exception ex)
         {
             _logger.LogError(ex, "[ExpiredInsuranceJob] Erreur globale lors du traitement des assurances expirées");
-            throw;
+            // Ne pas relancer l'exception : on ne veut pas faire tomber tout le backend
+            // si la génération des notifications échoue ponctuellement
         }
     }
 

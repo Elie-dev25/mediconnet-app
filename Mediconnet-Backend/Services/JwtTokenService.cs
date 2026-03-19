@@ -21,7 +21,12 @@ public class JwtTokenService : IJwtTokenService
     {
         try
         {
-            var jwtSecret = _configuration["Jwt:Secret"] ?? "default-super-secret-key-minimum-32-characters-long-!!!";
+            var jwtSecret = _configuration["Jwt:Secret"];
+            if (string.IsNullOrWhiteSpace(jwtSecret))
+            {
+                throw new InvalidOperationException("JWT secret is not configured. Please set Jwt__Secret in the environment variables.");
+            }
+
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "MediConnect";
             var jwtAudience = _configuration["Jwt:Audience"] ?? "MediConnectUsers";
             var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
@@ -61,7 +66,11 @@ public class JwtTokenService : IJwtTokenService
     {
         try
         {
-            var jwtSecret = _configuration["Jwt:Secret"] ?? "default-super-secret-key-minimum-32-characters-long-!!!";
+            var jwtSecret = _configuration["Jwt:Secret"];
+            if (string.IsNullOrWhiteSpace(jwtSecret))
+            {
+                throw new InvalidOperationException("JWT secret is not configured. Please set Jwt__Secret in the environment variables.");
+            }
             var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             var tokenHandler = new JwtSecurityTokenHandler();

@@ -15,6 +15,34 @@ export interface PharmacieKpi {
   commandesEnCours: number;
 }
 
+export interface PharmacieProfileDto {
+  idPharmacien: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string;
+  photo?: string;
+  specialite?: string;
+  numeroLicence?: string;
+  pharmacieNom?: string;
+  createdAt?: string;
+}
+
+export interface PharmacieDashboardDto {
+  totalMedicaments: number;
+  commandesMois: number;
+  ordonnancesAujourdHui: number;
+  fournisseursActifs: number;
+}
+
+export interface UpdatePharmacieProfileRequest {
+  telephone?: string;
+  photo?: string;
+  specialite?: string;
+  numeroLicence?: string;
+  pharmacieNom?: string;
+}
+
 export interface AlerteStock {
   type: string;
   idMedicament: number;
@@ -43,6 +71,49 @@ export interface MedicamentStock {
   temperatureConservation?: string;
   statutStock: string;
   joursAvantPeremption?: number;
+  fournisseurs?: FournisseurMedicament[];
+}
+
+export interface FournisseurMedicament {
+  idFournisseur: number;
+  nomFournisseur: string;
+  contactNom?: string;
+  contactEmail?: string;
+  contactTelephone?: string;
+  delaiLivraisonJours: number;
+  derniereCommande?: string;
+  totalCommandes: number;
+  
+  // Détails du médicament pour identification sans ambiguïté
+  idMedicament: number;
+  nomMedicament: string;
+  dosage?: string;
+  laboratoire?: string;
+  formeGalenique?: string;
+}
+
+export interface HistoriqueFournisseurMedicament {
+  idCommande: number;
+  dateCommande: string;
+  dateReceptionPrevue?: string;
+  dateReceptionReelle?: string;
+  statut: string;
+  montantTotal: number;
+  quantiteCommandee: number;
+  quantiteRecue: number;
+  prixAchat: number;
+  numeroLot?: string;
+  datePeremption?: string;
+  
+  // Infos fournisseur
+  idFournisseur: number;
+  nomFournisseur: string;
+  
+  // Infos médicament
+  idMedicament: number;
+  nomMedicament: string;
+  dosage?: string;
+  laboratoire?: string;
 }
 
 export interface CreateMedicamentRequest {
@@ -113,8 +184,11 @@ export interface Fournisseur {
   contactTelephone?: string;
   adresse?: string;
   conditionsPaiement?: string;
-  delaiLivraisonJours: number;
+  delaiLivraisonJours?: number;
   actif: boolean;
+  dateCreation: string;
+  totalCommandes: number;
+  montantTotalCommandes?: number;
 }
 
 export interface CreateFournisseurRequest {
@@ -124,7 +198,19 @@ export interface CreateFournisseurRequest {
   contactTelephone?: string;
   adresse?: string;
   conditionsPaiement?: string;
-  delaiLivraisonJours: number;
+  delaiLivraisonJours?: number;
+  actif?: boolean;
+}
+
+export interface UpdateFournisseurRequest {
+  nomFournisseur?: string;
+  contactNom?: string;
+  contactEmail?: string;
+  contactTelephone?: string;
+  adresse?: string;
+  conditionsPaiement?: string;
+  delaiLivraisonJours?: number;
+  actif?: boolean;
 }
 
 export interface CommandePharmacie {
@@ -339,6 +425,14 @@ export class PharmacieStockService {
     return this.http.get<MedicamentStock>(`${this.apiUrl}/medicaments/${id}`);
   }
 
+  getFournisseursByMedicament(id: number): Observable<FournisseurMedicament[]> {
+    return this.http.get<FournisseurMedicament[]>(`${this.apiUrl}/medicaments/${id}/fournisseurs`);
+  }
+
+  getHistoriqueFournisseurMedicament(id: number): Observable<HistoriqueFournisseurMedicament[]> {
+    return this.http.get<HistoriqueFournisseurMedicament[]>(`${this.apiUrl}/medicaments/${id}/historique`);
+  }
+
   createMedicament(request: CreateMedicamentRequest): Observable<MedicamentStock> {
     return this.http.post<MedicamentStock>(`${this.apiUrl}/medicaments`, request);
   }
@@ -378,12 +472,24 @@ export class PharmacieStockService {
     return this.http.get<Fournisseur[]>(`${this.apiUrl}/fournisseurs`, { params });
   }
 
+  getFournisseur(id: number): Observable<Fournisseur> {
+    return this.http.get<Fournisseur>(`${this.apiUrl}/fournisseurs/${id}`);
+  }
+
   createFournisseur(request: CreateFournisseurRequest): Observable<Fournisseur> {
     return this.http.post<Fournisseur>(`${this.apiUrl}/fournisseurs`, request);
   }
 
-  updateFournisseur(id: number, request: CreateFournisseurRequest): Observable<Fournisseur> {
+  updateFournisseur(id: number, request: UpdateFournisseurRequest): Observable<Fournisseur> {
     return this.http.put<Fournisseur>(`${this.apiUrl}/fournisseurs/${id}`, request);
+  }
+
+  toggleFournisseurStatut(id: number): Observable<Fournisseur> {
+    return this.http.patch<Fournisseur>(`${this.apiUrl}/fournisseurs/${id}/toggle-statut`, {});
+  }
+
+  deleteFournisseur(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/fournisseurs/${id}`);
   }
 
   // ==================== Commandes ====================
@@ -412,6 +518,20 @@ export class PharmacieStockService {
 
   annulerCommande(id: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/commandes/${id}/annuler`, {});
+  }
+
+  // ==================== Profile & Dashboard ====================
+
+  getProfile(): Observable<PharmacieProfileDto> {
+    return this.http.get<PharmacieProfileDto>(`${this.apiUrl}/profile`);
+  }
+
+  getDashboard(): Observable<PharmacieDashboardDto> {
+    return this.http.get<PharmacieDashboardDto>(`${this.apiUrl}/dashboard`);
+  }
+
+  updateProfile(request: UpdatePharmacieProfileRequest): Observable<PharmacieProfileDto> {
+    return this.http.put<PharmacieProfileDto>(`${this.apiUrl}/profile`, request);
   }
 
   // ==================== Ordonnances/Dispensations ====================

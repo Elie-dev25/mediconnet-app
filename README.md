@@ -47,10 +47,27 @@ docker-compose up -d --build
 ```
 
 Une fois lancé :
-- Frontend → http://localhost:4200
-- API → http://localhost:8080
-- Adminer (base de données) → http://localhost:8081
-- MailHog → http://localhost:8025
+- Frontend → http://localhost
+- API → http://localhost/api
+- Adminer (base de données) → via tunnel SSH
+- MailHog → via tunnel SSH
+
+### Accès aux services internes
+
+Les services MySQL, Adminer et MailHog ne sont plus accessibles directement. Utilisez des tunnels SSH :
+
+```bash
+# MySQL
+ssh -L 3306:mediconnet-db:3306 user@serveur
+
+# Adminer
+ssh -L 8888:mediconnet-adminer:8080 user@serveur
+
+# MailHog
+ssh -L 8025:mediconnet-mailhog:8025 user@serveur
+```
+
+Voir [nginx/README.md](nginx/README.md) pour plus de détails.
 
 ### En local pour développer
 
@@ -165,6 +182,27 @@ Les fichiers sont dans `./storage/` (volume Docker). Prescriptions, résultats d
 ## Sécurité
 
 JWT avec refresh tokens, bcrypt pour les mots de passe, validation forte à l'inscription (8+ caractères, maj/min/chiffre), CORS configuré. Les pipelines CI/CD font tourner CodeQL, Trivy et les audits npm/NuGet à chaque push.
+
+### Points de sécurité renforcés
+
+- **Secrets JWT forts** : Générés via variables d'environnement, plus de valeurs par défaut
+- **Admin dynamique** : Plus d'utilisateur admin codé en dur, création via CLI : `dotnet run --seed-admin --email admin@votre-clinique.com`
+- **Réseau isolé** : Services internes (MySQL, Adminer, MailHog) accessibles uniquement via Nginx ou tunnels SSH
+- **HTTPS prêt** : Nginx configuré pour ajouter TLS facilement (certificats + port 443)
+
+## Sauvegarde et restauration
+
+Des scripts sont fournis pour gérer les sauvegardes de la base de données :
+
+```bash
+# Créer une sauvegarde
+./scripts/backup-mysql.sh
+
+# Restaurer une sauvegarde
+./scripts/restore-mysql.sh backup_file.sql.gz
+```
+
+Voir [scripts/README.md](scripts/README.md) pour plus de détails.
 
 ## Licence
 

@@ -7,7 +7,6 @@
     <header class="page-header">
       <div class="header-left">
         <h1>Mon Planning</h1>
-        <p class="subtitle">Gérez vos horaires et disponibilités</p>
       </div>
       <div class="header-actions">
         <button class="btn-icon" (click)="refresh()" title="Actualiser">
@@ -138,7 +137,7 @@
               <div class="slot-duration">{{ creneau.dureeParDefaut }} min/RDV</div>
               <div class="slot-actions">
                 <button class="action-btn" (click)="toggleCreneau(creneau.idCreneau)" [title]="creneau.actif ? 'Désactiver' : 'Activer'">
-                  <lucide-icon [name]="creneau.actif ? 'toggle-right' : 'toggle-left'" [size]="16"></lucide-icon>
+                  <lucide-icon [name]="creneau.actif ? 'check-circle' : 'circle'" [size]="16"></lucide-icon>
                 </button>
                 <button class="action-btn" (click)="openCreneauModal(jour.numero, creneau)" title="Modifier">
                   <lucide-icon name="edit" [size]="14"></lucide-icon>

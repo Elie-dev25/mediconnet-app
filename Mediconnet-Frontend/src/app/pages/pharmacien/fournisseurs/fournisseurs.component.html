@@ -1,0 +1,283 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="fournisseurs-page">
+    <!-- Barre de recherche -->
+    <div class="filters-section">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher un fournisseur..." 
+            [(ngModel)]="searchQuery" 
+            (input)="onSearch()"
+          >
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="showActifsOnly" (change)="onToggleActifs()">
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Actifs seulement</span>
+      </div>
+    </div>
+
+    <!-- Tableau des fournisseurs -->
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Liste des fournisseurs</h3>
+        <span class="results-count">{{ fournisseursFiltres.length }} fournisseur(s)</span>
+      </div>
+
+      <div class="table-wrapper" *ngIf="!isLoading; else loadingTemplate">
+        <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Contact</th>
+            <th>Téléphone</th>
+            <th>Email</th>
+            <th>Délai livraison</th>
+            <th>Commandes</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fournisseur of fournisseursFiltres" [class.inactive]="!fournisseur.actif">
+            <td class="primary-cell">
+              <div class="fournisseur-name">{{ fournisseur.nomFournisseur }}</div>
+              <div class="fournisseur-address" *ngIf="fournisseur.adresse">
+                {{ fournisseur.adresse }}
+              </div>
+            </td>
+            <td>
+              <div class="contact-info">
+                <span *ngIf="fournisseur.contactNom">{{ fournisseur.contactNom }}</span>
+                <span *ngIf="!fournisseur.contactNom" class="no-data">-</span>
+              </div>
+            </td>
+            <td>
+              <span *ngIf="fournisseur.contactTelephone" class="phone">{{ fournisseur.contactTelephone }}</span>
+              <span *ngIf="!fournisseur.contactTelephone" class="no-data">-</span>
+            </td>
+            <td>
+              <span *ngIf="fournisseur.contactEmail" class="email">{{ fournisseur.contactEmail }}</span>
+              <span *ngIf="!fournisseur.contactEmail" class="no-data">-</span>
+            </td>
+            <td>
+              <span *ngIf="fournisseur.delaiLivraisonJours" class="delai">
+                {{ fournisseur.delaiLivraisonJours }} jours
+              </span>
+              <span *ngIf="!fournisseur.delaiLivraisonJours" class="no-data">-</span>
+            </td>
+            <td>
+              <div class="commandes-info">
+                <div class="commandes-count">{{ fournisseur.totalCommandes }} commande(s)</div>
+                <div class="commandes-montant" *ngIf="fournisseur.montantTotalCommandes">
+                  {{ formatService.formatPrice(fournisseur.montantTotalCommandes) }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="getStatutClass(fournisseur.actif)">
+                {{ getStatutLabel(fournisseur.actif) }}
+              </span>
+            </td>
+            <td class="actions-cell">
+              <div class="action-buttons">
+                <button class="btn-icon btn-edit" (click)="openEditModal(fournisseur)" title="Modifier">
+                  <lucide-icon name="pencil" [size]="16"></lucide-icon>
+                </button>
+                <button class="btn-icon btn-toggle" (click)="toggleActif(fournisseur)" 
+                        [title]="fournisseur.actif ? 'Désactiver' : 'Activer'">
+                  <lucide-icon [name]="fournisseur.actif ? 'check-circle' : 'circle'" [size]="16"></lucide-icon>
+                </button>
+                <button class="btn-icon btn-delete" (click)="openDeleteModal(fournisseur)" title="Supprimer">
+                  <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="empty-state" *ngIf="fournisseursFiltres.length === 0">
+        <lucide-icon name="inbox" [size]="48"></lucide-icon>
+        <h3>Aucun fournisseur trouvé</h3>
+        <p *ngIf="searchQuery">Aucun résultat pour "{{ searchQuery }}"</p>
+        <p *ngIf="!searchQuery">Commencez par ajouter votre premier fournisseur</p>
+        <button class="btn btn-primary" (click)="openCreateModal()" *ngIf="!searchQuery">
+          <lucide-icon name="plus" [size]="16"></lucide-icon>
+          Ajouter un fournisseur
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>
+
+<!-- Modal Création -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Nouveau fournisseur</h2>
+        <button class="btn-close" (click)="closeCreateModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="form-grid">
+          <div class="form-group full-width">
+            <label>Nom du fournisseur *</label>
+            <input type="text" [(ngModel)]="fournisseurForm.nomFournisseur" name="nom" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Contact</label>
+            <input type="text" [(ngModel)]="fournisseurForm.contactNom" name="contactNom">
+          </div>
+          
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" [(ngModel)]="fournisseurForm.contactTelephone" name="contactTelephone">
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="fournisseurForm.contactEmail" name="contactEmail">
+          </div>
+          
+          <div class="form-group full-width">
+            <label>Adresse</label>
+            <textarea [(ngModel)]="fournisseurForm.adresse" name="adresse" rows="2"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Conditions de paiement</label>
+            <input type="text" [(ngModel)]="fournisseurForm.conditionsPaiement" name="conditionsPaiement" 
+                   placeholder="ex: 30 jours">
+          </div>
+          
+          <div class="form-group">
+            <label>Délai de livraison (jours)</label>
+            <input type="number" [(ngModel)]="fournisseurForm.delaiLivraisonJours" name="delaiLivraison" min="1">
+          </div>
+          
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="fournisseurForm.actif" name="actif">
+              <span class="checkmark"></span>
+              Fournisseur actif
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCreateModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="createFournisseur()" 
+                [disabled]="!fournisseurForm.nomFournisseur.trim()">
+          <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
+          Créer le fournisseur
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Modification -->
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Modifier le fournisseur</h2>
+        <button class="btn-close" (click)="closeEditModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="form-grid">
+          <div class="form-group full-width">
+            <label>Nom du fournisseur *</label>
+            <input type="text" [(ngModel)]="editForm.nomFournisseur" name="nom" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Contact</label>
+            <input type="text" [(ngModel)]="editForm.contactNom" name="contactNom">
+          </div>
+          
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" [(ngModel)]="editForm.contactTelephone" name="contactTelephone">
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="editForm.contactEmail" name="contactEmail">
+          </div>
+          
+          <div class="form-group full-width">
+            <label>Adresse</label>
+            <textarea [(ngModel)]="editForm.adresse" name="adresse" rows="2"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Conditions de paiement</label>
+            <input type="text" [(ngModel)]="editForm.conditionsPaiement" name="conditionsPaiement">
+          </div>
+          
+          <div class="form-group">
+            <label>Délai de livraison (jours)</label>
+            <input type="number" [(ngModel)]="editForm.delaiLivraisonJours" name="delaiLivraison" min="1">
+          </div>
+          
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editForm.actif" name="actif">
+              <span class="checkmark"></span>
+              Fournisseur actif
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeEditModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="updateFournisseur()" 
+                [disabled]="!editForm.nomFournisseur?.trim()">
+          <lucide-icon name="check-circle-2" [size]="16"></lucide-icon>
+          Mettre à jour
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Suppression -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Supprimer le fournisseur</h2>
+        <button class="btn-close" (click)="closeDeleteModal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Êtes-vous sûr de vouloir supprimer le fournisseur <strong>{{ selectedFournisseur?.nomFournisseur }}</strong> ?</p>
+        <p class="warning-text" *ngIf="selectedFournisseur && selectedFournisseur.totalCommandes && selectedFournisseur.totalCommandes > 0">
+          ⚠️ Ce fournisseur a {{ selectedFournisseur.totalCommandes }} commande(s) associée(s). 
+          Il sera désactivé mais conservé dans l'historique.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDeleteModal()">Annuler</button>
+        <button class="btn btn-danger" (click)="deleteFournisseur()">
+          <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Template Loading -->
+<ng-template #loadingTemplate>
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des fournisseurs...</p>
+  </div>
+</ng-template>

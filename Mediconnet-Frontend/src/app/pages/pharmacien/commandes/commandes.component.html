@@ -1,0 +1,411 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="commandes-page">
+    <!-- Barre de recherche -->
+    <div class="filters-section">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <lucide-icon name="search" [size]="18"></lucide-icon>
+          <input 
+            type="text" 
+            placeholder="Rechercher une commande..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearch()"
+          >
+        </div>
+        <select class="filter-select" [(ngModel)]="selectedStatut" (change)="onStatutChange()">
+          <option *ngFor="let statut of statuts" [value]="statut.value">
+            {{ statut.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-section">
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="loading-spinner">
+          <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+          <span>Chargement...</span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table" *ngIf="!isLoading">
+          <thead>
+            <tr>
+              <th>N° Commande</th>
+              <th>Date</th>
+              <th>Fournisseur</th>
+              <th>Montant</th>
+              <th>Statut</th>
+              <th>Réception</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let commande of commandes">
+              <td>
+                <span class="commande-number">#{{ commande.idCommande }}</span>
+              </td>
+              <td>{{ formatService.formatDate(commande.dateCommande) }}</td>
+              <td>
+                <div class="fournisseur-info">
+                  <div class="nom">{{ commande.nomFournisseur }}</div>
+                </div>
+              </td>
+              <td>
+                <span class="montant">{{ formatService.formatPrice(commande.montantTotal) }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatutBadgeClass(commande.statut)">
+                  {{ getStatutLabel(commande.statut) }}
+                </span>
+              </td>
+              <td>
+                <div class="reception-info">
+                  <div *ngIf="commande.dateReceptionReelle" class="date-reception">
+                    {{ formatService.formatDate(commande.dateReceptionReelle) }}
+                  </div>
+                  <div *ngIf="!commande.dateReceptionReelle && commande.dateReceptionPrevue" class="date-prevue">
+                    Prévue: {{ formatService.formatDate(commande.dateReceptionPrevue) }}
+                  </div>
+                  <div *ngIf="!commande.dateReceptionReelle && !commande.dateReceptionPrevue" class="no-date">
+                    Non définie
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" title="Voir détails" (click)="openDetailsModal(commande)">
+                    <lucide-icon name="eye" [size]="16"></lucide-icon>
+                  </button>
+                  <button 
+                    class="btn-icon" 
+                    title="Réceptionner" 
+                    (click)="openReceptionModal(commande)"
+                    *ngIf="commande.statut === 'envoyee'"
+                  >
+                    <lucide-icon name="package-check" [size]="16"></lucide-icon>
+                  </button>
+                  <button 
+                    class="btn-icon btn-icon-danger" 
+                    title="Annuler" 
+                    (click)="openDeleteModal(commande)"
+                    *ngIf="commande.statut === 'brouillon' || commande.statut === 'envoyee'"
+                  >
+                    <lucide-icon name="x" [size]="16"></lucide-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoading && commandes.length === 0">
+        <div class="empty-icon">
+          <lucide-icon name="package" [size]="64"></lucide-icon>
+        </div>
+        <h3>Aucune commande trouvée</h3>
+        <p>Commencez par créer votre première commande</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <lucide-icon name="plus" [size]="16"></lucide-icon>
+          Créer une commande
+        </button>
+      </div>
+
+      <app-pagination
+        [currentPage]="currentPage"
+        [totalPages]="totalPages"
+        [totalItems]="totalItems"
+        [pageSize]="pageSize"
+        [loading]="isLoading"
+        (pageChange)="onPageChange($event)">
+      </app-pagination>
+    </div>
+  </div>
+</app-dashboard-layout>
+
+<!-- Create Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Nouvelle Commande</h2>
+      <button class="btn-close" (click)="closeCreateModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Fournisseur *</label>
+          <select class="form-control" [(ngModel)]="commandeForm.idFournisseur">
+            <option value="0">Sélectionner un fournisseur</option>
+            <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur.idFournisseur">
+              {{ fournisseur.nomFournisseur }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date de réception prévue</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="commandeForm.dateReceptionPrevue"
+          >
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea 
+          class="form-control" 
+          rows="3" 
+          [(ngModel)]="commandeForm.notes"
+          placeholder="Notes supplémentaires..."
+        ></textarea>
+      </div>
+
+      <div class="lignes-section">
+        <h3>Produits à commander</h3>
+        
+        <div class="add-ligne-form">
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label>Médicament *</label>
+              <select class="form-control" [(ngModel)]="ligneForm.idMedicament" (change)="onMedicamentChange()">
+                <option value="0">Sélectionner un médicament</option>
+                <option *ngFor="let medicament of medicaments" [value]="medicament.idMedicament">
+                  {{ medicament.nom }} {{ medicament.dosage || '' }} {{ medicament.laboratoire || '' }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantité *</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="ligneForm.quantiteCommandee"
+                min="1"
+              >
+            </div>
+            <div class="form-group">
+              <label>Prix unitaire *</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="ligneForm.prixAchat"
+                min="0"
+                step="0.01"
+              >
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" (click)="addLigne()">
+                <lucide-icon name="plus" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lignes-list" *ngIf="commandeForm.lignes.length > 0">
+          <div class="ligne-item" *ngFor="let ligne of commandeForm.lignes; let i = index">
+            <div class="ligne-info">
+              <div class="medicament-name">
+                {{ getMedicamentName(ligne.idMedicament) }}
+              </div>
+              <div class="ligne-details">
+                {{ ligne.quantiteCommandee }} × {{ formatService.formatPrice(ligne.prixAchat) }} = 
+                {{ formatService.formatPrice(ligne.quantiteCommandee * ligne.prixAchat) }}
+              </div>
+            </div>
+            <button class="btn-icon btn-icon-danger" (click)="removeLigne(i)">
+              <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="total-section" *ngIf="commandeForm.lignes.length > 0">
+          <div class="total-label">Total commande:</div>
+          <div class="total-amount">{{ formatService.formatPrice(getTotalCommande()) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeCreateModal()">Annuler</button>
+      <button 
+        class="btn btn-primary" 
+        (click)="createCommande()"
+        [disabled]="!commandeForm.idFournisseur || commandeForm.lignes.length === 0"
+      >
+        Créer la commande
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Détails de la Commande #{{ selectedCommande?.idCommande }}</h2>
+      <button class="btn-close" (click)="closeDetailsModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="commande-details">
+        <div class="detail-section">
+          <h3>Informations générales</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Fournisseur:</label>
+              <span>{{ selectedCommande?.nomFournisseur }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Date commande:</label>
+              <span>{{ formatService.formatDate(selectedCommande?.dateCommande) }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Statut:</label>
+              <span class="badge" [ngClass]="getStatutBadgeClass(selectedCommande?.statut || '')">
+                {{ getStatutLabel(selectedCommande?.statut || '') }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <label>Montant total:</label>
+              <span>{{ formatService.formatPrice(selectedCommande?.montantTotal || 0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Produits commandés</h3>
+          <div class="lignes-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Médicament</th>
+                  <th>Quantité commandée</th>
+                  <th>Quantité reçue</th>
+                  <th>Prix unitaire</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ligne of selectedCommande?.lignes">
+                  <td>{{ ligne.nomMedicament }}</td>
+                  <td>{{ ligne.quantiteCommandee }}</td>
+                  <td>{{ ligne.quantiteRecue }}</td>
+                  <td>{{ formatService.formatPrice(ligne.prixAchat) }}</td>
+                  <td>{{ formatService.formatPrice(ligne.quantiteCommandee * ligne.prixAchat) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedCommande?.notes">
+          <h3>Notes</h3>
+          <p>{{ selectedCommande?.notes }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDetailsModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reception Modal -->
+<div class="modal-overlay" *ngIf="showReceptionModal" (click)="closeReceptionModal()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Réception de la Commande #{{ selectedCommande?.idCommande }}</h2>
+      <button class="btn-close" (click)="closeReceptionModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="reception-form">
+        <h3>Quantités reçues</h3>
+        <div class="lignes-reception">
+          <div class="ligne-reception" *ngFor="let ligne of receptionForm.lignes">
+            <div class="ligne-info">
+              <div class="medicament-name">
+                {{ getNomMedicament(ligne.idLigneCommande) }}
+              </div>
+              <div class="quantite-info">
+                Commandée: {{ getQuantiteCommandee(ligne.idLigneCommande) }}
+              </div>
+            </div>
+            <div class="reception-fields">
+              <div class="field-group">
+                <label>Quantité reçue</label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="ligne.quantiteRecue"
+                  min="0"
+                  [max]="getQuantiteCommandee(ligne.idLigneCommande)"
+                >
+              </div>
+              <div class="field-group">
+                <label>N° de lot</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="ligne.numeroLot"
+                  placeholder="Optionnel"
+                >
+              </div>
+              <div class="field-group">
+                <label>Date péremption</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="ligne.datePeremption"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div class="total-label">Total reçu:</div>
+          <div class="total-amount">{{ formatService.formatPrice(getTotalReception()) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeReceptionModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="receptionnerCommande()">
+        <lucide-icon name="package-check" [size]="16"></lucide-icon>
+        Réceptionner la commande
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Annuler la commande</h2>
+      <button class="btn-close" (click)="closeDeleteModal()">
+        <lucide-icon name="x" [size]="20"></lucide-icon>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir annuler la commande <strong>#{{ selectedCommande?.idCommande }}</strong> ?</p>
+      <p class="warning-text">Cette action est irréversible.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()">Annuler</button>
+      <button class="btn btn-danger" (click)="annulerCommande()">
+        <lucide-icon name="x" [size]="16"></lucide-icon>
+        Annuler la commande
+      </button>
+    </div>
+  </div>
+</div>

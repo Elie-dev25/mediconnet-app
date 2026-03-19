@@ -1,0 +1,163 @@
+// Classes de base partagées pour le module Pharmacie
+@use './variables' as *;
+@use './pharmacie-mixins' as *;
+
+// ============================================
+// ANIMATIONS GLOBALES
+// ============================================
+@include spin-animation;
+
+// ============================================
+// PAGINATION
+// ============================================
+.pagination {
+  @include pagination-base;
+}
+
+// ============================================
+// MODALES
+// ============================================
+.modal-overlay {
+  @include modal-overlay;
+}
+
+.modal {
+  @include modal-base;
+}
+
+.modal-header {
+  @include modal-header;
+}
+
+.modal-body {
+  @include modal-body;
+}
+
+.modal-footer {
+  @include modal-footer;
+}
+
+// ============================================
+// TABLES
+// ============================================
+.table-container {
+  @include table-container;
+}
+
+.data-table {
+  @include data-table-base;
+}
+
+.loading-overlay {
+  @include loading-overlay;
+}
+
+// ============================================
+// BUTTONS
+// ============================================
+.btn {
+  @include btn-base;
+
+  &.btn-primary {
+    background: $primary-color;
+    color: $bg-white;
+
+    &:hover:not(:disabled) {
+      background: $primary-dark;
+      transform: translateY(-1px);
+      box-shadow: $shadow-md;
+    }
+  }
+
+  &.btn-secondary {
+    background: $bg-light;
+    color: $text-primary;
+    border: 1px solid $border-color;
+
+    &:hover:not(:disabled) {
+      background: $bg-gray;
+      border-color: $primary-color;
+    }
+  }
+
+  &.btn-danger {
+    background: $error-color;
+    color: $bg-white;
+
+    &:hover:not(:disabled) {
+      background: darken($error-color, 10%);
+      transform: translateY(-1px);
+      box-shadow: $shadow-md;
+    }
+  }
+}
+
+.btn-icon {
+  @include btn-icon;
+}
+
+// ============================================
+// FORMS
+// ============================================
+.form-group {
+  @include form-group;
+}
+
+.form-grid {
+  @include form-grid;
+}
+
+// ============================================
+// BADGES
+// ============================================
+.badge {
+  @include badge-base;
+
+  &.badge-success {
+    background: $success-light;
+    color: $success-color;
+  }
+
+  &.badge-warning {
+    background: $warning-light;
+    color: $warning-color;
+  }
+
+  &.badge-danger {
+    background: $error-light;
+    color: $error-color;
+  }
+
+  &.badge-info {
+    background: $info-light;
+    color: $info-color;
+  }
+
+  &.badge-secondary {
+    background: rgba($text-secondary, 0.1);
+    color: $text-secondary;
+  }
+
+  &.badge-primary {
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+  }
+}
+
+// ============================================
+// STATES
+// ============================================
+.empty-state {
+  @include empty-state;
+}
+
+// ============================================
+// PAGE LAYOUT
+// ============================================
+.page-header {
+  @include page-header;
+}
+
+.filters-bar {
+  @include filters-bar;
+}

@@ -321,6 +321,54 @@ GET /api/auth/confirm-email?token=email-confirmation-token
 }
 ```
 
+### `GET /api/pharmacie/medicaments`
+**Catalogue des médicaments avec stock**
+**Query params :** `search=paracetamol&statut=disponible`
+
+### `POST /api/pharmacie/dispensations`
+**Dispenser une ordonnance (nouveau workflow)**
+```json
+{
+  "idPrescription": 123,
+  "notes": "Patient informé",
+  "lignes": [
+    {
+      "idMedicament": 1,
+      "quantiteDispensee": 10,
+      "numeroLot": "LOT12345"
+    }
+  ]
+}
+```
+
+### `GET /api/pharmacie/dispensations`
+**Liste des dispensations**
+**Query params :** `dateDebut=2024-03-01&dateFin=2024-03-31&page=1&pageSize=20`
+
+### `GET /api/pharmacie/ordonnances`
+**Ordonnances en attente de dispensation**
+**Query params :** `search=dupont&page=1&pageSize=20`
+
+### `POST /api/pharmacie/stock/ajustement`
+**Ajuster le stock manuellement**
+```json
+{
+  "idMedicament": 1,
+  "quantite": 5,
+  "motif": "Ajustement inventaire",
+  "type": "ajustement"
+}
+```
+
+### `GET /api/pharmacie/ordonnances/{idOrdonnance}`
+**Détail d'une ordonnance avec statut dispensation**
+
+### `POST /api/pharmacie/ordonnances/{idOrdonnance}/valider`
+**Valider une ordonnance (crée facture)**
+
+### `POST /api/pharmacie/ordonnances/{idOrdonnance}/delivrer`
+**Délivrer une ordonnance (décrémente stock)**
+
 ---
 
 ## 💰 Facturation
@@ -471,7 +519,10 @@ Une collection Postman est disponible dans `/tests/postman/mediconnect-api.json`
 
 ---
 
-## 📊 Métriques de Performance Attendues
+
+---
+
+## �📊 Métriques de Performance Attendues
 
 | Route Critique | P95 Response Time | P99 Response Time | Error Rate | CPU Impact |
 |----------------|------------------|------------------|------------|------------|

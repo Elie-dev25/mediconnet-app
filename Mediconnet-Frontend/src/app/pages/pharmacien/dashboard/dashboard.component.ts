@@ -5,6 +5,7 @@ import { AuthService } from '../../../services/auth.service';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
 import { PHARMACIEN_MENU_ITEMS, PHARMACIEN_SIDEBAR_TITLE } from '../shared';
 import { PharmacieStockService, PharmacieKpi, AlerteStock } from '../../../services/pharmacie-stock.service';
+import { FormatService } from '../../../shared/services/format.service';
 
 @Component({
   selector: 'app-pharmacien-dashboard',
@@ -43,7 +44,8 @@ export class PharmacienDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private stockService: PharmacieStockService
+    private stockService: PharmacieStockService,
+    public formatService: FormatService
   ) {}
 
   ngOnInit(): void {
@@ -74,10 +76,6 @@ export class PharmacienDashboardComponent implements OnInit {
         this.isLoading = false;
       }
     });
-  }
-
-  formatPrice(value: number): string {
-    return value.toLocaleString('fr-FR') + ' FCFA';
   }
 
   getAlertIcon(type: string): string {

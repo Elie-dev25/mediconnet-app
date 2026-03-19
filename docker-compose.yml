@@ -2,13 +2,15 @@ services:
   mediconnet-db:
     image: mysql:8.0
     container_name: mediconnet-mysql
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: "root"
-      MYSQL_DATABASE: mediconnect
-      MYSQL_USER: "app"
-      MYSQL_PASSWORD: "app"
-    ports:
-      - "3306:3306"
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # ⚠️ Port 3306 retiré : la base n'est plus accessible de l'extérieur
+    # Pour accéder à MySQL depuis ton PC : SSH tunnel (voir README)
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -28,26 +30,28 @@ services:
       context: ./Mediconnet-Backend
       dockerfile: Dockerfile
     container_name: mediconnet-backend
-    ports:
-      - "8080:8080"
-      - "8081:8081"
+    env_file:
+      - .env
+    # ⚠️ Ports retirés : le backend n'est plus accessible directement de l'extérieur
+    # Seul Nginx peut lui parler (via le réseau interne Docker)
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=mediconnet-db;Port=3306;Database=mediconnect;User=app;Password=app;OldGuids=true;
-      - Jwt__Secret=your-super-secret-key-minimum-32-characters-long-!!!
-      - Jwt__Issuer=MediConnect
-      - Jwt__Audience=MediConnectUsers
-      - EmailSettings__SmtpServer=mailhog
-      - EmailSettings__SmtpPort=1025
-      - EmailSettings__UseSsl=false
-      - EmailSettings__SenderEmail=noreply@mediconnect.local
-      - EmailSettings__SenderName=MediConnect
+      - ConnectionStrings__DefaultConnection=Server=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};OldGuids=true;
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - EmailSettings__SmtpServer=${EMAIL_SMTP_SERVER}
+      - EmailSettings__SmtpPort=${EMAIL_SMTP_PORT}
+      - EmailSettings__UseSsl=${EMAIL_USE_SSL}
+      - EmailSettings__SenderEmail=${EMAIL_SENDER_EMAIL}
+      - EmailSettings__SenderName=${EMAIL_SENDER_NAME}
       - EmailSettings__EnableEmailConfirmation=true
       - EmailSettings__TokenExpirationHours=24
       - EmailSettings__DevMode=false
-      - AppSettings__FrontendUrl=http://0.0.0.0:4200
-      - AppSettings__ApiUrl=http://0.0.0.0:8080
+      # URLs mises à jour : tout passe par Nginx maintenant
+      - AppSettings__FrontendUrl=${FRONTEND_URL:-http://0.0.0.0:80}
+      - AppSettings__ApiUrl=${API_URL:-http://0.0.0.0:80/api}
       - DocumentStorage__RootPath=/storage/mediConnect
       - DocumentStorage__MaxFileSizeBytes=52428800
     volumes:
@@ -70,10 +74,26 @@ services:
       context: ./Mediconnet-Frontend
       dockerfile: Dockerfile
     container_name: mediconnet-frontend
-    ports:
-      - "4200:80"
+    # ⚠️ Port retiré : le frontend n'est plus accessible directement de l'extérieur
     depends_on:
       - mediconnet-backend
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+
+  # -------------------------------------------------------
+  # NGINX — Reverse proxy (seul point d'entrée public)
+  # -------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: mediconnet-nginx
+    ports:
+      - "80:80"      # HTTP (sera remplacé par 443 quand tu auras un domaine)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - mediconnet-backend
+      - mediconnet-frontend
     networks:
       - mediconnet-network
     restart: unless-stopped
@@ -81,8 +101,8 @@ services:
   adminer:
     image: adminer:latest
     container_name: mediconnet-adminer
-    ports:
-      - "8888:8080"
+    # ⚠️ Port retiré : Adminer n'est plus accessible de l'extérieur
+    # Pour y accéder : SSH tunnel (voir README)
     depends_on:
       - mediconnet-db
     networks:
@@ -91,13 +111,11 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: mediconnet-db
 
-  # MailHog - Serveur SMTP de test pour le développement
   mailhog:
     image: mailhog/mailhog:latest
     container_name: mediconnet-mailhog
-    ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
+    # ⚠️ Ports retirés : MailHog n'est plus accessible de l'extérieur
+    # Pour y accéder : SSH tunnel (voir README)
     networks:
       - mediconnet-network
     restart: unless-stopped

@@ -1,0 +1,770 @@
+// Mixins partagés pour le module Pharmacie
+// Design unifié et responsive pour toutes les pages
+@use './variables' as *;
+@use './mixins' as *;
+
+// ============================================
+// LAYOUT PRINCIPAL - PAGE PHARMACIE
+// ============================================
+
+// Container principal de page
+@mixin pharma-page-layout {
+  padding: 0;
+  background: $bg-gray;
+}
+
+// ============================================
+// BARRE DE RECHERCHE UNIFIÉE
+// ============================================
+@mixin pharma-search-bar {
+  background: $bg-white;
+  border-bottom: 1px solid $border-light;
+  padding: 0.75rem;
+  flex-shrink: 0;
+  
+  @include md-up {
+    padding: 1rem 2rem;
+  }
+  
+  .search-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+    
+    @include sm-up {
+      gap: 0.75rem;
+    }
+  }
+  
+  .search-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: $bg-gray;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    padding: 0 0.75rem;
+    transition: all $transition-fast;
+    min-width: 0;
+    
+    &:focus-within {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      background: $bg-white;
+    }
+    
+    lucide-icon {
+      color: $text-muted;
+      flex-shrink: 0;
+    }
+    
+    input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0.625rem 0.5rem;
+      font-size: 0.875rem;
+      color: $text-primary;
+      min-width: 0;
+      
+      &::placeholder {
+        color: $text-muted;
+      }
+      
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+  
+  .filter-select {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background: $bg-white;
+    font-size: 0.875rem;
+    color: $text-primary;
+    min-width: 120px;
+    flex-shrink: 0;
+    
+    @include sm-up {
+      min-width: 150px;
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+  
+  .btn-search {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem 0.875rem;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    flex-shrink: 0;
+    white-space: nowrap;
+    
+    &:hover {
+      background: $primary-dark;
+    }
+    
+    .btn-text {
+      display: none;
+      
+      @include sm-up {
+        display: inline;
+      }
+    }
+  }
+}
+
+// ============================================
+// CONTENEUR DE TABLE AVEC SCROLL
+// ============================================
+@mixin pharma-table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0.75rem;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  min-height: 0;
+  
+  @include md-up {
+    margin: 1rem 2rem;
+  }
+  
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid $border-light;
+    flex-shrink: 0;
+    
+    h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+    
+    .results-count {
+      font-size: 0.8rem;
+      color: $text-secondary;
+    }
+  }
+  
+  .table-wrapper {
+    flex: 1;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    // Scrollbar invisible mais fonctionnel
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    
+    &:hover {
+      scrollbar-color: rgba($text-secondary, 0.3) transparent;
+    }
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 3px;
+      
+      &:hover {
+        background: rgba($text-secondary, 0.5);
+      }
+    }
+    
+    &:hover::-webkit-scrollbar-thumb {
+      background: rgba($text-secondary, 0.3);
+    }
+  }
+}
+
+// ============================================
+// TABLE DE DONNÉES UNIFIÉE
+// ============================================
+@mixin pharma-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+  
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: $bg-light;
+    
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: $text-secondary;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      border-bottom: 1px solid $border-color;
+      white-space: nowrap;
+      
+      @include md-up {
+        padding: 0.875rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
+  }
+  
+  tbody {
+    tr {
+      border-bottom: 1px solid $border-light;
+      transition: background-color $transition-fast;
+      
+      &:hover {
+        background: rgba($primary-color, 0.02);
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      td {
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
+        color: $text-primary;
+        vertical-align: middle;
+        
+        @include md-up {
+          padding: 0.875rem 1rem;
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem !important;
+    
+    lucide-icon {
+      color: $text-muted;
+      opacity: 0.5;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      color: $text-secondary;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// ============================================
+// PAGINATION
+// ============================================
+@mixin pagination-base {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  .page-info {
+    color: $text-secondary;
+    font-size: 0.9rem;
+  }
+}
+
+// ============================================
+// MODALES
+// ============================================
+@mixin modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal-backdrop;
+  padding: 1rem;
+}
+
+@mixin modal-base {
+  background: $bg-white;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: $shadow-xl;
+
+  &.modal-sm {
+    max-width: 450px;
+  }
+
+  &.modal-lg {
+    max-width: 900px;
+  }
+}
+
+@mixin modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $border-light;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &.danger h2 {
+    color: $error-color;
+  }
+
+  .btn-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: $radius-md;
+    background: transparent;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $bg-light;
+      color: $text-primary;
+    }
+  }
+}
+
+@mixin modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@mixin modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid $border-light;
+  background: $bg-gray;
+}
+
+// ============================================
+// DATA TABLES
+// ============================================
+@mixin data-table-base {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid $border-light;
+  }
+
+  th {
+    background: $bg-gray;
+    font-weight: 600;
+    color: $text-secondary;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  tbody tr {
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: $bg-gray;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem !important;
+    color: $text-muted;
+
+    lucide-icon {
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+@mixin table-container {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: auto;
+  position: relative;
+  max-height: calc(100vh - 280px);
+
+  // Scroll invisible
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // IE/Edge
+  
+  &::-webkit-scrollbar {
+    display: none; // Chrome, Safari, Opera
+  }
+}
+
+// ============================================
+// BUTTONS
+// ============================================
+@mixin btn-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: $radius-md;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin btn-primary {
+  @include btn-base;
+  background: $primary-color;
+  color: $bg-white;
+
+  &:hover:not(:disabled) {
+    background: $primary-dark;
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin btn-secondary {
+  @include btn-base;
+  background: $bg-light;
+  color: $text-primary;
+  border: 1px solid $border-color;
+
+  &:hover:not(:disabled) {
+    background: $bg-gray;
+    border-color: $primary-color;
+  }
+}
+
+@mixin btn-danger {
+  @include btn-base;
+  background: $error-color;
+  color: $bg-white;
+
+  &:hover:not(:disabled) {
+    background: darken($error-color, 10%);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: $radius-md;
+  background: $bg-light;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $bg-gray;
+    color: $text-primary;
+  }
+
+  &.danger:hover {
+    background: $error-light;
+    color: $error-color;
+  }
+}
+
+// ============================================
+// FORMS
+// ============================================
+@mixin form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 500;
+    color: $text-primary;
+    font-size: 0.9rem;
+  }
+
+  input, select, textarea {
+    padding: 0.75rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    font-size: 0.9rem;
+    transition: border-color $transition-fast;
+    background: $bg-white;
+    color: $text-primary;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+}
+
+@mixin form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+// ============================================
+// LOADING & EMPTY STATES
+// ============================================
+@mixin loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-light;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@mixin empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: $text-muted;
+
+  lucide-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  h3 {
+    color: $text-secondary;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// ============================================
+// BADGES
+// ============================================
+@mixin badge-base {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: $radius-full;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+@mixin badge-success {
+  @include badge-base;
+  background: $success-light;
+  color: $success-color;
+}
+
+@mixin badge-warning {
+  @include badge-base;
+  background: $warning-light;
+  color: $warning-color;
+}
+
+@mixin badge-danger {
+  @include badge-base;
+  background: $error-light;
+  color: $error-color;
+}
+
+@mixin badge-info {
+  @include badge-base;
+  background: $info-light;
+  color: $info-color;
+}
+
+@mixin badge-secondary {
+  @include badge-base;
+  background: rgba($text-secondary, 0.1);
+  color: $text-secondary;
+}
+
+// ============================================
+// PAGE LAYOUT
+// ============================================
+@mixin page-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@mixin page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-content {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0 0 0.25rem 0;
+    }
+
+    p {
+      color: $text-secondary;
+      margin: 0;
+    }
+  }
+}
+
+@mixin filters-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    padding: 0 1rem;
+    flex: 1;
+    min-width: 250px;
+    max-width: 400px;
+
+    lucide-icon {
+      color: $text-muted;
+    }
+
+    input {
+      border: none;
+      outline: none;
+      padding: 0.75rem;
+      width: 100%;
+      font-size: 0.9rem;
+    }
+  }
+
+  .filter-group select {
+    padding: 0.75rem 1rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background: $bg-white;
+    font-size: 0.9rem;
+    min-width: 160px;
+  }
+}
+
+// ============================================
+// ANIMATIONS
+// ============================================
+@mixin spin-animation {
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+// ============================================
+// RESPONSIVE
+// ============================================
+@mixin responsive-mobile {
+  @media (max-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin responsive-tablet {
+  @media (min-width: $breakpoint-md) and (max-width: $breakpoint-lg) {
+    @content;
+  }
+}
+
+@mixin responsive-desktop {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}

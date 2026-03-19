@@ -1,144 +1,37 @@
-// Layout identique à Stock Médicaments
+@use '../../../shared/styles/variables' as *;
+@use '../../../shared/styles/mixins' as m;
+@use '../../../shared/styles/pharmacie-mixins' as *;
+
+// ============================================
+// PAGE LAYOUT
+// ============================================
 .ordonnances-page {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  @include pharma-page-layout;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-
-  .header-content {
-    h1 {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 1.75rem;
-      font-weight: 600;
-      color: #1e293b;
-      margin: 0 0 0.25rem 0;
-    }
-
-    p {
-      color: #64748b;
-      margin: 0;
-    }
-  }
+// ============================================
+// BARRE DE RECHERCHE
+// ============================================
+.search-bar {
+  @include pharma-search-bar;
 }
 
-.filters-bar {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-
-  .search-box {
-    display: flex;
-    align-items: center;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0 1rem;
-    flex: 1;
-    min-width: 250px;
-    max-width: 400px;
-
-    lucide-icon {
-      color: #94a3b8;
-    }
-
-    input {
-      border: none;
-      outline: none;
-      padding: 0.75rem;
-      width: 100%;
-      font-size: 0.9rem;
-    }
-  }
-}
-
-// Table container avec scroll invisible - identique à Stock
+// ============================================
+// TABLE CONTAINER
+// ============================================
 .table-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: auto;
-  position: relative;
-  max-height: calc(100vh - 280px);
-
-  // Scroll invisible
-  scrollbar-width: none; // Firefox
-  -ms-overflow-style: none; // IE/Edge
-  
-  &::-webkit-scrollbar {
-    display: none; // Chrome, Safari, Opera
-  }
-
-  // Désactiver le scroll pour moins de 5 ordonnances
-  &:has(tbody tr:nth-child(5):not(:last-child)) {
-    overflow-y: auto;
-  }
-
-  &:not(:has(tbody tr:nth-child(5))) {
-    overflow: visible;
-    max-height: none;
-  }
+  @include pharma-table-container;
 }
 
 .loading-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
+  @include loading-overlay;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Data table - identique à Stock
+// ============================================
+// DATA TABLE
+// ============================================
 .data-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th, td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  th {
-    background: #f8fafc;
-    font-weight: 600;
-    color: #475569;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-
-  tbody tr:hover {
-    background: #f8fafc;
-  }
+  @include pharma-data-table;
 
   .patient-cell {
     display: flex;
@@ -146,11 +39,11 @@
     gap: 0.5rem;
 
     lucide-icon {
-      color: #3b82f6;
+      color: $primary-color;
     }
 
     strong {
-      color: #1e293b;
+      color: $text-primary;
     }
   }
 
@@ -158,7 +51,7 @@
     .meds-count {
       display: block;
       font-weight: 500;
-      color: #1e293b;
+      color: $text-primary;
       margin-bottom: 0.25rem;
     }
 
@@ -171,110 +64,79 @@
     .med-tag {
       display: inline-block;
       padding: 0.125rem 0.5rem;
-      background: #f1f5f9;
-      border-radius: 4px;
+      background: $bg-light;
+      border-radius: $radius-sm;
       font-size: 0.75rem;
-      color: #64748b;
+      color: $text-secondary;
       max-width: 120px;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .more-tag {
-      display: inline-block;
-      padding: 0.125rem 0.5rem;
-      background: #e0e7ff;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      color: #3730a3;
     }
   }
 
   .montant {
     font-weight: 600;
-    color: #059669;
+    color: $success-color;
   }
 
   .montant-na {
-    color: #94a3b8;
+    color: $text-muted;
   }
 
-  .empty-state {
-    text-align: center;
-    padding: 3rem !important;
-    color: #94a3b8;
-
-    lucide-icon {
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    p {
-      margin: 0;
-    }
-  }
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  
+  @include m.md-up {
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
 }
 
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.completed-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #dcfce7;
-  color: #166534;
+.btn-icon {
+  @include btn-icon;
+  width: 32px;
+  height: 32px;
+  
+  @include m.md-up {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-
-  &.badge-success {
-    background: #dcfce7;
-    color: #166534;
-  }
+  @include badge-base;
 
   &.badge-warning {
-    background: #fef3c7;
-    color: #92400e;
+    background: $warning-light;
+    color: $warning-color;
   }
 
   &.badge-info {
-    background: #dbeafe;
-    color: #1e40af;
+    background: $info-light;
+    color: $info-color;
+  }
+
+  &.badge-success {
+    background: $success-light;
+    color: $success-color;
   }
 
   &.badge-primary {
-    background: #e0e7ff;
-    color: #3730a3;
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
   }
 
   &.badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: $error-light;
+    color: $error-color;
   }
 
   &.badge-secondary {
-    background: #f1f5f9;
-    color: #475569;
+    background: $bg-light;
+    color: $text-secondary;
   }
 }
 
@@ -287,10 +149,10 @@
 
 .montant-info {
   font-weight: 500;
-  color: #059669;
+  color: $success-color;
 
   .restant {
-    color: #dc2626;
+    color: $error-color;
     font-size: 0.8rem;
   }
 }
@@ -300,103 +162,41 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  border-radius: 8px;
+  border-radius: $radius-md;
   font-weight: 500;
   font-size: 0.9rem;
-  background: #dcfce7;
-  color: #166534;
+  background: $success-light;
+  color: $success-color;
 }
 
 .empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #94a3b8;
-
-  lucide-icon {
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-
-  h3 {
-    color: #475569;
-    margin: 0 0 0.5rem 0;
-  }
-
-  p {
-    margin: 0;
-  }
+  @include empty-state;
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  @include btn-base;
 
   &.btn-primary {
-    background: #3b82f6;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: #2563eb;
-    }
+    @include btn-primary;
   }
 
   &.btn-secondary {
-    background: #f1f5f9;
-    color: #475569;
-
-    &:hover:not(:disabled) {
-      background: #e2e8f0;
-    }
+    @include btn-secondary;
   }
 }
 
 .pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-
-  .page-info {
-    color: #64748b;
-    font-size: 0.9rem;
-  }
+  @include pagination-base;
 }
 
 // Modal styles
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
+  @include modal-overlay;
 }
 
 .modal {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
+  @include modal-base;
   max-width: 700px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 
   &.modal-lg {
     max-width: 900px;
@@ -404,45 +204,16 @@
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1e293b;
-  }
-
-  .btn-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: #64748b;
-    cursor: pointer;
-
-    &:hover {
-      background: #f1f5f9;
-    }
-  }
+  @include modal-header;
 }
 
 .modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
+  @include modal-body;
 
   .patient-summary {
-    background: #f8fafc;
+    background: $bg-gray;
     padding: 1rem;
-    border-radius: 8px;
+    border-radius: $radius-md;
     margin-bottom: 1.5rem;
 
     .summary-row {
@@ -453,7 +224,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: #475569;
+        color: $text-secondary;
       }
     }
   }
@@ -470,47 +241,47 @@
     th, td {
       padding: 0.75rem;
       text-align: left;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid $border-light;
     }
 
     th {
-      background: #f8fafc;
+      background: $bg-gray;
       font-weight: 600;
-      color: #475569;
+      color: $text-secondary;
       font-size: 0.85rem;
     }
 
     tbody tr {
       &:hover {
-        background: #f8fafc;
+        background: $bg-gray;
       }
 
       &.disabled {
         opacity: 0.5;
-        background: #f1f5f9;
+        background: $bg-light;
       }
     }
 
     .dosage {
       display: block;
       font-size: 0.8rem;
-      color: #64748b;
+      color: $text-secondary;
     }
 
     .low {
-      color: #dc2626;
+      color: $error-color;
       font-weight: 500;
     }
 
     .qty-input {
       width: 70px;
       padding: 0.5rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
+      border: 1px solid $border-color;
+      border-radius: $radius-sm;
       text-align: center;
 
       &:disabled {
-        background: #f1f5f9;
+        background: $bg-light;
       }
     }
 
@@ -518,12 +289,12 @@
       .total-label {
         text-align: right;
         font-weight: 600;
-        color: #1e293b;
+        color: $text-primary;
       }
 
       .total-value {
         font-weight: 700;
-        color: #059669;
+        color: $success-color;
         font-size: 1.1rem;
       }
     }
@@ -531,75 +302,26 @@
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  label {
-    font-weight: 500;
-    color: #374151;
-    font-size: 0.9rem;
-  }
-
-  textarea {
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    resize: vertical;
-
-    &:focus {
-      outline: none;
-      border-color: #3b82f6;
-    }
-  }
+  @include form-group;
 }
 
 .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  @include modal-footer;
 }
 
 // Responsive
-@media (max-width: 768px) {
-  .ordonnances-page {
-    padding: 1rem;
+@include m.md-down {
+  .table-container {
+    margin: 0.75rem;
   }
-
-  .filters-bar {
-    flex-direction: column;
-
-    .search-box {
-      max-width: none;
+  
+  .data-table {
+    th, td {
+      padding: 0.75rem;
+      white-space: nowrap;
     }
   }
-
-  .ordonnance-card {
-    .card-meta {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .medicaments-list .med-item {
-      flex-wrap: wrap;
-      gap: 0.5rem;
-
-      .med-quantities {
-        margin-right: 0;
-      }
-
-      .price {
-        width: 100%;
-        text-align: left;
-        margin-top: 0.5rem;
-      }
-    }
-  }
-
+  
   .modal {
     max-width: 100%;
     margin: 0.5rem;

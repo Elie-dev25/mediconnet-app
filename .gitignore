@@ -21,7 +21,7 @@ logs/
 storage/
 !storage/.gitkeep
 
-# Ignorer tous les fichiers .md sauf README.md et README-ROUTES.md
+# Ignorer tous les fichiers .md sauf README.md, README-ROUTES.md
 *.md
 !README.md
 !README-ROUTES.md

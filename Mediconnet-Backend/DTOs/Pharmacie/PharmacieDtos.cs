@@ -14,6 +14,37 @@ public class PharmacieKpiDto
     public int CommandesEnCours { get; set; }
 }
 
+public class PharmacieProfileDto
+{
+    public int IdPharmacien { get; set; }
+    public string Nom { get; set; } = "";
+    public string Prenom { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string? Telephone { get; set; }
+    public string? Photo { get; set; }
+    public string? Specialite { get; set; }
+    public string? NumeroLicence { get; set; }
+    public string? PharmacieNom { get; set; }
+    public DateTime? CreatedAt { get; set; }
+}
+
+public class PharmacieDashboardDto
+{
+    public int TotalMedicaments { get; set; }
+    public int CommandesMois { get; set; }
+    public int OrdonnancesAujourdHui { get; set; }
+    public int FournisseursActifs { get; set; }
+}
+
+public class UpdatePharmacieProfileRequest
+{
+    public string? Telephone { get; set; }
+    public string? Photo { get; set; }
+    public string? Specialite { get; set; }
+    public string? NumeroLicence { get; set; }
+    public string? PharmacieNom { get; set; }
+}
+
 // ==================== Médicaments/Stock ====================
 
 public class MedicamentStockDto
@@ -34,6 +65,51 @@ public class MedicamentStockDto
     public string? TemperatureConservation { get; set; }
     public string StatutStock { get; set; } = "normal"; // normal, alerte, rupture
     public int? JoursAvantPeremption { get; set; }
+    public List<FournisseurMedicamentDto>? Fournisseurs { get; set; }
+}
+
+public class FournisseurMedicamentDto
+{
+    public int IdFournisseur { get; set; }
+    public string NomFournisseur { get; set; } = "";
+    public string? ContactNom { get; set; }
+    public string? ContactEmail { get; set; }
+    public string? ContactTelephone { get; set; }
+    public int DelaiLivraisonJours { get; set; }
+    public DateTime? DerniereCommande { get; set; }
+    public int TotalCommandes { get; set; }
+    
+    // Détails du médicament pour éviter toute confusion
+    public int IdMedicament { get; set; }
+    public string NomMedicament { get; set; } = "";
+    public string? Dosage { get; set; }
+    public string? Laboratoire { get; set; }
+    public string? FormeGalenique { get; set; }
+}
+
+public class HistoriqueFournisseurMedicamentDto
+{
+    public int IdCommande { get; set; }
+    public DateTime DateCommande { get; set; }
+    public DateTime? DateReceptionPrevue { get; set; }
+    public DateTime? DateReceptionReelle { get; set; }
+    public string Statut { get; set; } = "";
+    public decimal MontantTotal { get; set; }
+    public int QuantiteCommandee { get; set; }
+    public int QuantiteRecue { get; set; }
+    public decimal PrixAchat { get; set; }
+    public string? NumeroLot { get; set; }
+    public DateTime? DatePeremption { get; set; }
+    
+    // Infos fournisseur
+    public int IdFournisseur { get; set; }
+    public string NomFournisseur { get; set; } = "";
+    
+    // Infos médicament
+    public int IdMedicament { get; set; }
+    public string NomMedicament { get; set; } = "";
+    public string? Dosage { get; set; }
+    public string? Laboratoire { get; set; }
 }
 
 public class CreateMedicamentRequest

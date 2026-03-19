@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using AspNetCoreRateLimit;
 using FluentValidation;
@@ -5,6 +6,7 @@ using Mediconnet_Backend.Core.Configuration;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Configuration;
 using Mediconnet_Backend.Data;
+using Mediconnet_Backend.DTOs.Admin;
 using Mediconnet_Backend.Services;
 using Mediconnet_Backend.Hubs;
 using Mediconnet_Backend.Validators;
@@ -14,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+var isAdminSeedMode = args.Contains("--seed-admin");
 
 // ==================== CONFIGURATION ====================
 // Configure Email Settings
@@ -182,10 +185,15 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<NotificationIntegrationService>();
 
 // ==================== JWT CONFIGURATION ====================
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? "default-super-secret-key-minimum-32-characters-long-!!!";
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("JWT secret is not configured. Please set Jwt__Secret in the environment variables.");
+}
 
 var key = Encoding.ASCII.GetBytes(jwtSecret);
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MediConnect";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MediConnectUsers";
 
 builder.Services
     .AddAuthentication(options =>
@@ -200,9 +208,9 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "MediConnect",
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "MediConnectUsers",
+            ValidAudience = jwtAudience,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
             RoleClaimType = System.Security.Claims.ClaimTypes.Role,
@@ -267,6 +275,12 @@ using (var scope = app.Services.CreateScope())
     await seeder.SeedAsync();
 }
 
+if (isAdminSeedMode)
+{
+    var exitCode = await RunSeedAdminModeAsync(app, args);
+    Environment.Exit(exitCode);
+}
+
 // ==================== MIDDLEWARE ====================
 // Configure HTTP request pipeline
 // Swagger activé en dev ET production pour faciliter le débogage
@@ -310,3 +324,98 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
 
 // ==================== RUN ====================
 app.Run();
+
+static async Task<int> RunSeedAdminModeAsync(WebApplication app, string[] args)
+{
+    var cliArgs = ParseArguments(args);
+
+    if (!cliArgs.TryGetValue("email", out var email) || string.IsNullOrWhiteSpace(email))
+    {
+        Console.Error.WriteLine("❌ Veuillez fournir l'email de l'administrateur avec --email");
+        return 1;
+    }
+
+    var nom = cliArgs.TryGetValue("nom", out var nomValue) && !string.IsNullOrWhiteSpace(nomValue)
+        ? nomValue
+        : "Admin";
+    var prenom = cliArgs.TryGetValue("prenom", out var prenomValue) && !string.IsNullOrWhiteSpace(prenomValue)
+        ? prenomValue
+        : "Systeme";
+    var telephone = cliArgs.TryGetValue("telephone", out var phoneValue) && !string.IsNullOrWhiteSpace(phoneValue)
+        ? phoneValue
+        : "000000000";
+    var passwordProvided = cliArgs.TryGetValue("password", out var passwordValue) && !string.IsNullOrWhiteSpace(passwordValue);
+    var password = passwordProvided ? passwordValue! : GenerateSecurePassword();
+
+    using var scope = app.Services.CreateScope();
+    var userService = scope.ServiceProvider.GetRequiredService<IUserManagementService>();
+
+    var request = new CreateUserRequest
+    {
+        Nom = nom,
+        Prenom = prenom,
+        Email = email,
+        Telephone = telephone,
+        Password = password,
+        Role = "administrateur"
+    };
+
+    var (success, message, _) = await userService.CreateUserAsync(request);
+    if (!success)
+    {
+        Console.Error.WriteLine($"❌ {message}");
+        return 1;
+    }
+
+    Console.WriteLine("✅ Administrateur créé avec succès");
+    Console.WriteLine($"    Email     : {email}");
+    Console.WriteLine($"    Nom       : {nom} {prenom}");
+    Console.WriteLine($"    Téléphone : {telephone}");
+    if (!passwordProvided)
+    {
+        Console.WriteLine($"    Mot de passe généré : {password}");
+    }
+
+    return 0;
+}
+
+static Dictionary<string, string> ParseArguments(string[] args)
+{
+    var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    for (var i = 0; i < args.Length; i++)
+    {
+        var current = args[i];
+        if (!current.StartsWith("--", StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        var key = current[2..];
+        string value = "true";
+
+        if (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal))
+        {
+            value = args[i + 1];
+            i++;
+        }
+
+        result[key] = value;
+    }
+
+    return result;
+}
+
+static string GenerateSecurePassword(int length = 16)
+{
+    const string allowedChars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@$!#%";
+    var bytes = RandomNumberGenerator.GetBytes(length);
+    var chars = new char[length];
+
+    for (var i = 0; i < length; i++)
+    {
+        chars[i] = allowedChars[bytes[i] % allowedChars.Length];
+    }
+
+    return new string(chars);
+}

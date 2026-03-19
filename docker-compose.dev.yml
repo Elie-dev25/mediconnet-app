@@ -1,0 +1,25 @@
+# Version développement - expose les ports directement
+version: '3.8'
+
+services:
+  mediconnet-frontend:
+    ports:
+      - "4200:80"
+    
+  mediconnet-backend:
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    
+  mailhog:
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    
+  mediconnet-db:
+    ports:
+      - "3306:3306"
+    
+  adminer:
+    ports:
+      - "8888:8080"

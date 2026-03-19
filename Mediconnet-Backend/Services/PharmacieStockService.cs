@@ -12,9 +12,16 @@ public interface IPharmacieStockService
     Task<PharmacieKpiDto> GetKpisAsync();
     Task<List<AlerteStockDto>> GetAlertesAsync();
     
+    // Profile & Dashboard
+    Task<PharmacieProfileDto> GetProfileAsync(int userId);
+    Task<PharmacieDashboardDto> GetDashboardAsync(int userId);
+    Task<PharmacieProfileDto> UpdateProfileAsync(int userId, UpdatePharmacieProfileRequest request);
+    
     // Médicaments/Stock
     Task<PagedResult<MedicamentStockDto>> GetMedicamentsAsync(string? search, string? statut, int page, int pageSize);
     Task<MedicamentStockDto?> GetMedicamentByIdAsync(int id);
+    Task<List<FournisseurMedicamentDto>> GetFournisseursByMedicamentAsync(int id);
+    Task<List<HistoriqueFournisseurMedicamentDto>> GetHistoriqueFournisseurMedicamentAsync(int id);
     Task<MedicamentStockDto> CreateMedicamentAsync(CreateMedicamentRequest request);
     Task<MedicamentStockDto> UpdateMedicamentAsync(int id, UpdateMedicamentRequest request);
     Task<bool> DeleteMedicamentAsync(int id);
@@ -27,6 +34,8 @@ public interface IPharmacieStockService
     Task<List<FournisseurDto>> GetFournisseursAsync(bool? actif = null);
     Task<FournisseurDto> CreateFournisseurAsync(CreateFournisseurRequest request);
     Task<FournisseurDto> UpdateFournisseurAsync(int id, CreateFournisseurRequest request);
+    Task<FournisseurDto> ToggleFournisseurStatutAsync(int id);
+    Task<bool> DeleteFournisseurAsync(int id);
     
     // Commandes
     Task<PagedResult<CommandePharmacieDto>> GetCommandesAsync(string? statut, int page, int pageSize);
@@ -198,7 +207,91 @@ public class PharmacieStockService : IPharmacieStockService
     public async Task<MedicamentStockDto?> GetMedicamentByIdAsync(int id)
     {
         var med = await _context.Medicaments.FindAsync(id);
-        return med == null ? null : MapToMedicamentDto(med);
+        if (med == null)
+            return null;
+
+        var fournisseurs = await GetFournisseursByMedicamentAsync(id);
+        return await MapToMedicamentDtoAsync(med, fournisseurs);
+    }
+
+    public async Task<List<FournisseurMedicamentDto>> GetFournisseursByMedicamentAsync(int id)
+    {
+        var medicament = await _context.Medicaments.FindAsync(id);
+        if (medicament == null)
+            return new List<FournisseurMedicamentDto>();
+
+        // Récupérer tous les fournisseurs qui ont commandé ce médicament
+        var fournisseurs = await _context.CommandesPharmacie
+            .Where(c => c.Lignes!.Any(l => l.IdMedicament == id))
+            .GroupBy(c => c.IdFournisseur)
+            .Select(g => new
+            {
+                IdFournisseur = g.Key,
+                DerniereCommande = g.Max(c => c.DateCommande),
+                TotalCommandes = g.Count(),
+                Fournisseur = g.FirstOrDefault().Fournisseur
+            })
+            .Select(f => new FournisseurMedicamentDto
+            {
+                IdFournisseur = f.IdFournisseur,
+                NomFournisseur = f.Fournisseur!.NomFournisseur,
+                ContactNom = f.Fournisseur.ContactNom,
+                ContactEmail = f.Fournisseur.ContactEmail,
+                ContactTelephone = f.Fournisseur.ContactTelephone,
+                DelaiLivraisonJours = f.Fournisseur.DelaiLivraisonJours,
+                DerniereCommande = f.DerniereCommande,
+                TotalCommandes = f.TotalCommandes,
+                
+                // Détails du médicament pour identification sans ambiguïté
+                IdMedicament = medicament.IdMedicament,
+                NomMedicament = medicament.Nom,
+                Dosage = medicament.Dosage,
+                Laboratoire = medicament.Laboratoire,
+                FormeGalenique = medicament.FormeGalenique
+            })
+            .OrderBy(f => f.NomFournisseur)
+            .ToListAsync();
+
+        return fournisseurs;
+    }
+
+    public async Task<List<HistoriqueFournisseurMedicamentDto>> GetHistoriqueFournisseurMedicamentAsync(int id)
+    {
+        var medicament = await _context.Medicaments.FindAsync(id);
+        if (medicament == null)
+            return new List<HistoriqueFournisseurMedicamentDto>();
+
+        // Récupérer l'historique complet des commandes pour ce médicament
+        var historique = await _context.CommandesPharmacie
+            .Where(c => c.Lignes!.Any(l => l.IdMedicament == id))
+            .SelectMany(c => c.Lignes!.Where(l => l.IdMedicament == id), (c, l) => new HistoriqueFournisseurMedicamentDto
+            {
+                IdCommande = c.IdCommande,
+                DateCommande = c.DateCommande,
+                DateReceptionPrevue = c.DateReceptionPrevue,
+                DateReceptionReelle = c.DateReceptionReelle,
+                Statut = c.Statut,
+                MontantTotal = c.MontantTotal,
+                QuantiteCommandee = l.QuantiteCommandee,
+                QuantiteRecue = l.QuantiteRecue,
+                PrixAchat = l.PrixAchat,
+                NumeroLot = l.NumeroLot,
+                DatePeremption = l.DatePeremption,
+                
+                // Infos fournisseur
+                IdFournisseur = c.IdFournisseur,
+                NomFournisseur = c.Fournisseur!.NomFournisseur,
+                
+                // Infos médicament
+                IdMedicament = medicament.IdMedicament,
+                NomMedicament = medicament.Nom,
+                Dosage = medicament.Dosage,
+                Laboratoire = medicament.Laboratoire
+            })
+            .OrderByDescending(h => h.DateCommande)
+            .ToListAsync();
+
+        return historique;
     }
 
     public async Task<MedicamentStockDto> CreateMedicamentAsync(CreateMedicamentRequest request)
@@ -439,6 +532,48 @@ public class PharmacieStockService : IPharmacieStockService
             DelaiLivraisonJours = fournisseur.DelaiLivraisonJours,
             Actif = fournisseur.Actif
         };
+    }
+
+    public async Task<FournisseurDto> ToggleFournisseurStatutAsync(int id)
+    {
+        var fournisseur = await _context.Fournisseurs.FindAsync(id)
+            ?? throw new KeyNotFoundException($"Fournisseur {id} non trouvé");
+
+        fournisseur.Actif = !fournisseur.Actif;
+        await _context.SaveChangesAsync();
+
+        return new FournisseurDto
+        {
+            IdFournisseur = fournisseur.IdFournisseur,
+            NomFournisseur = fournisseur.NomFournisseur,
+            ContactNom = fournisseur.ContactNom,
+            ContactEmail = fournisseur.ContactEmail,
+            ContactTelephone = fournisseur.ContactTelephone,
+            Adresse = fournisseur.Adresse,
+            ConditionsPaiement = fournisseur.ConditionsPaiement,
+            DelaiLivraisonJours = fournisseur.DelaiLivraisonJours,
+            Actif = fournisseur.Actif
+        };
+    }
+
+    public async Task<bool> DeleteFournisseurAsync(int id)
+    {
+        var fournisseur = await _context.Fournisseurs.FindAsync(id);
+        if (fournisseur == null)
+            return false;
+
+        // Vérifier si le fournisseur a des commandes associées
+        var hasCommandes = await _context.CommandesPharmacie
+            .AnyAsync(c => c.IdFournisseur == id);
+
+        if (hasCommandes)
+        {
+            throw new InvalidOperationException("Impossible de supprimer un fournisseur avec des commandes associées");
+        }
+
+        _context.Fournisseurs.Remove(fournisseur);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     // ==================== Commandes ====================
@@ -932,6 +1067,39 @@ public class PharmacieStockService : IPharmacieStockService
     }
 
     // ==================== Helpers ====================
+
+    private async Task<MedicamentStockDto> MapToMedicamentDtoAsync(Medicament m, List<FournisseurMedicamentDto>? fournisseurs = null)
+    {
+        var aujourdhui = DateTime.UtcNow.Date;
+        var joursAvantPeremption = m.DatePeremption.HasValue 
+            ? (int?)(m.DatePeremption.Value - aujourdhui).Days 
+            : null;
+
+        string statut = "normal";
+        if (m.Stock == 0 || m.Stock == null) statut = "rupture";
+        else if (m.Stock <= m.SeuilStock) statut = "alerte";
+
+        return new MedicamentStockDto
+        {
+            IdMedicament = m.IdMedicament,
+            Nom = m.Nom,
+            Dosage = m.Dosage,
+            FormeGalenique = m.FormeGalenique,
+            Laboratoire = m.Laboratoire,
+            Stock = m.Stock,
+            SeuilStock = m.SeuilStock,
+            Prix = m.Prix,
+            DatePeremption = m.DatePeremption,
+            EmplacementRayon = m.EmplacementRayon,
+            CodeATC = m.CodeATC,
+            Actif = m.Actif,
+            Conditionnement = m.Conditionnement,
+            TemperatureConservation = m.TemperatureConservation,
+            StatutStock = statut,
+            JoursAvantPeremption = joursAvantPeremption,
+            Fournisseurs = fournisseurs
+        };
+    }
 
     private static MedicamentStockDto MapToMedicamentDto(Medicament m)
     {
@@ -1474,5 +1642,103 @@ public class PharmacieStockService : IPharmacieStockService
                 PrixUnitaire = pm.Medicament?.Prix
             }).ToList() ?? new List<MedicamentPrescritDto>()
         };
+    }
+
+    public async Task<PharmacieProfileDto> GetProfileAsync(int userId)
+    {
+        var utilisateur = await _context.Utilisateurs
+            .FirstOrDefaultAsync(u => u.IdUser == userId)
+            ?? throw new KeyNotFoundException($"Utilisateur {userId} non trouvé");
+
+        var pharmacien = await _context.Pharmaciens
+            .FirstOrDefaultAsync(p => p.IdUser == userId);
+
+        return new PharmacieProfileDto
+        {
+            IdPharmacien = pharmacien?.IdUser ?? utilisateur.IdUser,
+            Nom = utilisateur.Nom,
+            Prenom = utilisateur.Prenom,
+            Email = utilisateur.Email,
+            Telephone = utilisateur.Telephone,
+            Photo = utilisateur.Photo,
+            Specialite = pharmacien?.NumeroOrdre != null ? "Pharmacien hospitalier" : "Pharmacien",
+            NumeroLicence = pharmacien?.NumeroOrdre ?? pharmacien?.Matricule,
+            PharmacieNom = utilisateur.Adresse ?? "Pharmacie Centrale",
+            CreatedAt = pharmacien?.CreatedAt ?? utilisateur.CreatedAt ?? DateTime.UtcNow
+        };
+    }
+
+    public async Task<PharmacieDashboardDto> GetDashboardAsync(int userId)
+    {
+        // Vérifier que l'utilisateur existe bien (pharmacien ou support)
+        var utilisateurExiste = await _context.Utilisateurs.AnyAsync(u => u.IdUser == userId);
+        if (!utilisateurExiste)
+            throw new KeyNotFoundException($"Utilisateur {userId} non trouvé");
+
+        var now = DateTime.UtcNow;
+        var startOfMonth = new DateTime(now.Year, now.Month, 1);
+        var tomorrow = now.Date.AddDays(1);
+        var today = now.Date;
+
+        var totalMedicamentsTask = _context.Medicaments
+            .Where(m => m.Actif)
+            .CountAsync();
+
+        var commandesMoisTask = _context.CommandesPharmacie
+            .Where(c => c.IdUser == userId && c.DateCommande >= startOfMonth)
+            .CountAsync();
+
+        var ordonnancesAujourdHuiTask = _context.Dispensations
+            .Where(d => d.IdPharmacien == userId && d.DateDispensation >= today && d.DateDispensation < tomorrow)
+            .CountAsync();
+
+        var fournisseursActifsTask = _context.Fournisseurs
+            .Where(f => f.Actif)
+            .CountAsync();
+
+        await Task.WhenAll(totalMedicamentsTask, commandesMoisTask, ordonnancesAujourdHuiTask, fournisseursActifsTask);
+
+        return new PharmacieDashboardDto
+        {
+            TotalMedicaments = totalMedicamentsTask.Result,
+            CommandesMois = commandesMoisTask.Result,
+            OrdonnancesAujourdHui = ordonnancesAujourdHuiTask.Result,
+            FournisseursActifs = fournisseursActifsTask.Result
+        };
+    }
+
+    public async Task<PharmacieProfileDto> UpdateProfileAsync(int userId, UpdatePharmacieProfileRequest request)
+    {
+        var utilisateur = await _context.Utilisateurs
+            .FirstOrDefaultAsync(u => u.IdUser == userId)
+            ?? throw new KeyNotFoundException($"Utilisateur {userId} non trouvé");
+
+        var pharmacien = await _context.Pharmaciens
+            .FirstOrDefaultAsync(p => p.IdUser == userId);
+
+        // Mise à jour des champs utilisateur
+        if (request.Telephone != null)
+            utilisateur.Telephone = request.Telephone;
+        if (request.Photo != null)
+            utilisateur.Photo = request.Photo;
+
+        // Mise à jour des champs pharmacien (si existant)
+        if (pharmacien != null)
+        {
+            if (request.NumeroLicence != null)
+                pharmacien.NumeroOrdre = request.NumeroLicence;
+            pharmacien.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Mettre à jour le champ Adresse pour stocker le nom de la pharmacie
+        if (request.PharmacieNom != null)
+            utilisateur.Adresse = request.PharmacieNom;
+
+        utilisateur.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Retourner le profil mis à jour
+        return await GetProfileAsync(userId);
     }
 }

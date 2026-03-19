@@ -1,0 +1,121 @@
+services:
+  mediconnet-db:
+    image: mysql:8.0
+    container_name: mediconnet-mysql
+    env_file:
+      - .env.production
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "app", "-papp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mediconnet-backend:
+    build:
+      context: ./Mediconnet-Backend
+      dockerfile: Dockerfile
+    container_name: mediconnet-backend
+    env_file:
+      - .env.production
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};OldGuids=true;
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - EmailSettings__SmtpServer=${EMAIL_SMTP_SERVER}
+      - EmailSettings__SmtpPort=${EMAIL_SMTP_PORT}
+      - EmailSettings__UseSsl=${EMAIL_USE_SSL}
+      - EmailSettings__SenderEmail=${EMAIL_SENDER_EMAIL}
+      - EmailSettings__SenderName=${EMAIL_SENDER_NAME}
+      - EmailSettings__EnableEmailConfirmation=true
+      - EmailSettings__TokenExpirationHours=24
+      - EmailSettings__DevMode=false
+      # URLs mises à jour : tout passe par Nginx maintenant
+      - AppSettings__FrontendUrl=${FRONTEND_URL:-http://0.0.0.0:80}
+      - AppSettings__ApiUrl=${API_URL:-http://0.0.0.0:80/api}
+      - DocumentStorage__RootPath=/storage/mediConnect
+      - DocumentStorage__MaxFileSizeBytes=52428800
+    volumes:
+      - ./storage:/storage/mediConnect
+    depends_on:
+      mediconnet-db:
+        condition: service_healthy
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mediconnet-frontend:
+    build:
+      context: ./Mediconnet-Frontend
+      dockerfile: Dockerfile
+    container_name: mediconnet-frontend
+    env_file:
+      - .env.production
+    ports:
+      - "4200:80"
+    depends_on:
+      - mediconnet-backend
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: mediconnet-adminer
+    env_file:
+      - .env.production
+    ports:
+      - "8888:8080"
+    depends_on:
+      - mediconnet-db
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mediconnet-db
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mediconnet-mailhog
+    env_file:
+      - .env.production
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - mediconnet-network
+    restart: unless-stopped
+
+networks:
+  mediconnet-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  document_storage:

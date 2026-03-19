@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, SidebarComponent, MenuItem, ALL_ICONS_PROVIDER } from '../../../shared';
+import { LucideAngularModule, DashboardLayoutComponent, MenuItem, ALL_ICONS_PROVIDER } from '../../../shared';
 import { PHARMACIEN_MENU_ITEMS, PHARMACIEN_SIDEBAR_TITLE } from '../shared';
 import { 
   PharmacieStockService, 
@@ -13,11 +13,13 @@ import {
   ValidationOrdonnanceResult,
   DelivranceResult
 } from '../../../services/pharmacie-stock.service';
+import { FormatService } from '../../../shared/services/format.service';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
 @Component({
   selector: 'app-pharmacien-ordonnances',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SidebarComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DashboardLayoutComponent, PaginationComponent],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './ordonnances.component.html',
   styleUrls: ['./ordonnances.component.scss']
@@ -42,7 +44,10 @@ export class PharmacienOrdonnancesComponent implements OnInit {
   dispensationLignes: { med: MedicamentPrescrit; quantite: number; selected: boolean }[] = [];
   dispensationNotes = '';
 
-  constructor(private stockService: PharmacieStockService) {}
+  constructor(
+    private stockService: PharmacieStockService,
+    public formatService: FormatService
+  ) {}
 
   ngOnInit(): void {
     this.loadOrdonnances();
@@ -73,18 +78,9 @@ export class PharmacienOrdonnancesComponent implements OnInit {
     this.loadOrdonnances();
   }
 
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.loadOrdonnances();
-    }
-  }
-
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.loadOrdonnances();
-    }
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadOrdonnances();
   }
 
   openDispensationModal(ord: OrdonnancePharmacie): void {
@@ -144,7 +140,7 @@ export class PharmacienOrdonnancesComponent implements OnInit {
       next: (result) => {
         this.isProcessing = false;
         if (result.success) {
-          alert(`Ordonnance validée avec succès!\n\nFacture: ${result.numeroFacture}\nMontant total: ${this.formatPrice(result.montantTotal)}\nPart assurance: ${this.formatPrice(result.montantAssurance)}\nPart patient: ${this.formatPrice(result.montantPatient)}\n\nLe patient peut maintenant aller payer à la caisse.`);
+          alert(`Ordonnance validée avec succès!\n\nFacture: ${result.numeroFacture}\nMontant total: ${this.formatService.formatPrice(result.montantTotal)}\nPart assurance: ${this.formatService.formatPrice(result.montantAssurance)}\nPart patient: ${this.formatService.formatPrice(result.montantPatient)}\n\nLe patient peut maintenant aller payer à la caisse.`);
           this.loadOrdonnances();
         } else {
           alert(`Erreur: ${result.message}`);
@@ -213,19 +209,6 @@ export class PharmacienOrdonnancesComponent implements OnInit {
       case 'expiree': return 'Expirée';
       default: return statut;
     }
-  }
-
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  }
-
-  formatPrice(price?: number): string {
-    if (price === undefined || price === null) return '-';
-    return price.toLocaleString('fr-FR') + ' FCFA';
   }
 
   getRestant(med: MedicamentPrescrit): number {
