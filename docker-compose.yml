@@ -9,8 +9,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    # ⚠️ Port 3306 retiré : la base n'est plus accessible de l'extérieur
-    # Pour accéder à MySQL depuis ton PC : SSH tunnel (voir README)
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -32,8 +32,8 @@ services:
     container_name: mediconnet-backend
     env_file:
       - .env
-    # ⚠️ Ports retirés : le backend n'est plus accessible directement de l'extérieur
-    # Seul Nginx peut lui parler (via le réseau interne Docker)
+    ports:
+      - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
@@ -74,7 +74,8 @@ services:
       context: ./Mediconnet-Frontend
       dockerfile: Dockerfile
     container_name: mediconnet-frontend
-    # ⚠️ Port retiré : le frontend n'est plus accessible directement de l'extérieur
+    ports:
+      - "4200:80"
     depends_on:
       - mediconnet-backend
     networks:
@@ -101,8 +102,8 @@ services:
   adminer:
     image: adminer:latest
     container_name: mediconnet-adminer
-    # ⚠️ Port retiré : Adminer n'est plus accessible de l'extérieur
-    # Pour y accéder : SSH tunnel (voir README)
+    ports:
+      - "8080:8080"
     depends_on:
       - mediconnet-db
     networks:
@@ -114,8 +115,9 @@ services:
   mailhog:
     image: mailhog/mailhog:latest
     container_name: mediconnet-mailhog
-    # ⚠️ Ports retirés : MailHog n'est plus accessible de l'extérieur
-    # Pour y accéder : SSH tunnel (voir README)
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - mediconnet-network
     restart: unless-stopped

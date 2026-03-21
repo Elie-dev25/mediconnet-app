@@ -22,9 +22,9 @@ storage/
 !storage/.gitkeep
 
 # Ignorer tous les fichiers .md sauf README.md, README-ROUTES.md
-*.md
-!README.md
-!README-ROUTES.md
+# *.md
+# !README.md
+# !README-ROUTES.md
 
 # Fichiers de test
 test_*.ps1
