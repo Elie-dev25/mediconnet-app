@@ -35,17 +35,19 @@ import { CreneauxSelectorComponent, CreneauUnifie } from '../creneaux-selector/c
 import { SpeechRecognitionService, SupportedLanguage } from '../../../services/speech-recognition.service';
 import { PharmacieStockService, MedicamentStock, FormePharmaceutique, VoieAdministration } from '../../../services/pharmacie-stock.service';
 import { AuthService } from '../../../services/auth.service';
+import { ProgrammationInterventionPanelComponent } from '../programmation-intervention-panel/programmation-intervention-panel.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 const GYNECO_SPECIALITE_ID = 23;
+const CHIRURGIE_SPECIALITE_IDS = [5, 6, 12, 21, 26, 31, 39, 41]; // IDs des spécialités chirurgicales
 
-type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'examen_gynecologique' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
+type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'examen_gynecologique' | 'examen_chirurgical' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
 
 @Component({
   selector: 'app-consultation-multi-etapes',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, HospitalisationMultiEtapesComponent, PrescriptionExamensComponent, CreneauxSelectorComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, HospitalisationMultiEtapesComponent, PrescriptionExamensComponent, CreneauxSelectorComponent, ProgrammationInterventionPanelComponent],
   templateUrl: './consultation-multi-etapes.component.html',
   styleUrl: './consultation-multi-etapes.component.scss'
 })
@@ -96,6 +98,10 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   // Clôture de dossier
   dossierCloture = false;
   clotureConfirmee = false;
+
+  // Programmation d'intervention chirurgicale
+  showProgrammationIntervention = false;
+  programmationCreee = false;
 
   // Panneau latéral Hospitalisation (composant multi-étapes réutilisable)
   showHospitalisationPanel = false;
@@ -271,6 +277,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   anamneseForm!: FormGroup;
   examenCliniqueForm!: FormGroup;
   examenGynecologiqueForm!: FormGroup;
+  examenChirurgicalForm!: FormGroup;
   diagnosticForm!: FormGroup;
   planTraitementForm!: FormGroup;
   conclusionForm!: FormGroup;
@@ -930,6 +937,17 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       autresObservations: ['']
     });
 
+    this.examenChirurgicalForm = this.fb.group({
+      zoneExaminee: [''],
+      inspectionLocale: [''],
+      palpationLocale: [''],
+      signesInflammatoires: [''],
+      cicatricesExistantes: [''],
+      mobiliteFonction: [''],
+      conclusionChirurgicale: [''],
+      notesComplementaires: ['']
+    });
+
     // Étape 3: Diagnostic
     this.diagnosticForm = this.fb.group({
       diagnosticPrincipal: ['', Validators.required],
@@ -947,7 +965,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       medicaments: this.fb.array([]),
       examens: this.fb.array([]),
       orientationSpecialiste: [''],
-      motifOrientation: ['']
+      motifOrientation: [''],
+      // Décision chirurgicale (uniquement pour les chirurgiens)
+      decisionChirurgicale: ['surveillance']
     });
 
     // Étape 5: Conclusion
@@ -1101,6 +1121,11 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     // Étape 2bis: Examen Gynécologique (si gynécologue)
     if (this.isGynecoConsultation() && this.consultation.examenGynecologique) {
       this.patchGynecologiqueForm(this.consultation.examenGynecologique);
+    }
+
+    // Étape 2ter: Examen Chirurgical (si chirurgien)
+    if (this.isChirurgieConsultation() && this.consultation.examenChirurgical) {
+      this.patchChirurgicalForm(this.consultation.examenChirurgical);
     }
 
     // Étape 3: Diagnostic
@@ -1361,6 +1386,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       case 'examen_clinique': return true; // Examen clinique optionnel
       case 'examen_gynecologique':
         return !this.isGynecoConsultation() || this.examenGynecologiqueForm.valid;
+      case 'examen_chirurgical':
+        return !this.isChirurgieConsultation() || this.examenChirurgicalForm.valid;
       case 'diagnostic': return this.diagnosticForm.valid;
       case 'plan_traitement': return true; // Plan de traitement optionnel
       case 'conclusion': return true;
@@ -1403,6 +1430,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
           break;
         case 'examen_gynecologique':
           await this.saveExamenGynecologique();
+          break;
+        case 'examen_chirurgical':
+          await this.saveExamenChirurgical();
           break;
         case 'diagnostic':
           await this.saveDiagnostic();
@@ -1488,6 +1518,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     if (this.isGynecoConsultation()) {
       newEtapes.push('examen_gynecologique');
     }
+    if (this.isChirurgieConsultation()) {
+      newEtapes.push('examen_chirurgical');
+    }
     newEtapes.push('diagnostic', 'plan_traitement', 'conclusion', 'suivi');
 
     const current = this.etapeActuelle;
@@ -1499,6 +1532,10 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   public isGynecoConsultation(): boolean {
     return (this.consultation?.specialiteId ?? 0) === GYNECO_SPECIALITE_ID;
+  }
+
+  public isChirurgieConsultation(): boolean {
+    return CHIRURGIE_SPECIALITE_IDS.includes(this.consultation?.specialiteId ?? 0);
   }
 
   private patchGynecologiqueForm(gyneco?: ExamenGynecologiqueDto): void {
@@ -1531,6 +1568,53 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     );
   }
 
+  hasExamenChirurgicalData(): boolean {
+    if (!this.isChirurgieConsultation()) {
+      return false;
+    }
+    const form = this.examenChirurgicalForm.value || {};
+    return !!(
+      form.zoneExaminee?.trim() ||
+      form.inspectionLocale?.trim() ||
+      form.palpationLocale?.trim() ||
+      form.signesInflammatoires?.trim() ||
+      form.cicatricesExistantes?.trim() ||
+      form.mobiliteFonction?.trim() ||
+      form.conclusionChirurgicale?.trim()
+    );
+  }
+
+  private async saveExamenChirurgical(): Promise<void> {
+    if (!this.isChirurgieConsultation()) {
+      return;
+    }
+    const form = this.examenChirurgicalForm.value;
+    await this.consultationService.saveExamenChirurgical(this.consultationId, form).toPromise();
+  }
+
+  private patchChirurgicalForm(chirurgical?: any): void {
+    if (!chirurgical) {
+      this.examenChirurgicalForm.reset();
+      return;
+    }
+    this.examenChirurgicalForm.patchValue({
+      zoneExaminee: chirurgical.zoneExaminee ?? '',
+      inspectionLocale: chirurgical.inspectionLocale ?? '',
+      palpationLocale: chirurgical.palpationLocale ?? '',
+      signesInflammatoires: chirurgical.signesInflammatoires ?? '',
+      cicatricesExistantes: chirurgical.cicatricesExistantes ?? '',
+      mobiliteFonction: chirurgical.mobiliteFonction ?? '',
+      conclusionChirurgicale: chirurgical.conclusionChirurgicale ?? '',
+      notesComplementaires: chirurgical.notesComplementaires ?? ''
+    });
+    // La décision chirurgicale est maintenant dans planTraitementForm
+    if (chirurgical.decision) {
+      this.planTraitementForm.patchValue({
+        decisionChirurgicale: chirurgical.decision
+      });
+    }
+  }
+
   private async saveDiagnostic(): Promise<void> {
     const diagnostic: DiagnosticDto = this.diagnosticForm.value;
     await this.consultationService.saveDiagnostic(this.consultationId, diagnostic).toPromise();
@@ -1548,9 +1632,16 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       } : undefined,
       examensPrescrits: this.examensPrescriptions,
       orientationSpecialiste: form.orientationSpecialiste,
-      motifOrientation: form.motifOrientation
+      motifOrientation: form.motifOrientation,
+      // Décision chirurgicale (uniquement pour les chirurgiens)
+      decisionChirurgicale: this.isChirurgieConsultation() ? form.decisionChirurgicale : undefined
     };
     await this.consultationService.savePlanTraitement(this.consultationId, planTraitement as any).toPromise();
+    
+    // Si indication opératoire, ouvrir le panneau de programmation d'intervention
+    if (this.isChirurgieConsultation() && form.decisionChirurgicale === 'indication_operatoire') {
+      this.showProgrammationIntervention = true;
+    }
   }
 
   private async saveConclusion(): Promise<void> {
@@ -2075,5 +2166,34 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
    */
   onHospitalisationCancelled(): void {
     this.closeHospitalisationPanel();
+  }
+
+  /**
+   * Ouvrir le panneau de programmation d'intervention
+   */
+  openProgrammationIntervention(): void {
+    this.showProgrammationIntervention = true;
+  }
+
+  /**
+   * Fermer le panneau de programmation d'intervention
+   */
+  closeProgrammationIntervention(): void {
+    this.showProgrammationIntervention = false;
+  }
+
+  /**
+   * Callback quand la programmation est sauvegardée
+   */
+  onProgrammationSaved(idProgrammation: number): void {
+    this.programmationCreee = true;
+    this.showProgrammationIntervention = false;
+  }
+
+  /**
+   * Vérifie si une indication opératoire a été décidée (maintenant dans planTraitementForm)
+   */
+  hasIndicationOperatoire(): boolean {
+    return this.planTraitementForm?.get('decisionChirurgicale')?.value === 'indication_operatoire';
   }
 }

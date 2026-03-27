@@ -405,3 +405,4 @@ npm install
 ## 🎯 Conseil
 
 **Utilisez toujours la méthode Docker** si possible. C'est plus simple, plus rapide et garantit que toutes les dépendances sont correctement configurées.
+

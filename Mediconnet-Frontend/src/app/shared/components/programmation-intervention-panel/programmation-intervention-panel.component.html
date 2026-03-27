@@ -1,0 +1,213 @@
+<div class="panel-overlay" (click)="onClose()"></div>
+<div class="panel-container">
+  <div class="panel-header">
+    <div class="header-title">
+      <lucide-icon name="scissors" [size]="20"></lucide-icon>
+      <h2>Programmation d'Intervention</h2>
+    </div>
+    <button class="btn-close" (click)="onClose()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <div class="panel-content">
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="isLoading">
+      <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+      <span>Chargement...</span>
+    </div>
+
+    <!-- Formulaire -->
+    <form *ngIf="!isLoading" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <!-- Patient info -->
+      <div class="patient-info" *ngIf="patientNom">
+        <lucide-icon name="user" [size]="16"></lucide-icon>
+        <span>Patient: <strong>{{ patientNom }}</strong></span>
+      </div>
+
+      <!-- Existing programmation badge -->
+      <div class="existing-badge" *ngIf="existingProgrammation">
+        <lucide-icon name="info" [size]="16"></lucide-icon>
+        <span>Programmation existante - Modification en cours</span>
+      </div>
+
+      <!-- Error -->
+      <div class="error-message" *ngIf="error">
+        <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+        {{ error }}
+      </div>
+
+      <!-- Type d'intervention -->
+      <div class="form-section">
+        <h3><lucide-icon name="clipboard-list" [size]="16"></lucide-icon> Type d'intervention</h3>
+        <div class="type-options">
+          <label *ngFor="let type of typesIntervention" 
+                 class="type-option"
+                 [class.selected]="form.get('typeIntervention')?.value === type.value">
+            <input type="radio" formControlName="typeIntervention" [value]="type.value">
+            <span>{{ type.label }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Indication opératoire -->
+      <div class="form-group">
+        <label>Indication opératoire <span class="required">*</span></label>
+        <textarea formControlName="indicationOperatoire" rows="3" 
+                  placeholder="Diagnostic justifiant l'intervention chirurgicale..."></textarea>
+        <div class="field-error" *ngIf="form.get('indicationOperatoire')?.touched && form.get('indicationOperatoire')?.invalid">
+          L'indication opératoire est requise
+        </div>
+      </div>
+
+      <!-- Technique prévue -->
+      <div class="form-group">
+        <label>Technique chirurgicale prévue</label>
+        <textarea formControlName="techniquePrevue" rows="2" 
+                  placeholder="Description de la technique opératoire envisagée..."></textarea>
+      </div>
+
+      <!-- Classification et risque -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Classification ASA</label>
+          <select formControlName="classificationAsa">
+            <option value="">-- Sélectionner --</option>
+            <option *ngFor="let asa of classificationsAsa" [value]="asa.value">{{ asa.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Risque opératoire</label>
+          <select formControlName="risqueOperatoire">
+            <option value="">-- Sélectionner --</option>
+            <option *ngFor="let risque of risquesOperatoires" [value]="risque.value">{{ risque.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date, heure et durée -->
+      <div class="form-row three-cols">
+        <div class="form-group">
+          <label>Date prévue</label>
+          <input type="date" formControlName="datePrevue" [min]="minDate">
+        </div>
+        <div class="form-group">
+          <label>Heure de début</label>
+          <input type="time" formControlName="heureDebut" placeholder="HH:mm">
+        </div>
+        <div class="form-group">
+          <label>Durée estimée (min)</label>
+          <input type="number" formControlName="dureeEstimee" min="0" placeholder="Ex: 120">
+        </div>
+      </div>
+      
+      <!-- Info blocage créneau -->
+      <div class="info-creneau" *ngIf="form.get('datePrevue')?.value && form.get('heureDebut')?.value && form.get('dureeEstimee')?.value">
+        <lucide-icon name="calendar-check" [size]="16"></lucide-icon>
+        <span>Le créneau sera automatiquement bloqué dans votre agenda</span>
+      </div>
+
+      <!-- Sélection du bloc opératoire -->
+      <div class="form-section bloc-section" *ngIf="form.get('datePrevue')?.value && form.get('heureDebut')?.value && form.get('dureeEstimee')?.value">
+        <h3>
+          <lucide-icon name="layout-grid" [size]="16"></lucide-icon> 
+          Bloc opératoire
+          <span class="loading-inline" *ngIf="isCheckingDisponibilite">
+            <lucide-icon name="loader-2" [size]="14" class="spinner"></lucide-icon>
+          </span>
+        </h3>
+        
+        <div class="blocs-grid" *ngIf="blocs.length > 0">
+          <div class="bloc-card" 
+               *ngFor="let bloc of blocs"
+               [class.selected]="selectedBlocId === bloc.idBloc"
+               [class.unavailable]="!isBlocDisponible(bloc.idBloc)"
+               (click)="selectBloc(bloc.idBloc)">
+            <div class="bloc-header">
+              <span class="bloc-nom">{{ bloc.nom }}</span>
+              <span class="badge" [ngClass]="getBlocStatutClass(bloc)">
+                {{ getBlocStatutLabel(bloc) }}
+              </span>
+            </div>
+            <div class="bloc-info" *ngIf="bloc.localisation">
+              <lucide-icon name="map-pin" [size]="12"></lucide-icon>
+              {{ bloc.localisation }}
+            </div>
+            <div class="bloc-dispo" *ngIf="getBlocDisponibilite(bloc.idBloc) as dispo">
+              <span *ngIf="dispo.estDisponible" class="dispo-ok">
+                <lucide-icon name="check-circle" [size]="14"></lucide-icon>
+                Disponible
+              </span>
+              <span *ngIf="!dispo.estDisponible" class="dispo-ko">
+                <lucide-icon name="x-circle" [size]="14"></lucide-icon>
+                Occupé sur ce créneau
+              </span>
+            </div>
+            <div class="bloc-selected-indicator" *ngIf="selectedBlocId === bloc.idBloc">
+              <lucide-icon name="check" [size]="16"></lucide-icon>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-blocs" *ngIf="blocs.length === 0 && !isLoadingBlocs">
+          <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+          <span>Aucun bloc opératoire disponible</span>
+        </div>
+
+        <div class="loading-blocs" *ngIf="isLoadingBlocs">
+          <lucide-icon name="loader-2" [size]="16" class="spinner"></lucide-icon>
+          <span>Chargement des blocs...</span>
+        </div>
+      </div>
+
+      <!-- Bilan pré-opératoire -->
+      <div class="form-group">
+        <label>Bilan pré-opératoire requis</label>
+        <textarea formControlName="bilanPreoperatoire" rows="2" 
+                  placeholder="Examens et bilans à réaliser avant l'intervention..."></textarea>
+      </div>
+
+      <!-- Notes anesthésie -->
+      <div class="form-group">
+        <label>Notes pour l'anesthésiste</label>
+        <textarea formControlName="notesAnesthesie" rows="2" 
+                  placeholder="Informations importantes pour l'anesthésie..."></textarea>
+      </div>
+
+      <!-- Instructions patient -->
+      <div class="form-group">
+        <label>Instructions pré-opératoires pour le patient</label>
+        <textarea formControlName="instructionsPatient" rows="2" 
+                  placeholder="Consignes à suivre avant l'intervention (jeûne, médicaments...)"></textarea>
+      </div>
+
+      <!-- Consentement éclairé -->
+      <div class="form-section consentement-section">
+        <h3><lucide-icon name="file-check" [size]="16"></lucide-icon> Consentement éclairé</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="consentementEclaire">
+          <span>Le patient a été informé des risques et a donné son consentement éclairé</span>
+        </label>
+      </div>
+
+      <!-- Notes complémentaires -->
+      <div class="form-group">
+        <label>Notes complémentaires</label>
+        <textarea formControlName="notes" rows="2" 
+                  placeholder="Autres informations..."></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSaving || form.invalid">
+          <lucide-icon *ngIf="isSaving" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+          <lucide-icon *ngIf="!isSaving" name="save" [size]="16"></lucide-icon>
+          {{ existingProgrammation ? 'Mettre à jour' : 'Programmer l\'intervention' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

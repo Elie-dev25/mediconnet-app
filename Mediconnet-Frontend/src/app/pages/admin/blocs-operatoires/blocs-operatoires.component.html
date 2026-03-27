@@ -1,0 +1,380 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="blocs-container">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1>
+          <lucide-icon name="layout-grid" [size]="28"></lucide-icon>
+          Gestion des Blocs Opératoires
+        </h1>
+        <p class="subtitle">Gérez les blocs opératoires et visualisez leur planning</p>
+      </div>
+      <button class="btn-primary" (click)="openBlocModal()" *ngIf="activeTab === 'liste'">
+        <lucide-icon name="plus" [size]="18"></lucide-icon>
+        Nouveau bloc
+      </button>
+    </div>
+
+    <!-- Messages -->
+    <div class="alert alert-success" *ngIf="successMessage">
+      <lucide-icon name="check-circle" [size]="18"></lucide-icon>
+      {{ successMessage }}
+    </div>
+    <div class="alert alert-danger" *ngIf="error">
+      <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+      {{ error }}
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'liste'"
+        (click)="setActiveTab('liste')">
+        <lucide-icon name="list" [size]="18"></lucide-icon>
+        Liste des blocs
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'agenda'"
+        (click)="setActiveTab('agenda')">
+        <lucide-icon name="calendar" [size]="18"></lucide-icon>
+        Agenda
+      </button>
+    </div>
+
+    <!-- Tab: Liste des blocs -->
+    <div class="tab-content" *ngIf="activeTab === 'liste'">
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+        <span>Chargement...</span>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="!isLoading && blocs.length === 0">
+        <lucide-icon name="layout-grid" [size]="48"></lucide-icon>
+        <h3>Aucun bloc opératoire</h3>
+        <p>Commencez par créer votre premier bloc opératoire</p>
+        <button class="btn-primary" (click)="openBlocModal()">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          Créer un bloc
+        </button>
+      </div>
+
+      <!-- Blocs Grid -->
+      <div class="blocs-grid" *ngIf="!isLoading && blocs.length > 0">
+        <div class="bloc-card" *ngFor="let bloc of blocs" [class.inactive]="!bloc.actif">
+          <div class="bloc-header">
+            <div class="bloc-info">
+              <h3>{{ bloc.nom }}</h3>
+              <span class="badge" [ngClass]="getStatutClass(bloc.statut)">
+                {{ getStatutLabel(bloc.statut) }}
+              </span>
+            </div>
+            <div class="bloc-actions">
+              <button class="btn-icon" title="Voir détails" (click)="viewBlocDetails(bloc)">
+                <lucide-icon name="eye" [size]="18"></lucide-icon>
+              </button>
+              <button class="btn-icon" title="Modifier" (click)="viewBlocDetails(bloc); openBlocModal(selectedBloc!)">
+                <lucide-icon name="edit" [size]="18"></lucide-icon>
+              </button>
+              <button class="btn-icon danger" title="Supprimer" (click)="confirmDelete(bloc)">
+                <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+              </button>
+            </div>
+          </div>
+          
+          <div class="bloc-body">
+            <p class="description" *ngIf="bloc.description">{{ bloc.description }}</p>
+            
+            <div class="bloc-meta">
+              <div class="meta-item" *ngIf="bloc.localisation">
+                <lucide-icon name="map-pin" [size]="14"></lucide-icon>
+                <span>{{ bloc.localisation }}</span>
+              </div>
+              <div class="meta-item">
+                <lucide-icon name="calendar-check" [size]="14"></lucide-icon>
+                <span>{{ bloc.nombreReservationsAujourdhui }} réservation(s) aujourd'hui</span>
+              </div>
+            </div>
+
+            <div class="bloc-status" *ngIf="!bloc.actif">
+              <lucide-icon name="alert-triangle" [size]="14"></lucide-icon>
+              <span>Bloc désactivé</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Agenda -->
+    <div class="tab-content" *ngIf="activeTab === 'agenda'">
+      <!-- Date Navigation -->
+      <div class="agenda-header">
+        <div class="date-navigation">
+          <button class="btn-icon" (click)="goToPreviousDay()">
+            <lucide-icon name="chevron-left" [size]="20"></lucide-icon>
+          </button>
+          <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="date-input">
+          <button class="btn-icon" (click)="goToNextDay()">
+            <lucide-icon name="chevron-right" [size]="20"></lucide-icon>
+          </button>
+          <button class="btn-secondary" (click)="goToToday()">Aujourd'hui</button>
+        </div>
+        <div class="date-display">
+          {{ formatDate(selectedDate) }}
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoadingAgenda">
+        <lucide-icon name="loader-2" [size]="32" class="spin"></lucide-icon>
+        <span>Chargement de l'agenda...</span>
+      </div>
+
+      <!-- Agenda Grid -->
+      <div class="agenda-grid" *ngIf="!isLoadingAgenda">
+        <div class="agenda-bloc" *ngFor="let agenda of agendas" 
+             [class.expanded]="selectedAgendaBloc === agenda.idBloc"
+             (click)="selectAgendaBloc(agenda.idBloc)">
+          <div class="agenda-bloc-header">
+            <h3>{{ agenda.nomBloc }}</h3>
+            <lucide-icon [name]="selectedAgendaBloc === agenda.idBloc ? 'chevron-up' : 'chevron-down'" [size]="18"></lucide-icon>
+          </div>
+          
+          <div class="agenda-timeline" *ngIf="selectedAgendaBloc === agenda.idBloc">
+            <div class="timeline-slot" *ngFor="let creneau of (agenda.creneaux || [])"
+                 [class.reserved]="creneau.estReserve"
+                 [class.available]="!creneau.estReserve">
+              <div class="slot-time">{{ creneau.heureDebut }}</div>
+              <div class="slot-content" *ngIf="creneau.estReserve && creneau.reservation">
+                <div class="reservation-info">
+                  <strong>{{ creneau.reservation.patientNom }} {{ creneau.reservation.patientPrenom }}</strong>
+                  <span class="intervention-type">{{ creneau.reservation.typeIntervention }}</span>
+                  <span class="medecin">Dr. {{ creneau.reservation.medecinNom }}</span>
+                  <span class="duree">{{ formatDuree(creneau.reservation.dureeMinutes) }}</span>
+                </div>
+              </div>
+              <div class="slot-content available" *ngIf="!creneau.estReserve">
+                <span class="disponible">Disponible</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary when collapsed -->
+          <div class="agenda-summary" *ngIf="selectedAgendaBloc !== agenda.idBloc">
+            <div class="summary-stats">
+              <span class="stat reserved">
+                <lucide-icon name="calendar-check" [size]="14"></lucide-icon>
+                {{ getReservedCount(agenda) }} réservés
+              </span>
+              <span class="stat available">
+                <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                {{ getAvailableCount(agenda) }} disponibles
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" *ngIf="agendas.length === 0">
+          <lucide-icon name="calendar-x" [size]="48"></lucide-icon>
+          <h3>Aucun bloc opératoire actif</h3>
+          <p>Créez des blocs opératoires pour voir leur agenda</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="details-panel" [class.open]="showDetailsPanel" *ngIf="selectedBloc">
+      <div class="panel-header">
+        <h2>{{ selectedBloc.nom }}</h2>
+        <button class="btn-icon" (click)="closeDetailsPanel()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="panel-content">
+        <!-- Statut et actions -->
+        <div class="detail-section">
+          <h4>Statut</h4>
+          <div class="status-row">
+            <span class="badge large" [ngClass]="getStatutClass(selectedBloc.statut)">
+              {{ getStatutLabel(selectedBloc.statut) }}
+            </span>
+            <button class="btn-secondary small" (click)="toggleBlocStatus(selectedBloc)">
+              {{ selectedBloc.statut === 'maintenance' ? 'Remettre en service' : 'Mettre en maintenance' }}
+            </button>
+          </div>
+          <div class="status-row" style="margin-top: 0.5rem;">
+            <span [class.text-success]="selectedBloc.actif" [class.text-danger]="!selectedBloc.actif">
+              {{ selectedBloc.actif ? 'Actif' : 'Désactivé' }}
+            </span>
+            <button class="btn-secondary small" (click)="toggleBlocActif(selectedBloc)">
+              {{ selectedBloc.actif ? 'Désactiver' : 'Activer' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Informations -->
+        <div class="detail-section">
+          <h4>Informations</h4>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="selectedBloc.description">
+              <label>Description</label>
+              <p>{{ selectedBloc.description }}</p>
+            </div>
+            <div class="info-item" *ngIf="selectedBloc.localisation">
+              <label>Localisation</label>
+              <p>{{ selectedBloc.localisation }}</p>
+            </div>
+            <div class="info-item" *ngIf="selectedBloc.capacite">
+              <label>Capacité</label>
+              <p>{{ selectedBloc.capacite }}</p>
+            </div>
+            <div class="info-item" *ngIf="selectedBloc.equipements">
+              <label>Équipements</label>
+              <p>{{ selectedBloc.equipements }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Réservation en cours -->
+        <div class="detail-section" *ngIf="selectedBloc.reservationEnCours">
+          <h4>
+            <lucide-icon name="activity" [size]="16"></lucide-icon>
+            Intervention en cours
+          </h4>
+          <div class="current-reservation">
+            <div class="reservation-patient">
+              <strong>{{ selectedBloc.reservationEnCours.patientNom }} {{ selectedBloc.reservationEnCours.patientPrenom }}</strong>
+            </div>
+            <div class="reservation-details">
+              <span>{{ selectedBloc.reservationEnCours.typeIntervention }}</span>
+              <span>{{ selectedBloc.reservationEnCours.heureDebut }} - {{ selectedBloc.reservationEnCours.heureFin }}</span>
+              <span>Dr. {{ selectedBloc.reservationEnCours.medecinNom }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prochaines réservations -->
+        <div class="detail-section">
+          <h4>
+            <lucide-icon name="calendar" [size]="16"></lucide-icon>
+            Prochaines réservations
+          </h4>
+          
+          <div class="loading-inline" *ngIf="isLoadingReservations">
+            <lucide-icon name="loader-2" [size]="16" class="spin"></lucide-icon>
+            Chargement...
+          </div>
+
+          <div class="reservations-list" *ngIf="!isLoadingReservations">
+            <div class="reservation-item" *ngFor="let res of reservations">
+              <div class="reservation-date">
+                <span class="day">{{ formatDateShort(res.dateReservation) }}</span>
+                <span class="time">{{ res.heureDebut }} - {{ res.heureFin }}</span>
+              </div>
+              <div class="reservation-info">
+                <strong>{{ res.patientNom }}</strong>
+                <span>{{ res.typeIntervention }}</span>
+                <span class="medecin">{{ res.medecinNom }}</span>
+              </div>
+              <span class="badge small" [ngClass]="getReservationStatutClass(res.statut)">
+                {{ getReservationStatutLabel(res.statut) }}
+              </span>
+            </div>
+
+            <div class="empty-reservations" *ngIf="reservations.length === 0">
+              <lucide-icon name="calendar-x" [size]="24"></lucide-icon>
+              <span>Aucune réservation à venir</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="panel-actions">
+          <button class="btn-primary" (click)="openBlocModal(selectedBloc)">
+            <lucide-icon name="edit" [size]="16"></lucide-icon>
+            Modifier
+          </button>
+          <button class="btn-danger" (click)="confirmDelete(selectedBloc); closeDetailsPanel()">
+            <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="panel-overlay" *ngIf="showDetailsPanel" (click)="closeDetailsPanel()"></div>
+
+    <!-- Modal Création/Édition -->
+    <div class="modal-overlay" *ngIf="showBlocModal" (click)="closeBlocModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ editingBloc ? 'Modifier le bloc' : 'Nouveau bloc opératoire' }}</h2>
+          <button class="btn-icon" (click)="closeBlocModal()">
+            <lucide-icon name="x" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="nom">Nom du bloc *</label>
+            <input type="text" id="nom" [(ngModel)]="blocForm.nom" placeholder="Ex: Bloc A, Bloc Orthopédie...">
+          </div>
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" [(ngModel)]="blocForm.description" rows="3" 
+                      placeholder="Description du bloc opératoire..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="localisation">Localisation</label>
+              <input type="text" id="localisation" [(ngModel)]="blocForm.localisation" 
+                     placeholder="Ex: Bâtiment A, 2ème étage">
+            </div>
+            <div class="form-group">
+              <label for="capacite">Capacité</label>
+              <input type="number" id="capacite" [(ngModel)]="blocForm.capacite" min="1" placeholder="Ex: 1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="equipements">Équipements</label>
+            <textarea id="equipements" [(ngModel)]="blocForm.equipements" rows="2"
+                      placeholder="Liste des équipements disponibles..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeBlocModal()">Annuler</button>
+          <button class="btn-primary" (click)="saveBloc()" [disabled]="isLoading">
+            <lucide-icon name="loader-2" [size]="16" class="spin" *ngIf="isLoading"></lucide-icon>
+            {{ editingBloc ? 'Enregistrer' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Confirmation Suppression -->
+    <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+      <div class="modal modal-small" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Confirmer la suppression</h2>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer le bloc <strong>{{ blocToDelete?.nom }}</strong> ?</p>
+          <p class="warning">
+            <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+            Cette action est irréversible. Les réservations associées seront également supprimées.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cancelDelete()">Annuler</button>
+          <button class="btn-danger" (click)="deleteBloc()" [disabled]="isLoading">
+            <lucide-icon name="loader-2" [size]="16" class="spin" *ngIf="isLoading"></lucide-icon>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

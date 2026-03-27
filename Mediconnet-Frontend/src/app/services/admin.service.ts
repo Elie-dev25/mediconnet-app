@@ -10,23 +10,52 @@ export interface ServiceDto {
   responsableId?: number;
   responsableNom?: string;
   nombreMedecins: number;
+  /** Coût de la consultation pour ce service (en FCFA) */
+  coutConsultation: number;
 }
 
 export interface CreateServiceRequest {
   nomService: string;
   description?: string;
   responsableId?: number;
+  /** Coût de la consultation pour ce service (en FCFA). Défaut: 5000 */
+  coutConsultation?: number;
 }
 
 export interface UpdateServiceRequest {
   nomService: string;
   description?: string;
   responsableId?: number;
+  /** Coût de la consultation pour ce service (en FCFA) */
+  coutConsultation: number;
 }
 
 export interface Responsable {
   id: number;
   nom: string;
+}
+
+export interface SpecialiteInfirmierDto {
+  idSpecialite: number;
+  code?: string;
+  nom: string;
+  description?: string;
+  actif: boolean;
+  createdAt: string;
+  nombreInfirmiers: number;
+}
+
+export interface CreateSpecialiteInfirmierRequest {
+  code?: string;
+  nom: string;
+  description?: string;
+}
+
+export interface UpdateSpecialiteInfirmierRequest {
+  code?: string;
+  nom: string;
+  description?: string;
+  actif: boolean;
 }
 
 @Injectable({
@@ -63,8 +92,33 @@ export class AdminService {
     return this.http.get<Responsable[]>(`${this.apiUrl}/responsables`);
   }
 
-  // Spécialités
+  // Spécialités (médecins)
   getSpecialites(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/specialites`);
+  }
+
+  // Spécialités Infirmiers
+  getSpecialitesInfirmiers(): Observable<SpecialiteInfirmierDto[]> {
+    return this.http.get<SpecialiteInfirmierDto[]>(`${environment.apiUrl}/specialites-infirmiers`);
+  }
+
+  getSpecialitesInfirmiersActives(): Observable<SpecialiteInfirmierDto[]> {
+    return this.http.get<SpecialiteInfirmierDto[]>(`${environment.apiUrl}/specialites-infirmiers/actives`);
+  }
+
+  getSpecialiteInfirmier(id: number): Observable<SpecialiteInfirmierDto> {
+    return this.http.get<SpecialiteInfirmierDto>(`${environment.apiUrl}/specialites-infirmiers/${id}`);
+  }
+
+  createSpecialiteInfirmier(request: CreateSpecialiteInfirmierRequest): Observable<SpecialiteInfirmierDto> {
+    return this.http.post<SpecialiteInfirmierDto>(`${environment.apiUrl}/specialites-infirmiers`, request);
+  }
+
+  updateSpecialiteInfirmier(id: number, request: UpdateSpecialiteInfirmierRequest): Observable<SpecialiteInfirmierDto> {
+    return this.http.put<SpecialiteInfirmierDto>(`${environment.apiUrl}/specialites-infirmiers/${id}`, request);
+  }
+
+  deleteSpecialiteInfirmier(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${environment.apiUrl}/specialites-infirmiers/${id}`);
   }
 }

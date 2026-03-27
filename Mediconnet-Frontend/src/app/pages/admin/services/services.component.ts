@@ -74,7 +74,8 @@ export class AdminServicesComponent implements OnInit {
     this.serviceForm = this.fb.group({
       nomService: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
       description: ['', [Validators.maxLength(500)]],
-      responsableId: [null]
+      responsableId: [null],
+      coutConsultation: [5000, [Validators.required, Validators.min(0), Validators.max(1000000)]]
     });
   }
 
@@ -131,7 +132,8 @@ export class AdminServicesComponent implements OnInit {
     this.serviceForm.patchValue({
       nomService: service.nomService,
       description: service.description || '',
-      responsableId: service.responsableId || null
+      responsableId: service.responsableId || null,
+      coutConsultation: service.coutConsultation || 5000
     });
     this.errorMessage = '';
     this.successMessage = '';

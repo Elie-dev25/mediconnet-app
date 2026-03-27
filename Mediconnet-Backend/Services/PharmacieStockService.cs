@@ -64,6 +64,29 @@ public interface IPharmacieStockService
     /// Récupère le détail d'une ordonnance avec son statut de paiement
     /// </summary>
     Task<OrdonnancePharmacieDetailDto?> GetOrdonnanceDetailAsync(int idOrdonnance);
+    
+    // ==================== Ventes Directes ====================
+    
+    /// <summary>
+    /// Crée une vente directe sans ordonnance
+    /// </summary>
+    Task<VenteDirecteResult> CreerVenteDirecteAsync(CreateVenteDirecteRequest request, int pharmacienId);
+    
+    /// <summary>
+    /// Récupère la liste des ventes directes avec pagination et filtres
+    /// </summary>
+    Task<PagedResult<VenteDirecteDto>> GetVentesDirectesAsync(VenteDirecteFilter filter);
+    
+    /// <summary>
+    /// Récupère le détail d'une vente directe
+    /// </summary>
+    Task<VenteDirecteDto?> GetVenteDirecteByIdAsync(int idDispensation);
+    
+    /// <summary>
+    /// Délivre une vente directe après paiement à la caisse
+    /// Décrémente le stock et met à jour le statut vers "delivre"
+    /// </summary>
+    Task<VenteDirecteResult> DelivrerVenteDirecteAsync(int idDispensation, int pharmacienId);
 }
 
 public class PharmacieStockService : IPharmacieStockService
@@ -1740,5 +1763,382 @@ public class PharmacieStockService : IPharmacieStockService
 
         // Retourner le profil mis à jour
         return await GetProfileAsync(userId);
+    }
+
+    // ==================== Ventes Directes ====================
+
+    public async Task<VenteDirecteResult> CreerVenteDirecteAsync(CreateVenteDirecteRequest request, int pharmacienId)
+    {
+        var result = new VenteDirecteResult();
+        
+        try
+        {
+            // Vérifier que le pharmacien existe
+            var pharmacien = await _context.Pharmaciens
+                .Include(p => p.Utilisateur)
+                .FirstOrDefaultAsync(p => p.IdUser == pharmacienId);
+            
+            if (pharmacien == null)
+            {
+                result.Success = false;
+                result.Message = "Pharmacien non trouvé";
+                return result;
+            }
+
+            // Vérifier qu'il y a au moins une ligne
+            if (request.Lignes == null || !request.Lignes.Any())
+            {
+                result.Success = false;
+                result.Message = "La vente doit contenir au moins un médicament";
+                return result;
+            }
+
+            // Vérifier le stock et calculer le montant total
+            decimal montantTotal = 0;
+            var lignesValidees = new List<(Medicament med, int quantite, decimal prixUnitaire)>();
+
+            foreach (var ligne in request.Lignes)
+            {
+                var medicament = await _context.Medicaments.FindAsync(ligne.IdMedicament);
+                
+                if (medicament == null)
+                {
+                    result.Erreurs.Add($"Médicament ID {ligne.IdMedicament} non trouvé");
+                    continue;
+                }
+
+                if (!medicament.Actif)
+                {
+                    result.Erreurs.Add($"Le médicament '{medicament.Nom}' n'est plus disponible à la vente");
+                    continue;
+                }
+
+                var stockDisponible = medicament.Stock ?? 0;
+                if (stockDisponible < ligne.Quantite)
+                {
+                    result.Erreurs.Add($"Stock insuffisant pour '{medicament.Nom}' (disponible: {stockDisponible}, demandé: {ligne.Quantite})");
+                    continue;
+                }
+
+                var prixUnitaire = (decimal)(medicament.Prix ?? 0);
+                montantTotal += prixUnitaire * ligne.Quantite;
+                lignesValidees.Add((medicament, ligne.Quantite, prixUnitaire));
+            }
+
+            // Si des erreurs critiques, arrêter
+            if (result.Erreurs.Any() && !lignesValidees.Any())
+            {
+                result.Success = false;
+                result.Message = "Aucun médicament valide dans la vente";
+                return result;
+            }
+
+            // Générer le numéro de ticket
+            var numeroTicket = await GenererNumeroTicketAsync();
+
+            // Créer la dispensation (vente directe) - statut en_attente (pas encore payé)
+            var dispensation = new Dispensation
+            {
+                IdPrescription = null, // Pas d'ordonnance
+                IdPharmacien = pharmacien.IdUser, // Utiliser IdUser car c'est la PK de la table pharmacien
+                IdPatient = request.IdPatientEnregistre,
+                DateDispensation = DateTime.UtcNow,
+                Statut = "en_attente", // En attente de paiement à la caisse
+                Notes = request.Notes,
+                TypeVente = "vente_directe",
+                NomClient = request.NomClient,
+                TelephoneClient = request.TelephoneClient,
+                MontantTotal = montantTotal,
+                ModePaiement = request.ModePaiement,
+                NumeroTicket = numeroTicket,
+                Lignes = new List<DispensationLigne>()
+            };
+
+            _context.Dispensations.Add(dispensation);
+            await _context.SaveChangesAsync();
+
+            // Créer les lignes SANS décrémenter le stock (sera fait à la délivrance)
+            foreach (var (medicament, quantite, prixUnitaire) in lignesValidees)
+            {
+                // Créer la ligne de dispensation
+                var ligne = new DispensationLigne
+                {
+                    IdDispensation = dispensation.IdDispensation,
+                    IdMedicament = medicament.IdMedicament,
+                    QuantitePrescrite = quantite, // Pour vente directe, prescrit = dispensé
+                    QuantiteDispensee = quantite,
+                    PrixUnitaire = prixUnitaire,
+                    MontantTotal = prixUnitaire * quantite
+                };
+                _context.DispensationsLignes.Add(ligne);
+
+                // Ajouter à la liste des lignes pour le résultat
+                result.Lignes.Add(new VenteDirecteLigneDto
+                {
+                    IdLigne = ligne.IdLigne,
+                    IdMedicament = medicament.IdMedicament,
+                    NomMedicament = medicament.Nom,
+                    Dosage = medicament.Dosage,
+                    Quantite = quantite,
+                    PrixUnitaire = prixUnitaire,
+                    MontantTotal = prixUnitaire * quantite,
+                    StockRestant = medicament.Stock ?? 0
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            result.Success = true;
+            result.Message = "Vente facturée - En attente de paiement à la caisse";
+            result.IdDispensation = dispensation.IdDispensation;
+            result.NumeroTicket = numeroTicket;
+            result.MontantTotal = montantTotal;
+
+            _logger.LogInformation("Vente directe créée: Ticket {NumeroTicket}, Montant {Montant}, Pharmacien {PharmacienId}", 
+                numeroTicket, montantTotal, pharmacienId);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la création de la vente directe");
+            result.Success = false;
+            result.Message = "Erreur lors de l'enregistrement de la vente";
+            result.Erreurs.Add(ex.Message);
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Délivre une vente directe après paiement à la caisse
+    /// Décrémente le stock et met à jour le statut
+    /// </summary>
+    public async Task<VenteDirecteResult> DelivrerVenteDirecteAsync(int idDispensation, int pharmacienId)
+    {
+        var result = new VenteDirecteResult();
+
+        try
+        {
+            // Récupérer la dispensation avec ses lignes
+            var dispensation = await _context.Dispensations
+                .Include(d => d.Lignes!)
+                    .ThenInclude(l => l.Medicament)
+                .FirstOrDefaultAsync(d => d.IdDispensation == idDispensation && d.TypeVente == "vente_directe");
+
+            if (dispensation == null)
+            {
+                result.Success = false;
+                result.Message = "Vente directe non trouvée";
+                return result;
+            }
+
+            // Vérifier le statut
+            if (dispensation.Statut != "paye")
+            {
+                result.Success = false;
+                result.Message = dispensation.Statut == "delivre" 
+                    ? "Cette vente a déjà été délivrée"
+                    : "Cette vente n'a pas encore été payée à la caisse";
+                return result;
+            }
+
+            // Décrémenter le stock pour chaque ligne
+            foreach (var ligne in dispensation.Lignes ?? new List<DispensationLigne>())
+            {
+                var medicament = ligne.Medicament;
+                if (medicament == null) continue;
+
+                var stockAvant = medicament.Stock ?? 0;
+                var quantite = ligne.QuantiteDispensee;
+
+                // Vérifier le stock disponible
+                if (stockAvant < quantite)
+                {
+                    result.Success = false;
+                    result.Message = $"Stock insuffisant pour {medicament.Nom} (disponible: {stockAvant}, demandé: {quantite})";
+                    return result;
+                }
+
+                // Décrémenter le stock
+                medicament.Stock = stockAvant - quantite;
+
+                // Créer le mouvement de stock
+                var mouvement = new MouvementStock
+                {
+                    IdMedicament = medicament.IdMedicament,
+                    TypeMouvement = "sortie",
+                    Quantite = quantite,
+                    DateMouvement = DateTime.UtcNow,
+                    Motif = $"Délivrance vente directe - Ticket {dispensation.NumeroTicket}",
+                    ReferenceId = dispensation.IdDispensation,
+                    ReferenceType = "vente_directe",
+                    IdUser = pharmacienId,
+                    StockApresMouvement = medicament.Stock ?? 0
+                };
+                _context.MouvementsStock.Add(mouvement);
+            }
+
+            // Mettre à jour le statut
+            dispensation.Statut = "delivre";
+
+            await _context.SaveChangesAsync();
+
+            result.Success = true;
+            result.Message = "Médicaments délivrés avec succès";
+            result.IdDispensation = dispensation.IdDispensation;
+            result.NumeroTicket = dispensation.NumeroTicket;
+            result.MontantTotal = dispensation.MontantTotal ?? 0;
+
+            _logger.LogInformation("Vente directe délivrée: Ticket {NumeroTicket}, Pharmacien {PharmacienId}", 
+                dispensation.NumeroTicket, pharmacienId);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la délivrance de la vente directe {IdDispensation}", idDispensation);
+            result.Success = false;
+            result.Message = "Erreur lors de la délivrance";
+            return result;
+        }
+    }
+
+    public async Task<PagedResult<VenteDirecteDto>> GetVentesDirectesAsync(VenteDirecteFilter filter)
+    {
+        var query = _context.Dispensations
+            .Include(d => d.Pharmacien)
+                .ThenInclude(p => p!.Utilisateur)
+            .Include(d => d.Patient)
+                .ThenInclude(p => p!.Utilisateur)
+            .Include(d => d.Lignes!)
+                .ThenInclude(l => l.Medicament)
+            .Where(d => d.TypeVente == "vente_directe")
+            .AsQueryable();
+
+        // Filtres
+        if (filter.DateDebut.HasValue)
+            query = query.Where(d => d.DateDispensation >= filter.DateDebut.Value);
+        
+        if (filter.DateFin.HasValue)
+            query = query.Where(d => d.DateDispensation <= filter.DateFin.Value.AddDays(1));
+        
+        if (!string.IsNullOrWhiteSpace(filter.NomClient))
+            query = query.Where(d => d.NomClient != null && d.NomClient.Contains(filter.NomClient));
+        
+        if (!string.IsNullOrWhiteSpace(filter.NumeroTicket))
+            query = query.Where(d => d.NumeroTicket != null && d.NumeroTicket.Contains(filter.NumeroTicket));
+
+        var totalItems = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(d => d.DateDispensation)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .Select(d => new VenteDirecteDto
+            {
+                IdDispensation = d.IdDispensation,
+                DateVente = d.DateDispensation,
+                NomClient = d.NomClient,
+                TelephoneClient = d.TelephoneClient,
+                NomPharmacien = d.Pharmacien != null && d.Pharmacien.Utilisateur != null 
+                    ? $"{d.Pharmacien.Utilisateur.Prenom} {d.Pharmacien.Utilisateur.Nom}" 
+                    : "Inconnu",
+                Statut = d.Statut,
+                Notes = d.Notes,
+                MontantTotal = d.MontantTotal ?? 0,
+                ModePaiement = d.ModePaiement,
+                NumeroTicket = d.NumeroTicket,
+                TypeVente = d.TypeVente,
+                IdPatient = d.IdPatient,
+                NomPatientEnregistre = d.Patient != null && d.Patient.Utilisateur != null 
+                    ? $"{d.Patient.Utilisateur.Prenom} {d.Patient.Utilisateur.Nom}" 
+                    : null,
+                Lignes = d.Lignes!.Select(l => new VenteDirecteLigneDto
+                {
+                    IdLigne = l.IdLigne,
+                    IdMedicament = l.IdMedicament,
+                    NomMedicament = l.Medicament != null ? l.Medicament.Nom : "Inconnu",
+                    Dosage = l.Medicament != null ? l.Medicament.Dosage : null,
+                    Quantite = l.QuantiteDispensee,
+                    PrixUnitaire = l.PrixUnitaire ?? 0,
+                    MontantTotal = l.MontantTotal ?? 0,
+                    StockRestant = l.Medicament != null ? l.Medicament.Stock ?? 0 : 0
+                }).ToList()
+            })
+            .ToListAsync();
+
+        return new PagedResult<VenteDirecteDto>
+        {
+            Items = items,
+            TotalItems = totalItems,
+            Page = filter.Page,
+            PageSize = filter.PageSize
+        };
+    }
+
+    public async Task<VenteDirecteDto?> GetVenteDirecteByIdAsync(int idDispensation)
+    {
+        var dispensation = await _context.Dispensations
+            .Include(d => d.Pharmacien)
+                .ThenInclude(p => p!.Utilisateur)
+            .Include(d => d.Patient)
+                .ThenInclude(p => p!.Utilisateur)
+            .Include(d => d.Lignes!)
+                .ThenInclude(l => l.Medicament)
+            .FirstOrDefaultAsync(d => d.IdDispensation == idDispensation && d.TypeVente == "vente_directe");
+
+        if (dispensation == null)
+            return null;
+
+        return new VenteDirecteDto
+        {
+            IdDispensation = dispensation.IdDispensation,
+            DateVente = dispensation.DateDispensation,
+            NomClient = dispensation.NomClient,
+            TelephoneClient = dispensation.TelephoneClient,
+            NomPharmacien = dispensation.Pharmacien?.Utilisateur != null 
+                ? $"{dispensation.Pharmacien.Utilisateur.Prenom} {dispensation.Pharmacien.Utilisateur.Nom}" 
+                : "Inconnu",
+            Statut = dispensation.Statut,
+            Notes = dispensation.Notes,
+            MontantTotal = dispensation.MontantTotal ?? 0,
+            ModePaiement = dispensation.ModePaiement,
+            NumeroTicket = dispensation.NumeroTicket,
+            TypeVente = dispensation.TypeVente,
+            IdPatient = dispensation.IdPatient,
+            NomPatientEnregistre = dispensation.Patient?.Utilisateur != null 
+                ? $"{dispensation.Patient.Utilisateur.Prenom} {dispensation.Patient.Utilisateur.Nom}" 
+                : null,
+            Lignes = dispensation.Lignes?.Select(l => new VenteDirecteLigneDto
+            {
+                IdLigne = l.IdLigne,
+                IdMedicament = l.IdMedicament,
+                NomMedicament = l.Medicament?.Nom ?? "Inconnu",
+                Dosage = l.Medicament?.Dosage,
+                Quantite = l.QuantiteDispensee,
+                PrixUnitaire = l.PrixUnitaire ?? 0,
+                MontantTotal = l.MontantTotal ?? 0,
+                StockRestant = l.Medicament?.Stock ?? 0
+            }).ToList() ?? new List<VenteDirecteLigneDto>()
+        };
+    }
+
+    /// <summary>
+    /// Génère un numéro de ticket unique pour les ventes directes
+    /// Format: VD-YYYYMMDD-XXXX (ex: VD-20260323-0001)
+    /// </summary>
+    private async Task<string> GenererNumeroTicketAsync()
+    {
+        var today = DateTime.UtcNow.Date;
+        var prefix = $"VD-{today:yyyyMMdd}-";
+        
+        // Compter les ventes du jour
+        var countToday = await _context.Dispensations
+            .Where(d => d.TypeVente == "vente_directe" 
+                && d.DateDispensation >= today 
+                && d.DateDispensation < today.AddDays(1))
+            .CountAsync();
+        
+        return $"{prefix}{(countToday + 1):D4}";
     }
 }

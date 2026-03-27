@@ -30,6 +30,13 @@ public class Service
     [Column("description")]
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Coût de la consultation pour ce service (en FCFA)
+    /// Modifiable par l'administrateur
+    /// </summary>
+    [Column("cout_consultation")]
+    public decimal CoutConsultation { get; set; } = 5000;
+
     // Navigation
     [ForeignKey("ResponsableService")]
     public virtual Utilisateur? Responsable { get; set; }

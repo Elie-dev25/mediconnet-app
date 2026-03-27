@@ -301,6 +301,15 @@
       color: #059669;
     }
 
+    &.cout {
+      color: #d97706;
+      font-weight: 500;
+
+      .cout-value {
+        font-weight: 600;
+      }
+    }
+
     .empty {
       font-style: italic;
       opacity: 0.6;
@@ -537,6 +546,34 @@
   font-size: 0.8rem;
   margin-top: 0.4rem;
   font-weight: 500;
+}
+
+.help-text {
+  display: block;
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+  font-style: italic;
+}
+
+.input-with-suffix {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  input {
+    flex: 1;
+    padding-right: 4rem;
+  }
+
+  .input-suffix {
+    position: absolute;
+    right: 1rem;
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 500;
+    pointer-events: none;
+  }
 }
 
 .alert {

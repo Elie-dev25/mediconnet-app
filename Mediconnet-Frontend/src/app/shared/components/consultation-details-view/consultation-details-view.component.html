@@ -154,6 +154,57 @@
             </ng-container>
           </ng-container>
 
+          <!-- Étape Examen chirurgical -->
+          <ng-container *ngSwitchCase="'examen_chirurgical'">
+            <ng-container *ngIf="hasExamenChirurgicalData() && getExamenChirurgical() as chirurgical; else emptyStep">
+              <section class="info-card">
+                <div class="card-header">
+                  <lucide-icon name="scissors" [size]="20"></lucide-icon>
+                  <h2>Examen chirurgical</h2>
+                  <span class="badge badge-outline" *ngIf="mode === 'medecin'">Spécialité chirurgicale</span>
+                </div>
+                <div class="card-body gyneco-body">
+                  <div class="gyneco-grid">
+                    <div class="gyneco-item" *ngIf="chirurgical.zoneExaminee">
+                      <span class="label">Zone examinée</span>
+                      <p>{{ chirurgical.zoneExaminee }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.inspectionLocale">
+                      <span class="label">Inspection locale</span>
+                      <p>{{ chirurgical.inspectionLocale }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.palpationLocale">
+                      <span class="label">Palpation locale</span>
+                      <p>{{ chirurgical.palpationLocale }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.signesInflammatoires">
+                      <span class="label">Signes inflammatoires</span>
+                      <p>{{ chirurgical.signesInflammatoires }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.cicatricesExistantes">
+                      <span class="label">Cicatrices existantes</span>
+                      <p>{{ chirurgical.cicatricesExistantes }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.mobiliteFonction">
+                      <span class="label">Mobilité / Fonction</span>
+                      <p>{{ chirurgical.mobiliteFonction }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.conclusionChirurgicale">
+                      <span class="label">Conclusion chirurgicale</span>
+                      <p>{{ chirurgical.conclusionChirurgicale }}</p>
+                    </div>
+                    <div class="gyneco-item" *ngIf="chirurgical.decision">
+                      <span class="label">Décision</span>
+                      <p class="decision-badge" [ngClass]="'decision-' + chirurgical.decision">
+                        {{ getDecisionChirurgicaleLabel(chirurgical.decision) }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </ng-container>
+          </ng-container>
+
           <!-- Étape Examen gynécologique -->
           <ng-container *ngSwitchCase="'examen_gynecologique'">
             <ng-container *ngIf="hasExamenGynecologiqueData() && getExamenGynecologique() as gyneco; else emptyStep">
@@ -373,7 +424,7 @@
                 </div>
                 <div class="card-body">
                   <div class="prescriptions-list">
-                    <div class="prescription-item" *ngFor="let med of consultation.ordonnance?.medicaments">
+                    <div class="prescription-item" *ngFor="let med of getOrdonnance()?.medicaments">
                       <div class="prescription-name">
                         <lucide-icon name="pill" [size]="16"></lucide-icon>
                         <strong>{{ med.nomMedicament }}</strong>
@@ -401,7 +452,7 @@
                 </div>
                 <div class="card-body">
                   <div class="examens-list">
-                    <div class="examen-item" *ngFor="let exam of consultation.examensPrescrits">
+                    <div class="examen-item" *ngFor="let exam of getExamensPrescrits()">
                       <div class="examen-name">
                         <lucide-icon name="test-tube" [size]="16"></lucide-icon>
                         <strong>{{ exam.nomExamen }}</strong>
@@ -483,10 +534,54 @@
           <!-- Étape 7: Suivi -->
           <ng-container *ngSwitchCase="'suivi'">
             <ng-container *ngIf="hasSuiviData(); else emptyStep">
+              <!-- RDV de suivi planifié -->
+              <section class="info-card rdv-suivi-card" *ngIf="consultation.rdvSuivi as rdv">
+                <div class="card-header">
+                  <lucide-icon name="calendar-clock" [size]="20"></lucide-icon>
+                  <h2>Rendez-vous de suivi</h2>
+                  <span class="status-badge" [ngClass]="getRdvSuiviStatutClass(rdv.statut)">
+                    {{ getRdvSuiviStatutLabel(rdv.statut) }}
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="rdv-suivi-grid">
+                    <div class="rdv-suivi-item">
+                      <lucide-icon name="calendar" [size]="16"></lucide-icon>
+                      <div class="rdv-suivi-content">
+                        <span class="label">Date et heure</span>
+                        <strong>{{ formatDateOrPlaceholder(rdv.dateHeure) }} à {{ formatTimeOrPlaceholder(rdv.dateHeure) }}</strong>
+                      </div>
+                    </div>
+                    <div class="rdv-suivi-item" *ngIf="rdv.medecinNom">
+                      <lucide-icon name="user" [size]="16"></lucide-icon>
+                      <div class="rdv-suivi-content">
+                        <span class="label">Médecin</span>
+                        <strong>{{ rdv.medecinNom }}</strong>
+                      </div>
+                    </div>
+                    <div class="rdv-suivi-item" *ngIf="rdv.serviceNom">
+                      <lucide-icon name="building-2" [size]="16"></lucide-icon>
+                      <div class="rdv-suivi-content">
+                        <span class="label">Service</span>
+                        <strong>{{ rdv.serviceNom }}</strong>
+                      </div>
+                    </div>
+                    <div class="rdv-suivi-item" *ngIf="rdv.motif">
+                      <lucide-icon name="file-text" [size]="16"></lucide-icon>
+                      <div class="rdv-suivi-content">
+                        <span class="label">Motif</span>
+                        <p>{{ rdv.motif }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Autres informations de suivi -->
               <section class="info-card">
                 <div class="card-header">
-                  <lucide-icon name="calendar-check" [size]="20"></lucide-icon>
-                  <h2>Suivi</h2>
+                  <lucide-icon name="clipboard-list" [size]="20"></lucide-icon>
+                  <h2>Informations de suivi</h2>
                 </div>
                 <div class="card-body">
                   <div class="suivi-grid">

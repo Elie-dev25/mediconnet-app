@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } 
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
-import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto } from '../../../services/user.service';
+import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto, SpecialiteInfirmierDto } from '../../../services/user.service';
 import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
 import { PatientAssurancePanelComponent, PatientBasicInfo } from '../../../shared/components/patient-assurance-panel/patient-assurance-panel.component';
 
@@ -40,6 +40,7 @@ export class UsersComponent implements OnInit {
 
   users: UserDto[] = [];
   specialites: Specialite[] = [];
+  specialitesInfirmiers: SpecialiteInfirmierDto[] = [];
   services: ServiceDto[] = [];
   laboratoires: any[] = [];
   
@@ -106,6 +107,7 @@ export class UsersComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadSpecialites();
+    this.loadSpecialitesInfirmiers();
     this.loadServices();
     this.loadLaboratoires();
   }
@@ -124,6 +126,7 @@ export class UsersComponent implements OnInit {
       numeroOrdre: [''],
       // Champs specifiques infirmier (idService aussi utilisé)
       matricule: [''],
+      idSpecialiteInfirmier: [null],
       // Champs specifiques laborantin
       idLabo: [null],
       specialisation: ['']
@@ -181,6 +184,13 @@ export class UsersComponent implements OnInit {
     this.userService.getSpecialites().subscribe({
       next: (specialites) => this.specialites = specialites,
       error: (err) => console.error('Error loading specialites:', err)
+    });
+  }
+
+  loadSpecialitesInfirmiers(): void {
+    this.userService.getSpecialitesInfirmiers().subscribe({
+      next: (specialites) => this.specialitesInfirmiers = specialites,
+      error: (err) => console.error('Error loading specialites infirmiers:', err)
     });
   }
 

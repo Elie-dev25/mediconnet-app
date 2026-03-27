@@ -149,7 +149,8 @@ public class UserManagementService : IUserManagementService
                 {
                     IdUser = utilisateur.IdUser,
                     Matricule = request.Matricule,
-                    IdService = request.IdService ?? 1
+                    IdService = request.IdService ?? 1,
+                    IdSpecialite = request.IdSpecialiteInfirmier
                 });
                 break;
 

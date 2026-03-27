@@ -52,6 +52,10 @@ public class CreateUserRequest
 
     // Champs specifiques infirmier (IdService aussi utilisé)
     public string? Matricule { get; set; }
+    /// <summary>
+    /// Spécialité de l'infirmier (IDE, IADE, IBODE, etc.)
+    /// </summary>
+    public int? IdSpecialiteInfirmier { get; set; }
 
     // Champs specifiques laborantin
     public int? IdLabo { get; set; }
@@ -69,6 +73,10 @@ public class ServiceDto
     public int? ResponsableId { get; set; }
     public string? ResponsableNom { get; set; }
     public int NombreMedecins { get; set; }
+    /// <summary>
+    /// Coût de la consultation pour ce service (en FCFA)
+    /// </summary>
+    public decimal CoutConsultation { get; set; }
 }
 
 /// <summary>
@@ -85,6 +93,12 @@ public class CreateServiceRequest
     public string? Description { get; set; }
 
     public int? ResponsableId { get; set; }
+
+    /// <summary>
+    /// Coût de la consultation pour ce service (en FCFA). Défaut: 5000
+    /// </summary>
+    [Range(0, 1000000, ErrorMessage = "Le coût doit être entre 0 et 1 000 000 FCFA")]
+    public decimal CoutConsultation { get; set; } = 5000;
 }
 
 /// <summary>
@@ -101,6 +115,12 @@ public class UpdateServiceRequest
     public string? Description { get; set; }
 
     public int? ResponsableId { get; set; }
+
+    /// <summary>
+    /// Coût de la consultation pour ce service (en FCFA)
+    /// </summary>
+    [Range(0, 1000000, ErrorMessage = "Le coût doit être entre 0 et 1 000 000 FCFA")]
+    public decimal CoutConsultation { get; set; }
 }
 
 /// <summary>
@@ -113,10 +133,60 @@ public class ResponsableDto
 }
 
 /// <summary>
-/// DTO pour afficher une specialite
+/// DTO pour afficher une specialite (médecin)
 /// </summary>
 public class SpecialiteDto
 {
     public int IdSpecialite { get; set; }
     public string NomSpecialite { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// DTO pour afficher une spécialité infirmier
+/// </summary>
+public class SpecialiteInfirmierDto
+{
+    public int IdSpecialite { get; set; }
+    public string? Code { get; set; }
+    public string Nom { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool Actif { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int NombreInfirmiers { get; set; }
+}
+
+/// <summary>
+/// Request pour créer une spécialité infirmier
+/// </summary>
+public class CreateSpecialiteInfirmierRequest
+{
+    [MaxLength(20, ErrorMessage = "Le code ne peut pas dépasser 20 caractères")]
+    public string? Code { get; set; }
+
+    [Required(ErrorMessage = "Le nom est requis")]
+    [MinLength(2, ErrorMessage = "Le nom doit contenir au moins 2 caractères")]
+    [MaxLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
+    public string Nom { get; set; } = string.Empty;
+
+    [MaxLength(500, ErrorMessage = "La description ne peut pas dépasser 500 caractères")]
+    public string? Description { get; set; }
+}
+
+/// <summary>
+/// Request pour mettre à jour une spécialité infirmier
+/// </summary>
+public class UpdateSpecialiteInfirmierRequest
+{
+    [MaxLength(20, ErrorMessage = "Le code ne peut pas dépasser 20 caractères")]
+    public string? Code { get; set; }
+
+    [Required(ErrorMessage = "Le nom est requis")]
+    [MinLength(2, ErrorMessage = "Le nom doit contenir au moins 2 caractères")]
+    [MaxLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
+    public string Nom { get; set; } = string.Empty;
+
+    [MaxLength(500, ErrorMessage = "La description ne peut pas dépasser 500 caractères")]
+    public string? Description { get; set; }
+
+    public bool Actif { get; set; } = true;
 }

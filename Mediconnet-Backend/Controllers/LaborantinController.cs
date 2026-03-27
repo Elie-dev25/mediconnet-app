@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Entities.Documents;
+using Mediconnet_Backend.Core.Configuration;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Laborantin;
 using Mediconnet_Backend.Services;
@@ -22,6 +24,7 @@ public class LaborantinController : ControllerBase
     private readonly INotificationService _notificationService;
     private readonly IAssuranceCouvertureService _assuranceService;
     private readonly ILogger<LaborantinController> _logger;
+    private readonly AppSettings _appSettings;
 
     public LaborantinController(
         ApplicationDbContext context,
@@ -29,6 +32,7 @@ public class LaborantinController : ControllerBase
         IEmailService emailService,
         INotificationService notificationService,
         IAssuranceCouvertureService assuranceService,
+        IOptions<AppSettings> appSettings,
         ILogger<LaborantinController> logger)
     {
         _context = context;
@@ -36,6 +40,7 @@ public class LaborantinController : ControllerBase
         _emailService = emailService;
         _notificationService = notificationService;
         _assuranceService = assuranceService;
+        _appSettings = appSettings.Value;
         _logger = logger;
     }
 
@@ -949,8 +954,9 @@ public class LaborantinController : ControllerBase
         }
     }
 
-    private static string GetPatientResultNotificationTemplate(string patientName, string nomExamen)
+    private string GetPatientResultNotificationTemplate(string patientName, string nomExamen)
     {
+        var frontendUrl = _appSettings.FrontendUrl;
         return $@"
 <!DOCTYPE html>
 <html lang=""fr"">
@@ -977,7 +983,7 @@ public class LaborantinController : ControllerBase
                                 Vous pouvez les consulter depuis votre espace patient.
                             </p>
                             <div style=""text-align: center; margin: 35px 0;"">
-                                <a href=""http://localhost:4200/patient/dashboard"" 
+                                <a href=""{frontendUrl}/patient/dashboard"" 
                                    style=""background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%); 
                                           color: #ffffff; 
                                           text-decoration: none; 
@@ -1008,8 +1014,9 @@ public class LaborantinController : ControllerBase
 </html>";
     }
 
-    private static string GetMedecinResultNotificationTemplate(string medecinName, string patientName, string nomExamen)
+    private string GetMedecinResultNotificationTemplate(string medecinName, string patientName, string nomExamen)
     {
+        var frontendUrl = _appSettings.FrontendUrl;
         return $@"
 <!DOCTYPE html>
 <html lang=""fr"">
@@ -1036,7 +1043,7 @@ public class LaborantinController : ControllerBase
                                 Connectez-vous à MediConnect pour les consulter.
                             </p>
                             <div style=""text-align: center; margin: 35px 0;"">
-                                <a href=""http://localhost:4200/medecin/dashboard"" 
+                                <a href=""{frontendUrl}/medecin/dashboard"" 
                                    style=""background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%); 
                                           color: #ffffff; 
                                           text-decoration: none; 

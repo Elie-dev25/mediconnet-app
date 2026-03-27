@@ -29,6 +29,7 @@ public class InfirmierManagementService : IInfirmierManagementService
     {
         var infirmier = await _context.Infirmiers
             .Include(i => i.Service)
+            .Include(i => i.Specialite)
             .FirstOrDefaultAsync(i => i.IdUser == userId);
 
         if (infirmier == null)
@@ -51,9 +52,12 @@ public class InfirmierManagementService : IInfirmierManagementService
             NomServiceMajor = serviceMajor?.NomService,
             DateNominationMajor = infirmier.DateNominationMajor,
             Accreditations = infirmier.Accreditations,
+            IdSpecialite = infirmier.IdSpecialite,
+            CodeSpecialite = infirmier.Specialite?.Code,
+            NomSpecialite = infirmier.Specialite?.Nom,
             TitreAffiche = isMajor && serviceMajor != null 
                 ? $"Major {serviceMajor.NomService}" 
-                : "Infirmier"
+                : infirmier.Specialite?.Nom ?? "Infirmier"
         };
     }
 

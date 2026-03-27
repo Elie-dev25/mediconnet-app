@@ -610,6 +610,109 @@ export class PharmacieStockService {
   getAllVoiesAdministration(): Observable<VoieAdministration[]> {
     return this.http.get<VoieAdministration[]>(`${environment.apiUrl}/medicament/voies`);
   }
+
+  // ==================== Ventes Directes ====================
+
+  /**
+   * Crée une vente directe sans ordonnance
+   */
+  creerVenteDirecte(request: CreateVenteDirecteRequest): Observable<VenteDirecteResult> {
+    return this.http.post<VenteDirecteResult>(`${this.apiUrl}/ventes-directes`, request);
+  }
+
+  /**
+   * Récupère la liste des ventes directes avec pagination et filtres
+   */
+  getVentesDirectes(filter: VenteDirecteFilter): Observable<PagedResult<VenteDirecte>> {
+    let params = new HttpParams()
+      .set('page', filter.page.toString())
+      .set('pageSize', filter.pageSize.toString());
+    
+    if (filter.dateDebut) params = params.set('dateDebut', filter.dateDebut);
+    if (filter.dateFin) params = params.set('dateFin', filter.dateFin);
+    if (filter.nomClient) params = params.set('nomClient', filter.nomClient);
+    if (filter.numeroTicket) params = params.set('numeroTicket', filter.numeroTicket);
+
+    return this.http.get<PagedResult<VenteDirecte>>(`${this.apiUrl}/ventes-directes`, { params });
+  }
+
+  /**
+   * Récupère le détail d'une vente directe
+   */
+  getVenteDirecteById(id: number): Observable<VenteDirecte> {
+    return this.http.get<VenteDirecte>(`${this.apiUrl}/ventes-directes/${id}`);
+  }
+
+  /**
+   * Délivre une vente directe (après paiement à la caisse)
+   * Décrémente le stock et met à jour le statut
+   */
+  delivrerVenteDirecte(idDispensation: number): Observable<VenteDirecteResult> {
+    return this.http.post<VenteDirecteResult>(`${this.apiUrl}/ventes-directes/${idDispensation}/delivrer`, {});
+  }
+}
+
+// ==================== Interfaces Ventes Directes ====================
+
+export interface CreateVenteDirecteRequest {
+  lignes: VenteDirecteLigneRequest[];
+  nomClient?: string;
+  telephoneClient?: string;
+  idPatientEnregistre?: number;
+  notes?: string;
+  modePaiement: string;
+}
+
+export interface VenteDirecteLigneRequest {
+  idMedicament: number;
+  quantite: number;
+}
+
+export interface VenteDirecte {
+  idDispensation: number;
+  dateVente: string;
+  nomClient?: string;
+  telephoneClient?: string;
+  nomPharmacien: string;
+  statut: string;
+  notes?: string;
+  montantTotal: number;
+  modePaiement?: string;
+  numeroTicket?: string;
+  typeVente: string;
+  lignes: VenteDirecteLigne[];
+  idPatient?: number;
+  nomPatientEnregistre?: string;
+}
+
+export interface VenteDirecteLigne {
+  idLigne: number;
+  idMedicament: number;
+  nomMedicament: string;
+  dosage?: string;
+  quantite: number;
+  prixUnitaire: number;
+  montantTotal: number;
+  stockRestant: number;
+}
+
+export interface VenteDirecteResult {
+  success: boolean;
+  message: string;
+  idDispensation?: number;
+  numeroTicket?: string;
+  montantTotal: number;
+  lignes: VenteDirecteLigne[];
+  erreurs: string[];
+}
+
+export interface VenteDirecteFilter {
+  dateDebut?: string;
+  dateFin?: string;
+  nomClient?: string;
+  numeroTicket?: string;
+  page: number;
+  pageSize: number;
 }
 
 // Interfaces pour formes et voies

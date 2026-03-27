@@ -158,6 +158,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LayoutList,
+  ScrollText,
   ShoppingCart,
   Settings,
   Settings2,
@@ -234,7 +235,10 @@ import {
   
   // Icons for history view
   ArrowUpDown,
-  Layers
+  Layers,
+  
+  // Direct sales icons
+  ShoppingBag
 } from 'lucide-angular';
 
 // Export du module et des utilitaires Lucide
@@ -404,8 +408,14 @@ export const ALL_ICONS = {
   // Layout & UI
   LayoutDashboard,
   LayoutGrid,
+  'layout-grid': LayoutGrid,
   LayoutList,
+  ScrollText,
+  'scroll-text': ScrollText,
   ShoppingCart,
+  'shopping-cart': ShoppingCart,
+  ShoppingBag,
+  'shopping-bag': ShoppingBag,
   Settings,
   Settings2,
   Building2,

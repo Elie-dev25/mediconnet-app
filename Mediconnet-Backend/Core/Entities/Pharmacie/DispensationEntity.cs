@@ -5,6 +5,7 @@ namespace Mediconnet_Backend.Core.Entities.Pharmacie;
 
 /// <summary>
 /// Entité Dispensation - Mappe à la table 'dispensation'
+/// Supporte les ventes avec ordonnance ET les ventes directes
 /// </summary>
 [Table("dispensation")]
 public class Dispensation
@@ -14,13 +15,13 @@ public class Dispensation
     public int IdDispensation { get; set; }
 
     [Column("id_prescription")]
-    public int IdPrescription { get; set; }
+    public int? IdPrescription { get; set; }
 
     [Column("id_pharmacien")]
     public int? IdPharmacien { get; set; }
 
     [Column("id_patient")]
-    public int IdPatient { get; set; }
+    public int? IdPatient { get; set; }
 
     [Column("date_dispensation")]
     public DateTime DateDispensation { get; set; } = DateTime.UtcNow;
@@ -30,6 +31,29 @@ public class Dispensation
 
     [Column("notes")]
     public string? Notes { get; set; }
+
+    [Column("type_vente")]
+    [Required]
+    public string TypeVente { get; set; } = "avec_ordonnance";
+
+    [Column("nom_client")]
+    [MaxLength(100)]
+    public string? NomClient { get; set; }
+
+    [Column("telephone_client")]
+    [MaxLength(20)]
+    public string? TelephoneClient { get; set; }
+
+    [Column("montant_total")]
+    public decimal? MontantTotal { get; set; }
+
+    [Column("mode_paiement")]
+    [MaxLength(50)]
+    public string? ModePaiement { get; set; }
+
+    [Column("numero_ticket")]
+    [MaxLength(50)]
+    public string? NumeroTicket { get; set; }
 
     // Navigation
     [ForeignKey("IdPrescription")]
@@ -42,6 +66,10 @@ public class Dispensation
     public virtual Patient? Patient { get; set; }
 
     public virtual ICollection<DispensationLigne>? Lignes { get; set; }
+
+    // Helpers
+    public bool EstVenteDirecte => TypeVente == "vente_directe";
+    public bool EstAvecOrdonnance => TypeVente == "avec_ordonnance";
 }
 
 /// <summary>

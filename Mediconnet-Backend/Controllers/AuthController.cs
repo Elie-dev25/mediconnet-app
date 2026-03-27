@@ -22,12 +22,14 @@ public class AuthController : ControllerBase
     private readonly EmailSettings _emailSettings;
     private readonly ILogger<AuthController> _logger;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly AppSettings _appSettings;
 
     public AuthController(
         IAuthService authService,
         IPasswordValidationService passwordValidationService,
         IEmailConfirmationService emailConfirmationService,
         IOptions<EmailSettings> emailSettings,
+        IOptions<AppSettings> appSettings,
         ILogger<AuthController> logger,
         IJwtTokenService jwtTokenService)
     {
@@ -35,6 +37,7 @@ public class AuthController : ControllerBase
         _passwordValidationService = passwordValidationService;
         _emailConfirmationService = emailConfirmationService;
         _emailSettings = emailSettings.Value;
+        _appSettings = appSettings.Value;
         _logger = logger;
         _jwtTokenService = jwtTokenService;
     }
@@ -502,8 +505,8 @@ public class AuthController : ControllerBase
 
     private string GetFrontendUrl()
     {
-        // Utilise la configuration ou une valeur par défaut
-        return "http://localhost:4200";
+        // Utilise la configuration depuis appsettings.json
+        return _appSettings.FrontendUrl;
     }
 
     #endregion

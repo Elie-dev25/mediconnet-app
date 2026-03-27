@@ -43,12 +43,25 @@ export interface UserDetailsDto {
 export interface InfirmierDetailsDto {
   matricule?: string;
   statut: string;
+  idService: number;
+  nomService?: string;
   isMajor: boolean;
   idServiceMajor?: number;
   nomServiceMajor?: string;
   dateNominationMajor?: string;
   accreditations?: string;
+  idSpecialite?: number;
+  codeSpecialite?: string;
+  nomSpecialite?: string;
   titreAffiche: string;
+}
+
+export interface SpecialiteInfirmierDto {
+  idSpecialite: number;
+  code?: string;
+  nom: string;
+  description?: string;
+  actif: boolean;
 }
 
 export interface MedecinDetailsDto {
@@ -86,6 +99,7 @@ export interface CreateUserRequest {
   numeroOrdre?: string;
   // Infirmier specific (idService aussi utilisé)
   matricule?: string;
+  idSpecialiteInfirmier?: number;
   // Laborantin specific
   idLabo?: number;
   specialisation?: string;
@@ -132,10 +146,17 @@ export class UserService {
   }
 
   /**
-   * Recuperer la liste des specialites
+   * Recuperer la liste des specialites (médecins)
    */
   getSpecialites(): Observable<Specialite[]> {
     return this.http.get<Specialite[]>(`${this.apiUrl}/specialites`);
+  }
+
+  /**
+   * Récupérer la liste des spécialités infirmiers actives
+   */
+  getSpecialitesInfirmiers(): Observable<SpecialiteInfirmierDto[]> {
+    return this.http.get<SpecialiteInfirmierDto[]>(`${environment.apiUrl}/specialites-infirmiers/actives`);
   }
 
   /**

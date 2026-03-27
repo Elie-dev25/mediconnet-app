@@ -1,0 +1,373 @@
+<app-dashboard-layout
+  [menuItems]="menuItems"
+  [sidebarTitle]="sidebarTitle"
+>
+  <div class="ventes-directes-container">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1>Ventes Directes</h1>
+        <p class="subtitle">Vente de médicaments sans ordonnance</p>
+      </div>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <lucide-icon name="plus"></lucide-icon>
+        Nouvelle vente
+      </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="filterDateDebut" (change)="onSearch()">
+        </div>
+        <div class="filter-group">
+          <label>Au</label>
+          <input type="date" [(ngModel)]="filterDateFin" (change)="onSearch()">
+        </div>
+        <div class="filter-group">
+          <label>Client</label>
+          <input type="text" [(ngModel)]="filterNomClient" placeholder="Nom du client" (keyup.enter)="onSearch()">
+        </div>
+        <div class="filter-group">
+          <label>N° Ticket</label>
+          <input type="text" [(ngModel)]="filterNumeroTicket" placeholder="VD-XXXXXXXX-XXXX" (keyup.enter)="onSearch()">
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-secondary" (click)="onSearch()">
+            <lucide-icon name="search"></lucide-icon>
+            Rechercher
+          </button>
+          <button class="btn btn-outline" (click)="resetFilters()">
+            <lucide-icon name="x"></lucide-icon>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau des ventes -->
+    <div class="table-container">
+      <div class="table-wrapper" *ngIf="!isLoading && ventes.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>N° Ticket</th>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Médicaments</th>
+              <th>Montant</th>
+              <th>Statut</th>
+              <th>Pharmacien</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vente of ventes">
+              <td class="ticket-number">{{ vente.numeroTicket }}</td>
+              <td>{{ vente.dateVente | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span *ngIf="vente.nomClient">{{ vente.nomClient }}</span>
+                <span *ngIf="vente.nomPatientEnregistre" class="patient-tag">
+                  <lucide-icon name="user-check" [size]="14"></lucide-icon>
+                  {{ vente.nomPatientEnregistre }}
+                </span>
+                <span *ngIf="!vente.nomClient && !vente.nomPatientEnregistre" class="anonymous">Client anonyme</span>
+              </td>
+              <td>
+                <span class="meds-count">{{ vente.lignes.length }} article(s)</span>
+              </td>
+              <td class="montant">{{ vente.montantTotal | number:'1.0-0' }} FCFA</td>
+              <td>
+                <span class="statut-badge" [ngClass]="getStatutClass(vente.statut)">
+                  {{ getStatutLabel(vente.statut) }}
+                </span>
+              </td>
+              <td>{{ vente.nomPharmacien }}</td>
+              <td>
+                <button class="btn-icon" (click)="openDetailModal(vente)" title="Voir détails">
+                  <lucide-icon name="eye"></lucide-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <lucide-icon name="loader-2" class="spin"></lucide-icon>
+        <p>Chargement des ventes...</p>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="!isLoading && ventes.length === 0">
+        <lucide-icon name="receipt"></lucide-icon>
+        <h3>Aucune vente directe</h3>
+        <p>Commencez par créer une nouvelle vente</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <lucide-icon name="plus"></lucide-icon>
+          Nouvelle vente
+        </button>
+      </div>
+
+      <!-- Pagination -->
+      <app-pagination
+        *ngIf="totalPages > 1"
+        [currentPage]="currentPage"
+        [totalPages]="totalPages"
+        [totalItems]="totalItems"
+        [pageSize]="pageSize"
+        (pageChange)="onPageChange($event)"
+      ></app-pagination>
+    </div>
+  </div>
+
+  <!-- Modal création vente -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Nouvelle vente directe</h2>
+        <button class="btn-close" (click)="closeCreateModal()">
+          <lucide-icon name="x"></lucide-icon>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="vente-layout">
+          <!-- Colonne gauche: Recherche médicaments -->
+          <div class="medicaments-section">
+            <h3>Médicaments disponibles</h3>
+            <div class="search-box">
+              <lucide-icon name="search"></lucide-icon>
+              <input 
+                type="text" 
+                [(ngModel)]="searchMedicament" 
+                (input)="filterMedicaments()"
+                placeholder="Rechercher un médicament..."
+              >
+            </div>
+            <div class="medicaments-list">
+              <div 
+                class="medicament-item" 
+                *ngFor="let med of medicamentsFiltres"
+                (click)="ajouterMedicament(med)"
+              >
+                <div class="med-info">
+                  <span class="med-name">{{ med.nom }}</span>
+                  <span class="med-dosage" *ngIf="med.dosage">{{ med.dosage }}</span>
+                </div>
+                <div class="med-details">
+                  <span class="med-stock" [class.low-stock]="(med.stock ?? 0) <= (med.seuilStock ?? 5)">
+                    Stock: {{ med.stock ?? 0 }}
+                  </span>
+                  <span class="med-price">{{ med.prix | number:'1.0-0' }} FCFA</span>
+                </div>
+                <button class="btn-add">
+                  <lucide-icon name="plus"></lucide-icon>
+                </button>
+              </div>
+              <div class="no-results" *ngIf="medicamentsFiltres.length === 0">
+                Aucun médicament trouvé
+              </div>
+            </div>
+          </div>
+
+          <!-- Colonne droite: Panier -->
+          <div class="panier-section">
+            <h3>Panier</h3>
+            
+            <!-- Lignes de vente -->
+            <div class="panier-items" *ngIf="lignesVente.length > 0">
+              <div class="panier-item" *ngFor="let ligne of lignesVente; let i = index">
+                <div class="item-info">
+                  <span class="item-name">{{ ligne.medicament.nom }}</span>
+                  <span class="item-dosage" *ngIf="ligne.medicament.dosage">{{ ligne.medicament.dosage }}</span>
+                </div>
+                <div class="item-controls">
+                  <div class="quantity-control">
+                    <button (click)="ligne.quantite = ligne.quantite - 1; updateQuantite(ligne)" [disabled]="ligne.quantite <= 1">-</button>
+                    <input type="number" [(ngModel)]="ligne.quantite" (ngModelChange)="updateQuantite(ligne)" min="1" [max]="ligne.medicament.stock ?? 999">
+                    <button (click)="ligne.quantite = ligne.quantite + 1; updateQuantite(ligne)" [disabled]="ligne.quantite >= (ligne.medicament.stock ?? 0)">+</button>
+                  </div>
+                  <span class="item-price">{{ ligne.prixUnitaire * ligne.quantite | number:'1.0-0' }} FCFA</span>
+                  <button class="btn-remove" (click)="supprimerLigne(i)">
+                    <lucide-icon name="trash-2"></lucide-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="panier-empty" *ngIf="lignesVente.length === 0">
+              <lucide-icon name="shopping-bag"></lucide-icon>
+              <p>Cliquez sur un médicament pour l'ajouter</p>
+            </div>
+
+            <!-- Total -->
+            <div class="panier-total" *ngIf="lignesVente.length > 0">
+              <span>Total</span>
+              <span class="total-amount">{{ montantTotalVente | number:'1.0-0' }} FCFA</span>
+            </div>
+
+            <!-- Informations client -->
+            <div class="client-section" *ngIf="lignesVente.length > 0">
+              <h4>Informations client (optionnel)</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nom du client</label>
+                  <input type="text" [(ngModel)]="nomClient" placeholder="Nom du client">
+                </div>
+                <div class="form-group">
+                  <label>Téléphone</label>
+                  <input type="tel" [(ngModel)]="telephoneClient" placeholder="Numéro de téléphone">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Mode de paiement</label>
+                <select [(ngModel)]="modePaiement">
+                  <option value="especes">Espèces</option>
+                  <option value="carte">Carte bancaire</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="cheque">Chèque</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Notes</label>
+                <textarea [(ngModel)]="notes" placeholder="Notes supplémentaires..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCreateModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="submitVente()" [disabled]="!canSubmit">
+          <lucide-icon name="check" *ngIf="!isProcessing"></lucide-icon>
+          <lucide-icon name="loader-2" class="spin" *ngIf="isProcessing"></lucide-icon>
+          {{ isProcessing ? 'Facturation...' : 'Facturer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal détail vente -->
+  <div class="modal-overlay" *ngIf="showDetailModal" (click)="closeDetailModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Détail de la vente</h2>
+        <button class="btn-close" (click)="closeDetailModal()">
+          <lucide-icon name="x"></lucide-icon>
+        </button>
+      </div>
+      
+      <div class="modal-body" *ngIf="selectedVente">
+        <div class="detail-header">
+          <div class="ticket-info">
+            <span class="ticket-label">N° Ticket</span>
+            <span class="ticket-value">{{ selectedVente.numeroTicket }}</span>
+          </div>
+          <div class="date-info">
+            <span class="date-label">Date</span>
+            <span class="date-value">{{ selectedVente.dateVente | date:'dd/MM/yyyy à HH:mm' }}</span>
+          </div>
+          <div class="statut-info">
+            <span class="statut-label">Statut</span>
+            <span class="statut-badge" [ngClass]="getStatutClass(selectedVente.statut)">
+              {{ getStatutLabel(selectedVente.statut) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Client</h4>
+          <p *ngIf="selectedVente.nomClient">{{ selectedVente.nomClient }}</p>
+          <p *ngIf="selectedVente.telephoneClient">Tél: {{ selectedVente.telephoneClient }}</p>
+          <p *ngIf="selectedVente.nomPatientEnregistre">Patient: {{ selectedVente.nomPatientEnregistre }}</p>
+          <p *ngIf="!selectedVente.nomClient && !selectedVente.nomPatientEnregistre" class="anonymous">Client anonyme</p>
+        </div>
+
+        <div class="detail-section">
+          <h4>Articles</h4>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Médicament</th>
+                <th>Qté</th>
+                <th>Prix unit.</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ligne of selectedVente.lignes">
+                <td>
+                  {{ ligne.nomMedicament }}
+                  <span class="dosage" *ngIf="ligne.dosage">{{ ligne.dosage }}</span>
+                </td>
+                <td>{{ ligne.quantite }}</td>
+                <td>{{ ligne.prixUnitaire | number:'1.0-0' }} FCFA</td>
+                <td>{{ ligne.montantTotal | number:'1.0-0' }} FCFA</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3"><strong>Total</strong></td>
+                <td><strong>{{ selectedVente.montantTotal | number:'1.0-0' }} FCFA</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h4>Paiement</h4>
+          <p>Mode: {{ getModePaiementLabel(selectedVente.modePaiement || 'especes') }}</p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedVente.notes">
+          <h4>Notes</h4>
+          <p>{{ selectedVente.notes }}</p>
+        </div>
+
+        <div class="detail-section">
+          <h4>Pharmacien</h4>
+          <p>{{ selectedVente.nomPharmacien }}</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDetailModal()">Fermer</button>
+        <button 
+          class="btn btn-success" 
+          *ngIf="selectedVente && selectedVente.statut === 'paye'" 
+          (click)="delivrerVente(selectedVente!)"
+          [disabled]="isProcessing"
+        >
+          <lucide-icon name="package-check" *ngIf="!isProcessing"></lucide-icon>
+          <lucide-icon name="loader-2" class="spin" *ngIf="isProcessing"></lucide-icon>
+          {{ isProcessing ? 'Délivrance...' : 'Délivrer les médicaments' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal succès -->
+  <div class="modal-overlay" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+    <div class="modal modal-success" (click)="$event.stopPropagation()">
+      <div class="success-content">
+        <div class="success-icon">
+          <lucide-icon name="check-circle"></lucide-icon>
+        </div>
+        <h2>Vente facturée !</h2>
+        <div class="success-details" *ngIf="lastResult">
+          <p class="ticket-number">{{ lastResult.numeroTicket }}</p>
+          <p class="total-amount">{{ lastResult.montantTotal | number:'1.0-0' }} FCFA</p>
+        </div>
+        <button class="btn btn-primary" (click)="closeSuccessModal()">
+          <lucide-icon name="check"></lucide-icon>
+          Continuer
+        </button>
+      </div>
+    </div>
+  </div>
+</app-dashboard-layout>

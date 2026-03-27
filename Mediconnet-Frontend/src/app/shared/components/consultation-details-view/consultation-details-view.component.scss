@@ -603,6 +603,85 @@ $warning: $warning-color;
   }
 }
 
+// RDV de suivi card
+.rdv-suivi-card {
+  .card-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+
+    h2 {
+      color: white;
+    }
+
+    .status-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.rdv-suivi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.rdv-suivi-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+
+  lucide-icon {
+    color: #10b981;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .rdv-suivi-content {
+    flex: 1;
+
+    .label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+    }
+
+    strong {
+      font-size: 0.9375rem;
+      color: #1f2937;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+  }
+}
+
+// Status badges for RDV
+.status-confirmed {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.status-cancelled {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.status-absent {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
 // Questionnaire
 .questionnaire-list {
   display: flex;
@@ -638,6 +717,30 @@ $warning: $warning-color;
   padding-left: 1.5rem;
 
   lucide-icon { flex-shrink: 0; color: $success; margin-top: 2px; }
+}
+
+// Decision badge for surgical exam
+.decision-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &.decision-surveillance {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.decision-traitement_medical {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.decision-indication_operatoire {
+    background: #fee2e2;
+    color: #991b1b;
+  }
 }
 
 // Print styles

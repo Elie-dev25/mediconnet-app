@@ -244,7 +244,7 @@ public class EmailConfirmationService : IEmailConfirmationService
         // Encoder en Base64 URL-safe
         return Convert.ToBase64String(bytes)
             .Replace("+", "-")
-            .Replace("/", "_")
+            .Replace("/", "-")
             .Replace("=", "");
     }
 
@@ -255,7 +255,7 @@ public class EmailConfirmationService : IEmailConfirmationService
     private string BuildConfirmationLink(string token)
     {
         // Utiliser l'URL de l'API backend pour la confirmation
-        return $"{_appSettings.ApiUrl}/api/auth/confirm-email?token={Uri.EscapeDataString(token)}";
+        return $"{_appSettings.ApiUrl}/auth/confirm-email?token={Uri.EscapeDataString(token)}";
     }
 }
 

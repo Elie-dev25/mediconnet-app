@@ -43,6 +43,12 @@ public class Infirmier
     [MaxLength(500)]
     public string? Accreditations { get; set; }
     
+    /// <summary>
+    /// Spécialité de l'infirmier (IDE, IADE, IBODE, etc.)
+    /// </summary>
+    [Column("id_specialite")]
+    public int? IdSpecialite { get; set; }
+    
     // Relations
     [ForeignKey("IdUser")]
     public virtual Utilisateur Utilisateur { get; set; } = null!;
@@ -52,4 +58,10 @@ public class Infirmier
     /// </summary>
     [ForeignKey("IdService")]
     public virtual Service Service { get; set; } = null!;
+    
+    /// <summary>
+    /// Spécialité de l'infirmier
+    /// </summary>
+    [ForeignKey("IdSpecialite")]
+    public virtual SpecialiteInfirmier? Specialite { get; set; }
 }

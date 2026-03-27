@@ -37,7 +37,8 @@ public class ServiceManagementService : IServiceManagementService
                 ResponsableNom = s.Responsable != null 
                     ? $"{s.Responsable.Prenom} {s.Responsable.Nom}" 
                     : null,
-                NombreMedecins = s.Medecins.Count
+                NombreMedecins = s.Medecins.Count,
+                CoutConsultation = s.CoutConsultation
             })
             .OrderBy(s => s.NomService)
             .ToListAsync();
@@ -58,7 +59,8 @@ public class ServiceManagementService : IServiceManagementService
                 ResponsableNom = s.Responsable != null 
                     ? $"{s.Responsable.Prenom} {s.Responsable.Nom}" 
                     : null,
-                NombreMedecins = s.Medecins.Count
+                NombreMedecins = s.Medecins.Count,
+                CoutConsultation = s.CoutConsultation
             })
             .FirstOrDefaultAsync();
     }
@@ -75,7 +77,8 @@ public class ServiceManagementService : IServiceManagementService
         {
             NomService = request.NomService,
             Description = request.Description,
-            ResponsableService = request.ResponsableId
+            ResponsableService = request.ResponsableId,
+            CoutConsultation = request.CoutConsultation
         };
 
         _context.Services.Add(service);
@@ -103,6 +106,7 @@ public class ServiceManagementService : IServiceManagementService
         service.NomService = request.NomService;
         service.Description = request.Description;
         service.ResponsableService = request.ResponsableId;
+        service.CoutConsultation = request.CoutConsultation;
 
         await _context.SaveChangesAsync();
 

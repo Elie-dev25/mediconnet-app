@@ -31,6 +31,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Laborantin> Laborantins { get; set; }
     public DbSet<Service> Services { get; set; }
     public DbSet<Specialite> Specialites { get; set; }
+    public DbSet<SpecialiteInfirmier> SpecialitesInfirmiers { get; set; }
     
     // Entités Caisse
     public DbSet<Facture> Factures { get; set; }
@@ -51,6 +52,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Consultation> Consultations { get; set; }
     public DbSet<Parametre> Parametres { get; set; }
     public DbSet<ConsultationGynecologique> ConsultationsGynecologiques { get; set; }
+    public DbSet<ConsultationChirurgicale> ConsultationsChirurgicales { get; set; }
+    public DbSet<ProgrammationIntervention> ProgrammationsInterventions { get; set; }
 
     // Entités Questions/Réponses (questionnaire consultation)
     public DbSet<Question> Questions { get; set; }
@@ -142,6 +145,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AuditAccesDocument> AuditAccesDocuments { get; set; }
     public DbSet<VerificationIntegrite> VerificationsIntegrite { get; set; }
     public DbSet<AlerteSysteme> AlertesSysteme { get; set; }
+
+    // Entités Bloc Opératoire
+    public DbSet<BlocOperatoire> BlocsOperatoires { get; set; }
+    public DbSet<ReservationBloc> ReservationsBlocs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -266,6 +273,20 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite");
         });
 
+        // ==================== SPECIALITE INFIRMIER ====================
+        modelBuilder.Entity<SpecialiteInfirmier>(entity =>
+        {
+            entity.HasKey(e => e.IdSpecialite);
+            entity.ToTable("specialite_infirmier");
+
+            entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite").ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(20);
+            entity.Property(e => e.Nom).HasColumnName("nom").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.Actif).HasColumnName("actif").HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
         // Infirmier Configuration
         // Note: Le Major est maintenant identifié via Service.IdMajor, pas via Infirmier.IsMajor/IdServiceMajor
         modelBuilder.Entity<Infirmier>(entity =>
@@ -279,12 +300,19 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.IdService).HasColumnName("id_service");
             entity.Property(e => e.DateNominationMajor).HasColumnName("date_nomination_major");
             entity.Property(e => e.Accreditations).HasColumnName("accreditations").HasMaxLength(500);
+            entity.Property(e => e.IdSpecialite).HasColumnName("id_specialite");
 
             // Relation vers le service de rattachement
             entity.HasOne(e => e.Service)
                 .WithMany(s => s.Infirmiers)
                 .HasForeignKey(e => e.IdService)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Relation vers la spécialité infirmier
+            entity.HasOne(e => e.Specialite)
+                .WithMany(s => s.Infirmiers)
+                .HasForeignKey(e => e.IdSpecialite)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Administrateur Configuration
@@ -738,6 +766,85 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .HasDatabaseName("IX_consultation_gyneco_consultation");
         });
 
+        // ConsultationChirurgicale Configuration
+        modelBuilder.Entity<ConsultationChirurgicale>(entity =>
+        {
+            entity.HasKey(e => e.IdConsultation);
+            entity.ToTable("consultation_chirurgicale");
+
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation");
+            entity.Property(e => e.ZoneExaminee).HasColumnName("zone_examinee");
+            entity.Property(e => e.InspectionLocale).HasColumnName("inspection_locale");
+            entity.Property(e => e.PalpationLocale).HasColumnName("palpation_locale");
+            entity.Property(e => e.SignesInflammatoires).HasColumnName("signes_inflammatoires");
+            entity.Property(e => e.CicatricesExistantes).HasColumnName("cicatrices_existantes");
+            entity.Property(e => e.MobiliteFonction).HasColumnName("mobilite_fonction");
+            entity.Property(e => e.ConclusionChirurgicale).HasColumnName("conclusion_chirurgicale");
+            entity.Property(e => e.Decision).HasColumnName("decision");
+            entity.Property(e => e.NotesComplementaires).HasColumnName("notes_complementaires");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Consultation)
+                .WithOne(c => c.ConsultationChirurgicale)
+                .HasForeignKey<ConsultationChirurgicale>(e => e.IdConsultation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.IdConsultation)
+                .IsUnique()
+                .HasDatabaseName("IX_consultation_chirurgicale_consultation");
+        });
+
+        // ProgrammationIntervention Configuration
+        modelBuilder.Entity<ProgrammationIntervention>(entity =>
+        {
+            entity.HasKey(e => e.IdProgrammation);
+            entity.ToTable("programmation_intervention");
+
+            entity.Property(e => e.IdProgrammation).HasColumnName("id_programmation").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation").IsRequired();
+            entity.Property(e => e.IdPatient).HasColumnName("id_patient").IsRequired();
+            entity.Property(e => e.IdChirurgien).HasColumnName("id_medecin").IsRequired();
+            entity.Property(e => e.TypeIntervention).HasColumnName("type_intervention").HasMaxLength(50);
+            entity.Property(e => e.ClassificationAsa).HasColumnName("classification_asa").HasMaxLength(10);
+            entity.Property(e => e.RisqueOperatoire).HasColumnName("risque_operatoire").HasMaxLength(20);
+            entity.Property(e => e.ConsentementEclaire).HasColumnName("consentement_eclaire");
+            entity.Property(e => e.DateConsentement).HasColumnName("date_consentement");
+            entity.Property(e => e.IndicationOperatoire).HasColumnName("indication_operatoire").HasColumnType("text");
+            entity.Property(e => e.TechniquePrevue).HasColumnName("technique_prevue").HasColumnType("text");
+            entity.Property(e => e.DatePrevue).HasColumnName("date_prevue");
+            entity.Property(e => e.DureeEstimee).HasColumnName("duree_estimee");
+            entity.Property(e => e.NotesAnesthesie).HasColumnName("notes_anesthesie").HasColumnType("text");
+            entity.Property(e => e.BilanPreoperatoire).HasColumnName("bilan_preoperatoire").HasColumnType("text");
+            entity.Property(e => e.InstructionsPatient).HasColumnName("instructions_patient").HasColumnType("text");
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20);
+            entity.Property(e => e.MotifAnnulation).HasColumnName("motif_annulation").HasColumnType("text");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            // Relations
+            entity.HasOne(e => e.Consultation)
+                .WithMany()
+                .HasForeignKey(e => e.IdConsultation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.IdPatient)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Chirurgien)
+                .WithMany()
+                .HasForeignKey(e => e.IdChirurgien)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.IdConsultation).HasDatabaseName("IX_programmation_intervention_consultation");
+            entity.HasIndex(e => e.IdPatient).HasDatabaseName("IX_programmation_intervention_patient");
+            entity.HasIndex(e => e.IdChirurgien).HasDatabaseName("IX_programmation_intervention_chirurgien");
+            entity.HasIndex(e => e.Statut).HasDatabaseName("IX_programmation_intervention_statut");
+        });
+
         // Parametre Configuration - Paramètres vitaux
         modelBuilder.Entity<Parametre>(entity =>
         {
@@ -794,10 +901,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         // ==================== ENTITÉS PRESCRIPTIONS/EXAMENS ====================
 
-        // PrescriptionMedicament Configuration (clé composite)
+        // PrescriptionMedicament Configuration
         modelBuilder.Entity<PrescriptionMedicament>(entity =>
         {
-            entity.HasKey(e => new { e.IdOrdonnance, e.IdMedicament });
+            entity.HasKey(e => e.IdPrescriptionMed);
             entity.ToTable("ordonnance_medicament");
 
             entity.Property(e => e.IdPrescriptionMed).HasColumnName("id_prescription_med").ValueGeneratedOnAdd();
@@ -1501,6 +1608,67 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .WithMany(v => v.MedicamentVoies)
                 .HasForeignKey(e => e.IdVoie)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ==================== BLOC OPERATOIRE ====================
+        modelBuilder.Entity<BlocOperatoire>(entity =>
+        {
+            entity.HasKey(e => e.IdBloc);
+            entity.ToTable("bloc_operatoire");
+
+            entity.Property(e => e.IdBloc).HasColumnName("id_bloc").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nom).HasColumnName("nom").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20).HasDefaultValue("libre");
+            entity.Property(e => e.Actif).HasColumnName("actif").HasDefaultValue(true);
+            entity.Property(e => e.Localisation).HasColumnName("localisation").HasMaxLength(100);
+            entity.Property(e => e.Capacite).HasColumnName("capacite");
+            entity.Property(e => e.Equipements).HasColumnName("equipements").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasMany(e => e.Reservations)
+                .WithOne(r => r.Bloc)
+                .HasForeignKey(r => r.IdBloc)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ==================== RESERVATION BLOC ====================
+        modelBuilder.Entity<ReservationBloc>(entity =>
+        {
+            entity.HasKey(e => e.IdReservation);
+            entity.ToTable("reservation_bloc");
+
+            entity.Property(e => e.IdReservation).HasColumnName("id_reservation").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdBloc).HasColumnName("id_bloc");
+            entity.Property(e => e.IdProgrammation).HasColumnName("id_programmation");
+            entity.Property(e => e.IdMedecin).HasColumnName("id_medecin");
+            entity.Property(e => e.DateReservation).HasColumnName("date_reservation");
+            entity.Property(e => e.HeureDebut).HasColumnName("heure_debut").IsRequired().HasMaxLength(5);
+            entity.Property(e => e.HeureFin).HasColumnName("heure_fin").IsRequired().HasMaxLength(5);
+            entity.Property(e => e.DureeMinutes).HasColumnName("duree_minutes");
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20).HasDefaultValue("confirmee");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Bloc)
+                .WithMany(b => b.Reservations)
+                .HasForeignKey(e => e.IdBloc)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Programmation)
+                .WithOne(p => p.ReservationBloc)
+                .HasForeignKey<ReservationBloc>(e => e.IdProgrammation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Medecin)
+                .WithMany()
+                .HasForeignKey(e => e.IdMedecin)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.IdBloc, e.DateReservation, e.HeureDebut })
+                .HasDatabaseName("IX_reservation_bloc_unique");
         });
     }
 }

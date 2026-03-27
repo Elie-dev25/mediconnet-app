@@ -95,6 +95,7 @@ export interface ConsultationEnCoursDto {
   anamnese?: AnamneseDto;
   examenClinique?: ExamenCliniqueDto;
   examenGynecologique?: ExamenGynecologiqueDto;
+  examenChirurgical?: ExamenChirurgicalDto;
   diagnostic?: DiagnosticDto;
   planTraitement?: PlanTraitementDto;
   conclusion?: ConclusionDto;
@@ -123,8 +124,21 @@ export interface ConsultationDetailDto {
   parametresVitaux?: ParametresVitauxDto;
   examenClinique?: ExamenCliniqueDto;
   examenGynecologique?: ExamenGynecologiqueDto;
+  examenChirurgical?: ExamenChirurgicalDto;
   planTraitement?: PlanTraitementDto;
   conclusionDetaillee?: ConclusionDto;
+  /** RDV de suivi créé après cette consultation */
+  rdvSuivi?: RdvSuiviDetailDto;
+}
+
+/** Détails d'un RDV de suivi créé après une consultation */
+export interface RdvSuiviDetailDto {
+  idRendezVous: number;
+  dateHeure: string;
+  motif?: string;
+  statut: string;
+  medecinNom?: string;
+  serviceNom?: string;
 }
 
 export interface ExamenPrescritDetailDto {
@@ -181,6 +195,27 @@ export interface ExamenGynecologiqueDto {
   examenSpeculum?: string;
   toucherVaginal?: string;
   autresObservations?: string;
+}
+
+export interface ExamenChirurgicalDto {
+  zoneExaminee?: string;
+  inspectionLocale?: string;
+  palpationLocale?: string;
+  signesInflammatoires?: string;
+  cicatricesExistantes?: string;
+  mobiliteFonction?: string;
+  conclusionChirurgicale?: string;
+  /** surveillance, traitement_medical, indication_operatoire */
+  decision?: string;
+  notesComplementaires?: string;
+}
+
+/** Réponse pour l'import du dernier examen gynécologique */
+export interface DernierExamenGynecoResponse {
+  found: boolean;
+  message?: string;
+  dateConsultation?: string;
+  examenGynecologique?: ExamenGynecologiqueDto;
 }
 
 // Étape 3: Diagnostic
@@ -543,6 +578,24 @@ export class ConsultationCompleteService {
   saveExamenGynecologique(idConsultation: number, examenGynecologique: ExamenGynecologiqueDto): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
       `${this.apiUrl}/${idConsultation}/examen-gynecologique`, examenGynecologique
+    );
+  }
+
+  /**
+   * Sauvegarder l'examen chirurgical (étape 2 ter)
+   */
+  saveExamenChirurgical(idConsultation: number, examenChirurgical: ExamenChirurgicalDto): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.apiUrl}/${idConsultation}/examen-chirurgical`, examenChirurgical
+    );
+  }
+
+  /**
+   * Récupérer le dernier examen gynécologique du patient (pour import)
+   */
+  getDernierExamenGynecologique(idConsultation: number): Observable<DernierExamenGynecoResponse> {
+    return this.http.get<DernierExamenGynecoResponse>(
+      `${this.apiUrl}/${idConsultation}/dernier-examen-gynecologique`
     );
   }
 

@@ -16,7 +16,7 @@
     <div class="step" *ngFor="let etape of etapes; let i = index"
          [class.active]="etapeActuelle === etape"
          [class.completed]="isEtapeComplete(etape)"
-         [class.locked]="etape === 'examen_gynecologique' && !isGynecoConsultation()"
+         [class.locked]="(etape === 'examen_gynecologique' && !isGynecoConsultation()) || (etape === 'examen_chirurgical' && !isChirurgieConsultation())"
          (click)="goToEtape(etape)">
       <div class="step-number">
         <span *ngIf="!isEtapeComplete(etape)">{{ i + 1 }}</span>
@@ -28,6 +28,10 @@
         <span *ngIf="etape === 'examen_gynecologique'">
           Examen Gynécologique
           <small class="step-hint" *ngIf="!isGynecoConsultation()">(gynécologue uniquement)</small>
+        </span>
+        <span *ngIf="etape === 'examen_chirurgical'">
+          Examen Chirurgical
+          <small class="step-hint" *ngIf="!isChirurgieConsultation()">(chirurgien uniquement)</small>
         </span>
         <span *ngIf="etape === 'diagnostic'">Diagnostic</span>
         <span *ngIf="etape === 'plan_traitement'">Traitement</span>
@@ -455,6 +459,125 @@
       </ng-container>
     </div>
 
+    <!-- ÉTAPE 4: EXAMEN CHIRURGICAL -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'examen_chirurgical'" [formGroup]="examenChirurgicalForm">
+      <div class="etape-header">
+        <h3><lucide-icon name="scissors" [size]="18"></lucide-icon> Examen Chirurgical</h3>
+      </div>
+
+      <div class="locked-panel" *ngIf="!isChirurgieConsultation()">
+        <lucide-icon name="shield-alert" [size]="32"></lucide-icon>
+        <div>
+          <h4>Étape réservée aux consultations chirurgicales</h4>
+          <p>Cette étape devient disponible lorsque la consultation est associée à une spécialité chirurgicale.</p>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isChirurgieConsultation()">
+        <div class="form-section chirurgie-section">
+          <div class="form-group">
+            <label>Zone anatomique examinée</label>
+            <input type="text" formControlName="zoneExaminee" placeholder="Ex: Abdomen, membre inférieur droit, région cervicale...">
+          </div>
+
+          <div class="chirurgie-grid">
+            <div class="form-group">
+              <div class="field-header">
+                <label>Inspection locale</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.inspectionLocale')"
+                        (click)="toggleVoiceInput('examenChirurgical.inspectionLocale')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.inspectionLocale') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="inspectionLocale" rows="3" placeholder="Aspect cutané, tuméfaction, déformation, coloration..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Palpation locale</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.palpationLocale')"
+                        (click)="toggleVoiceInput('examenChirurgical.palpationLocale')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.palpationLocale') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="palpationLocale" rows="3" placeholder="Douleur, masse, défense, consistance..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Signes inflammatoires</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.signesInflammatoires')"
+                        (click)="toggleVoiceInput('examenChirurgical.signesInflammatoires')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.signesInflammatoires') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="signesInflammatoires" rows="3" placeholder="Rougeur, chaleur, œdème, douleur..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Cicatrices existantes</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.cicatricesExistantes')"
+                        (click)="toggleVoiceInput('examenChirurgical.cicatricesExistantes')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.cicatricesExistantes') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="cicatricesExistantes" rows="3" placeholder="État des cicatrices, adhérences, aspect..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Mobilité / Fonction</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.mobiliteFonction')"
+                        (click)="toggleVoiceInput('examenChirurgical.mobiliteFonction')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.mobiliteFonction') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="mobiliteFonction" rows="3" placeholder="Amplitude articulaire, force musculaire, fonction..." appVoiceInput></textarea>
+            </div>
+            <div class="form-group">
+              <div class="field-header">
+                <label>Notes complémentaires</label>
+                <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                        [class.recording]="isVoiceActive('examenChirurgical.notesComplementaires')"
+                        (click)="toggleVoiceInput('examenChirurgical.notesComplementaires')"
+                        title="Dictée vocale">
+                  <lucide-icon [name]="isVoiceActive('examenChirurgical.notesComplementaires') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <textarea formControlName="notesComplementaires" rows="3" placeholder="Observations supplémentaires..." appVoiceInput></textarea>
+            </div>
+          </div>
+
+          <div class="form-group conclusion-group">
+            <div class="field-header">
+              <label>Conclusion chirurgicale</label>
+              <button type="button" class="voice-btn" *ngIf="isVoiceSupported"
+                      [class.recording]="isVoiceActive('examenChirurgical.conclusionChirurgicale')"
+                      (click)="toggleVoiceInput('examenChirurgical.conclusionChirurgicale')"
+                      title="Dictée vocale">
+                <lucide-icon [name]="isVoiceActive('examenChirurgical.conclusionChirurgicale') ? 'mic-off' : 'mic'" [size]="14"></lucide-icon>
+              </button>
+            </div>
+            <textarea formControlName="conclusionChirurgicale" rows="3" placeholder="Synthèse de l'examen chirurgical..." appVoiceInput></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="label-with-voice">
+              <label>Notes complémentaires</label>
+            </div>
+            <textarea formControlName="notesComplementaires" rows="2" placeholder="Notes additionnelles..."></textarea>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
     <!-- ÉTAPE 3: DIAGNOSTIC -->
     <div class="etape-content" *ngIf="etapeActuelle === 'diagnostic'" [formGroup]="diagnosticForm">
       <h3><lucide-icon name="stethoscope" [size]="18"></lucide-icon> Diagnostic / Orientation</h3>
@@ -661,6 +784,43 @@
                 </div>
               </div>
             </div>
+
+            <!-- Examen gynécologique (si consultation gynéco) -->
+            <div class="recap-block recap-gyneco" *ngIf="isGynecoConsultation() && hasExamenGynecoData()">
+              <div class="recap-block-header">
+                <lucide-icon name="sparkles" [size]="14"></lucide-icon>
+                <span>Examen gynécologique</span>
+              </div>
+              <div class="recap-block-content recap-compact">
+                <div class="recap-row" *ngIf="examenGynecologiqueForm.get('inspectionExterne')?.value">
+                  <span class="recap-label">Inspection externe</span>
+                  <span class="recap-value recap-text">
+                    {{ examenGynecologiqueForm.get('inspectionExterne')?.value }}
+                  </span>
+                </div>
+                <div class="recap-row" *ngIf="examenGynecologiqueForm.get('examenSpeculum')?.value">
+                  <span class="recap-label">Examen au spéculum</span>
+                  <span class="recap-value recap-text">
+                    {{ examenGynecologiqueForm.get('examenSpeculum')?.value }}
+                  </span>
+                </div>
+                <div class="recap-row" *ngIf="examenGynecologiqueForm.get('toucherVaginal')?.value">
+                  <span class="recap-label">Toucher vaginal</span>
+                  <span class="recap-value recap-text">
+                    {{ examenGynecologiqueForm.get('toucherVaginal')?.value }}
+                  </span>
+                </div>
+                <div class="recap-row" *ngIf="examenGynecologiqueForm.get('autresObservations')?.value">
+                  <span class="recap-label">Autres observations</span>
+                  <span class="recap-value recap-text">
+                    {{ examenGynecologiqueForm.get('autresObservations')?.value }}
+                  </span>
+                </div>
+                <div class="recap-row recap-empty-state" *ngIf="!hasExamenGynecoData()">
+                  <span class="recap-value recap-empty">Aucune donnée d'examen gynécologique</span>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -777,6 +937,40 @@
           </button>
         </div>
         <textarea formControlName="optionsTraitement" rows="3" placeholder="Options thérapeutiques proposées..." appVoiceInput></textarea>
+      </div>
+
+      <!-- Décision chirurgicale (uniquement pour les chirurgiens) -->
+      <div class="form-section decision-chirurgicale-section" *ngIf="isChirurgieConsultation()">
+        <h4><lucide-icon name="scissors" [size]="16"></lucide-icon> Décision chirurgicale</h4>
+        <div class="decision-options">
+          <label class="decision-option" [class.selected]="planTraitementForm.get('decisionChirurgicale')?.value === 'surveillance'">
+            <input type="radio" formControlName="decisionChirurgicale" value="surveillance">
+            <lucide-icon name="eye" [size]="16"></lucide-icon>
+            <span>Surveillance</span>
+          </label>
+          <label class="decision-option" [class.selected]="planTraitementForm.get('decisionChirurgicale')?.value === 'traitement_medical'">
+            <input type="radio" formControlName="decisionChirurgicale" value="traitement_medical">
+            <lucide-icon name="pill" [size]="16"></lucide-icon>
+            <span>Traitement médical</span>
+          </label>
+          <label class="decision-option" [class.selected]="planTraitementForm.get('decisionChirurgicale')?.value === 'indication_operatoire'">
+            <input type="radio" formControlName="decisionChirurgicale" value="indication_operatoire">
+            <lucide-icon name="scissors" [size]="16"></lucide-icon>
+            <span>Indication opératoire</span>
+          </label>
+        </div>
+        
+        <!-- Bouton programmation intervention si indication opératoire -->
+        <div class="programmation-action" *ngIf="planTraitementForm.get('decisionChirurgicale')?.value === 'indication_operatoire'">
+          <div class="programmation-alert">
+            <lucide-icon name="alert-triangle" [size]="18"></lucide-icon>
+            <span>Une indication opératoire a été posée. Veuillez programmer l'intervention.</span>
+          </div>
+          <button type="button" class="btn-programmation" (click)="openProgrammationIntervention()" [disabled]="programmationCreee">
+            <lucide-icon [name]="programmationCreee ? 'check-circle' : 'calendar-plus'" [size]="16"></lucide-icon>
+            {{ programmationCreee ? 'Intervention programmée' : 'Programmer l\'intervention' }}
+          </button>
+        </div>
       </div>
 
       <!-- Ordonnance médicaments -->
@@ -1362,3 +1556,13 @@
     </app-hospitalisation-multi-etapes>
   </div>
 </div>
+
+<!-- Panneau latéral Programmation Intervention -->
+<app-programmation-intervention-panel
+  *ngIf="showProgrammationIntervention"
+  [consultationId]="consultationId"
+  [patientNom]="patientNom"
+  [indicationFromExamen]="examenChirurgicalForm?.get('conclusionChirurgicale')?.value || ''"
+  (closed)="closeProgrammationIntervention()"
+  (saved)="onProgrammationSaved($event)">
+</app-programmation-intervention-panel>

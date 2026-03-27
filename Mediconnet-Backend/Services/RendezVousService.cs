@@ -129,9 +129,10 @@ public class RendezVousService : IRendezVousService
     public async Task<(bool Success, string Message, RendezVousDto? RendezVous)> CreateRendezVousAsync(
         CreateRendezVousRequest request, int patientId)
     {
-        // Vérifier que le médecin existe
+        // Vérifier que le médecin existe avec son service
         var medecin = await _context.Medecins
             .Include(m => m.Utilisateur)
+            .Include(m => m.Service)
             .FirstOrDefaultAsync(m => m.IdUser == request.IdMedecin);
 
         if (medecin == null)
@@ -256,8 +257,8 @@ public class RendezVousService : IRendezVousService
                 // Générer un numéro de facture unique
                 var numeroFacture = await GenererNumeroFactureAsync();
 
-                // Prix consultation par défaut (peut être configuré)
-                decimal prixConsultation = 5000; // FCFA - à récupérer depuis config ou spécialité
+                // Prix consultation récupéré depuis le service du médecin
+                decimal prixConsultation = medecin.Service?.CoutConsultation ?? 5000;
                 
                 // Calculer la couverture assurance via le service centralisé
                 var couverture = await _assuranceCouvertureService.CalculerCouvertureAsync(patient, "consultation", prixConsultation);

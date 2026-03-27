@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
-import { ConsultationCompleteService, ConsultationDetailDto, ConsultationEnCoursDto, ConclusionDto, ExamenCliniqueDto, ExamenGynecologiqueDto, ParametresVitauxDto, PlanTraitementDto } from '../../../services/consultation-complete.service';
+import { ConsultationCompleteService, ConsultationDetailDto, ConsultationEnCoursDto, ConclusionDto, ExamenCliniqueDto, ExamenGynecologiqueDto, ExamenChirurgicalDto, ParametresVitauxDto, PlanTraitementDto, OrdonnanceDto, ExamenPrescritDetailDto } from '../../../services/consultation-complete.service';
 
 export type ConsultationViewMode = 'patient' | 'medecin';
 
@@ -87,17 +87,60 @@ export class ConsultationDetailsViewComponent implements OnInit {
     );
   }
 
+  hasExamenChirurgicalData(): boolean {
+    const examen = this.getExamenChirurgical();
+    if (!examen) {
+      return false;
+    }
+    return !!(
+      examen.zoneExaminee?.trim() ||
+      examen.inspectionLocale?.trim() ||
+      examen.palpationLocale?.trim() ||
+      examen.signesInflammatoires?.trim() ||
+      examen.conclusionChirurgicale?.trim() ||
+      examen.decision?.trim()
+    );
+  }
+
+  getExamenChirurgical(): ExamenChirurgicalDto | undefined {
+    return this.consultation?.examenChirurgical;
+  }
+
+  getDecisionChirurgicaleLabel(decision?: string): string {
+    const labels: { [key: string]: string } = {
+      'surveillance': 'Surveillance',
+      'traitement_medical': 'Traitement médical',
+      'indication_operatoire': 'Indication opératoire'
+    };
+    return decision ? (labels[decision] || decision) : 'Non renseigné';
+  }
+
   hasDiagnosticData(): boolean {
     const c = this.consultation;
     return !!(c?.diagnostic || c?.conclusion || this.hasConclusionDetailleeData());
   }
 
   hasPrescriptionData(): boolean {
-    return !!(this.consultation?.ordonnance?.medicaments && this.consultation.ordonnance.medicaments.length > 0);
+    const ordonnance = this.consultation?.ordonnance || this.consultation?.planTraitement?.ordonnance;
+    return !!(ordonnance?.medicaments && ordonnance.medicaments.length > 0);
   }
 
   hasExamensData(): boolean {
-    return !!(this.consultation?.examensPrescrits && this.consultation.examensPrescrits.length > 0);
+    const examens = this.consultation?.examensPrescrits || this.consultation?.planTraitement?.examensPrescrits;
+    return !!(examens && examens.length > 0);
+  }
+
+  getOrdonnance(): OrdonnanceDto | undefined {
+    return this.consultation?.ordonnance || this.consultation?.planTraitement?.ordonnance;
+  }
+
+  getExamensPrescrits(): ExamenPrescritDetailDto[] {
+    return this.consultation?.examensPrescrits || 
+           this.consultation?.planTraitement?.examensPrescrits?.map(e => ({
+             nomExamen: e.nomExamen,
+             instructions: e.notes,
+             statut: 'prescrit'
+           })) || [];
   }
 
   hasRecommandationsData(): boolean {
@@ -331,6 +374,11 @@ export class ConsultationDetailsViewComponent implements OnInit {
       steps.push({ id: 'examen_gynecologique', label: 'Examen gynécologique', icon: 'sparkles', hasData: true });
     }
 
+    // Étape 3 bis: Examen chirurgical (uniquement si données présentes = consultation chirurgicale)
+    if (this.hasExamenChirurgicalData()) {
+      steps.push({ id: 'examen_chirurgical', label: 'Examen chirurgical', icon: 'scissors', hasData: true });
+    }
+
     // Étape 4: Diagnostic
     steps.push({ id: 'diagnostic', label: 'Diagnostic', icon: 'activity', hasData: this.hasDiagnosticData() });
 
@@ -368,8 +416,37 @@ export class ConsultationDetailsViewComponent implements OnInit {
       detail?.typeSuivi ||
       detail?.dateSuiviPrevue ||
       detail?.notesSuivi ||
-      this.consultation?.recommandations
+      this.consultation?.recommandations ||
+      this.consultation?.rdvSuivi
     );
+  }
+
+  hasRdvSuiviData(): boolean {
+    return !!this.consultation?.rdvSuivi;
+  }
+
+  getRdvSuiviStatutLabel(statut: string): string {
+    const labels: { [key: string]: string } = {
+      'planifie': 'Planifié',
+      'confirme': 'Confirmé',
+      'en_cours': 'En cours',
+      'termine': 'Terminé',
+      'annule': 'Annulé',
+      'absent': 'Absent'
+    };
+    return labels[statut] || statut;
+  }
+
+  getRdvSuiviStatutClass(statut: string): string {
+    const classes: { [key: string]: string } = {
+      'planifie': 'status-pending',
+      'confirme': 'status-confirmed',
+      'en_cours': 'status-progress',
+      'termine': 'status-completed',
+      'annule': 'status-cancelled',
+      'absent': 'status-absent'
+    };
+    return classes[statut] || '';
   }
 
   private mapToDetailDto(data: ConsultationEnCoursDto): ConsultationDetailDto {
@@ -395,6 +472,7 @@ export class ConsultationDetailsViewComponent implements OnInit {
       parametresVitaux: data.examenClinique?.parametresVitaux || data.anamnese?.parametresVitaux,
       examenClinique: data.examenClinique,
       examenGynecologique: data.examenGynecologique,
+      examenChirurgical: data.examenChirurgical,
       planTraitement: data.planTraitement,
       conclusionDetaillee: data.conclusion
     };

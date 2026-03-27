@@ -236,6 +236,17 @@
               <span class="error-text" *ngIf="hasError('idService')">Service requis</span>
             </div>
             <div class="form-group">
+              <label>Spécialité</label>
+              <select formControlName="idSpecialiteInfirmier">
+                <option [value]="null">Sélectionnez une spécialité</option>
+                <option *ngFor="let spec of specialitesInfirmiers" [value]="spec.idSpecialite">
+                  {{ spec.code ? spec.code + ' - ' : '' }}{{ spec.nom }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <label>Matricule</label>
               <input type="text" formControlName="matricule" placeholder="Ex: INF-12345" appVoiceInput>
             </div>
@@ -390,6 +401,14 @@
         <div class="info-section">
           <h4><lucide-icon name="syringe" [size]="16"></lucide-icon> Informations infirmier</h4>
           <div class="info-grid">
+            <div class="info-item">
+              <label>Spécialité</label>
+              <span>{{ selectedUserDetails.infirmier.nomSpecialite || 'Non définie' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Service</label>
+              <span>{{ selectedUserDetails.infirmier.nomService || '-' }}</span>
+            </div>
             <div class="info-item">
               <label>Matricule</label>
               <span>{{ selectedUserDetails.infirmier.matricule || '-' }}</span>

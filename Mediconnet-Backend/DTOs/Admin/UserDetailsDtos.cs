@@ -51,6 +51,13 @@ public class InfirmierDetailsDto
     public string? Accreditations { get; set; }
     
     /// <summary>
+    /// Spécialité de l'infirmier
+    /// </summary>
+    public int? IdSpecialite { get; set; }
+    public string? CodeSpecialite { get; set; }
+    public string? NomSpecialite { get; set; }
+    
+    /// <summary>
     /// Titre affiché (ex: "Infirmier" ou "Major Pédiatrie")
     /// </summary>
     public string TitreAffiche { get; set; } = "Infirmier";

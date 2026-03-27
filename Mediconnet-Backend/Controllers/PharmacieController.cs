@@ -594,4 +594,114 @@ public class PharmacieController : BaseApiController
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
+
+    // ==================== Ventes Directes ====================
+
+    /// <summary>
+    /// Crée une vente directe sans ordonnance
+    /// </summary>
+    [HttpPost("ventes-directes")]
+    public async Task<ActionResult<VenteDirecteResult>> CreerVenteDirecte([FromBody] CreateVenteDirecteRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return Unauthorized();
+
+            var result = await _stockService.CreerVenteDirecteAsync(request, userId.Value);
+            
+            if (!result.Success)
+                return BadRequest(result);
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur création vente directe");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Récupère la liste des ventes directes avec pagination et filtres
+    /// </summary>
+    [HttpGet("ventes-directes")]
+    public async Task<ActionResult<PagedResult<VenteDirecteDto>>> GetVentesDirectes(
+        [FromQuery] DateTime? dateDebut,
+        [FromQuery] DateTime? dateFin,
+        [FromQuery] string? nomClient,
+        [FromQuery] string? numeroTicket,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var filter = new VenteDirecteFilter
+            {
+                DateDebut = dateDebut,
+                DateFin = dateFin,
+                NomClient = nomClient,
+                NumeroTicket = numeroTicket,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await _stockService.GetVentesDirectesAsync(filter);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération ventes directes");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Récupère le détail d'une vente directe
+    /// </summary>
+    [HttpGet("ventes-directes/{id}")]
+    public async Task<ActionResult<VenteDirecteDto>> GetVenteDirecte(int id)
+    {
+        try
+        {
+            var result = await _stockService.GetVenteDirecteByIdAsync(id);
+            
+            if (result == null)
+                return NotFound(new { message = "Vente directe non trouvée" });
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur récupération vente directe {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Délivre une vente directe après paiement à la caisse
+    /// Décrémente le stock et met à jour le statut vers "delivre"
+    /// </summary>
+    [HttpPost("ventes-directes/{id}/delivrer")]
+    public async Task<ActionResult<VenteDirecteResult>> DelivrerVenteDirecte(int id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue || userId == 0)
+                return Unauthorized(new { message = "Utilisateur non authentifié" });
+
+            var result = await _stockService.DelivrerVenteDirecteAsync(id, userId.Value);
+            
+            if (!result.Success)
+                return BadRequest(result);
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur délivrance vente directe {Id}", id);
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
 }

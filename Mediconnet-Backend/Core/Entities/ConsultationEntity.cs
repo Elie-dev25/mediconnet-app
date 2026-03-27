@@ -185,6 +185,8 @@ public class Consultation
 
     public virtual ConsultationGynecologique? ConsultationGynecologique { get; set; }
 
+    public virtual ConsultationChirurgicale? ConsultationChirurgicale { get; set; }
+
     public virtual ICollection<BulletinExamen>? BulletinsExamen { get; set; }
 
     /// <summary>Orientations pré-consultation (unifiées)</summary>

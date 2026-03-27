@@ -245,6 +245,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Question)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
                 .Include(c => c.ConsultationGynecologique)
+                .Include(c => c.ConsultationChirurgicale)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
 
             if (consultation == null)
@@ -420,6 +421,7 @@ public class ConsultationCompleteController : BaseApiController
                     AutresObservations = consultation.ExamenAutres
                 },
                 ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
+                ExamenChirurgical = MapExamenChirurgical(consultation.ConsultationChirurgicale),
                 // Étape 3: Diagnostic
                 Diagnostic = new DiagnosticDto
                 {
@@ -487,6 +489,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Question)
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
                 .Include(c => c.ConsultationGynecologique)
+                .Include(c => c.ConsultationChirurgicale)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation);
 
             if (consultation == null)
@@ -521,8 +524,9 @@ public class ConsultationCompleteController : BaseApiController
                     {
                         IdPrescription = m.IdPrescriptionMed,
                         IdMedicament = m.IdMedicament,
-                        NomMedicament = m.Medicament?.Nom ?? "",
-                        Dosage = m.Medicament?.Dosage,
+                        // Utiliser le nom du catalogue OU le nom libre pour les médicaments hors catalogue
+                        NomMedicament = m.Medicament?.Nom ?? m.NomMedicamentLibre ?? "",
+                        Dosage = m.Medicament?.Dosage ?? m.DosageLibre,
                         Posologie = m.Posologie,
                         Frequence = m.Frequence,
                         Duree = m.DureeTraitement,
@@ -601,6 +605,30 @@ public class ConsultationCompleteController : BaseApiController
                 Recommandations = consultation.Recommandations
             };
 
+            // Récupérer le RDV de suivi créé après cette consultation
+            var rdvSuivi = await _context.RendezVous
+                .Include(r => r.Medecin).ThenInclude(m => m!.Utilisateur)
+                .Include(r => r.Service)
+                .Where(r => r.IdConsultationOrigine == idConsultation)
+                .OrderByDescending(r => r.DateCreation)
+                .FirstOrDefaultAsync();
+
+            RdvSuiviDetailDto? rdvSuiviDto = null;
+            if (rdvSuivi != null)
+            {
+                rdvSuiviDto = new RdvSuiviDetailDto
+                {
+                    IdRendezVous = rdvSuivi.IdRendezVous,
+                    DateHeure = rdvSuivi.DateHeure,
+                    Motif = rdvSuivi.Motif,
+                    Statut = rdvSuivi.Statut ?? "",
+                    MedecinNom = rdvSuivi.Medecin?.Utilisateur != null 
+                        ? $"Dr. {rdvSuivi.Medecin.Utilisateur.Prenom} {rdvSuivi.Medecin.Utilisateur.Nom}" 
+                        : null,
+                    ServiceNom = rdvSuivi.Service?.NomService
+                };
+            }
+
             var result = new ConsultationDetailDto
             {
                 IdConsultation = consultation.IdConsultation,
@@ -623,8 +651,10 @@ public class ConsultationCompleteController : BaseApiController
                 ParametresVitaux = parametresVitauxDto,
                 ExamenClinique = examenCliniqueDto,
                 ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
+                ExamenChirurgical = MapExamenChirurgical(consultation.ConsultationChirurgicale),
                 PlanTraitement = planTraitementDto,
-                ConclusionDetaillee = conclusionDto
+                ConclusionDetaillee = conclusionDto,
+                RdvSuivi = rdvSuiviDto
             };
 
             return Ok(result);
@@ -805,6 +835,56 @@ public class ConsultationCompleteController : BaseApiController
     }
 
     /// <summary>
+    /// Récupérer le dernier examen gynécologique d'un patient (pour import)
+    /// </summary>
+    [HttpGet("{idConsultation}/dernier-examen-gynecologique")]
+    public async Task<IActionResult> GetDernierExamenGynecologique(int idConsultation)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            // Vérifier que la consultation existe et appartient au médecin
+            var consultation = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            // Récupérer le dernier examen gynécologique du patient (hors consultation actuelle)
+            var dernierExamen = await _context.ConsultationsGynecologiques
+                .Include(cg => cg.Consultation)
+                .Where(cg => cg.Consultation!.IdPatient == consultation.IdPatient 
+                    && cg.IdConsultation != idConsultation
+                    && cg.Consultation.Statut == "terminee")
+                .OrderByDescending(cg => cg.Consultation!.DateHeure)
+                .FirstOrDefaultAsync();
+
+            if (dernierExamen == null)
+                return Ok(new { found = false, message = "Aucun examen gynécologique précédent trouvé" });
+
+            return Ok(new
+            {
+                found = true,
+                dateConsultation = dernierExamen.Consultation?.DateHeure.ToString("o"),
+                examenGynecologique = new ExamenGynecologiqueDto
+                {
+                    InspectionExterne = dernierExamen.InspectionExterne,
+                    ExamenSpeculum = dernierExamen.ExamenSpeculum,
+                    ToucherVaginal = dernierExamen.ToucherVaginal,
+                    AutresObservations = dernierExamen.AutresObservations
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur GetDernierExamenGynecologique: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
     /// Étape 2 bis: Sauvegarder l'examen gynécologique (réservé aux gynécologues)
     /// </summary>
     [HttpPost("{idConsultation}/examen-gynecologique")]
@@ -861,6 +941,69 @@ public class ConsultationCompleteController : BaseApiController
     }
 
     /// <summary>
+    /// Étape 2 ter: Sauvegarder l'examen chirurgical (réservé aux chirurgiens)
+    /// </summary>
+    [HttpPost("{idConsultation}/examen-chirurgical")]
+    public async Task<IActionResult> SaveExamenChirurgical(int idConsultation, [FromBody] ExamenChirurgicalDto examenChirurgical)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var medecin = await _context.Medecins
+                .Select(m => new { m.IdUser, m.IdSpecialite })
+                .FirstOrDefaultAsync(m => m.IdUser == medecinId.Value);
+
+            if (medecin == null)
+                return Forbid();
+
+            // Vérifier que c'est une spécialité chirurgicale
+            var specialitesChirurgicales = new[] { 5, 6, 12, 21, 26, 31, 39, 41 }; // IDs des spécialités chirurgicales
+            if (!specialitesChirurgicales.Contains(medecin.IdSpecialite ?? 0))
+                return BadRequest(new { message = "Cette étape est réservée aux consultations chirurgicales." });
+
+            var consultation = await _context.Consultations
+                .Include(c => c.ConsultationChirurgicale)
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            if (consultation.ConsultationChirurgicale == null)
+            {
+                consultation.ConsultationChirurgicale = new ConsultationChirurgicale
+                {
+                    IdConsultation = idConsultation,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.ConsultationsChirurgicales.Add(consultation.ConsultationChirurgicale);
+            }
+
+            consultation.ConsultationChirurgicale.ZoneExaminee = examenChirurgical.ZoneExaminee;
+            consultation.ConsultationChirurgicale.InspectionLocale = examenChirurgical.InspectionLocale;
+            consultation.ConsultationChirurgicale.PalpationLocale = examenChirurgical.PalpationLocale;
+            consultation.ConsultationChirurgicale.SignesInflammatoires = examenChirurgical.SignesInflammatoires;
+            consultation.ConsultationChirurgicale.CicatricesExistantes = examenChirurgical.CicatricesExistantes;
+            consultation.ConsultationChirurgicale.MobiliteFonction = examenChirurgical.MobiliteFonction;
+            consultation.ConsultationChirurgicale.ConclusionChirurgicale = examenChirurgical.ConclusionChirurgicale;
+            consultation.ConsultationChirurgicale.Decision = examenChirurgical.Decision;
+            consultation.ConsultationChirurgicale.NotesComplementaires = examenChirurgical.NotesComplementaires;
+            consultation.ConsultationChirurgicale.UpdatedAt = DateTime.UtcNow;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Examen chirurgical sauvegardé pour consultation {idConsultation}");
+            return Ok(new { message = "Examen chirurgical sauvegardé" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur SaveExamenChirurgical: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
     /// Étape 3: Sauvegarder le diagnostic et orientation
     /// </summary>
     [HttpPost("{idConsultation}/diagnostic")]
@@ -908,6 +1051,7 @@ public class ConsultationCompleteController : BaseApiController
             var consultation = await _context.Consultations
                 .Include(c => c.Ordonnance).ThenInclude(o => o!.Medicaments)
                 .Include(c => c.BulletinsExamen)
+                .Include(c => c.ConsultationChirurgicale)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
 
             if (consultation == null)
@@ -919,6 +1063,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.OrientationSpecialiste = planTraitement.OrientationSpecialiste;
             consultation.MotifOrientation = planTraitement.MotifOrientation;
             consultation.UpdatedAt = DateTime.UtcNow;
+
+            // Sauvegarder la décision chirurgicale si présente
+            if (!string.IsNullOrEmpty(planTraitement.DecisionChirurgicale) && consultation.ConsultationChirurgicale != null)
+            {
+                consultation.ConsultationChirurgicale.Decision = planTraitement.DecisionChirurgicale;
+            }
 
             // Sauvegarder l'ordonnance via le service centralisé
             if (planTraitement.Ordonnance != null && planTraitement.Ordonnance.Medicaments.Count > 0)
@@ -1536,7 +1686,8 @@ public class ConsultationCompleteController : BaseApiController
                 TypeRdv = RendezVousTypes.Suivi,
                 Motif = request.Motif ?? $"Suivi consultation du {consultation.DateHeure:dd/MM/yyyy}",
                 Notes = request.Notes,
-                DateCreation = DateTime.UtcNow
+                DateCreation = DateTime.UtcNow,
+                IdConsultationOrigine = idConsultation
             };
 
             _context.RendezVous.Add(rdv);
@@ -2279,6 +2430,27 @@ public class ConsultationCompleteController : BaseApiController
             ExamenSpeculum = entity.ExamenSpeculum,
             ToucherVaginal = entity.ToucherVaginal,
             AutresObservations = entity.AutresObservations
+        };
+    }
+
+    private static ExamenChirurgicalDto? MapExamenChirurgical(ConsultationChirurgicale? entity)
+    {
+        if (entity == null)
+        {
+            return null;
+        }
+
+        return new ExamenChirurgicalDto
+        {
+            ZoneExaminee = entity.ZoneExaminee,
+            InspectionLocale = entity.InspectionLocale,
+            PalpationLocale = entity.PalpationLocale,
+            SignesInflammatoires = entity.SignesInflammatoires,
+            CicatricesExistantes = entity.CicatricesExistantes,
+            MobiliteFonction = entity.MobiliteFonction,
+            ConclusionChirurgicale = entity.ConclusionChirurgicale,
+            Decision = entity.Decision,
+            NotesComplementaires = entity.NotesComplementaires
         };
     }
 }

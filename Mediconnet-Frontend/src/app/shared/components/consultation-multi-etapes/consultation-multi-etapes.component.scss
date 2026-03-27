@@ -82,6 +82,118 @@
   }
 }
 
+.chirurgie-section {
+  .form-group > label {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.35rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+}
+
+.chirurgie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+
+  .form-group {
+    label {
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 0.35rem;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+  }
+}
+
+.conclusion-group {
+  margin-top: 1rem;
+  
+  textarea {
+    min-height: 80px;
+  }
+}
+
+.decision-group {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+
+  > label {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+}
+
+.decision-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.decision-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+
+  input[type="radio"] {
+    display: none;
+  }
+
+  lucide-icon {
+    color: #6b7280;
+  }
+
+  span {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  &:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+  }
+
+  &.selected {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+
+    lucide-icon {
+      color: #3b82f6;
+    }
+
+    span {
+      color: #1d4ed8;
+    }
+  }
+}
+
 .locked-panel {
   display: flex;
   align-items: center;
@@ -99,6 +211,51 @@
 
   lucide-icon {
     color: #7c3aed;
+  }
+}
+
+.programmation-action {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+
+  .programmation-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: #92400e;
+    font-weight: 500;
+
+    lucide-icon {
+      color: #f59e0b;
+    }
+  }
+
+  .btn-programmation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background: #10b981;
+      cursor: default;
+    }
   }
 }
 
@@ -2518,6 +2675,21 @@
   line-height: 1.5;
   margin: 0;
   font-style: italic;
+}
+
+// Bloc examen gynécologique dans le récapitulatif
+.recap-gyneco {
+  border-color: #f9a8d4;
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  
+  .recap-block-header {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    color: white;
+    
+    span {
+      color: white;
+    }
+  }
 }
 
 // Section diagnostics précédents

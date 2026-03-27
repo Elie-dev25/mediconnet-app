@@ -98,6 +98,20 @@ public class ExamenGynecologiqueDto
     public string? AutresObservations { get; set; }
 }
 
+public class ExamenChirurgicalDto
+{
+    public string? ZoneExaminee { get; set; }
+    public string? InspectionLocale { get; set; }
+    public string? PalpationLocale { get; set; }
+    public string? SignesInflammatoires { get; set; }
+    public string? CicatricesExistantes { get; set; }
+    public string? MobiliteFonction { get; set; }
+    public string? ConclusionChirurgicale { get; set; }
+    /// <summary>surveillance, traitement_medical, indication_operatoire</summary>
+    public string? Decision { get; set; }
+    public string? NotesComplementaires { get; set; }
+}
+
 // ==================== CONSULTATION MULTI-ETAPES ====================
 
 public class ConsultationEnCoursDto
@@ -119,6 +133,7 @@ public class ConsultationEnCoursDto
     public AnamneseDto? Anamnese { get; set; }
     public ExamenCliniqueDto? ExamenClinique { get; set; }
     public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
+    public ExamenChirurgicalDto? ExamenChirurgical { get; set; }
     public DiagnosticDto? Diagnostic { get; set; }
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? Conclusion { get; set; }
@@ -240,6 +255,8 @@ public class PlanTraitementDto
     public string? OrientationSpecialiste { get; set; }
     public string? MotifOrientation { get; set; }
     public int? IdSpecialisteOriente { get; set; }
+    // Décision chirurgicale (uniquement pour les chirurgiens)
+    public string? DecisionChirurgicale { get; set; }
 }
 
 // Étape 5: Conclusion (NOUVEAU)
@@ -437,6 +454,12 @@ public class SaveExamenGynecologiqueRequest
     public ExamenGynecologiqueDto ExamenGynecologique { get; set; } = new();
 }
 
+public class SaveExamenChirurgicalRequest
+{
+    public int IdConsultation { get; set; }
+    public ExamenChirurgicalDto ExamenChirurgical { get; set; } = new();
+}
+
 public class SaveDiagnosticRequest
 {
     public int IdConsultation { get; set; }
@@ -498,8 +521,26 @@ public class ConsultationDetailDto
     public ParametresVitauxDto? ParametresVitaux { get; set; }
     public ExamenCliniqueDto? ExamenClinique { get; set; }
     public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
+    public ExamenChirurgicalDto? ExamenChirurgical { get; set; }
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? ConclusionDetaillee { get; set; }
+    /// <summary>
+    /// RDV de suivi créé après cette consultation
+    /// </summary>
+    public RdvSuiviDetailDto? RdvSuivi { get; set; }
+}
+
+/// <summary>
+/// Détails d'un RDV de suivi créé après une consultation
+/// </summary>
+public class RdvSuiviDetailDto
+{
+    public int IdRendezVous { get; set; }
+    public DateTime DateHeure { get; set; }
+    public string? Motif { get; set; }
+    public string Statut { get; set; } = "";
+    public string? MedecinNom { get; set; }
+    public string? ServiceNom { get; set; }
 }
 
 public class ExamenPrescritDetailDto

@@ -162,6 +162,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/admin/assurances/assurances.component').then(m => m.AdminAssurancesComponent)
       },
       { 
+        path: 'blocs-operatoires', 
+        loadComponent: () => import('./pages/admin/blocs-operatoires/blocs-operatoires.component').then(m => m.BlocsOperatoiresComponent)
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./pages/admin/settings/settings.component').then(m => m.AdminSettingsComponent)
       },
@@ -230,6 +234,10 @@ export const routes: Routes = [
       { 
         path: 'fournisseurs', 
         loadComponent: () => import('./pages/pharmacien/fournisseurs/fournisseurs.component').then(m => m.PharmacienFournisseursComponent)
+      },
+      { 
+        path: 'ventes-directes', 
+        loadComponent: () => import('./pages/pharmacien/ventes-directes/ventes-directes.component').then(m => m.PharmacienVentesDirectesComponent)
       }
     ]
   },

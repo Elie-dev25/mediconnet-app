@@ -66,10 +66,10 @@ export class EmailVerifiedComponent implements OnInit {
   }
 
   continueToLogin(): void {
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/login']);
   }
 
   goToRegister(): void {
-    this.router.navigate(['/auth/register']);
+    this.router.navigate(['/register']);
   }
 }

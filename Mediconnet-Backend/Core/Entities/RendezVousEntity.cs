@@ -55,6 +55,12 @@ public class RendezVous
     public string TypeRdv { get; set; } = "consultation"; // consultation, suivi, urgence, examen, vaccination
 
     /// <summary>
+    /// ID de la consultation d'origine (pour les RDV de suivi)
+    /// </summary>
+    [Column("id_consultation_origine")]
+    public int? IdConsultationOrigine { get; set; }
+
+    /// <summary>
     /// Indique si le patient a été notifié par SMS/Email
     /// </summary>
     public bool Notifie { get; set; } = false;

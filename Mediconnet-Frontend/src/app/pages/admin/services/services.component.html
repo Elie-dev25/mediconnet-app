@@ -90,6 +90,10 @@
               <lucide-icon name="users" [size]="14"></lucide-icon>
               <span>{{ service.nombreMedecins }} médecin(s)</span>
             </div>
+            <div class="meta-item cout">
+              <lucide-icon name="banknote" [size]="14"></lucide-icon>
+              <span class="cout-value">{{ service.coutConsultation | number:'1.0-0' }} FCFA</span>
+            </div>
           </div>
         </div>
       </div>
@@ -169,6 +173,30 @@
               {{ resp.nom }}
             </option>
           </select>
+        </div>
+
+        <!-- Coût de consultation -->
+        <div class="form-group">
+          <label>
+            <lucide-icon name="banknote" [size]="16"></lucide-icon>
+            Coût de consultation (FCFA) *
+          </label>
+          <div class="input-with-suffix">
+            <input 
+              type="number" 
+              formControlName="coutConsultation" 
+              placeholder="5000"
+              min="0"
+              max="1000000"
+              step="500">
+            <span class="input-suffix">FCFA</span>
+          </div>
+          <span class="error-text" *ngIf="hasError('coutConsultation')">
+            Le coût doit être entre 0 et 1 000 000 FCFA
+          </span>
+          <span class="help-text">
+            Ce tarif sera appliqué pour toutes les consultations de ce service
+          </span>
         </div>
       </div>
 

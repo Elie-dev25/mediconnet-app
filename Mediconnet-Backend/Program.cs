@@ -116,6 +116,12 @@ builder.Services.AddScoped<IMedecinHelperService, MedecinHelperService>();
 // Add Prescription Service (centralized prescription management)
 builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 
+// Add Programmation Intervention Service (notifications, blocage créneaux)
+builder.Services.AddScoped<ProgrammationInterventionService>();
+
+// Add Bloc Operatoire Service (gestion des blocs opératoires)
+builder.Services.AddScoped<IBlocOperatoireService, BlocOperatoireService>();
+
 // Add Data Seeder
 builder.Services.AddScoped<DataSeeder>();
 

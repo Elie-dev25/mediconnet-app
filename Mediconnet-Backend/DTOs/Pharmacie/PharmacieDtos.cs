@@ -380,7 +380,7 @@ public class DispensationLigneRequest
 public class DispensationDto
 {
     public int IdDispensation { get; set; }
-    public int IdPrescription { get; set; }
+    public int? IdPrescription { get; set; }
     public string NomPatient { get; set; } = "";
     public string NomPharmacien { get; set; } = "";
     public DateTime DateDispensation { get; set; }
@@ -518,6 +518,129 @@ public class OrdonnancePharmacieDetailDto
     public bool Renouvelable { get; set; }
     
     public List<MedicamentPrescritDto> Medicaments { get; set; } = new();
+}
+
+// ==================== Ventes Directes ====================
+
+/// <summary>
+/// Requête pour créer une vente directe sans ordonnance
+/// </summary>
+public class CreateVenteDirecteRequest
+{
+    public List<VenteDirecteLigneRequest> Lignes { get; set; } = new();
+    public string? NomClient { get; set; }
+    public string? TelephoneClient { get; set; }
+    public int? IdPatientEnregistre { get; set; }
+    public string? Notes { get; set; }
+    public string ModePaiement { get; set; } = "especes";
+}
+
+/// <summary>
+/// Ligne d'une vente directe
+/// </summary>
+public class VenteDirecteLigneRequest
+{
+    public int IdMedicament { get; set; }
+    public int Quantite { get; set; }
+}
+
+/// <summary>
+/// DTO pour afficher une vente directe
+/// </summary>
+public class VenteDirecteDto
+{
+    public int IdDispensation { get; set; }
+    public DateTime DateVente { get; set; }
+    public string? NomClient { get; set; }
+    public string? TelephoneClient { get; set; }
+    public string NomPharmacien { get; set; } = "";
+    public string Statut { get; set; } = "";
+    public string? Notes { get; set; }
+    public decimal MontantTotal { get; set; }
+    public string? ModePaiement { get; set; }
+    public string? NumeroTicket { get; set; }
+    public string TypeVente { get; set; } = "vente_directe";
+    public List<VenteDirecteLigneDto> Lignes { get; set; } = new();
+    
+    // Si client enregistré
+    public int? IdPatient { get; set; }
+    public string? NomPatientEnregistre { get; set; }
+}
+
+/// <summary>
+/// Ligne d'une vente directe (affichage)
+/// </summary>
+public class VenteDirecteLigneDto
+{
+    public int IdLigne { get; set; }
+    public int IdMedicament { get; set; }
+    public string NomMedicament { get; set; } = "";
+    public string? Dosage { get; set; }
+    public int Quantite { get; set; }
+    public decimal PrixUnitaire { get; set; }
+    public decimal MontantTotal { get; set; }
+    public int StockRestant { get; set; }
+}
+
+/// <summary>
+/// Résultat de la création d'une vente directe
+/// </summary>
+public class VenteDirecteResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
+    public int? IdDispensation { get; set; }
+    public string? NumeroTicket { get; set; }
+    public decimal MontantTotal { get; set; }
+    public List<VenteDirecteLigneDto> Lignes { get; set; } = new();
+    public List<string> Erreurs { get; set; } = new();
+}
+
+/// <summary>
+/// Filtre pour rechercher les ventes directes
+/// </summary>
+public class VenteDirecteFilter
+{
+    public DateTime? DateDebut { get; set; }
+    public DateTime? DateFin { get; set; }
+    public string? NomClient { get; set; }
+    public string? NumeroTicket { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+}
+
+// ==================== Dispensation étendue ====================
+
+/// <summary>
+/// DTO étendu pour afficher une dispensation (avec ou sans ordonnance)
+/// </summary>
+public class DispensationEtendueDto
+{
+    public int IdDispensation { get; set; }
+    public int? IdPrescription { get; set; }
+    public DateTime DateDispensation { get; set; }
+    public string TypeVente { get; set; } = "avec_ordonnance";
+    public string Statut { get; set; } = "";
+    public string? Notes { get; set; }
+    public decimal MontantTotal { get; set; }
+    public string? ModePaiement { get; set; }
+    public string? NumeroTicket { get; set; }
+    
+    // Informations patient/client
+    public int? IdPatient { get; set; }
+    public string? NomPatient { get; set; }
+    public string? NomClient { get; set; }
+    public string? TelephoneClient { get; set; }
+    
+    // Pharmacien
+    public string NomPharmacien { get; set; } = "";
+    
+    // Lignes
+    public List<DispensationLigneDto> Lignes { get; set; } = new();
+    
+    // Helpers
+    public bool EstVenteDirecte => TypeVente == "vente_directe";
+    public string NomAffiche => EstVenteDirecte ? (NomClient ?? "Client anonyme") : (NomPatient ?? "Patient inconnu");
 }
 
 // ==================== Pagination ====================
