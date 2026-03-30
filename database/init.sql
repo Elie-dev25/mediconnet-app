@@ -458,7 +458,7 @@ CREATE TABLE `specialite_infirmier` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_specialite_infirmier_code` (`code`),
   INDEX `idx_specialite_infirmier_actif` (`actif`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Données initiales spécialités infirmiers
 INSERT INTO `specialite_infirmier` (`code`, `nom`, `description`) VALUES
@@ -930,7 +930,7 @@ CREATE TABLE `execution_soin` (
     REFERENCES `soin_hospitalisation` (`id_soin`) ON DELETE CASCADE,
   CONSTRAINT `fk_execution_executant` FOREIGN KEY (`id_executant`) 
     REFERENCES `utilisateurs` (`id_user`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: ordonnance (remplace prescription)
@@ -1938,7 +1938,7 @@ CREATE TABLE `documents_medicaux` (
   INDEX `idx_documents_date` (`date_document`),
   INDEX `idx_documents_hash` (`hash_sha256`),
   INDEX `idx_documents_version_courante` (`est_version_courante`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 COMMENT='Table centralisee des documents medicaux avec UUID et integrite';
 
 -- --------------------------------------------------------
@@ -1977,7 +1977,7 @@ CREATE TABLE `audit_acces_documents` (
   INDEX `idx_audit_timestamp` (`timestamp`),
   INDEX `idx_audit_autorise` (`autorise`),
   INDEX `idx_audit_ip` (`ip_address`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 COMMENT='Journal d audit des acces aux documents medicaux';
 
 -- --------------------------------------------------------
@@ -2008,7 +2008,7 @@ CREATE TABLE `verification_integrite` (
   INDEX `idx_verif_statut` (`statut_verification`),
   INDEX `idx_verif_timestamp` (`timestamp`),
   INDEX `idx_verif_type` (`type_verification`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 COMMENT='Historique des verifications d integrite des documents';
 
 -- --------------------------------------------------------
@@ -2030,7 +2030,7 @@ CREATE TABLE `alertes_systeme` (
   INDEX `idx_alertes_severite` (`severite`),
   INDEX `idx_alertes_acquittee` (`acquittee`),
   INDEX `idx_alertes_created` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 COMMENT='Alertes systeme pour le monitoring du stockage et de la securite';
 
 -- --------------------------------------------------------
@@ -2062,8 +2062,7 @@ ALTER TABLE `caissier`
 ALTER TABLE `accueil`
   ADD CONSTRAINT `accueil_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
 
-ALTER TABLE `pharmacien`
-  ADD CONSTRAINT `pharmacien_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `utilisateurs` (`id_user`) ON DELETE CASCADE;
+-- Note: pharmacien_ibfk_1 déjà définie inline dans la création de la table pharmacien
 
 -- Note: La table laborantin a ses FK définies inline dans sa création
 
@@ -2106,11 +2105,7 @@ ALTER TABLE `bulletin_examen`
   ADD CONSTRAINT `fk_bulletin_examen` FOREIGN KEY (`id_exam`) REFERENCES `examens` (`id_exam`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_bulletin_document_uuid` FOREIGN KEY (`document_resultat_uuid`) REFERENCES `documents_medicaux` (`uuid`) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE `orientation_specialiste`
-  ADD CONSTRAINT `fk_orientation_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_orientation_specialite` FOREIGN KEY (`id_specialite`) REFERENCES `specialites` (`id_specialite`),
-  ADD CONSTRAINT `fk_orientation_medecin` FOREIGN KEY (`id_medecin_oriente`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_orientation_rdv` FOREIGN KEY (`id_rdv_cree`) REFERENCES `rendez_vous` (`id_rdv`) ON DELETE SET NULL;
+-- NOTE: ALTER TABLE orientation_specialiste supprimé car la table a été remplacée par orientation_pre_consultation
 
 ALTER TABLE `result_exam`
   ADD CONSTRAINT `result_exam_ibfk_1` FOREIGN KEY (`id_exam`) REFERENCES `bulletin_examen` (`id_bull_exam`) ON DELETE CASCADE,
@@ -2257,7 +2252,7 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   INDEX `idx_audit_resource` (`resource_type`, `resource_id`),
   INDEX `idx_audit_created_at` (`created_at`),
   INDEX `idx_audit_success` (`success`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: session_caisse (sessions de caisse)
@@ -2282,7 +2277,7 @@ CREATE TABLE IF NOT EXISTS `session_caisse` (
   INDEX `IX_session_caisse_date` (`date_ouverture`),
   CONSTRAINT `FK_session_caisse_caissier` FOREIGN KEY (`id_caissier`) 
     REFERENCES `caissier` (`id_user`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: transaction_paiement (transactions de paiement)
@@ -2325,7 +2320,7 @@ CREATE TABLE IF NOT EXISTS `transaction_paiement` (
     REFERENCES `caissier` (`id_user`) ON DELETE CASCADE,
   CONSTRAINT `FK_transaction_session` FOREIGN KEY (`id_session_caisse`) 
     REFERENCES `session_caisse` (`id_session`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `rendez_vous` (
   `id_rdv` INT NOT NULL AUTO_INCREMENT,
@@ -2390,7 +2385,7 @@ CREATE TABLE `question` (
   `ordre` INT DEFAULT 0,
   `obligatoire` TINYINT(1) DEFAULT 0,
   `actif` TINYINT(1) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: consultation_question (liaison consultation-question)
@@ -2406,7 +2401,7 @@ CREATE TABLE `consultation_question` (
     REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
   CONSTRAINT `FK_consultation_question_question` FOREIGN KEY (`id_question`)
     REFERENCES `question` (`id_question`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: reponse (réponses aux questions)
@@ -2420,7 +2415,7 @@ CREATE TABLE `reponse` (
   INDEX `IX_reponse_consultation_question` (`id_consultation_question`),
   CONSTRAINT `FK_reponse_consultation_question` FOREIGN KEY (`id_consultation_question`)
     REFERENCES `consultation_question` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Seed: Questions prédéfinies
@@ -2446,7 +2441,7 @@ CREATE TABLE `permissions` (
   `actif` BOOLEAN DEFAULT TRUE,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `IX_permission_module` (`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: role_permissions (liaison rôles-permissions)
@@ -2462,7 +2457,7 @@ CREATE TABLE `role_permissions` (
   INDEX `IX_role_permission_role` (`role`),
   CONSTRAINT `FK_role_permission_permission` FOREIGN KEY (`id_permission`) 
     REFERENCES `permissions`(`id_permission`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Table: user_permissions (permissions spécifiques utilisateur)
@@ -2479,7 +2474,7 @@ CREATE TABLE `user_permissions` (
     REFERENCES `utilisateurs`(`id_user`) ON DELETE CASCADE,
   CONSTRAINT `FK_user_permission_permission` FOREIGN KEY (`id_permission`) 
     REFERENCES `permissions`(`id_permission`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 -- Seed: Permissions par module
