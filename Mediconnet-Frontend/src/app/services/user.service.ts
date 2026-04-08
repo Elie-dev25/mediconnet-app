@@ -64,6 +64,41 @@ export interface SpecialiteInfirmierDto {
   actif: boolean;
 }
 
+// ==================== AFFECTATIONS SERVICE ====================
+
+export interface AffectationServiceDto {
+  idAffectation: number;
+  idUser: number;
+  typeUser: string;
+  idService: number;
+  nomService: string;
+  dateDebut: string;
+  dateFin?: string;
+  motifChangement?: string;
+  idAdminChangement?: number;
+  nomAdminChangement?: string;
+  estActif: boolean;
+}
+
+export interface HistoriqueAffectationsDto {
+  idUser: number;
+  nomComplet: string;
+  typeUser: string;
+  affectationActuelle?: AffectationServiceDto;
+  historique: AffectationServiceDto[];
+}
+
+export interface ChangerServiceRequest {
+  idNouveauService: number;
+  motif?: string;
+}
+
+export interface ChangerServiceResponse {
+  success: boolean;
+  message: string;
+  nouvelleAffectation?: AffectationServiceDto;
+}
+
 export interface MedecinDetailsDto {
   numeroOrdre?: string;
   idSpecialite?: number;
@@ -213,5 +248,35 @@ export class UserService {
    */
   updateInfirmierAccreditations(userId: number, accreditations: string): Observable<{ success: boolean; message: string }> {
     return this.http.put<{ success: boolean; message: string }>(`${this.apiUrl}/infirmiers/${userId}/accreditations`, { accreditations });
+  }
+
+  // ==================== AFFECTATIONS SERVICE ====================
+
+  /**
+   * Récupérer l'historique des affectations d'un médecin
+   */
+  getHistoriqueAffectationsMedecin(userId: number): Observable<HistoriqueAffectationsDto> {
+    return this.http.get<HistoriqueAffectationsDto>(`${environment.apiUrl}/affectations-service/medecin/${userId}/historique`);
+  }
+
+  /**
+   * Récupérer l'historique des affectations d'un infirmier
+   */
+  getHistoriqueAffectationsInfirmier(userId: number): Observable<HistoriqueAffectationsDto> {
+    return this.http.get<HistoriqueAffectationsDto>(`${environment.apiUrl}/affectations-service/infirmier/${userId}/historique`);
+  }
+
+  /**
+   * Changer le service d'un médecin
+   */
+  changerServiceMedecin(userId: number, request: ChangerServiceRequest): Observable<ChangerServiceResponse> {
+    return this.http.put<ChangerServiceResponse>(`${environment.apiUrl}/affectations-service/medecin/${userId}/changer-service`, request);
+  }
+
+  /**
+   * Changer le service d'un infirmier
+   */
+  changerServiceInfirmier(userId: number, request: ChangerServiceRequest): Observable<ChangerServiceResponse> {
+    return this.http.put<ChangerServiceResponse>(`${environment.apiUrl}/affectations-service/infirmier/${userId}/changer-service`, request);
   }
 }

@@ -631,8 +631,8 @@ public class AccueilController : BaseApiController
                 }
             }
 
-            // Coût de consultation du service (prioritaire) ou de la spécialité (fallback)
-            var coutConsultation = medecin.Service?.CoutConsultation ?? medecin.Specialite?.CoutConsultation ?? 5000;
+            // Coût de consultation du service
+            var coutConsultation = medecin.Service?.CoutConsultation ?? 5000;
 
             return Ok(new
             {

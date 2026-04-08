@@ -187,13 +187,10 @@ public class ProgrammationInterventionService
         if (dateHeureChanged && programmation.DatePrevue.HasValue && 
             !string.IsNullOrEmpty(programmation.HeureDebut) && programmation.DureeEstimee.HasValue)
         {
-            // Supprimer l'ancienne indisponibilité
-            if (programmation.Indisponibilite != null)
-            {
-                _context.IndisponibilitesMedecin.Remove(programmation.Indisponibilite);
-            }
+            // Récupérer l'ID de l'ancienne indisponibilité pour l'exclure de la vérification
+            var oldIndispoId = programmation.IdIndisponibilite;
 
-            // Créer la nouvelle
+            // Créer la nouvelle indisponibilité (en excluant l'ancienne de la vérification)
             var resultIndispo = await CreerIndisponibiliteInterventionAsync(
                 medecinId,
                 programmation.DatePrevue.Value,
@@ -201,11 +198,21 @@ public class ProgrammationInterventionService
                 programmation.DureeEstimee.Value,
                 programmation.Patient?.Utilisateur?.Nom,
                 programmation.Patient?.Utilisateur?.Prenom,
-                programmation.TechniquePrevue);
+                programmation.TechniquePrevue,
+                oldIndispoId);
 
             if (resultIndispo.Success && resultIndispo.Indisponibilite != null)
             {
+                // Supprimer l'ancienne indisponibilité après création de la nouvelle
+                if (programmation.Indisponibilite != null)
+                {
+                    _context.IndisponibilitesMedecin.Remove(programmation.Indisponibilite);
+                }
                 programmation.IdIndisponibilite = resultIndispo.Indisponibilite.IdIndisponibilite;
+            }
+            else if (!resultIndispo.Success)
+            {
+                return (false, resultIndispo.Message);
             }
         }
 
@@ -263,9 +270,10 @@ public class ProgrammationInterventionService
     /// <summary>
     /// Créer une indisponibilité pour bloquer le créneau de l'intervention
     /// </summary>
+    /// <param name="excludeIndispoId">ID de l'indisponibilité à exclure de la vérification (pour les mises à jour)</param>
     private async Task<(bool Success, string Message, IndisponibiliteMedecin? Indisponibilite)> CreerIndisponibiliteInterventionAsync(
         int medecinId, DateTime datePrevue, string heureDebut, int dureeMinutes,
-        string? patientNom, string? patientPrenom, string? technique)
+        string? patientNom, string? patientPrenom, string? technique, int? excludeIndispoId = null)
     {
         // Parser l'heure de début
         if (!TimeSpan.TryParse(heureDebut, out var heureDebutTs))
@@ -293,7 +301,8 @@ public class ProgrammationInterventionService
         var conflitIndispo = await _context.IndisponibilitesMedecin
             .Where(i => i.IdMedecin == medecinId &&
                        i.DateDebut < dateFin &&
-                       i.DateFin > dateDebut)
+                       i.DateFin > dateDebut &&
+                       (excludeIndispoId == null || i.IdIndisponibilite != excludeIndispoId))
             .AnyAsync();
 
         if (conflitIndispo)

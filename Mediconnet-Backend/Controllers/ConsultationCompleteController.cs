@@ -246,6 +246,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
                 .Include(c => c.ConsultationGynecologique)
                 .Include(c => c.ConsultationChirurgicale)
+                .Include(c => c.ConsultationAnesthesique)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
 
             if (consultation == null)
@@ -422,6 +423,7 @@ public class ConsultationCompleteController : BaseApiController
                 },
                 ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
                 ExamenChirurgical = MapExamenChirurgical(consultation.ConsultationChirurgicale),
+                ExamenAnesthesique = MapExamenAnesthesique(consultation.ConsultationAnesthesique),
                 // Étape 3: Diagnostic
                 Diagnostic = new DiagnosticDto
                 {
@@ -490,6 +492,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Include(c => c.ConsultationQuestions)!.ThenInclude(cq => cq.Reponses)
                 .Include(c => c.ConsultationGynecologique)
                 .Include(c => c.ConsultationChirurgicale)
+                .Include(c => c.ConsultationAnesthesique)
                 .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation);
 
             if (consultation == null)
@@ -652,6 +655,7 @@ public class ConsultationCompleteController : BaseApiController
                 ExamenClinique = examenCliniqueDto,
                 ExamenGynecologique = MapExamenGynecologique(consultation.ConsultationGynecologique),
                 ExamenChirurgical = MapExamenChirurgical(consultation.ConsultationChirurgicale),
+                ExamenAnesthesique = MapExamenAnesthesique(consultation.ConsultationAnesthesique),
                 PlanTraitement = planTraitementDto,
                 ConclusionDetaillee = conclusionDto,
                 RdvSuivi = rdvSuiviDto
@@ -999,6 +1003,107 @@ public class ConsultationCompleteController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError($"Erreur SaveExamenChirurgical: {ex.Message}");
+            return StatusCode(500, new { message = "Erreur serveur" });
+        }
+    }
+
+    /// <summary>
+    /// Étape 2 quater: Sauvegarder l'examen anesthésique (réservé aux anesthésistes)
+    /// </summary>
+    [HttpPost("{idConsultation}/examen-anesthesique")]
+    public async Task<IActionResult> SaveExamenAnesthesique(int idConsultation, [FromBody] ExamenAnesthesiqueDto examenAnesthesique)
+    {
+        try
+        {
+            var medecinId = GetCurrentUserId();
+            if (!medecinId.HasValue) return Unauthorized();
+
+            var consultation = await _context.Consultations
+                .Include(c => c.ConsultationAnesthesique)
+                .FirstOrDefaultAsync(c => c.IdConsultation == idConsultation && c.IdMedecin == medecinId.Value);
+
+            if (consultation == null)
+                return NotFound(new { message = "Consultation non trouvée" });
+
+            // Créer ou mettre à jour l'extension anesthésique
+            if (consultation.ConsultationAnesthesique == null)
+            {
+                consultation.ConsultationAnesthesique = new ConsultationAnesthesique
+                {
+                    IdConsultation = idConsultation,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.ConsultationsAnesthesiques.Add(consultation.ConsultationAnesthesique);
+            }
+
+            var ca = consultation.ConsultationAnesthesique;
+            
+            // Anamnèse spécifique
+            ca.AntecedentsMedicaux = examenAnesthesique.AntecedentsMedicaux;
+            ca.ProblemesCardiaques = examenAnesthesique.ProblemesCardiaques;
+            ca.ProblemesRespiratoires = examenAnesthesique.ProblemesRespiratoires;
+            ca.AllergiesAnesthesie = examenAnesthesique.AllergiesAnesthesie;
+            ca.AntecedentsChirurgicaux = examenAnesthesique.AntecedentsChirurgicaux;
+            ca.ProblemesAnesthesiePrecedente = examenAnesthesique.ProblemesAnesthesiePrecedente;
+            ca.MedicamentsEnCours = examenAnesthesique.MedicamentsEnCours;
+            ca.ApneeSommeil = examenAnesthesique.ApneeSommeil;
+            ca.TroublesCoagulation = examenAnesthesique.TroublesCoagulation;
+            
+            // Examen clinique
+            ca.AuscultationCardiaque = examenAnesthesique.AuscultationCardiaque;
+            ca.AuscultationPulmonaire = examenAnesthesique.AuscultationPulmonaire;
+            
+            // Voies aériennes
+            ca.OuvertureBouche = examenAnesthesique.OuvertureBouche;
+            ca.Mallampati = examenAnesthesique.Mallampati;
+            ca.EtatDents = examenAnesthesique.EtatDents;
+            ca.MobiliteCou = examenAnesthesique.MobiliteCou;
+            ca.DistanceThyroMentonniere = examenAnesthesique.DistanceThyroMentonniere;
+            ca.IntubationDifficilePrevue = examenAnesthesique.IntubationDifficilePrevue;
+            ca.NotesVoiesAeriennes = examenAnesthesique.NotesVoiesAeriennes;
+            
+            // Évaluation du risque
+            ca.ClassificationASA = examenAnesthesique.ClassificationASA;
+            ca.NiveauRisque = examenAnesthesique.NiveauRisque;
+            ca.RisqueCardiaque = examenAnesthesique.RisqueCardiaque;
+            ca.RisqueRespiratoire = examenAnesthesique.RisqueRespiratoire;
+            ca.RisqueAllergique = examenAnesthesique.RisqueAllergique;
+            ca.RisqueHemorragique = examenAnesthesique.RisqueHemorragique;
+            
+            // Choix anesthésie
+            ca.TypeAnesthesie = examenAnesthesique.TypeAnesthesie;
+            ca.SousTypeAnesthesie = examenAnesthesique.SousTypeAnesthesie;
+            ca.JustificationAnesthesie = examenAnesthesique.JustificationAnesthesie;
+            ca.ExplicationPatient = examenAnesthesique.ExplicationPatient;
+            ca.ConsentementObtenu = examenAnesthesique.ConsentementObtenu;
+            if (examenAnesthesique.ConsentementObtenu == true && ca.DateConsentement == null)
+            {
+                ca.DateConsentement = DateTime.UtcNow;
+            }
+            
+            // Consignes préopératoires
+            ca.DureeJeune = examenAnesthesique.DureeJeune;
+            ca.InstructionsJeune = examenAnesthesique.InstructionsJeune;
+            ca.ArretTabac = examenAnesthesique.ArretTabac;
+            ca.InstructionsHygiene = examenAnesthesique.InstructionsHygiene;
+            ca.AutresConsignes = examenAnesthesique.AutresConsignes;
+            
+            // Conclusion
+            ca.Aptitude = examenAnesthesique.Aptitude;
+            ca.Reserves = examenAnesthesique.Reserves;
+            ca.MotifNonAptitude = examenAnesthesique.MotifNonAptitude;
+            ca.Recommandations = examenAnesthesique.Recommandations;
+            
+            ca.UpdatedAt = DateTime.UtcNow;
+            consultation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Examen anesthésique sauvegardé pour consultation {idConsultation}");
+            return Ok(new { message = "Examen anesthésique sauvegardé" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erreur SaveExamenAnesthesique: {ex.Message}");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1887,8 +1992,7 @@ public class ConsultationCompleteController : BaseApiController
                 .Select(s => new SpecialiteDto
                 {
                     IdSpecialite = s.IdSpecialite,
-                    NomSpecialite = s.NomSpecialite,
-                    CoutConsultation = s.CoutConsultation
+                    NomSpecialite = s.NomSpecialite
                 })
                 .ToListAsync();
 
@@ -2451,6 +2555,63 @@ public class ConsultationCompleteController : BaseApiController
             ConclusionChirurgicale = entity.ConclusionChirurgicale,
             Decision = entity.Decision,
             NotesComplementaires = entity.NotesComplementaires
+        };
+    }
+
+    private static ExamenAnesthesiqueDto? MapExamenAnesthesique(ConsultationAnesthesique? entity)
+    {
+        if (entity == null)
+        {
+            return null;
+        }
+
+        return new ExamenAnesthesiqueDto
+        {
+            // Anamnèse spécifique
+            AntecedentsMedicaux = entity.AntecedentsMedicaux,
+            ProblemesCardiaques = entity.ProblemesCardiaques,
+            ProblemesRespiratoires = entity.ProblemesRespiratoires,
+            AllergiesAnesthesie = entity.AllergiesAnesthesie,
+            AntecedentsChirurgicaux = entity.AntecedentsChirurgicaux,
+            ProblemesAnesthesiePrecedente = entity.ProblemesAnesthesiePrecedente,
+            MedicamentsEnCours = entity.MedicamentsEnCours,
+            ApneeSommeil = entity.ApneeSommeil,
+            TroublesCoagulation = entity.TroublesCoagulation,
+            // Examen clinique
+            AuscultationCardiaque = entity.AuscultationCardiaque,
+            AuscultationPulmonaire = entity.AuscultationPulmonaire,
+            // Voies aériennes
+            OuvertureBouche = entity.OuvertureBouche,
+            Mallampati = entity.Mallampati,
+            EtatDents = entity.EtatDents,
+            MobiliteCou = entity.MobiliteCou,
+            DistanceThyroMentonniere = entity.DistanceThyroMentonniere,
+            IntubationDifficilePrevue = entity.IntubationDifficilePrevue,
+            NotesVoiesAeriennes = entity.NotesVoiesAeriennes,
+            // Évaluation du risque
+            ClassificationASA = entity.ClassificationASA,
+            NiveauRisque = entity.NiveauRisque,
+            RisqueCardiaque = entity.RisqueCardiaque,
+            RisqueRespiratoire = entity.RisqueRespiratoire,
+            RisqueAllergique = entity.RisqueAllergique,
+            RisqueHemorragique = entity.RisqueHemorragique,
+            // Choix anesthésie
+            TypeAnesthesie = entity.TypeAnesthesie,
+            SousTypeAnesthesie = entity.SousTypeAnesthesie,
+            JustificationAnesthesie = entity.JustificationAnesthesie,
+            ExplicationPatient = entity.ExplicationPatient,
+            ConsentementObtenu = entity.ConsentementObtenu,
+            // Consignes préopératoires
+            DureeJeune = entity.DureeJeune,
+            InstructionsJeune = entity.InstructionsJeune,
+            ArretTabac = entity.ArretTabac,
+            InstructionsHygiene = entity.InstructionsHygiene,
+            AutresConsignes = entity.AutresConsignes,
+            // Conclusion
+            Aptitude = entity.Aptitude,
+            Reserves = entity.Reserves,
+            MotifNonAptitude = entity.MotifNonAptitude,
+            Recommandations = entity.Recommandations
         };
     }
 }

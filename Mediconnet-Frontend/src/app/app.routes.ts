@@ -73,6 +73,10 @@ export const routes: Routes = [
       { 
         path: 'consultation/:id', 
         loadComponent: () => import('./pages/patient/consultation-details/consultation-details.component').then(m => m.PatientConsultationDetailsComponent)
+      },
+      { 
+        path: 'ordonnances', 
+        loadComponent: () => import('./pages/patient/ordonnances/ordonnances.component').then(m => m.OrdonnancesComponent)
       }
     ]
   },
@@ -115,6 +119,10 @@ export const routes: Routes = [
       { 
         path: 'patient/:patientId', 
         loadComponent: () => import('./pages/medecin/dossier-patient/dossier-patient.component').then(m => m.MedecinDossierPatientComponent)
+      },
+      { 
+        path: 'interventions', 
+        loadComponent: () => import('./pages/medecin/interventions/interventions.component').then(m => m.InterventionsComponent)
       }
     ]
   },

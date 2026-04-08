@@ -1,0 +1,325 @@
+<div class="panel-overlay" (click)="onClose()"></div>
+<div class="panel-container">
+  <div class="panel-header">
+    <div class="header-title">
+      <lucide-icon name="clipboard-check" [size]="20"></lucide-icon>
+      <h2>Demande de Coordination</h2>
+    </div>
+    <button class="btn-close" (click)="onClose()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- Statut badge -->
+  <div class="statut-banner" [ngClass]="'statut-' + getStatutClass(coordination.statut)">
+    <lucide-icon name="info" [size]="16"></lucide-icon>
+    <span>Statut: {{ getStatutLabel(coordination.statut) }}</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" *ngIf="!success">
+    <button class="tab" [class.active]="activeTab === 'details'" (click)="activeTab = 'details'">
+      <lucide-icon name="file-text" [size]="16"></lucide-icon>
+      Détails
+    </button>
+    <button class="tab" [class.active]="activeTab === 'historique'" (click)="activeTab = 'historique'">
+      <lucide-icon name="history" [size]="16"></lucide-icon>
+      Historique
+    </button>
+    <button class="tab" [class.active]="activeTab === 'reponse'" 
+            *ngIf="canRespond()" (click)="activeTab = 'reponse'">
+      <lucide-icon name="message-square" [size]="16"></lucide-icon>
+      Répondre
+    </button>
+  </div>
+
+  <div class="panel-content">
+    <!-- Success state -->
+    <div class="success-state" *ngIf="success">
+      <div class="success-icon">
+        <lucide-icon name="check-circle" [size]="64"></lucide-icon>
+      </div>
+      <h3>Réponse envoyée !</h3>
+      <p>Votre réponse a été transmise au chirurgien.</p>
+      <button class="btn-primary" (click)="onClose()">
+        <lucide-icon name="check" [size]="16"></lucide-icon>
+        Fermer
+      </button>
+    </div>
+
+    <!-- Tab: Détails -->
+    <div class="tab-content" *ngIf="activeTab === 'details' && !success">
+      <!-- Chirurgien info -->
+      <div class="info-section">
+        <h3><lucide-icon name="user" [size]="16"></lucide-icon> Chirurgien demandeur</h3>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="label">Nom</span>
+            <span class="value">{{ coordination.nomChirurgien }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Spécialité</span>
+            <span class="value">{{ coordination.specialiteChirurgien }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient info -->
+      <div class="info-section">
+        <h3><lucide-icon name="user-check" [size]="16"></lucide-icon> Patient</h3>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="label">Nom</span>
+            <span class="value">{{ coordination.nomPatient }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Intervention info -->
+      <div class="info-section">
+        <h3><lucide-icon name="scissors" [size]="16"></lucide-icon> Intervention</h3>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="label">Type</span>
+            <span class="value">{{ coordination.typeIntervention }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Indication</span>
+            <span class="value">{{ coordination.indicationOperatoire }}</span>
+          </div>
+          <div class="info-row" *ngIf="coordination.classificationAsa">
+            <span class="label">Classification ASA</span>
+            <span class="value">{{ coordination.classificationAsa }}</span>
+          </div>
+          <div class="info-row" *ngIf="coordination.risqueOperatoire">
+            <span class="label">Risque opératoire</span>
+            <span class="value badge-risk" [ngClass]="'risk-' + coordination.risqueOperatoire">
+              {{ coordination.risqueOperatoire }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Créneau proposé -->
+      <div class="info-section highlight">
+        <h3><lucide-icon name="calendar" [size]="16"></lucide-icon> Créneau proposé</h3>
+        <div class="creneau-card">
+          <div class="creneau-date">
+            <lucide-icon name="calendar-days" [size]="20"></lucide-icon>
+            <span>{{ formatDate(coordination.dateProposee) }}</span>
+          </div>
+          <div class="creneau-time">
+            <lucide-icon name="clock" [size]="20"></lucide-icon>
+            <span>{{ coordination.heureProposee }}</span>
+          </div>
+          <div class="creneau-duration">
+            <lucide-icon name="timer" [size]="20"></lucide-icon>
+            <span>{{ formatDuree(coordination.dureeEstimee) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes du chirurgien -->
+      <div class="info-section" *ngIf="coordination.notesChirurgien || coordination.notesAnesthesie">
+        <h3><lucide-icon name="file-text" [size]="16"></lucide-icon> Notes</h3>
+        <div class="notes-card">
+          <p *ngIf="coordination.notesChirurgien">{{ coordination.notesChirurgien }}</p>
+          <p *ngIf="coordination.notesAnesthesie">{{ coordination.notesAnesthesie }}</p>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="quick-actions" *ngIf="canRespond()">
+        <button class="btn-success" (click)="setResponseMode('valider')">
+          <lucide-icon name="check" [size]="16"></lucide-icon>
+          Valider
+        </button>
+        <button class="btn-warning" (click)="setResponseMode('modifier')">
+          <lucide-icon name="edit" [size]="16"></lucide-icon>
+          Modifier
+        </button>
+        <button class="btn-danger" (click)="setResponseMode('refuser')">
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+          Refuser
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Historique -->
+    <div class="tab-content" *ngIf="activeTab === 'historique' && !success">
+      <div class="loading-state" *ngIf="isLoadingHistorique">
+        <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+        <span>Chargement...</span>
+      </div>
+
+      <div class="historique-list" *ngIf="!isLoadingHistorique">
+        <div class="historique-item" *ngFor="let item of historique">
+          <div class="historique-icon">
+            <lucide-icon [name]="item.typeAction === 'validation' ? 'check-circle' : 
+                                 item.typeAction === 'refus' ? 'x-circle' : 
+                                 item.typeAction === 'modification' ? 'edit' : 'send'" 
+                         [size]="16"></lucide-icon>
+          </div>
+          <div class="historique-content">
+            <div class="historique-header">
+              <span class="action-type">{{ getTypeActionLabel(item.typeAction) }}</span>
+              <span class="action-date">{{ formatDateTime(item.createdAt) }}</span>
+            </div>
+            <div class="historique-user">
+              Par {{ item.nomUser }} ({{ item.roleUser }})
+            </div>
+            <div class="historique-details" *ngIf="item.details">
+              {{ item.details }}
+            </div>
+            <div class="historique-creneau" *ngIf="item.dateProposee">
+              <lucide-icon name="calendar" [size]="12"></lucide-icon>
+              {{ formatDate(item.dateProposee) }} à {{ item.heureProposee }}
+            </div>
+          </div>
+        </div>
+
+        <div class="no-historique" *ngIf="historique.length === 0">
+          <lucide-icon name="inbox" [size]="24"></lucide-icon>
+          <span>Aucun historique</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Réponse -->
+    <div class="tab-content" *ngIf="activeTab === 'reponse' && !success">
+      <!-- Mode sélection -->
+      <div class="response-mode-selection" *ngIf="!responseMode">
+        <h3>Choisissez votre réponse</h3>
+        <div class="response-options">
+          <button class="response-option success" (click)="setResponseMode('valider')">
+            <lucide-icon name="check-circle" [size]="32"></lucide-icon>
+            <span class="option-title">Valider</span>
+            <span class="option-desc">Accepter le créneau proposé</span>
+          </button>
+          <button class="response-option warning" (click)="setResponseMode('modifier')">
+            <lucide-icon name="edit-3" [size]="32"></lucide-icon>
+            <span class="option-title">Contre-proposer</span>
+            <span class="option-desc">Proposer un autre créneau</span>
+          </button>
+          <button class="response-option danger" (click)="setResponseMode('refuser')">
+            <lucide-icon name="x-circle" [size]="32"></lucide-icon>
+            <span class="option-title">Refuser</span>
+            <span class="option-desc">Décliner cette demande</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulaire de validation -->
+      <div class="response-form" *ngIf="responseMode === 'valider'">
+        <div class="form-header success">
+          <lucide-icon name="check-circle" [size]="24"></lucide-icon>
+          <h3>Valider la coordination</h3>
+        </div>
+        <p class="form-desc">
+          Vous acceptez l'intervention le <strong>{{ formatDate(coordination.dateProposee) }}</strong> 
+          à <strong>{{ coordination.heureProposee }}</strong>.
+        </p>
+
+        <!-- Section RDV consultation pré-opératoire -->
+        <div class="rdv-section">
+          <div class="rdv-header">
+            <lucide-icon name="calendar-plus" [size]="18"></lucide-icon>
+            <h4>Planifier le RDV de consultation pré-opératoire</h4>
+          </div>
+          <p class="rdv-desc">
+            Planifiez votre rendez-vous avec le patient pour la consultation pré-anesthésique.
+            <span class="optional-tag">(Optionnel - vous pourrez le planifier plus tard)</span>
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date du RDV</label>
+              <input type="date" [(ngModel)]="dateRdvConsultation" [min]="minDate" [max]="maxDateRdv">
+            </div>
+            <div class="form-group">
+              <label>Heure du RDV</label>
+              <input type="time" [(ngModel)]="heureRdvConsultation">
+            </div>
+          </div>
+          <div class="rdv-info" *ngIf="dateRdvConsultation && heureRdvConsultation">
+            <lucide-icon name="info" [size]="14"></lucide-icon>
+            <span>Le patient sera notifié de ce rendez-vous.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Commentaire (optionnel)</label>
+          <textarea [(ngModel)]="commentaire" rows="3" 
+                    placeholder="Ajouter un commentaire..."></textarea>
+        </div>
+      </div>
+
+      <!-- Formulaire de modification -->
+      <div class="response-form" *ngIf="responseMode === 'modifier'">
+        <div class="form-header warning">
+          <lucide-icon name="edit-3" [size]="24"></lucide-icon>
+          <h3>Proposer une modification</h3>
+        </div>
+        <p class="form-desc">
+          Proposez un nouveau créneau au chirurgien.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nouvelle date <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="dateContreProposee" [min]="minDate">
+          </div>
+          <div class="form-group">
+            <label>Nouvelle heure <span class="required">*</span></label>
+            <input type="time" [(ngModel)]="heureContreProposee">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Motif de la modification <span class="required">*</span></label>
+          <textarea [(ngModel)]="commentaire" rows="3" 
+                    placeholder="Expliquez pourquoi vous proposez ce changement..."></textarea>
+        </div>
+      </div>
+
+      <!-- Formulaire de refus -->
+      <div class="response-form" *ngIf="responseMode === 'refuser'">
+        <div class="form-header danger">
+          <lucide-icon name="x-circle" [size]="24"></lucide-icon>
+          <h3>Refuser la coordination</h3>
+        </div>
+        <p class="form-desc">
+          Indiquez le motif de votre refus.
+        </p>
+        <div class="form-group">
+          <label>Motif du refus <span class="required">*</span></label>
+          <textarea [(ngModel)]="motifRefus" rows="4" 
+                    placeholder="Expliquez pourquoi vous ne pouvez pas participer à cette intervention..."></textarea>
+        </div>
+      </div>
+
+      <!-- Erreur -->
+      <div class="error-message" *ngIf="error">
+        <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+        {{ error }}
+      </div>
+
+      <!-- Actions formulaire -->
+      <div class="form-actions" *ngIf="responseMode">
+        <button class="btn-secondary" (click)="cancelResponse()">
+          <lucide-icon name="arrow-left" [size]="16"></lucide-icon>
+          Retour
+        </button>
+        <button class="btn-primary" [disabled]="isSubmitting" (click)="submitResponse()"
+                [ngClass]="{'btn-success': responseMode === 'valider', 
+                            'btn-warning': responseMode === 'modifier',
+                            'btn-danger': responseMode === 'refuser'}">
+          <lucide-icon *ngIf="isSubmitting" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting && responseMode === 'valider'" name="check" [size]="16"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting && responseMode === 'modifier'" name="send" [size]="16"></lucide-icon>
+          <lucide-icon *ngIf="!isSubmitting && responseMode === 'refuser'" name="x" [size]="16"></lucide-icon>
+          {{ responseMode === 'valider' ? 'Confirmer la validation' : 
+             responseMode === 'modifier' ? 'Envoyer la contre-proposition' : 
+             'Confirmer le refus' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

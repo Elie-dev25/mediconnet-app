@@ -16,7 +16,7 @@
     <div class="step" *ngFor="let etape of etapes; let i = index"
          [class.active]="etapeActuelle === etape"
          [class.completed]="isEtapeComplete(etape)"
-         [class.locked]="(etape === 'examen_gynecologique' && !isGynecoConsultation()) || (etape === 'examen_chirurgical' && !isChirurgieConsultation())"
+         [class.locked]="(etape === 'examen_gynecologique' && !isGynecoConsultation()) || (etape === 'examen_chirurgical' && !isChirurgieConsultation()) || (etape === 'examen_anesthesique' && !isAnesthesisteConsultation())"
          (click)="goToEtape(etape)">
       <div class="step-number">
         <span *ngIf="!isEtapeComplete(etape)">{{ i + 1 }}</span>
@@ -32,6 +32,10 @@
         <span *ngIf="etape === 'examen_chirurgical'">
           Examen Chirurgical
           <small class="step-hint" *ngIf="!isChirurgieConsultation()">(chirurgien uniquement)</small>
+        </span>
+        <span *ngIf="etape === 'examen_anesthesique'">
+          Examen Anesthésique
+          <small class="step-hint" *ngIf="!isAnesthesisteConsultation()">(anesthésiste uniquement)</small>
         </span>
         <span *ngIf="etape === 'diagnostic'">Diagnostic</span>
         <span *ngIf="etape === 'plan_traitement'">Traitement</span>
@@ -573,6 +577,328 @@
               <label>Notes complémentaires</label>
             </div>
             <textarea formControlName="notesComplementaires" rows="2" placeholder="Notes additionnelles..."></textarea>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ÉTAPE 5: EXAMEN ANESTHÉSIQUE -->
+    <div class="etape-content" *ngIf="etapeActuelle === 'examen_anesthesique'" [formGroup]="examenAnesthesiqueForm">
+      <div class="etape-header">
+        <h3><lucide-icon name="syringe" [size]="18"></lucide-icon> Consultation Pré-Anesthésique</h3>
+      </div>
+
+      <div class="locked-panel" *ngIf="!isAnesthesisteConsultation()">
+        <lucide-icon name="shield-alert" [size]="32"></lucide-icon>
+        <div>
+          <h4>Étape réservée aux consultations anesthésiques</h4>
+          <p>Cette étape devient disponible lorsque la consultation est associée à la spécialité anesthésie.</p>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isAnesthesisteConsultation()">
+        <!-- Section 1: Anamnèse spécifique -->
+        <div class="form-section anesthesie-section">
+          <h4><lucide-icon name="clipboard-list" [size]="16"></lucide-icon> Anamnèse spécifique</h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Antécédents médicaux</label>
+              <textarea formControlName="antecedentsMedicaux" rows="3" placeholder="HTA, diabète, asthme, BPCO, insuffisance cardiaque..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Problèmes cardiaques</label>
+              <textarea formControlName="problemesCardiaques" rows="3" placeholder="Coronaropathie, arythmie, valvulopathie..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Problèmes respiratoires</label>
+              <textarea formControlName="problemesRespiratoires" rows="3" placeholder="Asthme, BPCO, apnée du sommeil..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Allergies connues</label>
+              <textarea formControlName="allergiesAnesthesie" rows="3" placeholder="Médicaments, latex, iode..."></textarea>
+            </div>
+          </div>
+
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Antécédents chirurgicaux</label>
+              <textarea formControlName="antecedentsChirurgicaux" rows="2" placeholder="Interventions précédentes..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Problèmes lors d'anesthésies précédentes</label>
+              <textarea formControlName="problemesAnesthesiePrecedente" rows="2" placeholder="Intubation difficile, nausées, réveil prolongé..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Médicaments en cours</label>
+            <textarea formControlName="medicamentsEnCours" rows="2" placeholder="Anticoagulants, aspirine, AINS, antihypertenseurs..."></textarea>
+          </div>
+
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="apneeSommeil">
+              <span>Apnée du sommeil / Ronflement</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="troublesCoagulation">
+              <span>Troubles de la coagulation</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 2: Examen clinique -->
+        <div class="form-section anesthesie-section">
+          <h4><lucide-icon name="stethoscope" [size]="16"></lucide-icon> Examen clinique</h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Auscultation cardiaque</label>
+              <textarea formControlName="auscultationCardiaque" rows="2" placeholder="BDC réguliers, souffle..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Auscultation pulmonaire</label>
+              <textarea formControlName="auscultationPulmonaire" rows="2" placeholder="MV bilatéral, râles..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Voies aériennes (CRITIQUE) -->
+        <div class="form-section anesthesie-section voies-aeriennes-section">
+          <h4><lucide-icon name="wind" [size]="16"></lucide-icon> Évaluation des voies aériennes <span class="badge-critical">Critique</span></h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Ouverture de bouche</label>
+              <select formControlName="ouvertureBouche">
+                <option value="">-- Sélectionner --</option>
+                <option value="normale">Normale (> 3 cm)</option>
+                <option value="limitee">Limitée (2-3 cm)</option>
+                <option value="tres_limitee">Très limitée (< 2 cm)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Score de Mallampati</label>
+              <select formControlName="mallampati">
+                <option [ngValue]="null">-- Sélectionner --</option>
+                <option [ngValue]="1">Classe I - Palais mou, luette, piliers visibles</option>
+                <option [ngValue]="2">Classe II - Palais mou, luette visibles</option>
+                <option [ngValue]="3">Classe III - Palais mou, base de luette visibles</option>
+                <option [ngValue]="4">Classe IV - Palais mou non visible</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>État des dents</label>
+              <input type="text" formControlName="etatDents" placeholder="Normal, prothèses, dents mobiles...">
+            </div>
+            <div class="form-group">
+              <label>Mobilité du cou</label>
+              <select formControlName="mobiliteCou">
+                <option value="">-- Sélectionner --</option>
+                <option value="normale">Normale</option>
+                <option value="limitee">Limitée</option>
+                <option value="tres_limitee">Très limitée</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Distance thyro-mentonnière (cm)</label>
+              <input type="number" formControlName="distanceThyroMentonniere" step="0.5" min="0" max="15" placeholder="Ex: 6.5">
+            </div>
+          </div>
+
+          <div class="checkbox-row intubation-warning">
+            <label class="checkbox-label warning-checkbox">
+              <input type="checkbox" formControlName="intubationDifficilePrevue">
+              <span><lucide-icon name="alert-triangle" [size]="14"></lucide-icon> Intubation difficile prévue</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>Notes sur les voies aériennes</label>
+            <textarea formControlName="notesVoiesAeriennes" rows="2" placeholder="Observations complémentaires..."></textarea>
+          </div>
+        </div>
+
+        <!-- Section 4: Évaluation du risque -->
+        <div class="form-section anesthesie-section">
+          <h4><lucide-icon name="alert-triangle" [size]="16"></lucide-icon> Évaluation du risque</h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Classification ASA</label>
+              <select formControlName="classificationASA">
+                <option [ngValue]="null">-- Sélectionner --</option>
+                <option [ngValue]="1">ASA 1 - Patient en bonne santé</option>
+                <option [ngValue]="2">ASA 2 - Maladie systémique légère</option>
+                <option [ngValue]="3">ASA 3 - Maladie systémique sévère</option>
+                <option [ngValue]="4">ASA 4 - Maladie mettant en jeu le pronostic vital</option>
+                <option [ngValue]="5">ASA 5 - Patient moribond</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Niveau de risque global</label>
+              <select formControlName="niveauRisque">
+                <option value="">-- Sélectionner --</option>
+                <option value="faible">Faible</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="risques-grid">
+            <div class="risque-item">
+              <label>Risque cardiaque</label>
+              <select formControlName="risqueCardiaque">
+                <option value="">--</option>
+                <option value="faible">Faible</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+            <div class="risque-item">
+              <label>Risque respiratoire</label>
+              <select formControlName="risqueRespiratoire">
+                <option value="">--</option>
+                <option value="faible">Faible</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+            <div class="risque-item">
+              <label>Risque allergique</label>
+              <select formControlName="risqueAllergique">
+                <option value="">--</option>
+                <option value="faible">Faible</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+            <div class="risque-item">
+              <label>Risque hémorragique</label>
+              <select formControlName="risqueHemorragique">
+                <option value="">--</option>
+                <option value="faible">Faible</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Choix du type d'anesthésie -->
+        <div class="form-section anesthesie-section">
+          <h4><lucide-icon name="syringe" [size]="16"></lucide-icon> Choix du type d'anesthésie</h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Type d'anesthésie</label>
+              <select formControlName="typeAnesthesie">
+                <option value="">-- Sélectionner --</option>
+                <option value="generale">Anesthésie générale</option>
+                <option value="locoregionale">Anesthésie loco-régionale</option>
+                <option value="locale">Anesthésie locale</option>
+                <option value="sedation">Sédation</option>
+              </select>
+            </div>
+            <div class="form-group" *ngIf="examenAnesthesiqueForm.get('typeAnesthesie')?.value === 'locoregionale'">
+              <label>Sous-type</label>
+              <select formControlName="sousTypeAnesthesie">
+                <option value="">-- Sélectionner --</option>
+                <option value="rachianesthesie">Rachianesthésie</option>
+                <option value="peridurale">Péridurale</option>
+                <option value="bloc_peripherique">Bloc périphérique</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Justification du choix</label>
+            <textarea formControlName="justificationAnesthesie" rows="2" placeholder="Raisons du choix de ce type d'anesthésie..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Explication donnée au patient</label>
+            <textarea formControlName="explicationPatient" rows="2" placeholder="Informations communiquées au patient..."></textarea>
+          </div>
+
+          <div class="checkbox-row">
+            <label class="checkbox-label success-checkbox">
+              <input type="checkbox" formControlName="consentementObtenu">
+              <span><lucide-icon name="check-circle" [size]="14"></lucide-icon> Consentement éclairé obtenu</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 6: Consignes préopératoires -->
+        <div class="form-section anesthesie-section">
+          <h4><lucide-icon name="list-checks" [size]="16"></lucide-icon> Consignes préopératoires</h4>
+          
+          <div class="anesthesie-grid">
+            <div class="form-group">
+              <label>Durée de jeûne (heures)</label>
+              <input type="number" formControlName="dureeJeune" min="0" max="24" placeholder="6">
+            </div>
+            <div class="form-group">
+              <label>Instructions de jeûne</label>
+              <input type="text" formControlName="instructionsJeune" placeholder="Pas de solides 6h avant, liquides clairs 2h avant...">
+            </div>
+          </div>
+
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="arretTabac">
+              <span>Arrêt du tabac recommandé</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>Instructions d'hygiène</label>
+            <textarea formControlName="instructionsHygiene" rows="2" placeholder="Douche antiseptique la veille et le matin..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Autres consignes</label>
+            <textarea formControlName="autresConsignes" rows="2" placeholder="Consignes supplémentaires..."></textarea>
+          </div>
+        </div>
+
+        <!-- Section 7: Conclusion / Aptitude -->
+        <div class="form-section anesthesie-section aptitude-section">
+          <h4><lucide-icon name="check-square" [size]="16"></lucide-icon> Conclusion et Aptitude</h4>
+          
+          <div class="aptitude-selector">
+            <label class="aptitude-option" [class.selected]="examenAnesthesiqueForm.get('aptitude')?.value === 'apte'">
+              <input type="radio" formControlName="aptitude" value="apte">
+              <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+              <span>Apte</span>
+            </label>
+            <label class="aptitude-option warning" [class.selected]="examenAnesthesiqueForm.get('aptitude')?.value === 'apte_avec_reserve'">
+              <input type="radio" formControlName="aptitude" value="apte_avec_reserve">
+              <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+              <span>Apte avec réserves</span>
+            </label>
+            <label class="aptitude-option danger" [class.selected]="examenAnesthesiqueForm.get('aptitude')?.value === 'non_apte'">
+              <input type="radio" formControlName="aptitude" value="non_apte">
+              <lucide-icon name="x-circle" [size]="20"></lucide-icon>
+              <span>Non apte</span>
+            </label>
+          </div>
+
+          <div class="form-group" *ngIf="examenAnesthesiqueForm.get('aptitude')?.value === 'apte_avec_reserve'">
+            <label>Réserves</label>
+            <textarea formControlName="reserves" rows="2" placeholder="Préciser les réserves..."></textarea>
+          </div>
+
+          <div class="form-group" *ngIf="examenAnesthesiqueForm.get('aptitude')?.value === 'non_apte'">
+            <label>Motif de non-aptitude</label>
+            <textarea formControlName="motifNonAptitude" rows="2" placeholder="Raisons de la non-aptitude..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Recommandations</label>
+            <textarea formControlName="recommandations" rows="2" placeholder="Recommandations finales..."></textarea>
           </div>
         </div>
       </ng-container>

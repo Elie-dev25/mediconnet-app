@@ -564,6 +564,126 @@ const EXAMENS_UROLOGIE: CategorieExamenDefinition[] = [
 ];
 
 /**
+ * Examens pour l'anesthésiste (Consultation pré-anesthésique)
+ */
+const EXAMENS_ANESTHESIE: CategorieExamenDefinition[] = [
+  {
+    type: 'cardiaque',
+    label: 'Examens cardiaques',
+    icon: 'heart-pulse',
+    examens: [
+      { nom: 'ECG (Électrocardiogramme)', description: 'Évaluation du rythme cardiaque' },
+      { nom: 'Échocardiographie transthoracique', description: 'Évaluation de la fonction cardiaque' },
+      { nom: 'Échocardiographie transœsophagienne', description: 'Évaluation cardiaque approfondie' },
+      { nom: 'Test d\'effort', description: 'Évaluation de la tolérance à l\'effort' },
+      { nom: 'Holter ECG 24h', description: 'Surveillance du rythme cardiaque sur 24h' },
+      { nom: 'Holter tensionnel (MAPA)', description: 'Surveillance de la tension artérielle sur 24h' },
+      { nom: 'Coronarographie', description: 'Visualisation des artères coronaires' },
+      { nom: 'Scanner cardiaque', description: 'Imagerie cardiaque par scanner' },
+      { nom: 'IRM cardiaque', description: 'Imagerie cardiaque par résonance magnétique' }
+    ]
+  },
+  {
+    type: 'respiratoire',
+    label: 'Examens respiratoires',
+    icon: 'wind',
+    examens: [
+      { nom: 'EFR (Exploration Fonctionnelle Respiratoire)', description: 'Évaluation complète de la fonction pulmonaire' },
+      { nom: 'Spirométrie', description: 'Mesure des volumes et débits respiratoires' },
+      { nom: 'Radiographie thoracique', description: 'Imagerie pulmonaire standard' },
+      { nom: 'Scanner thoracique', description: 'Imagerie pulmonaire détaillée' },
+      { nom: 'Gaz du sang artériel', description: 'Mesure de l\'oxygénation et du pH sanguin' },
+      { nom: 'Oxymétrie nocturne', description: 'Surveillance de la saturation pendant le sommeil' },
+      { nom: 'Polysomnographie', description: 'Diagnostic de l\'apnée du sommeil' },
+      { nom: 'Test de marche de 6 minutes', description: 'Évaluation de la capacité fonctionnelle' }
+    ]
+  },
+  {
+    type: 'neurologique',
+    label: 'Examens neurologiques',
+    icon: 'brain',
+    examens: [
+      { nom: 'Scanner cérébral', description: 'Imagerie cérébrale par scanner' },
+      { nom: 'IRM cérébrale', description: 'Imagerie cérébrale par résonance magnétique' },
+      { nom: 'EEG (Électroencéphalogramme)', description: 'Évaluation de l\'activité électrique cérébrale' },
+      { nom: 'Doppler des troncs supra-aortiques', description: 'Évaluation des artères cérébrales' },
+      { nom: 'Potentiels évoqués', description: 'Évaluation des voies nerveuses' }
+    ]
+  },
+  {
+    type: 'biologie',
+    label: 'Bilan biologique pré-opératoire',
+    icon: 'test-tube',
+    examens: [
+      { nom: 'NFS (Numération Formule Sanguine)', description: 'Hémoglobine, plaquettes, globules blancs' },
+      { nom: 'Groupe sanguin / Rhésus', description: 'Typage sanguin' },
+      { nom: 'RAI (Recherche d\'Agglutinines Irrégulières)', description: 'Compatibilité transfusionnelle' },
+      { nom: 'Bilan d\'hémostase (TP, TCA, INR)', description: 'Évaluation de la coagulation' },
+      { nom: 'Fibrinogène', description: 'Facteur de coagulation' },
+      { nom: 'Ionogramme sanguin', description: 'Électrolytes (Na, K, Cl)' },
+      { nom: 'Créatinine / Urée', description: 'Fonction rénale' },
+      { nom: 'Clairance de la créatinine', description: 'Évaluation précise de la fonction rénale' },
+      { nom: 'Glycémie à jeun', description: 'Dépistage du diabète' },
+      { nom: 'HbA1c', description: 'Équilibre glycémique sur 3 mois' },
+      { nom: 'Bilan hépatique (ASAT, ALAT, GGT, PAL)', description: 'Fonction hépatique' },
+      { nom: 'Albumine', description: 'État nutritionnel' },
+      { nom: 'Préalbumine', description: 'État nutritionnel récent' },
+      { nom: 'Troponine', description: 'Marqueur cardiaque' },
+      { nom: 'BNP / NT-proBNP', description: 'Marqueur d\'insuffisance cardiaque' }
+    ]
+  },
+  {
+    type: 'coagulation',
+    label: 'Bilan de coagulation approfondi',
+    icon: 'droplets',
+    examens: [
+      { nom: 'TP / INR', description: 'Temps de prothrombine' },
+      { nom: 'TCA', description: 'Temps de céphaline activée' },
+      { nom: 'Fibrinogène', description: 'Facteur de coagulation' },
+      { nom: 'D-Dimères', description: 'Marqueur de thrombose' },
+      { nom: 'Facteurs de coagulation (II, V, VII, X)', description: 'Dosage des facteurs' },
+      { nom: 'Facteur VIII', description: 'Hémophilie A' },
+      { nom: 'Facteur IX', description: 'Hémophilie B' },
+      { nom: 'Facteur von Willebrand', description: 'Maladie de von Willebrand' },
+      { nom: 'Temps de saignement', description: 'Fonction plaquettaire' },
+      { nom: 'Agrégation plaquettaire', description: 'Fonction plaquettaire détaillée' },
+      { nom: 'Antithrombine III', description: 'Inhibiteur de la coagulation' },
+      { nom: 'Protéine C / Protéine S', description: 'Anticoagulants naturels' },
+      { nom: 'Thromboélastographie (TEG)', description: 'Évaluation globale de la coagulation' }
+    ]
+  },
+  {
+    type: 'allergologie',
+    label: 'Tests allergologiques',
+    icon: 'shield-alert',
+    examens: [
+      { nom: 'Tests cutanés aux anesthésiques locaux', description: 'Allergie aux anesthésiques' },
+      { nom: 'Tests cutanés aux curares', description: 'Allergie aux curares' },
+      { nom: 'Tests cutanés au latex', description: 'Allergie au latex' },
+      { nom: 'IgE spécifiques latex', description: 'Dosage sanguin allergie latex' },
+      { nom: 'IgE spécifiques médicaments', description: 'Dosage sanguin allergie médicamenteuse' },
+      { nom: 'Tryptase sérique', description: 'Marqueur de réaction anaphylactique' },
+      { nom: 'Histamine plasmatique', description: 'Marqueur de réaction allergique' },
+      { nom: 'Test de provocation médicamenteuse', description: 'Confirmation d\'allergie médicamenteuse' }
+    ]
+  },
+  {
+    type: 'imagerie',
+    label: 'Imagerie générale',
+    icon: 'scan-line',
+    examens: [
+      { nom: 'Radiographie thoracique', description: 'Évaluation pulmonaire et cardiaque' },
+      { nom: 'Radiographie du rachis cervical', description: 'Évaluation pour intubation' },
+      { nom: 'Scanner (TDM)', description: 'Imagerie par scanner' },
+      { nom: 'IRM', description: 'Imagerie par résonance magnétique' },
+      { nom: 'Échographie cardiaque', description: 'Évaluation cardiaque' },
+      { nom: 'Échographie des voies aériennes', description: 'Évaluation pour intubation difficile' },
+      { nom: 'Échographie abdominale', description: 'Évaluation abdominale' }
+    ]
+  }
+];
+
+/**
  * Map des examens par clé de spécialité normalisée
  */
 export const EXAMENS_PAR_SPECIALITE: Map<string, CategorieExamenDefinition[]> = new Map([
@@ -593,7 +713,12 @@ export const EXAMENS_PAR_SPECIALITE: Map<string, CategorieExamenDefinition[]> = 
   ['neurologue', EXAMENS_NEUROLOGIE],
   
   ['urologie', EXAMENS_UROLOGIE],
-  ['urologue', EXAMENS_UROLOGIE]
+  ['urologue', EXAMENS_UROLOGIE],
+  
+  ['anesthesiologie', EXAMENS_ANESTHESIE],
+  ['anesthesie', EXAMENS_ANESTHESIE],
+  ['anesthesiste', EXAMENS_ANESTHESIE],
+  ['anesthesiologie', EXAMENS_ANESTHESIE]
 ]);
 
 /**
@@ -664,5 +789,6 @@ export const SPECIALITES_SUPPORTEES: { key: string; label: string }[] = [
   { key: 'cardiologie', label: 'Cardiologie' },
   { key: 'pediatrie', label: 'Pédiatrie' },
   { key: 'neurologie', label: 'Neurologie' },
-  { key: 'urologie', label: 'Urologie' }
+  { key: 'urologie', label: 'Urologie' },
+  { key: 'anesthesiologie', label: 'Anesthésiologie' }
 ];

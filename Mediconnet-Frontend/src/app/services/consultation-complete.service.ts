@@ -96,6 +96,7 @@ export interface ConsultationEnCoursDto {
   examenClinique?: ExamenCliniqueDto;
   examenGynecologique?: ExamenGynecologiqueDto;
   examenChirurgical?: ExamenChirurgicalDto;
+  examenAnesthesique?: ExamenAnesthesiqueDto;
   diagnostic?: DiagnosticDto;
   planTraitement?: PlanTraitementDto;
   conclusion?: ConclusionDto;
@@ -125,6 +126,7 @@ export interface ConsultationDetailDto {
   examenClinique?: ExamenCliniqueDto;
   examenGynecologique?: ExamenGynecologiqueDto;
   examenChirurgical?: ExamenChirurgicalDto;
+  examenAnesthesique?: ExamenAnesthesiqueDto;
   planTraitement?: PlanTraitementDto;
   conclusionDetaillee?: ConclusionDto;
   /** RDV de suivi créé après cette consultation */
@@ -208,6 +210,54 @@ export interface ExamenChirurgicalDto {
   /** surveillance, traitement_medical, indication_operatoire */
   decision?: string;
   notesComplementaires?: string;
+}
+
+export interface ExamenAnesthesiqueDto {
+  // Anamnèse spécifique
+  antecedentsMedicaux?: string;
+  problemesCardiaques?: string;
+  problemesRespiratoires?: string;
+  allergiesAnesthesie?: string;
+  antecedentsChirurgicaux?: string;
+  problemesAnesthesiePrecedente?: string;
+  medicamentsEnCours?: string;
+  apneeSommeil?: boolean;
+  troublesCoagulation?: boolean;
+  // Examen clinique
+  auscultationCardiaque?: string;
+  auscultationPulmonaire?: string;
+  // Voies aériennes (critique)
+  ouvertureBouche?: string;
+  mallampati?: number;
+  etatDents?: string;
+  mobiliteCou?: string;
+  distanceThyroMentonniere?: number;
+  intubationDifficilePrevue?: boolean;
+  notesVoiesAeriennes?: string;
+  // Évaluation du risque
+  classificationASA?: number;
+  niveauRisque?: string;
+  risqueCardiaque?: string;
+  risqueRespiratoire?: string;
+  risqueAllergique?: string;
+  risqueHemorragique?: string;
+  // Choix anesthésie
+  typeAnesthesie?: string;
+  sousTypeAnesthesie?: string;
+  justificationAnesthesie?: string;
+  explicationPatient?: string;
+  consentementObtenu?: boolean;
+  // Consignes préopératoires
+  dureeJeune?: number;
+  instructionsJeune?: string;
+  arretTabac?: boolean;
+  instructionsHygiene?: string;
+  autresConsignes?: string;
+  // Conclusion
+  aptitude?: string;
+  reserves?: string;
+  motifNonAptitude?: string;
+  recommandations?: string;
 }
 
 /** Réponse pour l'import du dernier examen gynécologique */
@@ -587,6 +637,15 @@ export class ConsultationCompleteService {
   saveExamenChirurgical(idConsultation: number, examenChirurgical: ExamenChirurgicalDto): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
       `${this.apiUrl}/${idConsultation}/examen-chirurgical`, examenChirurgical
+    );
+  }
+
+  /**
+   * Sauvegarder l'examen anesthésique (étape 2 quater - pour anesthésistes)
+   */
+  saveExamenAnesthesique(idConsultation: number, examenAnesthesique: ExamenAnesthesiqueDto): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.apiUrl}/${idConsultation}/examen-anesthesique`, examenAnesthesique
     );
   }
 

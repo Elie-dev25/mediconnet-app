@@ -89,8 +89,9 @@ public class AuthService : IAuthService
                 declarationHonneurAcceptee = patient?.DeclarationHonneurAcceptee ?? false;
             }
 
-            // Récupérer le titre affiché selon le rôle
+            // Récupérer le titre affiché et la spécialité selon le rôle
             string? titreAffiche = null;
+            int? idSpecialite = null;
             if (utilisateur.Role == "medecin")
             {
                 var medecin = await _context.Medecins
@@ -100,6 +101,7 @@ public class AuthService : IAuthService
                 if (medecin?.Specialite != null)
                 {
                     titreAffiche = $"Médecin - {medecin.Specialite.NomSpecialite}";
+                    idSpecialite = medecin.IdSpecialite;
                 }
             }
             else if (utilisateur.Role == "infirmier")
@@ -127,6 +129,7 @@ public class AuthService : IAuthService
                 Telephone = utilisateur.Telephone,
                 Role = utilisateur.Role,
                 TitreAffiche = titreAffiche,
+                IdSpecialite = idSpecialite,
                 Message = "Connexion reussie",
                 ExpiresIn = 3600,
                 EmailConfirmed = utilisateur.EmailConfirmed,

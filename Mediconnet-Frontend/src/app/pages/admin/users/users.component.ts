@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } 
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
-import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto, SpecialiteInfirmierDto } from '../../../services/user.service';
+import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto, SpecialiteInfirmierDto, HistoriqueAffectationsDto, AffectationServiceDto } from '../../../services/user.service';
 import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
 import { PatientAssurancePanelComponent, PatientBasicInfo } from '../../../shared/components/patient-assurance-panel/patient-assurance-panel.component';
 
@@ -75,6 +75,14 @@ export class UsersComponent implements OnInit {
   showAssurancePanel = false;
   selectedPatientForAssurance: PatientBasicInfo | null = null;
 
+  // Sidebar changement de service
+  showChangeServiceSidebar = false;
+  selectedServiceForChange: number | null = null;
+  motifChangementService = '';
+  isChangingService = false;
+  historiqueAffectations: HistoriqueAffectationsDto | null = null;
+  isLoadingHistorique = false;
+
   // Rôles du personnel (sans patient)
   personnelRoles = [
     { value: 'medecin', label: 'Médecin', icon: 'stethoscope' },
@@ -142,24 +150,41 @@ export class UsersComponent implements OnInit {
     const idSpecialite = this.userForm.get('idSpecialite');
     const idService = this.userForm.get('idService');
     const idLabo = this.userForm.get('idLabo');
+    const numeroOrdre = this.userForm.get('numeroOrdre');
+    const idSpecialiteInfirmier = this.userForm.get('idSpecialiteInfirmier');
+    const matricule = this.userForm.get('matricule');
+    const specialisation = this.userForm.get('specialisation');
     
     // Reset all validators
     idSpecialite?.clearValidators();
     idService?.clearValidators();
     idLabo?.clearValidators();
+    numeroOrdre?.clearValidators();
+    idSpecialiteInfirmier?.clearValidators();
+    matricule?.clearValidators();
+    specialisation?.clearValidators();
     
     if (role === 'medecin') {
       idSpecialite?.setValidators([Validators.required]);
       idService?.setValidators([Validators.required]);
+      numeroOrdre?.setValidators([Validators.required]);
     } else if (role === 'infirmier') {
       idService?.setValidators([Validators.required]);
+      idSpecialiteInfirmier?.setValidators([Validators.required]);
+      matricule?.setValidators([Validators.required]);
     } else if (role === 'laborantin') {
       idLabo?.setValidators([Validators.required]);
+      specialisation?.setValidators([Validators.required]);
+      matricule?.setValidators([Validators.required]);
     }
     
     idSpecialite?.updateValueAndValidity();
     idService?.updateValueAndValidity();
     idLabo?.updateValueAndValidity();
+    numeroOrdre?.updateValueAndValidity();
+    idSpecialiteInfirmier?.updateValueAndValidity();
+    matricule?.updateValueAndValidity();
+    specialisation?.updateValueAndValidity();
   }
 
   loadUsers(): void {
@@ -499,5 +524,109 @@ export class UsersComponent implements OnInit {
 
   onAssuranceSaved(): void {
     this.loadUsers();
+  }
+
+  // ==================== CHANGEMENT DE SERVICE ====================
+
+  openChangeServiceSidebar(): void {
+    if (!this.selectedUserDetails) return;
+    
+    // Initialiser avec le service actuel
+    if (this.selectedUserDetails.role === 'medecin' && this.selectedUserDetails.medecin) {
+      this.selectedServiceForChange = this.selectedUserDetails.medecin.idService || null;
+    } else if (this.selectedUserDetails.role === 'infirmier' && this.selectedUserDetails.infirmier) {
+      this.selectedServiceForChange = this.selectedUserDetails.infirmier.idService || null;
+    }
+    
+    this.motifChangementService = '';
+    this.showChangeServiceSidebar = true;
+    this.loadHistoriqueAffectations();
+  }
+
+  closeChangeServiceSidebar(): void {
+    this.showChangeServiceSidebar = false;
+    this.selectedServiceForChange = null;
+    this.motifChangementService = '';
+    this.historiqueAffectations = null;
+  }
+
+  loadHistoriqueAffectations(): void {
+    if (!this.selectedUserDetails) return;
+
+    this.isLoadingHistorique = true;
+    const userId = this.selectedUserDetails.idUser;
+    const role = this.selectedUserDetails.role;
+
+    const request$ = role === 'medecin' 
+      ? this.userService.getHistoriqueAffectationsMedecin(userId)
+      : this.userService.getHistoriqueAffectationsInfirmier(userId);
+
+    request$.pipe(
+      finalize(() => this.isLoadingHistorique = false)
+    ).subscribe({
+      next: (historique) => {
+        this.historiqueAffectations = historique;
+      },
+      error: (err) => {
+        console.error('Erreur chargement historique:', err);
+        // L'historique peut être vide si aucune affectation n'existe encore
+        this.historiqueAffectations = null;
+      }
+    });
+  }
+
+  changerService(): void {
+    if (!this.selectedUserDetails || !this.selectedServiceForChange || this.isChangingService) return;
+
+    // Vérifier que le service a changé
+    const serviceActuel = this.selectedUserDetails.role === 'medecin' 
+      ? this.selectedUserDetails.medecin?.idService 
+      : this.selectedUserDetails.infirmier?.idService;
+
+    if (this.selectedServiceForChange === serviceActuel) {
+      this.errorMessage = 'Veuillez sélectionner un service différent';
+      setTimeout(() => this.errorMessage = null, 3000);
+      return;
+    }
+
+    this.isChangingService = true;
+    const userId = this.selectedUserDetails.idUser;
+    const role = this.selectedUserDetails.role;
+
+    const request$ = role === 'medecin'
+      ? this.userService.changerServiceMedecin(userId, {
+          idNouveauService: this.selectedServiceForChange,
+          motif: this.motifChangementService || undefined
+        })
+      : this.userService.changerServiceInfirmier(userId, {
+          idNouveauService: this.selectedServiceForChange,
+          motif: this.motifChangementService || undefined
+        });
+
+    request$.pipe(
+      finalize(() => this.isChangingService = false)
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.successMessage = response.message;
+          setTimeout(() => this.successMessage = null, 3000);
+          this.refreshUserDetails();
+          this.loadHistoriqueAffectations();
+          this.loadUsers();
+        } else {
+          this.errorMessage = response.message;
+          setTimeout(() => this.errorMessage = null, 3000);
+        }
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors du changement de service';
+        setTimeout(() => this.errorMessage = null, 3000);
+      }
+    });
+  }
+
+  getServiceName(idService: number): string {
+    const service = this.services.find(s => s.idService === idService);
+    return service?.nomService || 'Service inconnu';
   }
 }

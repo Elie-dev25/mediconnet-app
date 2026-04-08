@@ -31,5 +31,15 @@ namespace Mediconnet_Backend.Core.Interfaces.Services
         /// Recherche des patients par numéro de dossier, nom ou email
         /// </summary>
         Task<PatientSearchResponse> SearchPatientsAsync(PatientSearchRequest request);
+
+        /// <summary>
+        /// Récupère le dossier pharmaceutique complet du patient
+        /// </summary>
+        Task<DossierPharmaceutiqueDto?> GetDossierPharmaceutiqueAsync(int patientId, FiltreOrdonnancesPatientRequest? filtre = null);
+
+        /// <summary>
+        /// Récupère une ordonnance spécifique pour le patient
+        /// </summary>
+        Task<OrdonnancePatientDto?> GetOrdonnancePatientAsync(int patientId, int ordonnanceId);
     }
 }

@@ -142,4 +142,13 @@ namespace Mediconnet_Backend.DTOs
         public string HeureDebut { get; set; } = string.Empty;
         public int DureeMinutes { get; set; }
     }
+
+    public class ConfirmerAnnulationRdvRequest
+    {
+        public DateTime Date { get; set; }
+        public string HeureDebut { get; set; } = string.Empty;
+        public int DureeMinutes { get; set; }
+        public string PatientIntervention { get; set; } = string.Empty;
+        public string NomChirurgien { get; set; } = string.Empty;
+    }
 }

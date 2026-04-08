@@ -1,10 +1,32 @@
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Core.Entities;
+using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs;
 
 namespace Mediconnet_Backend.Services
 {
+    // DTOs pour la vérification de disponibilité avec gestion des conflits
+    public class VerificationDisponibiliteResult
+    {
+        public bool Disponible { get; set; } = true;
+        public string? Message { get; set; }
+        public bool HasInterventionConflict { get; set; } = false;
+        public bool HasRdvConflicts { get; set; } = false;
+        public List<RdvConflitInfo> RdvsEnConflit { get; set; } = new();
+    }
+
+    public class RdvConflitInfo
+    {
+        public int IdRendezVous { get; set; }
+        public DateTime DateHeure { get; set; }
+        public int Duree { get; set; }
+        public string PatientNom { get; set; } = "";
+        public string PatientPrenom { get; set; } = "";
+        public string? PatientEmail { get; set; }
+        public string? Motif { get; set; }
+    }
+
     public interface IBlocOperatoireService
     {
         // Gestion des blocs
@@ -25,6 +47,8 @@ namespace Mediconnet_Backend.Services
         // Disponibilité
         Task<List<DisponibiliteBlocDto>> GetDisponibilitesAsync(DateTime date, string heureDebut, int dureeMinutes);
         Task<bool> VerifierDisponibiliteAsync(int idBloc, DateTime date, string heureDebut, int dureeMinutes, int? excludeReservationId = null);
+        Task<VerificationDisponibiliteResult> VerifierDisponibiliteChirurgienAsync(int medecinId, DateTime date, string heureDebut, int dureeMinutes);
+        Task<bool> AnnulerRdvsEnConflitAsync(int medecinId, DateTime date, string heureDebut, int dureeMinutes, string patientIntervention, string nomChirurgien);
 
         // Agenda
         Task<AgendaBlocDto> GetAgendaBlocAsync(int idBloc, DateTime date);
@@ -38,11 +62,16 @@ namespace Mediconnet_Backend.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<BlocOperatoireService> _logger;
+        private readonly IEmailService _emailService;
 
-        public BlocOperatoireService(ApplicationDbContext context, ILogger<BlocOperatoireService> logger)
+        public BlocOperatoireService(
+            ApplicationDbContext context, 
+            ILogger<BlocOperatoireService> logger,
+            IEmailService emailService)
         {
             _context = context;
             _logger = logger;
+            _emailService = emailService;
         }
 
         #region Gestion des Blocs
@@ -470,6 +499,213 @@ namespace Mediconnet_Backend.Services
                 .ToListAsync();
 
             return !HasConflict(reservations, heureDebut, heureFin);
+        }
+
+        /// <summary>
+        /// Vérifie si le chirurgien est disponible sur le créneau pour une intervention
+        /// Retourne les conflits détaillés : interventions (bloquantes) vs RDV (annulables)
+        /// </summary>
+        public async Task<VerificationDisponibiliteResult> VerifierDisponibiliteChirurgienAsync(
+            int medecinId, DateTime date, string heureDebut, int dureeMinutes)
+        {
+            var result = new VerificationDisponibiliteResult { Disponible = true };
+            
+            var heureFin = CalculerHeureFin(heureDebut, dureeMinutes);
+            
+            // Parser les heures
+            if (!TimeSpan.TryParse(heureDebut, out var heureDebutTs) || 
+                !TimeSpan.TryParse(heureFin, out var heureFinTs))
+            {
+                result.Disponible = false;
+                result.Message = "Format d'heure invalide";
+                return result;
+            }
+
+            var dateDebut = date.Date.Add(heureDebutTs);
+            var dateFin = date.Date.Add(heureFinTs);
+
+            // 1. Vérifier les indisponibilités de type "intervention" (BLOQUANT)
+            var indispoIntervention = await _context.IndisponibilitesMedecin
+                .Where(i => i.IdMedecin == medecinId &&
+                           i.Type == "intervention" &&
+                           i.DateDebut < dateFin &&
+                           i.DateFin > dateDebut)
+                .FirstOrDefaultAsync();
+
+            if (indispoIntervention != null)
+            {
+                result.Disponible = false;
+                result.HasInterventionConflict = true;
+                result.Message = "Une intervention est déjà programmée sur ce créneau. Veuillez choisir un autre horaire.";
+                return result;
+            }
+
+            // 2. Vérifier les autres indisponibilités (congés, absences, etc.) - BLOQUANT
+            var autreIndispo = await _context.IndisponibilitesMedecin
+                .Where(i => i.IdMedecin == medecinId &&
+                           i.Type != "intervention" &&
+                           i.DateDebut < dateFin &&
+                           i.DateFin > dateDebut)
+                .FirstOrDefaultAsync();
+
+            if (autreIndispo != null)
+            {
+                result.Disponible = false;
+                result.Message = $"Une indisponibilité existe sur ce créneau ({autreIndispo.Motif ?? autreIndispo.Type ?? "Absence"})";
+                return result;
+            }
+
+            // 3. Vérifier les RDV existants (NON BLOQUANT - peuvent être annulés)
+            var rdvsEnConflit = await _context.RendezVous
+                .Include(r => r.Patient)
+                    .ThenInclude(p => p.Utilisateur)
+                .Where(r => r.IdMedecin == medecinId &&
+                           r.Statut != "annule" &&
+                           r.DateHeure.Date == date.Date &&
+                           r.DateHeure < dateFin &&
+                           r.DateHeure.AddMinutes(r.Duree) > dateDebut)
+                .ToListAsync();
+
+            if (rdvsEnConflit.Any())
+            {
+                result.HasRdvConflicts = true;
+                result.RdvsEnConflit = rdvsEnConflit.Select(r => new RdvConflitInfo
+                {
+                    IdRendezVous = r.IdRendezVous,
+                    DateHeure = r.DateHeure,
+                    Duree = r.Duree,
+                    PatientNom = r.Patient?.Utilisateur?.Nom ?? "Inconnu",
+                    PatientPrenom = r.Patient?.Utilisateur?.Prenom ?? "",
+                    PatientEmail = r.Patient?.Utilisateur?.Email,
+                    Motif = r.Motif
+                }).ToList();
+                
+                var heuresRdv = string.Join(", ", rdvsEnConflit.Select(r => r.DateHeure.ToString("HH:mm")));
+                result.Message = $"Un ou plusieurs rendez-vous existent sur ce créneau ({heuresRdv}). En poursuivant, ces rendez-vous seront annulés et devront être reprogrammés.";
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Annule tous les RDV en conflit avec l'intervention et envoie les notifications
+        /// </summary>
+        public async Task<bool> AnnulerRdvsEnConflitAsync(
+            int medecinId, DateTime date, string heureDebut, int dureeMinutes, 
+            string patientIntervention, string nomChirurgien)
+        {
+            var heureFin = CalculerHeureFin(heureDebut, dureeMinutes);
+            
+            if (!TimeSpan.TryParse(heureDebut, out var heureDebutTs) || 
+                !TimeSpan.TryParse(heureFin, out var heureFinTs))
+                return false;
+
+            var dateDebut = date.Date.Add(heureDebutTs);
+            var dateFin = date.Date.Add(heureFinTs);
+
+            // Récupérer tous les RDV en conflit
+            var rdvsEnConflit = await _context.RendezVous
+                .Include(r => r.Patient)
+                    .ThenInclude(p => p.Utilisateur)
+                .Include(r => r.Medecin)
+                    .ThenInclude(m => m.Utilisateur)
+                .Where(r => r.IdMedecin == medecinId &&
+                           r.Statut != "annule" &&
+                           r.DateHeure.Date == date.Date &&
+                           r.DateHeure < dateFin &&
+                           r.DateHeure.AddMinutes(r.Duree) > dateDebut)
+                .ToListAsync();
+
+            if (!rdvsEnConflit.Any())
+                return true;
+
+            var patientsAnnules = new List<string>();
+            var emailMedecin = rdvsEnConflit.FirstOrDefault()?.Medecin?.Utilisateur?.Email;
+
+            foreach (var rdv in rdvsEnConflit)
+            {
+                // Marquer le RDV comme annulé (ne pas supprimer pour garder l'historique)
+                rdv.Statut = "annule";
+                rdv.Notes = (rdv.Notes ?? "") + $"\n[Annulé automatiquement le {DateTime.Now:dd/MM/yyyy HH:mm}] - Intervention prioritaire programmée";
+
+                var patientNom = $"{rdv.Patient?.Utilisateur?.Prenom} {rdv.Patient?.Utilisateur?.Nom}";
+                patientsAnnules.Add(patientNom);
+
+                // Envoyer email au patient
+                var patientEmail = rdv.Patient?.Utilisateur?.Email;
+                if (!string.IsNullOrEmpty(patientEmail))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var subject = "Annulation de votre rendez-vous - MediConnect";
+                            var body = $@"
+<html>
+<body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+<p>Bonjour {rdv.Patient?.Utilisateur?.Prenom} {rdv.Patient?.Utilisateur?.Nom},</p>
+
+<p>Votre rendez-vous avec le <strong>Dr. {nomChirurgien}</strong> prévu pour le <strong>{rdv.DateHeure:dd/MM/yyyy}</strong> à <strong>{rdv.DateHeure:HH:mm}</strong> a été annulé en raison d'une intervention médicale prioritaire.</p>
+
+<p>Nous vous invitons à reprendre rendez-vous via notre plateforme ou à attendre une reprogrammation de la part du médecin.</p>
+
+<p>Nous nous excusons pour ce désagrément et vous remercions de votre compréhension.</p>
+
+<p>Cordialement,<br/>
+L'équipe MediConnect</p>
+</body>
+</html>";
+                            await _emailService.SendEmailAsync(patientEmail, subject, body);
+                            _logger.LogInformation("Email d'annulation envoyé au patient: {Email}", patientEmail);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Erreur envoi email annulation au patient: {Email}", patientEmail);
+                        }
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Envoyer email récapitulatif au médecin
+            if (!string.IsNullOrEmpty(emailMedecin) && patientsAnnules.Any())
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var subject = "Rendez-vous annulés suite à intervention - MediConnect";
+                        var listePatients = string.Join("<br/>- ", patientsAnnules);
+                        var body = $@"
+<html>
+<body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+<p>Bonjour Dr. {nomChirurgien},</p>
+
+<p>Vos rendez-vous avec le(s) patient(s) suivant(s) ont été annulés suite à la programmation de l'intervention du patient <strong>{patientIntervention}</strong> :</p>
+
+<p>- {listePatients}</p>
+
+<p>Veuillez procéder à leur reprogrammation dans les meilleurs délais.</p>
+
+<p>Cordialement,<br/>
+L'équipe MediConnect</p>
+</body>
+</html>";
+                        await _emailService.SendEmailAsync(emailMedecin, subject, body);
+                        _logger.LogInformation("Email récapitulatif envoyé au médecin: {Email}", emailMedecin);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Erreur envoi email récapitulatif au médecin: {Email}", emailMedecin);
+                    }
+                });
+            }
+
+            _logger.LogInformation("Annulation de {Count} RDV en conflit pour intervention du patient {Patient}", 
+                rdvsEnConflit.Count, patientIntervention);
+
+            return true;
         }
 
         #endregion

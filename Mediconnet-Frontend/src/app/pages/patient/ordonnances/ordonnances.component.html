@@ -1,0 +1,402 @@
+<app-dashboard-layout 
+  [menuItems]="menuItems" 
+  [sidebarTitle]="sidebarTitle">
+  
+  <div class="main-content">
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-title">
+          <h1>
+            <lucide-icon name="pill"></lucide-icon>
+            Mes Ordonnances
+          </h1>
+          <p class="header-subtitle">Dossier pharmaceutique complet</p>
+        </div>
+        
+        <div class="header-actions">
+          <button class="btn btn-outline-primary" (click)="setAffichageMode('liste')" 
+                  [class.active]="affichageMode === 'liste'">
+            <lucide-icon name="list"></lucide-icon>
+            Liste
+          </button>
+          <button class="btn btn-outline-primary" (click)="setAffichageMode('cartes')" 
+                  [class.active]="affichageMode === 'cartes'">
+            <lucide-icon name="grid"></lucide-icon>
+            Cartes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner">
+        <lucide-icon name="loader-2" class="spin"></lucide-icon>
+        <p>Chargement de vos ordonnances...</p>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error" class="alert alert-danger">
+      <lucide-icon name="alert-circle"></lucide-icon>
+      {{ error }}
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="!loading && !error && dossierPharmaceutique" class="ordonnances-content">
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <lucide-icon name="file-text"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ dossierPharmaceutique.totalOrdonnances }}</div>
+            <div class="stat-label">Total ordonnances</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon active">
+            <lucide-icon name="check-circle"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ dossierPharmaceutique.ordonnancesActives }}</div>
+            <div class="stat-label">Actives</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon delivered">
+            <lucide-icon name="package"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ dossierPharmaceutique.ordonnancesDelivrees }}</div>
+            <div class="stat-label">Délivrées</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon partial">
+            <lucide-icon name="package-open"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ dossierPharmaceutique.ordonnancesPartielles }}</div>
+            <div class="stat-label">Partielles</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-section">
+        <div class="filters-header">
+          <h3>
+            <lucide-icon name="filter"></lucide-icon>
+            Filtres
+          </h3>
+          <button class="btn btn-sm btn-outline-secondary" (click)="reinitialiserFiltres()">
+            <lucide-icon name="refresh-cw"></lucide-icon>
+            Réinitialiser
+          </button>
+        </div>
+        
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label for="statut">Statut</label>
+            <select id="statut" [(ngModel)]="filtre.statut" (change)="appliquerFiltres()">
+              <option *ngFor="let option of statutOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="contexte">Contexte</label>
+            <select id="contexte" [(ngModel)]="filtre.typeContexte" (change)="appliquerFiltres()">
+              <option *ngFor="let option of contexteOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="tri">Tri</label>
+            <select id="tri" [(ngModel)]="filtre.tri" (change)="setTri(filtre.tri)">
+              <option *ngFor="let option of triOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="dateDebut">Date début</label>
+            <input type="date" id="dateDebut" [(ngModel)]="filtre.dateDebut" (change)="appliquerFiltres()">
+          </div>
+          
+          <div class="filter-group">
+            <label for="dateFin">Date fin</label>
+            <input type="date" id="dateFin" [(ngModel)]="filtre.dateFin" (change)="appliquerFiltres()">
+          </div>
+        </div>
+      </div>
+
+      <!-- No Results -->
+      <div *ngIf="dossierPharmaceutique.ordonnances.length === 0" class="no-results">
+        <lucide-icon name="inbox"></lucide-icon>
+        <h3>Aucune ordonnance trouvée</h3>
+        <p>Vous n'avez aucune ordonnance correspondant aux critères de recherche.</p>
+      </div>
+
+      <!-- List View -->
+      <div *ngIf="affichageMode === 'liste' && dossierPharmaceutique.ordonnances.length > 0" class="list-view">
+        <div class="ordonnances-list">
+          <div *ngFor="let ordonnance of dossierPharmaceutique.ordonnances" 
+               class="ordonnance-item" 
+               (click)="selectOrdonnance(ordonnance)">
+            
+            <div class="ordonnance-header">
+              <div class="ordonnance-info">
+                <h4>{{ ordonnancesService.formatDate(ordonnance.datePrescription) }}</h4>
+                <div class="ordonnance-meta">
+                  <span class="badge" [ngClass]="ordonnancesService.getTypeContexteClass(ordonnance.typeContexte)">
+                    {{ ordonnancesService.getTypeContexteLabel(ordonnance.typeContexte) }}
+                  </span>
+                  <span class="badge" [ngClass]="ordonnancesService.getStatutClass(ordonnance.statut)">
+                    {{ ordonnancesService.getStatutLabel(ordonnance.statut) }}
+                  </span>
+                  <span class="badge" [ngClass]="ordonnancesService.getStatutDelivranceClass(ordonnance.statutDelivrance)">
+                    {{ ordonnancesService.getStatutDelivranceLabel(ordonnance.statutDelivrance) }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="ordonnance-doctor">
+                <strong>{{ ordonnance.nomMedecin }}</strong>
+                <span *ngIf="ordonnance.specialiteMedecin" class="specialty">
+                  {{ ordonnance.specialiteMedecin }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="ordonnance-content">
+              <div class="medicaments-summary">
+                <span class="medicaments-count">{{ ordonnance.medicaments.length }} médicament(s)</span>
+                <div class="medicaments-list">
+                  <span *ngFor="let med of ordonnance.medicaments.slice(0, 3)" class="medicament-name">
+                    {{ med.nomMedicament }}
+                    <span *ngIf="med.dosage">({{ med.dosage }})</span>
+                  </span>
+                  <span *ngIf="ordonnance.medicaments.length > 3" class="more-medicaments">
+                    +{{ ordonnance.medicaments.length - 3 }} autre(s)
+                  </span>
+                </div>
+              </div>
+              
+              <div *ngIf="ordonnance.diagnostic" class="diagnostic">
+                <strong>Diagnostic:</strong> {{ ordonnance.diagnostic }}
+              </div>
+            </div>
+            
+            <div class="ordonnance-footer">
+              <div *ngIf="ordonnance.service" class="service">
+                <lucide-icon name="building"></lucide-icon>
+                {{ ordonnance.service }}
+              </div>
+              
+              <div *ngIf="ordonnance.dateDelivrance" class="delivery-info">
+                <lucide-icon name="package-check"></lucide-icon>
+                Délivré le {{ ordonnancesService.formatDate(ordonnance.dateDelivrance) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards View -->
+      <div *ngIf="affichageMode === 'cartes' && dossierPharmaceutique.ordonnances.length > 0" class="cards-view">
+        <div class="ordonnances-grid">
+          <div *ngFor="let ordonnance of dossierPharmaceutique.ordonnances" 
+               class="ordonnance-card" 
+               (click)="selectOrdonnance(ordonnance)">
+            
+            <div class="card-header">
+              <div class="card-date">
+                {{ ordonnancesService.formatDate(ordonnance.datePrescription) }}
+              </div>
+              <div class="card-badges">
+                <span class="badge" [ngClass]="ordonnancesService.getTypeContexteClass(ordonnance.typeContexte)">
+                  {{ ordonnancesService.getTypeContexteLabel(ordonnance.typeContexte) }}
+                </span>
+                <span class="badge" [ngClass]="ordonnancesService.getStatutDelivranceClass(ordonnance.statutDelivrance)">
+                  {{ ordonnancesService.getStatutDelivranceLabel(ordonnance.statutDelivrance) }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <div class="doctor-info">
+                <strong>{{ ordonnance.nomMedecin }}</strong>
+                <span *ngIf="ordonnance.specialiteMedecin">{{ ordonnance.specialiteMedecin }}</span>
+              </div>
+              
+              <div *ngIf="ordonnance.diagnostic" class="card-diagnostic">
+                {{ ordonnance.diagnostic }}
+              </div>
+              
+              <div class="medicaments-preview">
+                <div class="medicaments-title">{{ ordonnance.medicaments.length }} médicament(s)</div>
+                <div class="medicaments-list">
+                  <span *ngFor="let med of ordonnance.medicaments.slice(0, 2)" class="medicament-item">
+                    {{ med.nomMedicament }}
+                  </span>
+                  <span *ngIf="ordonnance.medicaments.length > 2" class="more-text">
+                    +{{ ordonnance.medicaments.length - 2 }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-footer">
+              <div *ngIf="ordonnance.service" class="service-info">
+                <lucide-icon name="map-pin"></lucide-icon>
+                {{ ordonnance.service }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div *ngIf="showDetails && selectedOrdonnance" class="details-overlay" (click)="closeDetails()">
+    <div class="details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Détails de l'ordonnance</h2>
+        <button class="btn-close" (click)="closeDetails()">
+          <lucide-icon name="x"></lucide-icon>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Ordonnance Info -->
+        <div class="info-section">
+          <h3>Informations générales</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Date de prescription:</label>
+              <span>{{ ordonnancesService.formatDateTime(selectedOrdonnance.datePrescription) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Médecin:</label>
+              <span>{{ selectedOrdonnance.nomMedecin }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedOrdonnance.specialiteMedecin">
+              <label>Spécialité:</label>
+              <span>{{ selectedOrdonnance.specialiteMedecin }}</span>
+            </div>
+            <div class="info-item">
+              <label>Contexte:</label>
+              <span class="badge" [ngClass]="ordonnancesService.getTypeContexteClass(selectedOrdonnance.typeContexte)">
+                {{ ordonnancesService.getTypeContexteLabel(selectedOrdonnance.typeContexte) }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="selectedOrdonnance.service">
+              <label>Service:</label>
+              <span>{{ selectedOrdonnance.service }}</span>
+            </div>
+            <div class="info-item">
+              <label>Statut:</label>
+              <span class="badge" [ngClass]="ordonnancesService.getStatutClass(selectedOrdonnance.statut)">
+                {{ ordonnancesService.getStatutLabel(selectedOrdonnance.statut) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostic -->
+        <div class="info-section" *ngIf="selectedOrdonnance.diagnostic">
+          <h3>Diagnostic</h3>
+          <p>{{ selectedOrdonnance.diagnostic }}</p>
+        </div>
+
+        <!-- Notes -->
+        <div class="info-section" *ngIf="selectedOrdonnance.notes">
+          <h3>Notes</h3>
+          <p>{{ selectedOrdonnance.notes }}</p>
+        </div>
+
+        <!-- Médicaments -->
+        <div class="info-section">
+          <h3>Médicaments prescrits</h3>
+          <div class="medicaments-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Médicament</th>
+                  <th>Dosage</th>
+                  <th>Quantité</th>
+                  <th>Posologie</th>
+                  <th>Fréquence</th>
+                  <th>Durée</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let med of selectedOrdonnance.medicaments">
+                  <td>
+                    <strong>{{ med.nomMedicament }}</strong>
+                    <span *ngIf="med.estHorsCatalogue" class="badge badge-warning">Hors catalogue</span>
+                  </td>
+                  <td>{{ med.dosage || '-' }}</td>
+                  <td>{{ med.quantitePrescrite }}</td>
+                  <td>{{ med.posologie || '-' }}</td>
+                  <td>{{ med.frequence || '-' }}</td>
+                  <td>{{ med.dureeTraitement || '-' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="ordonnancesService.getStatutDelivranceClass(med.statutDelivrance)">
+                      {{ ordonnancesService.getStatutDelivranceLabel(med.statutDelivrance) }}
+                    </span>
+                    <small *ngIf="med.quantiteDelivree > 0" class="text-muted">
+                      ({{ med.quantiteDelivree }}/{{ med.quantitePrescrite }} délivré)
+                    </small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Délivrance Info -->
+        <div class="info-section" *ngIf="selectedOrdonnance.dateDelivrance">
+          <h3>Informations de délivrance</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Date de délivrance:</label>
+              <span>{{ ordonnancesService.formatDateTime(selectedOrdonnance.dateDelivrance) }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedOrdonnance.nomPharmacien">
+              <label>Pharmacien:</label>
+              <span>{{ selectedOrdonnance.nomPharmacien }}</span>
+            </div>
+            <div class="info-item">
+              <label>Statut de délivrance:</label>
+              <span class="badge" [ngClass]="ordonnancesService.getStatutDelivranceClass(selectedOrdonnance.statutDelivrance)">
+                {{ ordonnancesService.getStatutDelivranceLabel(selectedOrdonnance.statutDelivrance) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDetails()">Fermer</button>
+        <button class="btn btn-primary" (click)="imprimerOrdonnance()">
+          <lucide-icon name="printer"></lucide-icon>
+          Imprimer
+        </button>
+      </div>
+    </div>
+    </div>
+  
+  </app-dashboard-layout>

@@ -10,6 +10,24 @@
     </button>
   </div>
 
+  <!-- Steps indicator - toujours visible -->
+  <div class="steps-indicator">
+    <div class="step" [class.active]="currentStep === 'info'" [class.completed]="currentStep !== 'info'">
+      <span class="step-number">1</span>
+      <span class="step-label">Informations</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step" [class.active]="currentStep === 'anesthesiste'" [class.completed]="currentStep === 'confirmation'">
+      <span class="step-number">2</span>
+      <span class="step-label">Anesthésiste</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step" [class.active]="currentStep === 'confirmation'">
+      <span class="step-number">3</span>
+      <span class="step-label">Confirmation</span>
+    </div>
+  </div>
+
   <div class="panel-content">
     <!-- Loading -->
     <div class="loading-state" *ngIf="isLoading">
@@ -17,18 +35,44 @@
       <span>Chargement...</span>
     </div>
 
-    <!-- Formulaire -->
-    <form *ngIf="!isLoading" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <!-- ÉTAPE 1: Formulaire d'informations -->
+    <form *ngIf="!isLoading && currentStep === 'info'" [formGroup]="form" (ngSubmit)="onSubmit()">
       <!-- Patient info -->
       <div class="patient-info" *ngIf="patientNom">
         <lucide-icon name="user" [size]="16"></lucide-icon>
         <span>Patient: <strong>{{ patientNom }}</strong></span>
       </div>
 
-      <!-- Existing programmation badge -->
-      <div class="existing-badge" *ngIf="existingProgrammation">
-        <lucide-icon name="info" [size]="16"></lucide-icon>
-        <span>Programmation existante - Modification en cours</span>
+      <!-- Existing programmation info with status -->
+      <div class="existing-programmation-info" *ngIf="existingProgrammation">
+        <div class="existing-badge">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          <span>Programmation existante - Modification en cours</span>
+        </div>
+        <div class="statut-badge" [style.background-color]="getStatutColor(existingProgrammation.statut)">
+          {{ getStatutLabel(existingProgrammation.statut) }}
+        </div>
+        
+        <!-- Avertissement si validée par anesthésiste -->
+        <div class="validation-warning" *ngIf="existingProgrammation.statut === 'coordination_validee' || existingProgrammation.statut === 'validee' || existingProgrammation.statut === 'planifiee'">
+          <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+          <span>Cette intervention a été validée. Toute modification sera notifiée à l'anesthésiste.</span>
+        </div>
+
+        <!-- Boutons d'action rapide -->
+        <div class="quick-actions" *ngIf="canModify() || canCancel()">
+          <button type="button" class="btn-action btn-cancel" *ngIf="canCancel()" (click)="openAnnulationConfirm()">
+            <lucide-icon name="x-circle" [size]="16"></lucide-icon>
+            Annuler l'intervention
+          </button>
+        </div>
+
+        <!-- Message si non modifiable -->
+        <div class="readonly-warning" *ngIf="!canModify()">
+          <lucide-icon name="lock" [size]="16"></lucide-icon>
+          <span *ngIf="existingProgrammation.statut === 'realisee'">Cette intervention a été réalisée et ne peut plus être modifiée.</span>
+          <span *ngIf="existingProgrammation.statut === 'annulee'">Cette intervention a été annulée.</span>
+        </div>
       </div>
 
       <!-- Error -->
@@ -102,9 +146,42 @@
       </div>
       
       <!-- Info blocage créneau -->
-      <div class="info-creneau" *ngIf="form.get('datePrevue')?.value && form.get('heureDebut')?.value && form.get('dureeEstimee')?.value">
+      <div class="info-creneau" *ngIf="form.get('datePrevue')?.value && form.get('heureDebut')?.value && form.get('dureeEstimee')?.value && chirurgienDisponible && !hasRdvConflicts">
         <lucide-icon name="calendar-check" [size]="16"></lucide-icon>
         <span>Le créneau sera automatiquement bloqué dans votre agenda</span>
+      </div>
+      
+      <!-- Erreur bloquante : conflit avec une autre intervention -->
+      <div class="error-creneau" *ngIf="hasInterventionConflict">
+        <lucide-icon name="x-circle" [size]="16"></lucide-icon>
+        <span>Une intervention est déjà programmée sur ce créneau. Veuillez choisir un autre horaire.</span>
+      </div>
+      
+      <!-- Avertissement : conflit avec des RDV (annulables) -->
+      <div class="warning-rdv-conflict" *ngIf="hasRdvConflicts && !hasInterventionConflict">
+        <div class="warning-header">
+          <lucide-icon name="alert-triangle" [size]="18"></lucide-icon>
+          <span class="warning-title">Rendez-vous en conflit</span>
+        </div>
+        <p class="warning-message">
+          Un ou plusieurs rendez-vous existent sur ce créneau. En poursuivant, ces rendez-vous seront annulés et les patients seront notifiés.
+        </p>
+        <div class="rdv-list">
+          <div class="rdv-item" *ngFor="let rdv of rdvsEnConflit">
+            <lucide-icon name="calendar" [size]="14"></lucide-icon>
+            <span>{{ rdv.patientPrenom }} {{ rdv.patientNom }} - {{ rdv.dateHeure | date:'HH:mm' }}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-confirm-annulation" (click)="openRdvConflictModal()">
+          <lucide-icon name="check" [size]="16"></lucide-icon>
+          Confirmer et annuler les RDV
+        </button>
+      </div>
+      
+      <!-- Avertissement indisponibilité chirurgien (autres cas) -->
+      <div class="warning-creneau" *ngIf="!chirurgienDisponible && messageIndisponibilite && !hasInterventionConflict && !hasRdvConflicts">
+        <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+        <span>{{ messageIndisponibilite }}</span>
       </div>
 
       <!-- Sélection du bloc opératoire -->
@@ -202,12 +279,254 @@
         <button type="button" class="btn-secondary" (click)="onClose()">
           Annuler
         </button>
-        <button type="submit" class="btn-primary" [disabled]="isSaving || form.invalid">
+        <button *ngIf="!existingProgrammation" type="submit" class="btn-primary" [disabled]="isSaving || form.invalid">
           <lucide-icon *ngIf="isSaving" name="loader-2" [size]="16" class="spinner"></lucide-icon>
-          <lucide-icon *ngIf="!isSaving" name="save" [size]="16"></lucide-icon>
-          {{ existingProgrammation ? 'Mettre à jour' : 'Programmer l\'intervention' }}
+          <lucide-icon *ngIf="!isSaving" name="arrow-right" [size]="16"></lucide-icon>
+          Suivant : Sélectionner l'anesthésiste
+        </button>
+        <button *ngIf="existingProgrammation" type="button" class="btn-primary" 
+                [disabled]="form.invalid" (click)="goToAnesthesisteStep()">
+          <lucide-icon name="arrow-right" [size]="16"></lucide-icon>
+          Sélectionner l'anesthésiste
         </button>
       </div>
     </form>
+
+    <!-- ÉTAPE 2: Sélection de l'anesthésiste -->
+    <div class="anesthesiste-step" *ngIf="!isLoading && currentStep === 'anesthesiste'">
+      <!-- Info intervention -->
+      <div class="intervention-summary">
+        <h3><lucide-icon name="clipboard-list" [size]="16"></lucide-icon> Résumé de l'intervention</h3>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="label">Patient</span>
+            <span class="value">{{ patientNom }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Indication</span>
+            <span class="value">{{ form.get('indicationOperatoire')?.value | slice:0:50 }}...</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Date souhaitée</span>
+            <span class="value">{{ form.get('datePrevue')?.value | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Durée estimée</span>
+            <span class="value">{{ formatDuree(form.get('dureeEstimee')?.value) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des anesthésistes -->
+      <div class="anesthesistes-section">
+        <h3><lucide-icon name="stethoscope" [size]="16"></lucide-icon> Sélectionner un anesthésiste</h3>
+        
+        <div class="loading-state" *ngIf="isLoadingAnesthesistes">
+          <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+          <span>Chargement des anesthésistes...</span>
+        </div>
+
+        <div class="anesthesistes-list" *ngIf="!isLoadingAnesthesistes">
+          <div class="anesthesiste-card" 
+               *ngFor="let anesth of anesthesistes"
+               [class.selected]="selectedAnesthesiste?.idMedecin === anesth.idMedecin"
+               (click)="selectAnesthesiste(anesth)">
+            <div class="anesth-avatar">
+              <img *ngIf="anesth.photo" [src]="anesth.photo" [alt]="anesth.nomComplet">
+              <lucide-icon *ngIf="!anesth.photo" name="user" [size]="24"></lucide-icon>
+            </div>
+            <div class="anesth-info">
+              <span class="anesth-name">{{ anesth.nomComplet }}</span>
+              <span class="anesth-stats">
+                <lucide-icon name="calendar" [size]="12"></lucide-icon>
+                {{ anesth.nbInterventionsSemaine }} interventions cette semaine
+              </span>
+              <span class="anesth-dispo">
+                <lucide-icon name="clock" [size]="12"></lucide-icon>
+                {{ anesth.creneauxDisponibles.length }} créneaux disponibles
+              </span>
+            </div>
+            <div class="anesth-check" *ngIf="selectedAnesthesiste?.idMedecin === anesth.idMedecin">
+              <lucide-icon name="check-circle" [size]="20"></lucide-icon>
+            </div>
+          </div>
+
+          <div class="no-anesthesistes" *ngIf="anesthesistes.length === 0">
+            <lucide-icon name="alert-circle" [size]="24"></lucide-icon>
+            <span>Aucun anesthésiste disponible pour cette période</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Créneaux disponibles -->
+      <div class="creneaux-section" *ngIf="selectedAnesthesiste">
+        <h3>
+          <lucide-icon name="calendar-clock" [size]="16"></lucide-icon> 
+          Créneaux de {{ selectedAnesthesiste.nomComplet }}
+        </h3>
+
+        <div class="loading-state" *ngIf="isLoadingCreneaux">
+          <lucide-icon name="loader-2" [size]="24" class="spinner"></lucide-icon>
+          <span>Chargement des créneaux...</span>
+        </div>
+
+        <div class="creneaux-list" *ngIf="!isLoadingCreneaux">
+          <div class="creneaux-day" *ngFor="let group of getCreneauxGroupedByDate()">
+            <div class="day-header">
+              <lucide-icon name="calendar" [size]="14"></lucide-icon>
+              {{ formatCreneauDate(group.date) }}
+            </div>
+            <div class="day-creneaux-grid">
+              <div class="creneau-card" 
+                   *ngFor="let creneau of group.creneaux"
+                   [class.selected]="form.get('datePrevue')?.value === creneau.date.split('T')[0] && form.get('heureDebut')?.value === creneau.heureDebut"
+                   [class.morning]="isMorning(creneau.heureDebut)"
+                   [class.afternoon]="isAfternoon(creneau.heureDebut)"
+                   [class.evening]="isEvening(creneau.heureDebut)"
+                   (click)="selectCreneau(creneau)">
+                <div class="creneau-time">
+                  <lucide-icon name="clock" [size]="12"></lucide-icon>
+                  {{ creneau.heureDebut }} - {{ creneau.heureFin }}
+                </div>
+                <div class="creneau-duration">
+                  <lucide-icon name="hourglass" [size]="10"></lucide-icon>
+                  {{ creneau.dureeMinutes }} min
+                </div>
+                <div class="creneau-status">
+                  <lucide-icon name="check-circle" [size]="10" *ngIf="form.get('datePrevue')?.value === creneau.date.split('T')[0] && form.get('heureDebut')?.value === creneau.heureDebut"></lucide-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="no-creneaux" *ngIf="creneauxAnesthesiste.length === 0">
+            <lucide-icon name="calendar-x" [size]="20"></lucide-icon>
+            <span>Aucun créneau disponible pour cet anesthésiste</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Erreur coordination -->
+      <div class="error-message" *ngIf="coordinationError">
+        <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+        {{ coordinationError }}
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="goBackToInfo()">
+          <lucide-icon name="arrow-left" [size]="16"></lucide-icon>
+          Retour
+        </button>
+        <button type="button" class="btn-primary" 
+                [disabled]="!selectedAnesthesiste || isProposingCoordination"
+                (click)="proposerCoordination()">
+          <lucide-icon *ngIf="isProposingCoordination" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+          <lucide-icon *ngIf="!isProposingCoordination" name="send" [size]="16"></lucide-icon>
+          Envoyer la demande
+        </button>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 3: Confirmation -->
+    <div class="confirmation-step" *ngIf="!isLoading && currentStep === 'confirmation'">
+      <div class="success-icon">
+        <lucide-icon name="check-circle" [size]="64"></lucide-icon>
+      </div>
+      <h3>Demande envoyée !</h3>
+      <p>Votre demande de coordination a été envoyée à <strong>{{ selectedAnesthesiste?.nomComplet }}</strong>.</p>
+      <p class="info-text">
+        L'anesthésiste recevra une notification et pourra :
+      </p>
+      <ul class="action-list">
+        <li><lucide-icon name="check" [size]="14"></lucide-icon> Valider le créneau proposé</li>
+        <li><lucide-icon name="edit" [size]="14"></lucide-icon> Proposer une modification</li>
+        <li><lucide-icon name="x" [size]="14"></lucide-icon> Refuser (avec motif)</li>
+      </ul>
+      <p class="info-text">
+        Vous serez notifié dès que l'anesthésiste aura répondu.
+      </p>
+      <div class="form-actions">
+        <button type="button" class="btn-primary" (click)="onClose()">
+          <lucide-icon name="check" [size]="16"></lucide-icon>
+          Terminé
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmation d'annulation -->
+  <div class="annulation-modal-overlay" *ngIf="showAnnulationConfirm" (click)="closeAnnulationConfirm()"></div>
+  <div class="annulation-modal" *ngIf="showAnnulationConfirm">
+    <div class="modal-header">
+      <lucide-icon name="alert-triangle" [size]="24" class="warning-icon"></lucide-icon>
+      <h3>Annuler l'intervention</h3>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir annuler cette intervention ?</p>
+      <p class="warning-text" *ngIf="existingProgrammation && (existingProgrammation.statut === 'coordination_validee' || existingProgrammation.statut === 'validee' || existingProgrammation.statut === 'planifiee')">
+        <lucide-icon name="info" [size]="14"></lucide-icon>
+        L'anesthésiste et le patient seront notifiés de cette annulation.
+      </p>
+      <div class="form-group">
+        <label>Motif de l'annulation (optionnel)</label>
+        <textarea [(ngModel)]="motifAnnulation" rows="3" 
+                  placeholder="Indiquez la raison de l'annulation..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeAnnulationConfirm()" [disabled]="isAnnulating">
+        Retour
+      </button>
+      <button type="button" class="btn-danger" (click)="confirmAnnulation()" [disabled]="isAnnulating">
+        <lucide-icon *ngIf="isAnnulating" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+        <lucide-icon *ngIf="!isAnnulating" name="x-circle" [size]="16"></lucide-icon>
+        Confirmer l'annulation
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmation d'annulation des RDV en conflit -->
+<div class="modal-overlay" *ngIf="showRdvConflictModal" (click)="closeRdvConflictModal()">
+  <div class="modal-content rdv-conflict-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header warning">
+      <lucide-icon name="alert-triangle" [size]="24"></lucide-icon>
+      <h3>Confirmation d'annulation des rendez-vous</h3>
+    </div>
+    <div class="modal-body">
+      <p class="modal-warning-text">
+        <strong>Attention :</strong> En programmant cette intervention, les rendez-vous suivants seront automatiquement annulés :
+      </p>
+      <div class="rdv-conflict-list">
+        <div class="rdv-conflict-item" *ngFor="let rdv of rdvsEnConflit">
+          <div class="rdv-patient">
+            <lucide-icon name="user" [size]="16"></lucide-icon>
+            <span>{{ rdv.patientPrenom }} {{ rdv.patientNom }}</span>
+          </div>
+          <div class="rdv-details">
+            <span class="rdv-time">
+              <lucide-icon name="clock" [size]="14"></lucide-icon>
+              {{ rdv.dateHeure | date:'dd/MM/yyyy à HH:mm' }}
+            </span>
+            <span class="rdv-motif" *ngIf="rdv.motif">{{ rdv.motif }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-info">
+        <lucide-icon name="mail" [size]="16"></lucide-icon>
+        <span>Les patients concernés seront automatiquement notifiés par email de l'annulation de leur rendez-vous.</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeRdvConflictModal()" [disabled]="isConfirmingAnnulation">
+        Annuler
+      </button>
+      <button type="button" class="btn-warning" (click)="confirmerAnnulationRdv()" [disabled]="isConfirmingAnnulation">
+        <lucide-icon *ngIf="isConfirmingAnnulation" name="loader-2" [size]="16" class="spinner"></lucide-icon>
+        <lucide-icon *ngIf="!isConfirmingAnnulation" name="check" [size]="16"></lucide-icon>
+        Confirmer et programmer l'intervention
+      </button>
+    </div>
   </div>
 </div>

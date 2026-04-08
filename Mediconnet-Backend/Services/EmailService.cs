@@ -326,6 +326,405 @@ public class EmailService : IEmailService
 
     #endregion
 
+    #region Coordination Intervention Templates
+
+    /// <inheritdoc />
+    public async Task<bool> SendCoordinationDemandeAsync(string toEmail, string nomAnesthesiste, string nomChirurgien,
+        string nomPatient, string dateIntervention, string heureIntervention, string indication)
+    {
+        var subject = "🔔 Nouvelle demande de coordination d'intervention - MediConnect";
+        var htmlBody = GetCoordinationDemandeTemplate(nomAnesthesiste, nomChirurgien, nomPatient, 
+            dateIntervention, heureIntervention, indication);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendCoordinationValideeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string dateIntervention, string heureIntervention)
+    {
+        var subject = "✅ Coordination validée - Intervention confirmée - MediConnect";
+        var htmlBody = GetCoordinationValideeTemplate(nomChirurgien, nomAnesthesiste, nomPatient,
+            dateIntervention, heureIntervention);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendCoordinationModifieeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string nouvelleDateIntervention, string nouvelleHeureIntervention, string commentaire)
+    {
+        var subject = "📝 Contre-proposition de l'anesthésiste - MediConnect";
+        var htmlBody = GetCoordinationModifieeTemplate(nomChirurgien, nomAnesthesiste, nomPatient,
+            nouvelleDateIntervention, nouvelleHeureIntervention, commentaire);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendCoordinationRefuseeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string motifRefus)
+    {
+        var subject = "❌ Coordination refusée - MediConnect";
+        var htmlBody = GetCoordinationRefuseeTemplate(nomChirurgien, nomAnesthesiste, nomPatient, motifRefus);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendInterventionPlanifieePatientAsync(string toEmail, string nomPatient, string nomChirurgien,
+        string nomAnesthesiste, string dateIntervention, string heureIntervention, string? dateRdvPreop)
+    {
+        var subject = "📅 Votre intervention chirurgicale est programmée - MediConnect";
+        var htmlBody = GetInterventionPlanifieePatientTemplate(nomPatient, nomChirurgien, nomAnesthesiste,
+            dateIntervention, heureIntervention, dateRdvPreop);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    private string GetCoordinationDemandeTemplate(string nomAnesthesiste, string nomChirurgien,
+        string nomPatient, string dateIntervention, string heureIntervention, string indication)
+    {
+        var dashboardLink = $"{_appSettings.FrontendUrl}/medecin/interventions";
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">🔔 Nouvelle demande de coordination</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour Dr. {nomAnesthesiste},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Le <strong>Dr. {nomChirurgien}</strong> vous sollicite pour une intervention chirurgicale.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;"">
+                                <h3 style=""color: #92400e; margin: 0 0 15px;"">📋 Détails de l'intervention</h3>
+                                <table style=""width: 100%; color: #78350f;"">
+                                    <tr><td style=""padding: 5px 0;""><strong>Patient:</strong></td><td>{nomPatient}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Date proposée:</strong></td><td>{dateIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Heure:</strong></td><td>{heureIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Indication:</strong></td><td>{indication}</td></tr>
+                                </table>
+                            </div>
+                            
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Veuillez vous connecter à votre espace pour <strong>accepter</strong>, <strong>proposer une modification</strong> ou <strong>refuser</strong> cette demande.
+                            </p>
+                            
+                            <div style=""text-align: center; margin: 35px 0;"">
+                                <a href=""{dashboardLink}"" style=""background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block;"">
+                                    📋 Voir la demande
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private string GetCoordinationValideeTemplate(string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string dateIntervention, string heureIntervention)
+    {
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">✅ Coordination validée</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour Dr. {nomChirurgien},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Excellente nouvelle ! Le <strong>Dr. {nomAnesthesiste}</strong> a validé votre demande de coordination.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #d1fae5; border-radius: 8px; border-left: 4px solid #10b981;"">
+                                <h3 style=""color: #065f46; margin: 0 0 15px;"">📅 Intervention confirmée</h3>
+                                <table style=""width: 100%; color: #047857;"">
+                                    <tr><td style=""padding: 5px 0;""><strong>Patient:</strong></td><td>{nomPatient}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Date:</strong></td><td>{dateIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Heure:</strong></td><td>{heureIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Anesthésiste:</strong></td><td>Dr. {nomAnesthesiste}</td></tr>
+                                </table>
+                            </div>
+                            
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                L'intervention est maintenant programmée. Le patient sera notifié automatiquement.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private string GetCoordinationModifieeTemplate(string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string nouvelleDateIntervention, string nouvelleHeureIntervention, string commentaire)
+    {
+        var dashboardLink = $"{_appSettings.FrontendUrl}/medecin/consultations";
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">📝 Contre-proposition</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour Dr. {nomChirurgien},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Le <strong>Dr. {nomAnesthesiste}</strong> propose une modification du créneau pour l'intervention de <strong>{nomPatient}</strong>.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #dbeafe; border-radius: 8px; border-left: 4px solid #3b82f6;"">
+                                <h3 style=""color: #1e40af; margin: 0 0 15px;"">📅 Nouveau créneau proposé</h3>
+                                <table style=""width: 100%; color: #1e3a8a;"">
+                                    <tr><td style=""padding: 5px 0;""><strong>Date:</strong></td><td>{nouvelleDateIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Heure:</strong></td><td>{nouvelleHeureIntervention}</td></tr>
+                                </table>
+                            </div>
+                            
+                            <div style=""margin: 25px 0; padding: 15px; background-color: #f3f4f6; border-radius: 8px;"">
+                                <p style=""color: #374151; font-size: 14px; margin: 0;""><strong>Commentaire:</strong><br>{commentaire}</p>
+                            </div>
+                            
+                            <div style=""text-align: center; margin: 35px 0;"">
+                                <a href=""{dashboardLink}"" style=""background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block;"">
+                                    Voir la contre-proposition
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private string GetCoordinationRefuseeTemplate(string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string motifRefus)
+    {
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">❌ Coordination refusée</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour Dr. {nomChirurgien},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Le <strong>Dr. {nomAnesthesiste}</strong> ne peut malheureusement pas participer à l'intervention prévue pour <strong>{nomPatient}</strong>.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #fee2e2; border-radius: 8px; border-left: 4px solid #dc2626;"">
+                                <h3 style=""color: #991b1b; margin: 0 0 15px;"">📋 Motif du refus</h3>
+                                <p style=""color: #7f1d1d; margin: 0;"">{motifRefus}</p>
+                            </div>
+                            
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Vous pouvez sélectionner un autre anesthésiste disponible pour cette intervention.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    private string GetInterventionPlanifieePatientTemplate(string nomPatient, string nomChirurgien,
+        string nomAnesthesiste, string dateIntervention, string heureIntervention, string? dateRdvPreop)
+    {
+        var rdvSection = !string.IsNullOrEmpty(dateRdvPreop) ? $@"
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;"">
+                                <h3 style=""color: #92400e; margin: 0 0 10px;"">📋 Consultation pré-opératoire</h3>
+                                <p style=""color: #78350f; margin: 0;"">Un rendez-vous de consultation pré-opératoire est prévu le <strong>{dateRdvPreop}</strong> avec l'anesthésiste.</p>
+                            </div>" : "";
+
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">📅 Intervention programmée</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour {nomPatient},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                Votre intervention chirurgicale a été confirmée et programmée.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #d1fae5; border-radius: 8px; border-left: 4px solid #10b981;"">
+                                <h3 style=""color: #065f46; margin: 0 0 15px;"">🏥 Détails de l'intervention</h3>
+                                <table style=""width: 100%; color: #047857;"">
+                                    <tr><td style=""padding: 5px 0;""><strong>Date:</strong></td><td>{dateIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Heure:</strong></td><td>{heureIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Chirurgien:</strong></td><td>Dr. {nomChirurgien}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Anesthésiste:</strong></td><td>Dr. {nomAnesthesiste}</td></tr>
+                                </table>
+                            </div>
+                            {rdvSection}
+                            <div style=""margin: 25px 0; padding: 15px; background-color: #f3f4f6; border-radius: 8px;"">
+                                <p style=""color: #374151; font-size: 14px; margin: 0;"">
+                                    <strong>⚠️ Important:</strong> Veuillez vous présenter à jeun le jour de l'intervention. 
+                                    En cas d'empêchement, contactez-nous au plus vite.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    /// <summary>
+    /// Envoie une confirmation d'intervention à l'anesthésiste
+    /// </summary>
+    public async Task<bool> SendInterventionConfirmeeAnesthesisteAsync(string toEmail, string nomAnesthesiste, 
+        string nomChirurgien, string nomPatient, string dateIntervention, string heureIntervention, string? dateRdvPreop)
+    {
+        var subject = $"✅ Intervention confirmée - {nomPatient} le {dateIntervention}";
+        var htmlBody = GetInterventionConfirmeeAnesthesisteTemplate(nomAnesthesiste, nomChirurgien, nomPatient, 
+            dateIntervention, heureIntervention, dateRdvPreop);
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    private string GetInterventionConfirmeeAnesthesisteTemplate(string nomAnesthesiste, string nomChirurgien, 
+        string nomPatient, string dateIntervention, string heureIntervention, string? dateRdvPreop)
+    {
+        var rdvSection = !string.IsNullOrEmpty(dateRdvPreop) ? 
+            $@"<div style=""margin: 20px 0; padding: 15px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;"">
+                <h3 style=""color: #92400e; margin: 0 0 10px;"">📋 Consultation pré-opératoire</h3>
+                <p style=""color: #78350f; margin: 0;"">Un rendez-vous de consultation pré-opératoire est programmé le <strong>{dateRdvPreop}</strong> avec le patient.</p>
+            </div>" : "";
+
+        return $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;"">
+    <table role=""presentation"" style=""width: 100%; border-collapse: collapse;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 0;"">
+                <table role=""presentation"" style=""width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"">
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px;"">✅ Intervention confirmée</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <h2 style=""color: #1f2937; margin: 0 0 20px;"">Bonjour Dr. {nomAnesthesiste},</h2>
+                            <p style=""color: #4b5563; font-size: 16px; line-height: 1.6;"">
+                                L'intervention chirurgicale a été confirmée par le chirurgien. Votre participation est validée.
+                            </p>
+                            
+                            <div style=""margin: 25px 0; padding: 20px; background-color: #d1fae5; border-radius: 8px; border-left: 4px solid #10b981;"">
+                                <h3 style=""color: #065f46; margin: 0 0 15px;"">🏥 Détails de l'intervention</h3>
+                                <table style=""width: 100%; color: #047857;"">
+                                    <tr><td style=""padding: 5px 0;""><strong>Patient:</strong></td><td>{nomPatient}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Date:</strong></td><td>{dateIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Heure:</strong></td><td>{heureIntervention}</td></tr>
+                                    <tr><td style=""padding: 5px 0;""><strong>Chirurgien:</strong></td><td>Dr. {nomChirurgien}</td></tr>
+                                </table>
+                            </div>
+                            {rdvSection}
+                            <p style=""color: #4b5563; font-size: 14px; line-height: 1.6;"">
+                                Vous pouvez consulter les détails complets de l'intervention dans votre espace MediConnect.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 12px 12px;"">
+                            <p style=""color: #9ca3af; font-size: 13px; margin: 0;"">© {DateTime.Now.Year} MediConnect</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
+
+    #endregion
+
     /// <summary>
     /// Supprime les tags HTML pour créer une version texte
     /// </summary>

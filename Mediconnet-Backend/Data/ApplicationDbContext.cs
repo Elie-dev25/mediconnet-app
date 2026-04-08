@@ -32,6 +32,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<Specialite> Specialites { get; set; }
     public DbSet<SpecialiteInfirmier> SpecialitesInfirmiers { get; set; }
+    public DbSet<AffectationService> AffectationsService { get; set; }
     
     // Entités Caisse
     public DbSet<Facture> Factures { get; set; }
@@ -53,7 +54,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Parametre> Parametres { get; set; }
     public DbSet<ConsultationGynecologique> ConsultationsGynecologiques { get; set; }
     public DbSet<ConsultationChirurgicale> ConsultationsChirurgicales { get; set; }
+    public DbSet<ConsultationAnesthesique> ConsultationsAnesthesiques { get; set; }
     public DbSet<ProgrammationIntervention> ProgrammationsInterventions { get; set; }
+    public DbSet<CoordinationIntervention> CoordinationsIntervention { get; set; }
+    public DbSet<CoordinationInterventionHistorique> CoordinationsInterventionHistorique { get; set; }
 
     // Entités Questions/Réponses (questionnaire consultation)
     public DbSet<Question> Questions { get; set; }
@@ -285,6 +289,44 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
             entity.Property(e => e.Actif).HasColumnName("actif").HasDefaultValue(true);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        // ==================== AFFECTATION SERVICE ====================
+        modelBuilder.Entity<AffectationService>(entity =>
+        {
+            entity.HasKey(e => e.IdAffectation);
+            entity.ToTable("affectation_service");
+
+            entity.Property(e => e.IdAffectation).HasColumnName("id_affectation").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdUser).HasColumnName("id_user").IsRequired();
+            entity.Property(e => e.TypeUser).HasColumnName("type_user").IsRequired().HasMaxLength(20);
+            entity.Property(e => e.IdService).HasColumnName("id_service").IsRequired();
+            entity.Property(e => e.DateDebut).HasColumnName("date_debut").IsRequired();
+            entity.Property(e => e.DateFin).HasColumnName("date_fin");
+            entity.Property(e => e.MotifChangement).HasColumnName("motif_changement").HasMaxLength(500);
+            entity.Property(e => e.IdAdminChangement).HasColumnName("id_admin_changement");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            // Index pour recherche rapide par utilisateur
+            entity.HasIndex(e => new { e.IdUser, e.TypeUser }).HasDatabaseName("idx_affectation_user");
+            entity.HasIndex(e => e.IdService).HasDatabaseName("idx_affectation_service");
+            entity.HasIndex(e => e.DateFin).HasDatabaseName("idx_affectation_date_fin");
+
+            // Relations
+            entity.HasOne(e => e.Utilisateur)
+                .WithMany()
+                .HasForeignKey(e => e.IdUser)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Service)
+                .WithMany()
+                .HasForeignKey(e => e.IdService)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.AdminChangement)
+                .WithMany()
+                .HasForeignKey(e => e.IdAdminChangement)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Infirmier Configuration
@@ -795,6 +837,107 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .HasDatabaseName("IX_consultation_chirurgicale_consultation");
         });
 
+        // ConsultationAnesthesique Configuration
+        modelBuilder.Entity<ConsultationAnesthesique>(entity =>
+        {
+            entity.HasKey(e => e.IdConsultation);
+            entity.ToTable("consultation_anesthesique");
+
+            entity.Property(e => e.IdConsultation).HasColumnName("id_consultation");
+            entity.Property(e => e.IdCoordination).HasColumnName("id_coordination");
+            
+            // Anamnèse
+            entity.Property(e => e.AntecedentsMedicaux).HasColumnName("antecedents_medicaux").HasColumnType("text");
+            entity.Property(e => e.ProblemesCardiaques).HasColumnName("problemes_cardiaques").HasColumnType("text");
+            entity.Property(e => e.ProblemesRespiratoires).HasColumnName("problemes_respiratoires").HasColumnType("text");
+            entity.Property(e => e.AllergiesAnesthesie).HasColumnName("allergies_anesthesie").HasColumnType("text");
+            entity.Property(e => e.AntecedentsChirurgicaux).HasColumnName("antecedents_chirurgicaux").HasColumnType("text");
+            entity.Property(e => e.ProblemesAnesthesiePrecedente).HasColumnName("problemes_anesthesie_precedente").HasColumnType("text");
+            entity.Property(e => e.MedicamentsEnCours).HasColumnName("medicaments_en_cours").HasColumnType("text");
+            entity.Property(e => e.Symptomes).HasColumnName("symptomes").HasColumnType("text");
+            entity.Property(e => e.ApneeSommeil).HasColumnName("apnee_sommeil");
+            entity.Property(e => e.TroublesCoagulation).HasColumnName("troubles_coagulation");
+            entity.Property(e => e.TroublesCoagulationDetails).HasColumnName("troubles_coagulation_details").HasColumnType("text");
+            
+            // Examen clinique
+            entity.Property(e => e.Poids).HasColumnName("poids").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.Taille).HasColumnName("taille").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.IMC).HasColumnName("imc").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.TensionSystolique).HasColumnName("tension_systolique");
+            entity.Property(e => e.TensionDiastolique).HasColumnName("tension_diastolique");
+            entity.Property(e => e.FrequenceCardiaque).HasColumnName("frequence_cardiaque");
+            entity.Property(e => e.SaturationOxygene).HasColumnName("saturation_oxygene").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.AuscultationCardiaque).HasColumnName("auscultation_cardiaque").HasColumnType("text");
+            entity.Property(e => e.AuscultationPulmonaire).HasColumnName("auscultation_pulmonaire").HasColumnType("text");
+            
+            // Voies aériennes
+            entity.Property(e => e.OuvertureBouche).HasColumnName("ouverture_bouche").HasMaxLength(50);
+            entity.Property(e => e.Mallampati).HasColumnName("mallampati");
+            entity.Property(e => e.EtatDents).HasColumnName("etat_dents").HasMaxLength(100);
+            entity.Property(e => e.MobiliteCou).HasColumnName("mobilite_cou").HasMaxLength(50);
+            entity.Property(e => e.DistanceThyroMentonniere).HasColumnName("distance_thyro_mentonniere").HasColumnType("decimal(4,2)");
+            entity.Property(e => e.IntubationDifficilePrevue).HasColumnName("intubation_difficile_prevue");
+            entity.Property(e => e.NotesVoiesAeriennes).HasColumnName("notes_voies_aeriennes").HasColumnType("text");
+            
+            // Évaluation du risque
+            entity.Property(e => e.ClassificationASA).HasColumnName("classification_asa");
+            entity.Property(e => e.NiveauRisque).HasColumnName("niveau_risque").HasMaxLength(20);
+            entity.Property(e => e.RisqueCardiaque).HasColumnName("risque_cardiaque").HasMaxLength(20);
+            entity.Property(e => e.RisqueRespiratoire).HasColumnName("risque_respiratoire").HasMaxLength(20);
+            entity.Property(e => e.RisqueAllergique).HasColumnName("risque_allergique").HasMaxLength(20);
+            entity.Property(e => e.RisqueHemorragique).HasColumnName("risque_hemorragique").HasMaxLength(20);
+            entity.Property(e => e.NotesRisques).HasColumnName("notes_risques").HasColumnType("text");
+            
+            // Choix anesthésie
+            entity.Property(e => e.TypeAnesthesie).HasColumnName("type_anesthesie").HasMaxLength(30);
+            entity.Property(e => e.SousTypeAnesthesie).HasColumnName("sous_type_anesthesie").HasMaxLength(50);
+            entity.Property(e => e.JustificationAnesthesie).HasColumnName("justification_anesthesie").HasColumnType("text");
+            entity.Property(e => e.ExplicationPatient).HasColumnName("explication_patient").HasColumnType("text");
+            entity.Property(e => e.ConsentementObtenu).HasColumnName("consentement_obtenu");
+            entity.Property(e => e.DateConsentement).HasColumnName("date_consentement");
+            
+            // Consignes préopératoires
+            entity.Property(e => e.DureeJeune).HasColumnName("duree_jeune");
+            entity.Property(e => e.InstructionsJeune).HasColumnName("instructions_jeune").HasColumnType("text");
+            entity.Property(e => e.MedicamentsAArreter).HasColumnName("medicaments_a_arreter").HasColumnType("text");
+            entity.Property(e => e.MedicamentsAAdapter).HasColumnName("medicaments_a_adapter").HasColumnType("text");
+            entity.Property(e => e.MedicamentsAContinuer).HasColumnName("medicaments_a_continuer").HasColumnType("text");
+            entity.Property(e => e.ArretTabac).HasColumnName("arret_tabac");
+            entity.Property(e => e.DelaiArretTabac).HasColumnName("delai_arret_tabac");
+            entity.Property(e => e.InstructionsHygiene).HasColumnName("instructions_hygiene").HasColumnType("text");
+            entity.Property(e => e.AutresConsignes).HasColumnName("autres_consignes").HasColumnType("text");
+            
+            // Conclusion
+            entity.Property(e => e.ResumeConsultation).HasColumnName("resume_consultation").HasColumnType("text");
+            entity.Property(e => e.Aptitude).HasColumnName("aptitude").HasMaxLength(30);
+            entity.Property(e => e.Reserves).HasColumnName("reserves").HasColumnType("text");
+            entity.Property(e => e.MotifNonAptitude).HasColumnName("motif_non_aptitude").HasColumnType("text");
+            entity.Property(e => e.Recommandations).HasColumnName("recommandations").HasColumnType("text");
+            entity.Property(e => e.DateInterventionPrevue).HasColumnName("date_intervention_prevue");
+            
+            // Métadonnées
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            // Relations
+            entity.HasOne(e => e.Consultation)
+                .WithOne(c => c.ConsultationAnesthesique)
+                .HasForeignKey<ConsultationAnesthesique>(e => e.IdConsultation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Coordination)
+                .WithMany()
+                .HasForeignKey(e => e.IdCoordination)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.IdConsultation)
+                .IsUnique()
+                .HasDatabaseName("IX_consultation_anesthesique_consultation");
+            
+            entity.HasIndex(e => e.IdCoordination)
+                .HasDatabaseName("IX_consultation_anesthesique_coordination");
+        });
+
         // ProgrammationIntervention Configuration
         modelBuilder.Entity<ProgrammationIntervention>(entity =>
         {
@@ -817,7 +960,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.NotesAnesthesie).HasColumnName("notes_anesthesie").HasColumnType("text");
             entity.Property(e => e.BilanPreoperatoire).HasColumnName("bilan_preoperatoire").HasColumnType("text");
             entity.Property(e => e.InstructionsPatient).HasColumnName("instructions_patient").HasColumnType("text");
-            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20);
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(30);
+            entity.Property(e => e.IdAnesthesiste).HasColumnName("id_anesthesiste");
             entity.Property(e => e.MotifAnnulation).HasColumnName("motif_annulation").HasColumnType("text");
             entity.Property(e => e.Notes).HasColumnName("notes").HasColumnType("text");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -839,10 +983,115 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .HasForeignKey(e => e.IdChirurgien)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(e => e.Anesthesiste)
+                .WithMany()
+                .HasForeignKey(e => e.IdAnesthesiste)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasIndex(e => e.IdConsultation).HasDatabaseName("IX_programmation_intervention_consultation");
             entity.HasIndex(e => e.IdPatient).HasDatabaseName("IX_programmation_intervention_patient");
             entity.HasIndex(e => e.IdChirurgien).HasDatabaseName("IX_programmation_intervention_chirurgien");
+            entity.HasIndex(e => e.IdAnesthesiste).HasDatabaseName("IX_programmation_intervention_anesthesiste");
             entity.HasIndex(e => e.Statut).HasDatabaseName("IX_programmation_intervention_statut");
+        });
+
+        // CoordinationIntervention Configuration
+        modelBuilder.Entity<CoordinationIntervention>(entity =>
+        {
+            entity.HasKey(e => e.IdCoordination);
+            entity.ToTable("coordination_intervention");
+
+            entity.Property(e => e.IdCoordination).HasColumnName("id_coordination").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdProgrammation).HasColumnName("id_programmation").IsRequired();
+            entity.Property(e => e.IdChirurgien).HasColumnName("id_chirurgien").IsRequired();
+            entity.Property(e => e.IdAnesthesiste).HasColumnName("id_anesthesiste").IsRequired();
+            entity.Property(e => e.DateProposee).HasColumnName("date_proposee").IsRequired();
+            entity.Property(e => e.HeureProposee).HasColumnName("heure_proposee").HasMaxLength(5).IsRequired();
+            entity.Property(e => e.DureeEstimee).HasColumnName("duree_estimee").IsRequired();
+            entity.Property(e => e.Statut).HasColumnName("statut").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.DateContreProposee).HasColumnName("date_contre_proposee");
+            entity.Property(e => e.HeureContreProposee).HasColumnName("heure_contre_proposee").HasMaxLength(5);
+            entity.Property(e => e.CommentaireAnesthesiste).HasColumnName("commentaire_anesthesiste").HasColumnType("text");
+            entity.Property(e => e.MotifRefus).HasColumnName("motif_refus").HasColumnType("text");
+            entity.Property(e => e.NotesChirurgien).HasColumnName("notes_chirurgien").HasColumnType("text");
+            entity.Property(e => e.IdRdvConsultationAnesthesiste).HasColumnName("id_rdv_consultation_anesthesiste");
+            entity.Property(e => e.IdIndisponibiliteChirurgien).HasColumnName("id_indisponibilite_chirurgien");
+            entity.Property(e => e.IdIndisponibiliteAnesthesiste).HasColumnName("id_indisponibilite_anesthesiste");
+            entity.Property(e => e.IdReservationBloc).HasColumnName("id_reservation_bloc");
+            entity.Property(e => e.DateValidation).HasColumnName("date_validation");
+            entity.Property(e => e.DateReponse).HasColumnName("date_reponse");
+            entity.Property(e => e.NbModifications).HasColumnName("nb_modifications").HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            // Relations
+            entity.HasOne(e => e.Programmation)
+                .WithOne(p => p.Coordination)
+                .HasForeignKey<CoordinationIntervention>(e => e.IdProgrammation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Chirurgien)
+                .WithMany()
+                .HasForeignKey(e => e.IdChirurgien)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Anesthesiste)
+                .WithMany()
+                .HasForeignKey(e => e.IdAnesthesiste)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.RdvConsultationAnesthesiste)
+                .WithMany()
+                .HasForeignKey(e => e.IdRdvConsultationAnesthesiste)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.IndisponibiliteChirurgien)
+                .WithMany()
+                .HasForeignKey(e => e.IdIndisponibiliteChirurgien)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.IndisponibiliteAnesthesiste)
+                .WithMany()
+                .HasForeignKey(e => e.IdIndisponibiliteAnesthesiste)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Index
+            entity.HasIndex(e => e.IdProgrammation).HasDatabaseName("IX_coordination_programmation");
+            entity.HasIndex(e => e.IdChirurgien).HasDatabaseName("IX_coordination_chirurgien");
+            entity.HasIndex(e => e.IdAnesthesiste).HasDatabaseName("IX_coordination_anesthesiste");
+            entity.HasIndex(e => e.Statut).HasDatabaseName("IX_coordination_statut");
+            entity.HasIndex(e => e.DateProposee).HasDatabaseName("IX_coordination_date");
+        });
+
+        // CoordinationInterventionHistorique Configuration
+        modelBuilder.Entity<CoordinationInterventionHistorique>(entity =>
+        {
+            entity.HasKey(e => e.IdHistorique);
+            entity.ToTable("coordination_intervention_historique");
+
+            entity.Property(e => e.IdHistorique).HasColumnName("id_historique").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdCoordination).HasColumnName("id_coordination").IsRequired();
+            entity.Property(e => e.TypeAction).HasColumnName("type_action").HasMaxLength(30).IsRequired();
+            entity.Property(e => e.IdUserAction).HasColumnName("id_user_action").IsRequired();
+            entity.Property(e => e.RoleUser).HasColumnName("role_user").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Details).HasColumnName("details").HasColumnType("text");
+            entity.Property(e => e.DateProposee).HasColumnName("date_proposee");
+            entity.Property(e => e.HeureProposee).HasColumnName("heure_proposee").HasMaxLength(5);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            // Relations
+            entity.HasOne(e => e.Coordination)
+                .WithMany()
+                .HasForeignKey(e => e.IdCoordination)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.UserAction)
+                .WithMany()
+                .HasForeignKey(e => e.IdUserAction)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Index
+            entity.HasIndex(e => e.IdCoordination).HasDatabaseName("IX_coordination_historique_coordination");
         });
 
         // Parametre Configuration - Paramètres vitaux

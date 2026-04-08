@@ -1,0 +1,196 @@
+<app-dashboard-layout [menuItems]="menuItems" [sidebarTitle]="sidebarTitle">
+  <div class="interventions-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <h1>
+            <lucide-icon name="syringe" [size]="28"></lucide-icon>
+            Interventions
+          </h1>
+          <p class="subtitle" *ngIf="isAnesthesiste">Demandes de coordination reçues</p>
+          <p class="subtitle" *ngIf="isChirurgien">Mes demandes de coordination</p>
+        </div>
+
+        <button class="btn btn-icon" (click)="loadCoordinations()" title="Actualiser">
+          <lucide-icon name="refresh-cw" [size]="18"></lucide-icon>
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-row">
+        <div class="stat-chip" [class.active]="activeTab === 'toutes'" (click)="setActiveTab('toutes')">
+          <span class="stat-value">{{ stats.total }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-chip warning" [class.active]="activeTab === 'en_attente'" (click)="setActiveTab('en_attente')">
+          <span class="stat-value">{{ stats.enAttente }}</span>
+          <span class="stat-label">En attente</span>
+        </div>
+        <div class="stat-chip info" [class.active]="activeTab === 'modifiees'" (click)="setActiveTab('modifiees')">
+          <span class="stat-value">{{ stats.modifiees }}</span>
+          <span class="stat-label">Modifiées</span>
+        </div>
+        <div class="stat-chip success" [class.active]="activeTab === 'validees'" (click)="setActiveTab('validees')">
+          <span class="stat-value">{{ stats.validees }}</span>
+          <span class="stat-label">Validées</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-section">
+      <div class="search-box">
+        <lucide-icon name="search" [size]="16"></lucide-icon>
+        <input type="text" 
+               placeholder="Rechercher..." 
+               [(ngModel)]="searchTerm"
+               (input)="onSearch()">
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section">
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <lucide-icon name="loader-2" [size]="32" class="spinner"></lucide-icon>
+        <span>Chargement...</span>
+      </div>
+
+      <!-- Error -->
+      <div class="error-state" *ngIf="error && !isLoading">
+        <lucide-icon name="alert-circle" [size]="32"></lucide-icon>
+        <span>{{ error }}</span>
+        <button class="btn btn-primary" (click)="loadCoordinations()">Réessayer</button>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading && !error && filteredCoordinations.length === 0">
+        <lucide-icon name="inbox" [size]="48"></lucide-icon>
+        <h3>Aucune intervention</h3>
+        <p>Aucune intervention ne correspond à vos critères</p>
+      </div>
+
+      <!-- Liste des interventions - Vue Desktop (tableau) -->
+      <div class="table-container desktop-only" *ngIf="!isLoading && !error && filteredCoordinations.length > 0">
+        <table class="interventions-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th *ngIf="isAnesthesiste">Chirurgien</th>
+              <th *ngIf="isChirurgien && activeTab === 'validees'">Anesthésiste</th>
+              <th>Date / Heure</th>
+              <th>Durée</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let coord of filteredCoordinations; trackBy: trackByCoordination"
+                [class.highlight]="coord.statut === 'modifiee'"
+                (click)="openDetailPanel(coord)">
+              <td class="patient-cell">
+                <span class="patient-name">{{ coord.nomPatient }}</span>
+                <span class="indication">{{ coord.indicationOperatoire || '-' }}</span>
+              </td>
+              <td *ngIf="isAnesthesiste">
+                <span class="doctor-name">Dr. {{ coord.nomChirurgien }}</span>
+                <span class="specialty">{{ coord.specialiteChirurgien }}</span>
+              </td>
+              <td *ngIf="isChirurgien && activeTab === 'validees'">
+                <span class="doctor-name">Dr. {{ coord.nomAnesthesiste }}</span>
+              </td>
+              <td class="datetime-cell">
+                <div class="date-display">
+                  <lucide-icon name="calendar" [size]="14"></lucide-icon>
+                  {{ formatDate(coord.statut === 'modifiee' && coord.dateContreProposee ? coord.dateContreProposee : coord.dateProposee) }}
+                </div>
+                <div class="time-display">
+                  <lucide-icon name="clock" [size]="14"></lucide-icon>
+                  {{ coord.statut === 'modifiee' && coord.heureContreProposee ? coord.heureContreProposee : coord.heureProposee }}
+                </div>
+              </td>
+              <td>{{ formatDuree(coord.dureeEstimee) }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="'status-' + coord.statut">
+                  {{ getStatutLabel(coord.statut) }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <button class="btn btn-sm btn-primary" *ngIf="coord.statut === 'proposee' || coord.statut === 'modifiee'">
+                  <lucide-icon name="message-square" [size]="14"></lucide-icon>
+                  Répondre
+                </button>
+                <button class="btn btn-sm btn-ghost" *ngIf="coord.statut !== 'proposee' && coord.statut !== 'modifiee'">
+                  <lucide-icon name="eye" [size]="14"></lucide-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Liste des interventions - Vue Mobile (cartes) -->
+      <div class="cards-container mobile-only" *ngIf="!isLoading && !error && filteredCoordinations.length > 0">
+        <div class="intervention-card" 
+             *ngFor="let coord of filteredCoordinations; trackBy: trackByCoordination"
+             [class.highlight]="coord.statut === 'modifiee'"
+             (click)="openDetailPanel(coord)">
+          
+          <div class="card-top">
+            <div class="patient-info">
+              <span class="patient-name">{{ coord.nomPatient }}</span>
+              <span class="indication">{{ coord.indicationOperatoire || '-' }}</span>
+            </div>
+            <span class="status-badge" [ngClass]="'status-' + coord.statut">
+              {{ getStatutLabel(coord.statut) }}
+            </span>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-row" *ngIf="isAnesthesiste">
+              <lucide-icon name="user" [size]="14"></lucide-icon>
+              <span>Dr. {{ coord.nomChirurgien }}</span>
+            </div>
+            <div class="detail-row" *ngIf="isChirurgien && coord.statut === 'validee'">
+              <lucide-icon name="stethoscope" [size]="14"></lucide-icon>
+              <span>Dr. {{ coord.nomAnesthesiste }}</span>
+            </div>
+            <div class="detail-row">
+              <lucide-icon name="calendar" [size]="14"></lucide-icon>
+              <span>{{ formatDate(coord.statut === 'modifiee' && coord.dateContreProposee ? coord.dateContreProposee : coord.dateProposee) }}</span>
+            </div>
+            <div class="detail-row">
+              <lucide-icon name="clock" [size]="14"></lucide-icon>
+              <span>{{ coord.statut === 'modifiee' && coord.heureContreProposee ? coord.heureContreProposee : coord.heureProposee }} ({{ formatDuree(coord.dureeEstimee) }})</span>
+            </div>
+          </div>
+
+          <div class="card-action" *ngIf="coord.statut === 'proposee' || coord.statut === 'modifiee'">
+            <button class="btn btn-primary btn-block">
+              <lucide-icon name="message-square" [size]="16"></lucide-icon>
+              Répondre
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Anesthésiste -->
+  <app-coordination-anesthesiste-panel
+    *ngIf="showDetailPanel && selectedCoordination && isAnesthesiste"
+    [coordination]="selectedCoordination"
+    (closed)="closeDetailPanel()"
+    (actionCompleted)="onActionCompleted($event)">
+  </app-coordination-anesthesiste-panel>
+
+  <!-- Panel Chirurgien -->
+  <app-coordination-chirurgien-panel
+    *ngIf="showDetailPanel && selectedCoordination && isChirurgien"
+    [coordination]="selectedCoordination"
+    (close)="closeDetailPanel()"
+    (actionCompleted)="onActionCompleted($event)"
+    (relancerAvecAutre)="onRelancerAvecAutre($event)">
+  </app-coordination-chirurgien-panel>
+</app-dashboard-layout>

@@ -123,11 +123,17 @@ public class ProgrammationIntervention
     public string? InstructionsPatient { get; set; }
 
     /// <summary>
-    /// Statut : en_attente, validee, planifiee, realisee, annulee
+    /// Statut : en_attente_coordination, coordination_proposee, coordination_validee, planifiee, realisee, annulee
     /// </summary>
     [Column("statut")]
-    [MaxLength(20)]
-    public string Statut { get; set; } = "en_attente";
+    [MaxLength(30)]
+    public string Statut { get; set; } = "en_attente_coordination";
+
+    /// <summary>
+    /// ID de l'anesthésiste assigné
+    /// </summary>
+    [Column("id_anesthesiste")]
+    public int? IdAnesthesiste { get; set; }
 
     /// <summary>
     /// Motif d'annulation si annulée
@@ -157,8 +163,16 @@ public class ProgrammationIntervention
     [ForeignKey(nameof(IdChirurgien))]
     public virtual Medecin Chirurgien { get; set; } = null!;
 
+    [ForeignKey(nameof(IdAnesthesiste))]
+    public virtual Medecin? Anesthesiste { get; set; }
+
     /// <summary>
     /// Réservation de bloc opératoire associée
     /// </summary>
     public virtual ReservationBloc? ReservationBloc { get; set; }
+
+    /// <summary>
+    /// Coordination avec l'anesthésiste
+    /// </summary>
+    public virtual CoordinationIntervention? Coordination { get; set; }
 }

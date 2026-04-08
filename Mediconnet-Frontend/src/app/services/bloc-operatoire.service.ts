@@ -13,7 +13,7 @@ export interface BlocOperatoireDto {
   actif: boolean;
   localisation?: string;
   capacite?: number;
-  equipements?: string;
+  equipements?: string[];
   createdAt: string;
   updatedAt?: string;
   nombreReservationsAujourdhui: number;
@@ -35,7 +35,7 @@ export interface CreateBlocOperatoireRequest {
   description?: string;
   localisation?: string;
   capacite?: number;
-  equipements?: string;
+  equipements?: string[];
 }
 
 export interface UpdateBlocOperatoireRequest {
@@ -45,7 +45,7 @@ export interface UpdateBlocOperatoireRequest {
   actif?: boolean;
   localisation?: string;
   capacite?: number;
-  equipements?: string;
+  equipements?: string[];
 }
 
 export interface ReservationBlocDto {
@@ -122,6 +122,33 @@ export interface DisponibiliteBlocDto {
   estDisponible: boolean;
   creneauxDisponibles: string[];
   creneauxOccupes: string[];
+}
+
+export interface RdvConflitInfo {
+  idRendezVous: number;
+  dateHeure: string;
+  duree: number;
+  patientNom: string;
+  patientPrenom: string;
+  patientEmail?: string;
+  motif?: string;
+}
+
+export interface DisponibilitesResponse {
+  blocs: DisponibiliteBlocDto[];
+  chirurgienDisponible: boolean;
+  hasInterventionConflict: boolean;
+  hasRdvConflicts: boolean;
+  rdvsEnConflit: RdvConflitInfo[];
+  messageIndisponibilite?: string;
+}
+
+export interface ConfirmerAnnulationRdvRequest {
+  date: string;
+  heureDebut: string;
+  dureeMinutes: number;
+  patientIntervention: string;
+  nomChirurgien: string;
 }
 
 export interface VerifierDisponibiliteBlocRequest {
@@ -208,16 +235,20 @@ export class BlocOperatoireService {
 
   // ==================== DISPONIBILITÉ ====================
 
-  getDisponibilites(date: string, heureDebut: string, dureeMinutes: number): Observable<DisponibiliteBlocDto[]> {
+  getDisponibilites(date: string, heureDebut: string, dureeMinutes: number): Observable<DisponibilitesResponse> {
     const params = new HttpParams()
       .set('date', date)
       .set('heureDebut', heureDebut)
       .set('dureeMinutes', dureeMinutes.toString());
-    return this.http.get<DisponibiliteBlocDto[]>(`${this.apiUrl}/disponibilites`, { params });
+    return this.http.get<DisponibilitesResponse>(`${this.apiUrl}/disponibilites`, { params });
   }
 
   verifierDisponibilite(idBloc: number, request: VerifierDisponibiliteBlocRequest): Observable<{ estDisponible: boolean }> {
     return this.http.post<{ estDisponible: boolean }>(`${this.apiUrl}/${idBloc}/verifier-disponibilite`, request);
+  }
+
+  confirmerAnnulationRdv(request: ConfirmerAnnulationRdvRequest): Observable<{ message: string; success: boolean }> {
+    return this.http.post<{ message: string; success: boolean }>(`${this.apiUrl}/confirmer-annulation-rdv`, request);
   }
 
   // ==================== AGENDA ====================

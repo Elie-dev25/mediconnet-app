@@ -41,8 +41,9 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 const GYNECO_SPECIALITE_ID = 23;
 const CHIRURGIE_SPECIALITE_IDS = [5, 6, 12, 21, 26, 31, 39, 41]; // IDs des spécialités chirurgicales
+const ANESTHESISTE_SPECIALITE_ID = 3; // ID de la spécialité anesthésie
 
-type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'examen_gynecologique' | 'examen_chirurgical' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
+type EtapeConsultation = 'anamnese' | 'examen_clinique' | 'examen_gynecologique' | 'examen_chirurgical' | 'examen_anesthesique' | 'diagnostic' | 'plan_traitement' | 'conclusion' | 'suivi';
 
 @Component({
   selector: 'app-consultation-multi-etapes',
@@ -278,6 +279,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   examenCliniqueForm!: FormGroup;
   examenGynecologiqueForm!: FormGroup;
   examenChirurgicalForm!: FormGroup;
+  examenAnesthesiqueForm!: FormGroup;
   diagnosticForm!: FormGroup;
   planTraitementForm!: FormGroup;
   conclusionForm!: FormGroup;
@@ -948,6 +950,55 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       notesComplementaires: ['']
     });
 
+    // Examen Anesthésique (pour anesthésistes)
+    this.examenAnesthesiqueForm = this.fb.group({
+      // Anamnèse spécifique
+      antecedentsMedicaux: [''],
+      problemesCardiaques: [''],
+      problemesRespiratoires: [''],
+      allergiesAnesthesie: [''],
+      antecedentsChirurgicaux: [''],
+      problemesAnesthesiePrecedente: [''],
+      medicamentsEnCours: [''],
+      apneeSommeil: [false],
+      troublesCoagulation: [false],
+      // Examen clinique
+      auscultationCardiaque: [''],
+      auscultationPulmonaire: [''],
+      // Voies aériennes (critique)
+      ouvertureBouche: [''],
+      mallampati: [null],
+      etatDents: [''],
+      mobiliteCou: [''],
+      distanceThyroMentonniere: [null],
+      intubationDifficilePrevue: [false],
+      notesVoiesAeriennes: [''],
+      // Évaluation du risque
+      classificationASA: [null],
+      niveauRisque: [''],
+      risqueCardiaque: [''],
+      risqueRespiratoire: [''],
+      risqueAllergique: [''],
+      risqueHemorragique: [''],
+      // Choix anesthésie
+      typeAnesthesie: [''],
+      sousTypeAnesthesie: [''],
+      justificationAnesthesie: [''],
+      explicationPatient: [''],
+      consentementObtenu: [false],
+      // Consignes préopératoires
+      dureeJeune: [6],
+      instructionsJeune: [''],
+      arretTabac: [false],
+      instructionsHygiene: [''],
+      autresConsignes: [''],
+      // Conclusion
+      aptitude: ['apte'],
+      reserves: [''],
+      motifNonAptitude: [''],
+      recommandations: ['']
+    });
+
     // Étape 3: Diagnostic
     this.diagnosticForm = this.fb.group({
       diagnosticPrincipal: ['', Validators.required],
@@ -1126,6 +1177,11 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     // Étape 2ter: Examen Chirurgical (si chirurgien)
     if (this.isChirurgieConsultation() && this.consultation.examenChirurgical) {
       this.patchChirurgicalForm(this.consultation.examenChirurgical);
+    }
+
+    // Étape 2quater: Examen Anesthésique (si anesthésiste)
+    if (this.isAnesthesisteConsultation() && this.consultation.examenAnesthesique) {
+      this.patchAnesthesiqueForm(this.consultation.examenAnesthesique);
     }
 
     // Étape 3: Diagnostic
@@ -1388,6 +1444,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         return !this.isGynecoConsultation() || this.examenGynecologiqueForm.valid;
       case 'examen_chirurgical':
         return !this.isChirurgieConsultation() || this.examenChirurgicalForm.valid;
+      case 'examen_anesthesique':
+        return !this.isAnesthesisteConsultation() || this.examenAnesthesiqueForm.valid;
       case 'diagnostic': return this.diagnosticForm.valid;
       case 'plan_traitement': return true; // Plan de traitement optionnel
       case 'conclusion': return true;
@@ -1433,6 +1491,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
           break;
         case 'examen_chirurgical':
           await this.saveExamenChirurgical();
+          break;
+        case 'examen_anesthesique':
+          await this.saveExamenAnesthesique();
           break;
         case 'diagnostic':
           await this.saveDiagnostic();
@@ -1521,6 +1582,9 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     if (this.isChirurgieConsultation()) {
       newEtapes.push('examen_chirurgical');
     }
+    if (this.isAnesthesisteConsultation()) {
+      newEtapes.push('examen_anesthesique');
+    }
     newEtapes.push('diagnostic', 'plan_traitement', 'conclusion', 'suivi');
 
     const current = this.etapeActuelle;
@@ -1536,6 +1600,10 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
 
   public isChirurgieConsultation(): boolean {
     return CHIRURGIE_SPECIALITE_IDS.includes(this.consultation?.specialiteId ?? 0);
+  }
+
+  public isAnesthesisteConsultation(): boolean {
+    return (this.consultation?.specialiteId ?? 0) === ANESTHESISTE_SPECIALITE_ID;
   }
 
   private patchGynecologiqueForm(gyneco?: ExamenGynecologiqueDto): void {
@@ -1584,12 +1652,92 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     );
   }
 
+  hasExamenAnesthesiqueData(): boolean {
+    if (!this.isAnesthesisteConsultation()) {
+      return false;
+    }
+    const form = this.examenAnesthesiqueForm.value || {};
+    return !!(
+      form.antecedentsMedicaux?.trim() ||
+      form.problemesCardiaques?.trim() ||
+      form.problemesRespiratoires?.trim() ||
+      form.allergiesAnesthesie?.trim() ||
+      form.mallampati ||
+      form.classificationASA ||
+      form.typeAnesthesie?.trim() ||
+      form.aptitude?.trim()
+    );
+  }
+
   private async saveExamenChirurgical(): Promise<void> {
     if (!this.isChirurgieConsultation()) {
       return;
     }
     const form = this.examenChirurgicalForm.value;
     await this.consultationService.saveExamenChirurgical(this.consultationId, form).toPromise();
+  }
+
+  private async saveExamenAnesthesique(): Promise<void> {
+    if (!this.isAnesthesisteConsultation()) {
+      return;
+    }
+    const form = this.examenAnesthesiqueForm.value;
+    await this.consultationService.saveExamenAnesthesique(this.consultationId, form).toPromise();
+  }
+
+  private patchAnesthesiqueForm(anesthesique?: any): void {
+    if (!anesthesique) {
+      this.examenAnesthesiqueForm.reset({
+        apneeSommeil: false,
+        troublesCoagulation: false,
+        intubationDifficilePrevue: false,
+        consentementObtenu: false,
+        arretTabac: false,
+        dureeJeune: 6,
+        aptitude: 'apte'
+      });
+      return;
+    }
+    this.examenAnesthesiqueForm.patchValue({
+      antecedentsMedicaux: anesthesique.antecedentsMedicaux ?? '',
+      problemesCardiaques: anesthesique.problemesCardiaques ?? '',
+      problemesRespiratoires: anesthesique.problemesRespiratoires ?? '',
+      allergiesAnesthesie: anesthesique.allergiesAnesthesie ?? '',
+      antecedentsChirurgicaux: anesthesique.antecedentsChirurgicaux ?? '',
+      problemesAnesthesiePrecedente: anesthesique.problemesAnesthesiePrecedente ?? '',
+      medicamentsEnCours: anesthesique.medicamentsEnCours ?? '',
+      apneeSommeil: anesthesique.apneeSommeil ?? false,
+      troublesCoagulation: anesthesique.troublesCoagulation ?? false,
+      auscultationCardiaque: anesthesique.auscultationCardiaque ?? '',
+      auscultationPulmonaire: anesthesique.auscultationPulmonaire ?? '',
+      ouvertureBouche: anesthesique.ouvertureBouche ?? '',
+      mallampati: anesthesique.mallampati ?? null,
+      etatDents: anesthesique.etatDents ?? '',
+      mobiliteCou: anesthesique.mobiliteCou ?? '',
+      distanceThyroMentonniere: anesthesique.distanceThyroMentonniere ?? null,
+      intubationDifficilePrevue: anesthesique.intubationDifficilePrevue ?? false,
+      notesVoiesAeriennes: anesthesique.notesVoiesAeriennes ?? '',
+      classificationASA: anesthesique.classificationASA ?? null,
+      niveauRisque: anesthesique.niveauRisque ?? '',
+      risqueCardiaque: anesthesique.risqueCardiaque ?? '',
+      risqueRespiratoire: anesthesique.risqueRespiratoire ?? '',
+      risqueAllergique: anesthesique.risqueAllergique ?? '',
+      risqueHemorragique: anesthesique.risqueHemorragique ?? '',
+      typeAnesthesie: anesthesique.typeAnesthesie ?? '',
+      sousTypeAnesthesie: anesthesique.sousTypeAnesthesie ?? '',
+      justificationAnesthesie: anesthesique.justificationAnesthesie ?? '',
+      explicationPatient: anesthesique.explicationPatient ?? '',
+      consentementObtenu: anesthesique.consentementObtenu ?? false,
+      dureeJeune: anesthesique.dureeJeune ?? 6,
+      instructionsJeune: anesthesique.instructionsJeune ?? '',
+      arretTabac: anesthesique.arretTabac ?? false,
+      instructionsHygiene: anesthesique.instructionsHygiene ?? '',
+      autresConsignes: anesthesique.autresConsignes ?? '',
+      aptitude: anesthesique.aptitude ?? 'apte',
+      reserves: anesthesique.reserves ?? '',
+      motifNonAptitude: anesthesique.motifNonAptitude ?? '',
+      recommandations: anesthesique.recommandations ?? ''
+    });
   }
 
   private patchChirurgicalForm(chirurgical?: any): void {

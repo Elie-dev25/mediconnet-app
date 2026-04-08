@@ -124,6 +124,252 @@
   }
 }
 
+// ==================== ANESTHÉSIE STYLES ====================
+.anesthesie-section {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .form-group > label {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: white;
+    
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  textarea {
+    min-height: 60px;
+    resize: vertical;
+  }
+}
+
+.anesthesie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.voies-aeriennes-section {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+
+  h4 {
+    color: #b45309;
+  }
+
+  .badge-critical {
+    background: #dc2626;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-left: 0.5rem;
+  }
+}
+
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.75rem 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+  }
+
+  &.warning-checkbox span {
+    color: #b45309;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &.success-checkbox span {
+    color: #059669;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+.intubation-warning {
+  background: #fef2f2;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+.risques-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .risque-item {
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: white;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+    }
+  }
+}
+
+.aptitude-section {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+
+  h4 {
+    color: #047857;
+  }
+}
+
+.aptitude-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+}
+
+.aptitude-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  input[type="radio"] {
+    display: none;
+  }
+
+  lucide-icon {
+    color: #9ca3af;
+  }
+
+  span {
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  &:hover {
+    border-color: #9ca3af;
+  }
+
+  &.selected {
+    border-color: #10b981;
+    background: #ecfdf5;
+
+    lucide-icon {
+      color: #10b981;
+    }
+
+    span {
+      color: #047857;
+    }
+  }
+
+  &.warning.selected {
+    border-color: #f59e0b;
+    background: #fffbeb;
+
+    lucide-icon {
+      color: #f59e0b;
+    }
+
+    span {
+      color: #b45309;
+    }
+  }
+
+  &.danger.selected {
+    border-color: #ef4444;
+    background: #fef2f2;
+
+    lucide-icon {
+      color: #ef4444;
+    }
+
+    span {
+      color: #b91c1c;
+    }
+  }
+}
+
 .conclusion-group {
   margin-top: 1rem;
   

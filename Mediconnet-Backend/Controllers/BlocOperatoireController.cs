@@ -200,9 +200,11 @@ namespace Mediconnet_Backend.Controllers
 
         /// <summary>
         /// Vérifie la disponibilité des blocs pour un créneau donné
+        /// Inclut aussi la vérification des indisponibilités du chirurgien connecté
+        /// Distingue les conflits d'intervention (bloquants) des conflits de RDV (annulables)
         /// </summary>
         [HttpGet("disponibilites")]
-        public async Task<ActionResult<List<DisponibiliteBlocDto>>> GetDisponibilites(
+        public async Task<ActionResult<object>> GetDisponibilites(
             [FromQuery] DateTime date,
             [FromQuery] string heureDebut,
             [FromQuery] int dureeMinutes)
@@ -211,7 +213,50 @@ namespace Mediconnet_Backend.Controllers
                 return BadRequest(new { message = "Paramètres invalides" });
 
             var disponibilites = await _blocService.GetDisponibilitesAsync(date, heureDebut, dureeMinutes);
-            return Ok(disponibilites);
+            
+            // Vérifier les conflits du chirurgien connecté
+            var userId = GetCurrentUserId();
+            var result = new VerificationDisponibiliteResult { Disponible = true };
+            
+            if (userId > 0)
+            {
+                result = await _blocService.VerifierDisponibiliteChirurgienAsync(
+                    userId, date, heureDebut, dureeMinutes);
+            }
+            
+            return Ok(new { 
+                blocs = disponibilites,
+                chirurgienDisponible = result.Disponible && !result.HasInterventionConflict,
+                hasInterventionConflict = result.HasInterventionConflict,
+                hasRdvConflicts = result.HasRdvConflicts,
+                rdvsEnConflit = result.RdvsEnConflit,
+                messageIndisponibilite = result.Message
+            });
+        }
+
+        /// <summary>
+        /// Confirme l'annulation des RDV en conflit pour programmer une intervention
+        /// </summary>
+        [HttpPost("confirmer-annulation-rdv")]
+        [Authorize(Roles = "medecin")]
+        public async Task<ActionResult> ConfirmerAnnulationRdv([FromBody] ConfirmerAnnulationRdvRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0)
+                return Unauthorized();
+
+            var success = await _blocService.AnnulerRdvsEnConflitAsync(
+                userId, 
+                request.Date, 
+                request.HeureDebut, 
+                request.DureeMinutes,
+                request.PatientIntervention,
+                request.NomChirurgien);
+
+            if (!success)
+                return BadRequest(new { message = "Erreur lors de l'annulation des rendez-vous" });
+
+            return Ok(new { message = "Rendez-vous annulés avec succès", success = true });
         }
 
         /// <summary>

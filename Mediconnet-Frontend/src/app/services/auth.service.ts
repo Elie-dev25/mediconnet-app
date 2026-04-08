@@ -41,6 +41,7 @@ export interface AuthResponse {
   telephone?: string;
   role: string;
   titreAffiche?: string;
+  idSpecialite?: number;
   message?: string;
 }
 
@@ -232,6 +233,7 @@ export class AuthService {
         telephone: response.telephone,
         role: response.role,
         titreAffiche: response.titreAffiche,
+        idSpecialite: response.idSpecialite,
         emailConfirmed: (response as any).emailConfirmed ?? true,
         profileCompleted: (response as any).profileCompleted ?? false,
         mustChangePassword: (response as any).mustChangePassword ?? false,

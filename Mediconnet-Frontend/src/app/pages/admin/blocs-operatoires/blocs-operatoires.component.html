@@ -233,9 +233,11 @@
               <label>Capacité</label>
               <p>{{ selectedBloc.capacite }}</p>
             </div>
-            <div class="info-item" *ngIf="selectedBloc.equipements">
+            <div class="info-item" *ngIf="selectedBloc.equipements && selectedBloc.equipements.length > 0">
               <label>Équipements</label>
-              <p>{{ selectedBloc.equipements }}</p>
+              <ul class="equipements-display">
+                <li *ngFor="let equipement of selectedBloc.equipements">{{ equipement }}</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -339,9 +341,28 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="equipements">Équipements</label>
-            <textarea id="equipements" [(ngModel)]="blocForm.equipements" rows="2"
-                      placeholder="Liste des équipements disponibles..."></textarea>
+            <label>Équipements</label>
+            <div class="equipements-list">
+              <div *ngFor="let equipement of blocForm.equipements; let i = index" class="equipement-item">
+                <input type="text" 
+                       [value]="equipement" 
+                       (input)="updateEquipement(i, $any($event.target).value)"
+                       class="equipement-input"
+                       placeholder="Nom de l'équipement...">
+                <button type="button" 
+                        class="btn-remove-equipement" 
+                        (click)="removeEquipement(i)"
+                        *ngIf="blocForm.equipements && blocForm.equipements.length > 1">
+                  <lucide-icon name="x" [size]="16"></lucide-icon>
+                </button>
+              </div>
+              <button type="button" 
+                      class="btn-add-equipement" 
+                      (click)="addEquipement()">
+                <lucide-icon name="plus" [size]="16"></lucide-icon>
+                Ajouter un équipement
+              </button>
+            </div>
           </div>
         </div>
         <div class="modal-footer">

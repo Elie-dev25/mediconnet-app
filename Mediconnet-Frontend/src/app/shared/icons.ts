@@ -226,6 +226,7 @@ import {
   Cloud,
   Clock8,
   Wand2,
+  Hourglass,
   
   // Missing icons for consultation
   ScanLine,
@@ -490,6 +491,8 @@ export const ALL_ICONS = {
   'clock-8': Clock8,
   Wand2,
   'wand-2': Wand2,
+  Hourglass,
+  'hourglass': Hourglass,
   
   // Consultation icons
   ScanLine,

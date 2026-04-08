@@ -31,4 +31,40 @@ public interface IEmailService
     /// Envoie un email de bienvenue après confirmation
     /// </summary>
     Task<bool> SendWelcomeEmailAsync(string toEmail, string userName);
+
+    /// <summary>
+    /// Envoie une notification de nouvelle demande de coordination à l'anesthésiste
+    /// </summary>
+    Task<bool> SendCoordinationDemandeAsync(string toEmail, string nomAnesthesiste, string nomChirurgien, 
+        string nomPatient, string dateIntervention, string heureIntervention, string indication);
+
+    /// <summary>
+    /// Envoie une notification de validation de coordination au chirurgien
+    /// </summary>
+    Task<bool> SendCoordinationValideeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string dateIntervention, string heureIntervention);
+
+    /// <summary>
+    /// Envoie une notification de contre-proposition au chirurgien
+    /// </summary>
+    Task<bool> SendCoordinationModifieeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string nouvelleDateIntervention, string nouvelleHeureIntervention, string commentaire);
+
+    /// <summary>
+    /// Envoie une notification de refus de coordination au chirurgien
+    /// </summary>
+    Task<bool> SendCoordinationRefuseeAsync(string toEmail, string nomChirurgien, string nomAnesthesiste,
+        string nomPatient, string motifRefus);
+
+    /// <summary>
+    /// Envoie une notification d'intervention planifiée au patient
+    /// </summary>
+    Task<bool> SendInterventionPlanifieePatientAsync(string toEmail, string nomPatient, string nomChirurgien,
+        string nomAnesthesiste, string dateIntervention, string heureIntervention, string? dateRdvPreop);
+
+    /// <summary>
+    /// Envoie une confirmation d'intervention à l'anesthésiste
+    /// </summary>
+    Task<bool> SendInterventionConfirmeeAnesthesisteAsync(string toEmail, string nomAnesthesiste, string nomChirurgien,
+        string nomPatient, string dateIntervention, string heureIntervention, string? dateRdvPreop);
 }

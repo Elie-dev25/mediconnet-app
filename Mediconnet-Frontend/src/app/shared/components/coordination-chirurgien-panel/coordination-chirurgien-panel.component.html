@@ -1,0 +1,268 @@
+<div class="panel-overlay" (click)="onClose()"></div>
+<div class="panel-container">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="header-content">
+      <h2>
+        <lucide-icon name="calendar-check" [size]="24"></lucide-icon>
+        Coordination d'intervention
+      </h2>
+      <span class="badge" [ngClass]="'badge-' + getStatutClass(coordination.statut)">
+        {{ getStatutLabel(coordination.statut) }}
+      </span>
+    </div>
+    <button class="btn-close" (click)="onClose()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" *ngIf="success">
+    <lucide-icon name="check-circle" [size]="48"></lucide-icon>
+    <h3 *ngIf="responseMode === 'accepter'">Contre-proposition acceptée !</h3>
+    <h3 *ngIf="responseMode === 'refuser'">Contre-proposition refusée</h3>
+    <p *ngIf="responseMode === 'accepter'">L'intervention est maintenant confirmée.</p>
+    <p *ngIf="responseMode === 'refuser' && relancerAvecAutreAnesth">
+      Vous allez pouvoir sélectionner un autre anesthésiste...
+    </p>
+  </div>
+
+  <!-- Content -->
+  <div class="panel-content" *ngIf="!success">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab === 'details'" (click)="activeTab = 'details'">
+        <lucide-icon name="info" [size]="16"></lucide-icon>
+        Détails
+      </button>
+      <button class="tab" [class.active]="activeTab === 'historique'" 
+              (click)="activeTab = 'historique'; loadHistorique()">
+        <lucide-icon name="history" [size]="16"></lucide-icon>
+        Historique
+      </button>
+      <button class="tab" [class.active]="activeTab === 'reponse'" 
+              *ngIf="canRespond()"
+              (click)="activeTab = 'reponse'">
+        <lucide-icon name="message-square" [size]="16"></lucide-icon>
+        Répondre
+      </button>
+    </div>
+
+    <!-- Tab: Détails -->
+    <div class="tab-content" *ngIf="activeTab === 'details'">
+      <!-- Alerte contre-proposition -->
+      <div class="alert alert-info" *ngIf="hasContreProposition()">
+        <lucide-icon name="alert-circle" [size]="20"></lucide-icon>
+        <div class="alert-content">
+          <strong>Contre-proposition reçue</strong>
+          <p>L'anesthésiste propose un nouveau créneau. Veuillez accepter ou refuser.</p>
+        </div>
+      </div>
+
+      <!-- Infos Patient -->
+      <div class="info-section">
+        <h4><lucide-icon name="user" [size]="16"></lucide-icon> Patient</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Nom</span>
+            <span class="value">{{ coordination.nomPatient }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Indication</span>
+            <span class="value">{{ coordination.indicationOperatoire || '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infos Anesthésiste -->
+      <div class="info-section">
+        <h4><lucide-icon name="stethoscope" [size]="16"></lucide-icon> Anesthésiste</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Nom</span>
+            <span class="value">Dr. {{ coordination.nomAnesthesiste }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Créneau proposé vs contre-proposé -->
+      <div class="info-section">
+        <h4><lucide-icon name="calendar" [size]="16"></lucide-icon> Créneau</h4>
+        
+        <!-- Créneau original -->
+        <div class="creneau-card" [class.barred]="hasContreProposition()">
+          <div class="creneau-label">Votre proposition initiale</div>
+          <div class="creneau-info">
+            <lucide-icon name="calendar-days" [size]="18"></lucide-icon>
+            <span>{{ formatDate(coordination.dateProposee) }}</span>
+          </div>
+          <div class="creneau-info">
+            <lucide-icon name="clock" [size]="18"></lucide-icon>
+            <span>{{ coordination.heureProposee }} ({{ formatDuree(coordination.dureeEstimee) }})</span>
+          </div>
+        </div>
+
+        <!-- Contre-proposition -->
+        <div class="creneau-card highlight" *ngIf="hasContreProposition()">
+          <div class="creneau-label">Contre-proposition de l'anesthésiste</div>
+          <div class="creneau-info">
+            <lucide-icon name="calendar-days" [size]="18"></lucide-icon>
+            <span>{{ formatDate(coordination.dateContreProposee!) }}</span>
+          </div>
+          <div class="creneau-info">
+            <lucide-icon name="clock" [size]="18"></lucide-icon>
+            <span>{{ coordination.heureContreProposee }}</span>
+          </div>
+          <div class="creneau-comment" *ngIf="coordination.commentaireAnesthesiste">
+            <lucide-icon name="message-circle" [size]="16"></lucide-icon>
+            <span>{{ coordination.commentaireAnesthesiste }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="quick-actions" *ngIf="canRespond()">
+        <button class="btn btn-success" (click)="setResponseMode('accepter')">
+          <lucide-icon name="check" [size]="18"></lucide-icon>
+          Accepter le nouveau créneau
+        </button>
+        <button class="btn btn-danger" (click)="setResponseMode('refuser')">
+          <lucide-icon name="x" [size]="18"></lucide-icon>
+          Refuser
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Historique -->
+    <div class="tab-content" *ngIf="activeTab === 'historique'">
+      <div class="loading" *ngIf="isLoadingHistorique">
+        <lucide-icon name="loader-2" [size]="24" class="spin"></lucide-icon>
+        Chargement...
+      </div>
+      
+      <div class="timeline" *ngIf="!isLoadingHistorique">
+        <div class="timeline-item" *ngFor="let item of historique">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-action">{{ getTypeActionLabel(item.typeAction) }}</span>
+              <span class="timeline-date">{{ formatDateTime(item.createdAt) }}</span>
+            </div>
+            <div class="timeline-user">{{ item.nomUser }} ({{ item.roleUser }})</div>
+            <div class="timeline-details" *ngIf="item.details">{{ item.details }}</div>
+          </div>
+        </div>
+        
+        <div class="empty-state" *ngIf="historique.length === 0">
+          <lucide-icon name="inbox" [size]="32"></lucide-icon>
+          <p>Aucun historique disponible</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Réponse -->
+    <div class="tab-content" *ngIf="activeTab === 'reponse'">
+      <!-- Choix du mode si pas encore sélectionné -->
+      <div class="response-choice" *ngIf="!responseMode">
+        <h4>Comment souhaitez-vous répondre ?</h4>
+        <div class="choice-cards">
+          <div class="choice-card accept" (click)="setResponseMode('accepter')">
+            <lucide-icon name="check-circle" [size]="32"></lucide-icon>
+            <h5>Accepter</h5>
+            <p>Valider le créneau proposé par l'anesthésiste</p>
+          </div>
+          <div class="choice-card refuse" (click)="setResponseMode('refuser')">
+            <lucide-icon name="x-circle" [size]="32"></lucide-icon>
+            <h5>Refuser</h5>
+            <p>Refuser et choisir un autre anesthésiste</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire Accepter -->
+      <div class="response-form" *ngIf="responseMode === 'accepter'">
+        <div class="form-header">
+          <lucide-icon name="check-circle" [size]="24" class="text-success"></lucide-icon>
+          <h4>Accepter la contre-proposition</h4>
+        </div>
+
+        <div class="recap-card">
+          <div class="recap-item">
+            <span class="label">Nouveau créneau</span>
+            <span class="value">{{ formatDate(coordination.dateContreProposee!) }} à {{ coordination.heureContreProposee }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Notes (optionnel)</label>
+          <textarea [(ngModel)]="notesChirurgien" 
+                    placeholder="Ajouter des notes..."
+                    rows="3"></textarea>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="error">
+          <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+          {{ error }}
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" (click)="cancelResponse()" [disabled]="isSubmitting">
+            Annuler
+          </button>
+          <button class="btn btn-success" (click)="submitResponse()" [disabled]="isSubmitting">
+            <lucide-icon name="loader-2" [size]="16" class="spin" *ngIf="isSubmitting"></lucide-icon>
+            <lucide-icon name="check" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+            Confirmer l'acceptation
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulaire Refuser -->
+      <div class="response-form" *ngIf="responseMode === 'refuser'">
+        <div class="form-header">
+          <lucide-icon name="x-circle" [size]="24" class="text-danger"></lucide-icon>
+          <h4>Refuser la contre-proposition</h4>
+        </div>
+
+        <div class="form-group">
+          <label>Motif du refus <span class="required">*</span></label>
+          <textarea [(ngModel)]="motifRefus" 
+                    placeholder="Expliquez pourquoi ce créneau ne convient pas..."
+                    rows="3"
+                    [class.invalid]="motifRefus.length > 0 && motifRefus.length < 10"></textarea>
+          <small *ngIf="motifRefus.length > 0 && motifRefus.length < 10" class="text-danger">
+            Minimum 10 caractères ({{ motifRefus.length }}/10)
+          </small>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="relancerAvecAutreAnesth">
+            <span class="checkmark"></span>
+            <span class="checkbox-text">
+              <strong>Choisir un autre anesthésiste</strong>
+              <small>Relancer le processus de coordination avec un nouvel anesthésiste</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="error">
+          <lucide-icon name="alert-triangle" [size]="16"></lucide-icon>
+          {{ error }}
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" (click)="cancelResponse()" [disabled]="isSubmitting">
+            Annuler
+          </button>
+          <button class="btn btn-danger" (click)="submitResponse()" 
+                  [disabled]="isSubmitting || motifRefus.length < 10">
+            <lucide-icon name="loader-2" [size]="16" class="spin" *ngIf="isSubmitting"></lucide-icon>
+            <lucide-icon name="x" [size]="16" *ngIf="!isSubmitting"></lucide-icon>
+            Confirmer le refus
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

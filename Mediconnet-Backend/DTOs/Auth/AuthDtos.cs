@@ -38,6 +38,9 @@ public class LoginResponse
     /// <summary>Titre affiché (ex: "Major Pédiatrie" pour un infirmier major)</summary>
     public string? TitreAffiche { get; set; }
     
+    /// <summary>ID de la spécialité (pour les médecins)</summary>
+    public int? IdSpecialite { get; set; }
+    
     /// <summary>JWT Token</summary>
     public string? Token { get; set; } = string.Empty;
     

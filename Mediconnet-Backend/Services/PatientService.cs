@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Patient;
+using Mediconnet_Backend.Core.Entities.Pharmacie;
 
 namespace Mediconnet_Backend.Services
 {
@@ -342,6 +343,272 @@ namespace Mediconnet_Backend.Services
                     TotalCount = 0
                 };
             }
+        }
+
+        /// <summary>
+        /// Récupère le dossier pharmaceutique complet du patient
+        /// Inclut toutes les ordonnances avec leur statut de délivrance
+        /// </summary>
+        public async Task<DossierPharmaceutiqueDto?> GetDossierPharmaceutiqueAsync(int patientId, FiltreOrdonnancesPatientRequest? filtre = null)
+        {
+            try
+            {
+                // Vérifier que le patient existe
+                var patient = await _context.Patients
+                    .Include(p => p.Utilisateur)
+                    .FirstOrDefaultAsync(p => p.IdUser == patientId);
+
+                if (patient == null)
+                {
+                    _logger.LogWarning("Patient {PatientId} non trouvé pour le dossier pharmaceutique", patientId);
+                    return null;
+                }
+
+                // Récupérer toutes les ordonnances du patient
+                var query = _context.Ordonnances
+                    .Include(o => o.Medecin)
+                        .ThenInclude(m => m!.Utilisateur)
+                    .Include(o => o.Medecin)
+                        .ThenInclude(m => m!.Service)
+                    .Include(o => o.Consultation)
+                    .Include(o => o.Hospitalisation)
+                        .ThenInclude(h => h!.Service)
+                    .Include(o => o.Medicaments!)
+                        .ThenInclude(m => m.Medicament)
+                    .Where(o => o.IdPatient == patientId)
+                    .AsQueryable();
+
+                // Appliquer les filtres
+                if (filtre != null)
+                {
+                    if (!string.IsNullOrEmpty(filtre.Statut))
+                        query = query.Where(o => o.Statut == filtre.Statut);
+                    
+                    if (!string.IsNullOrEmpty(filtre.TypeContexte))
+                        query = query.Where(o => o.TypeContexte == filtre.TypeContexte);
+                    
+                    if (filtre.DateDebut.HasValue)
+                        query = query.Where(o => o.Date >= filtre.DateDebut.Value);
+                    
+                    if (filtre.DateFin.HasValue)
+                        query = query.Where(o => o.Date <= filtre.DateFin.Value.AddDays(1));
+                    
+                    if (filtre.IdMedecin.HasValue)
+                        query = query.Where(o => o.IdMedecin == filtre.IdMedecin.Value);
+                }
+
+                // Tri
+                var tri = filtre?.Tri ?? "date_desc";
+                query = tri switch
+                {
+                    "date_asc" => query.OrderBy(o => o.Date),
+                    "medecin" => query.OrderBy(o => o.Medecin!.Utilisateur!.Nom),
+                    _ => query.OrderByDescending(o => o.Date)
+                };
+
+                var ordonnances = await query.ToListAsync();
+
+                // Récupérer les dispensations pour ces ordonnances
+                var ordonnanceIds = ordonnances.Select(o => o.IdOrdonnance).ToList();
+                var dispensations = await _context.Dispensations
+                    .Include(d => d.Pharmacien)
+                        .ThenInclude(p => p!.Utilisateur)
+                    .Include(d => d.Lignes!)
+                        .ThenInclude(l => l.Medicament)
+                    .Where(d => d.IdPrescription.HasValue && ordonnanceIds.Contains(d.IdPrescription.Value))
+                    .ToListAsync();
+
+                // Mapper les ordonnances en DTOs
+                var ordonnancesDto = ordonnances.Select(o => MapToOrdonnancePatientDto(o, dispensations)).ToList();
+
+                // Calculer les statistiques
+                var result = new DossierPharmaceutiqueDto
+                {
+                    IdPatient = patientId,
+                    NomPatient = patient.Utilisateur != null 
+                        ? $"{patient.Utilisateur.Prenom} {patient.Utilisateur.Nom}" 
+                        : "Patient",
+                    TotalOrdonnances = ordonnancesDto.Count,
+                    OrdonnancesActives = ordonnancesDto.Count(o => o.Statut == "active" && !o.EstExpire),
+                    OrdonnancesDelivrees = ordonnancesDto.Count(o => o.StatutDelivrance == "delivre"),
+                    OrdonnancesPartielles = ordonnancesDto.Count(o => o.StatutDelivrance == "partiel"),
+                    Ordonnances = ordonnancesDto
+                };
+
+                _logger.LogInformation("Dossier pharmaceutique récupéré pour patient {PatientId}: {Count} ordonnances", 
+                    patientId, ordonnancesDto.Count);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du dossier pharmaceutique pour patient {PatientId}", patientId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Récupère une ordonnance spécifique pour le patient
+        /// </summary>
+        public async Task<OrdonnancePatientDto?> GetOrdonnancePatientAsync(int patientId, int ordonnanceId)
+        {
+            var ordonnance = await _context.Ordonnances
+                .Include(o => o.Medecin)
+                    .ThenInclude(m => m!.Utilisateur)
+                .Include(o => o.Medecin)
+                    .ThenInclude(m => m!.Service)
+                .Include(o => o.Consultation)
+                .Include(o => o.Hospitalisation)
+                    .ThenInclude(h => h!.Service)
+                .Include(o => o.Medicaments!)
+                    .ThenInclude(m => m.Medicament)
+                .FirstOrDefaultAsync(o => o.IdOrdonnance == ordonnanceId && o.IdPatient == patientId);
+
+            if (ordonnance == null)
+                return null;
+
+            // Récupérer les dispensations
+            var dispensations = await _context.Dispensations
+                .Include(d => d.Pharmacien)
+                    .ThenInclude(p => p!.Utilisateur)
+                .Include(d => d.Lignes!)
+                    .ThenInclude(l => l.Medicament)
+                .Where(d => d.IdPrescription == ordonnanceId)
+                .ToListAsync();
+
+            return MapToOrdonnancePatientDto(ordonnance, dispensations);
+        }
+
+        private OrdonnancePatientDto MapToOrdonnancePatientDto(
+            Core.Entities.Ordonnance ordonnance, 
+            List<Dispensation> dispensations)
+        {
+            // Trouver les dispensations pour cette ordonnance
+            var ordonnanceDispensations = dispensations
+                .Where(d => d.IdPrescription == ordonnance.IdOrdonnance)
+                .ToList();
+
+            // Calculer le statut de délivrance global
+            var statutDelivrance = "non_delivre";
+            DateTime? dateDelivrance = null;
+            string? nomPharmacien = null;
+
+            if (ordonnanceDispensations.Any())
+            {
+                var dernierDispensation = ordonnanceDispensations
+                    .OrderByDescending(d => d.DateDispensation)
+                    .First();
+
+                dateDelivrance = dernierDispensation.DateDispensation;
+                nomPharmacien = dernierDispensation.Pharmacien?.Utilisateur != null
+                    ? $"{dernierDispensation.Pharmacien.Utilisateur.Prenom} {dernierDispensation.Pharmacien.Utilisateur.Nom}"
+                    : null;
+
+                // Vérifier si tous les médicaments sont délivrés
+                var totalPrescrit = ordonnance.Medicaments?.Sum(m => m.Quantite) ?? 0;
+                var totalDelivre = ordonnanceDispensations
+                    .SelectMany(d => d.Lignes ?? new List<DispensationLigne>())
+                    .Sum(l => l.QuantiteDispensee);
+
+                if (totalDelivre >= totalPrescrit)
+                    statutDelivrance = "delivre";
+                else if (totalDelivre > 0)
+                    statutDelivrance = "partiel";
+                else
+                    statutDelivrance = "en_attente";
+            }
+
+            // Déterminer le service
+            string? service = null;
+            if (ordonnance.Hospitalisation?.Service != null)
+                service = ordonnance.Hospitalisation.Service.NomService;
+            else if (ordonnance.Medecin?.Service != null)
+                service = ordonnance.Medecin.Service.NomService;
+
+            // Déterminer le diagnostic
+            string? diagnostic = null;
+            if (ordonnance.Consultation != null)
+                diagnostic = ordonnance.Consultation.Diagnostic;
+
+            return new OrdonnancePatientDto
+            {
+                IdOrdonnance = ordonnance.IdOrdonnance,
+                DatePrescription = ordonnance.Date,
+                IdMedecin = ordonnance.IdMedecin ?? 0,
+                NomMedecin = ordonnance.Medecin?.Utilisateur != null
+                    ? $"Dr. {ordonnance.Medecin.Utilisateur.Prenom} {ordonnance.Medecin.Utilisateur.Nom}"
+                    : "Médecin inconnu",
+                SpecialiteMedecin = ordonnance.Medecin?.Specialite?.NomSpecialite,
+                TypeContexte = ordonnance.TypeContexte ?? "consultation",
+                Service = service,
+                IdConsultation = ordonnance.IdConsultation,
+                IdHospitalisation = ordonnance.IdHospitalisation,
+                Diagnostic = diagnostic,
+                Notes = ordonnance.Commentaire,
+                Statut = ordonnance.Statut,
+                StatutDelivrance = statutDelivrance,
+                DateExpiration = ordonnance.DateExpiration,
+                EstExpire = ordonnance.DateExpiration.HasValue && ordonnance.DateExpiration.Value < DateTime.UtcNow,
+                Renouvelable = ordonnance.Renouvelable,
+                NombreRenouvellements = ordonnance.NombreRenouvellements,
+                RenouvellementRestants = ordonnance.RenouvellementRestants,
+                DateDelivrance = dateDelivrance,
+                NomPharmacien = nomPharmacien,
+                Medicaments = ordonnance.Medicaments?.Select(m => MapToMedicamentOrdonnanceDto(m, ordonnanceDispensations)).ToList() 
+                    ?? new List<MedicamentOrdonnanceDto>()
+            };
+        }
+
+        private MedicamentOrdonnanceDto MapToMedicamentOrdonnanceDto(
+            Core.Entities.PrescriptionMedicament med,
+            List<Dispensation> dispensations)
+        {
+            // Calculer la quantité délivrée pour ce médicament
+            var quantiteDelivree = dispensations
+                .SelectMany(d => d.Lignes ?? new List<DispensationLigne>())
+                .Where(l => l.IdMedicament == med.IdMedicament)
+                .Sum(l => l.QuantiteDispensee);
+
+            var statutDelivrance = "non_delivre";
+            DateTime? dateDelivrance = null;
+
+            if (quantiteDelivree >= med.Quantite)
+            {
+                statutDelivrance = "delivre";
+                dateDelivrance = dispensations
+                    .Where(d => d.Lignes?.Any(l => l.IdMedicament == med.IdMedicament) == true)
+                    .OrderByDescending(d => d.DateDispensation)
+                    .FirstOrDefault()?.DateDispensation;
+            }
+            else if (quantiteDelivree > 0)
+            {
+                statutDelivrance = "partiel";
+                dateDelivrance = dispensations
+                    .Where(d => d.Lignes?.Any(l => l.IdMedicament == med.IdMedicament) == true)
+                    .OrderByDescending(d => d.DateDispensation)
+                    .FirstOrDefault()?.DateDispensation;
+            }
+
+            return new MedicamentOrdonnanceDto
+            {
+                IdPrescriptionMed = med.IdPrescriptionMed,
+                IdMedicament = med.IdMedicament,
+                NomMedicament = med.EstHorsCatalogue 
+                    ? med.NomMedicamentLibre ?? "Médicament non spécifié"
+                    : med.Medicament?.Nom ?? med.NomMedicamentLibre ?? "Médicament inconnu",
+                Dosage = med.EstHorsCatalogue ? med.DosageLibre : med.Medicament?.Dosage ?? med.DosageLibre,
+                FormePharmaceutique = med.FormePharmaceutique ?? med.Medicament?.FormeGalenique,
+                VoieAdministration = med.VoieAdministration,
+                EstHorsCatalogue = med.EstHorsCatalogue,
+                QuantitePrescrite = med.Quantite,
+                Posologie = med.Posologie,
+                Frequence = med.Frequence,
+                DureeTraitement = med.DureeTraitement,
+                Instructions = med.Instructions,
+                QuantiteDelivree = quantiteDelivree,
+                StatutDelivrance = statutDelivrance,
+                DateDelivrance = dateDelivrance
+            };
         }
     }
 }

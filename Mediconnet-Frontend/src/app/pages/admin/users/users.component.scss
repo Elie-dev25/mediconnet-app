@@ -870,3 +870,145 @@
   padding-top: 1.5rem;
   border-top: 1px solid $border-color;
 }
+
+// ==================== SIDEBAR CHANGEMENT DE SERVICE ====================
+.change-service-sidebar {
+  width: 450px;
+
+  @media (max-width: 500px) {
+    width: 100%;
+  }
+
+  .sidebar-content {
+    overflow-y: auto;
+  }
+}
+
+.current-service-info {
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: $text-secondary;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .current-service {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $primary-color;
+  }
+}
+
+.historique-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $border-color;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $text-dark;
+    margin-bottom: 1rem;
+  }
+}
+
+.loading-historique {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.affectation-item {
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
+
+  &.current {
+    background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, rgba($primary-color, 0.1) 100%);
+    border-color: rgba($primary-color, 0.3);
+  }
+
+  &.past {
+    opacity: 0.8;
+  }
+
+  .affectation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+
+    .service-name {
+      font-weight: 600;
+      color: $text-dark;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.active {
+        background: rgba(#059669, 0.15);
+        color: #059669;
+      }
+    }
+  }
+
+  .affectation-dates {
+    font-size: 0.85rem;
+    color: $text-secondary;
+  }
+
+  .affectation-motif {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed $border-color;
+
+    small {
+      font-size: 0.8rem;
+      color: $text-secondary;
+      font-style: italic;
+    }
+  }
+}
+
+.no-historique {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  text-align: center;
+  justify-content: center;
+}

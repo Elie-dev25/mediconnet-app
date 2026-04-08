@@ -618,6 +618,54 @@ public class PatientController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Récupérer le dossier pharmaceutique complet du patient
+    /// </summary>
+    [HttpGet("ordonnances")]
+    public async Task<IActionResult> GetDossierPharmaceutique([FromQuery] FiltreOrdonnancesPatientRequest? filtre = null)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var dossier = await _patientService.GetDossierPharmaceutiqueAsync(userId.Value, filtre);
+            if (dossier == null)
+                return NotFound(new { message = "Patient non trouvé" });
+
+            return Ok(dossier);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération du dossier pharmaceutique");
+            return StatusCode(500, new { message = "Erreur serveur lors de la récupération du dossier pharmaceutique" });
+        }
+    }
+
+    /// <summary>
+    /// Récupérer une ordonnance spécifique du patient
+    /// </summary>
+    [HttpGet("ordonnances/{ordonnanceId:int}")]
+    public async Task<IActionResult> GetOrdonnancePatient(int ordonnanceId)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var ordonnance = await _patientService.GetOrdonnancePatientAsync(userId.Value, ordonnanceId);
+            if (ordonnance == null)
+                return NotFound(new { message = "Ordonnance non trouvée" });
+
+            return Ok(ordonnance);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération de l'ordonnance {OrdonnanceId}", ordonnanceId);
+            return StatusCode(500, new { message = "Erreur serveur lors de la récupération de l'ordonnance" });
+        }
+    }
+
     private bool IsProfileComplete(Core.Entities.Utilisateur utilisateur)
     {
         if (!utilisateur.Naissance.HasValue) return false;

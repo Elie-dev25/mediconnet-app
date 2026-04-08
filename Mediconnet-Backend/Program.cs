@@ -54,6 +54,8 @@ builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
 builder.Services.AddScoped<IUserDetailsService, UserDetailsService>();
 builder.Services.AddScoped<IInfirmierManagementService, InfirmierManagementService>();
+builder.Services.AddScoped<IAffectationServiceService, AffectationServiceService>();
+builder.Services.AddScoped<ICoordinationInterventionService, CoordinationInterventionService>();
 
 // Add Caisse Services
 builder.Services.AddScoped<ICaisseService, CaisseService>();

@@ -22,7 +22,7 @@ type TabType = 'liste' | 'agenda';
   imports: [CommonModule, FormsModule, DashboardLayoutComponent, LucideAngularModule],
   providers: [ALL_ICONS_PROVIDER],
   templateUrl: './blocs-operatoires.component.html',
-  styleUrl: './blocs-operatoires.component.scss'
+  styleUrls: ['./blocs-operatoires.component.scss', './blocs-operatoires-equipements.scss']
 })
 export class BlocsOperatoiresComponent implements OnInit {
   menuItems = ADMIN_MENU_ITEMS;
@@ -48,7 +48,7 @@ export class BlocsOperatoiresComponent implements OnInit {
     description: '',
     localisation: '',
     capacite: undefined,
-    equipements: ''
+    equipements: []
   };
 
   // Confirmation suppression
@@ -97,23 +97,22 @@ export class BlocsOperatoiresComponent implements OnInit {
   }
 
   openBlocModal(bloc?: BlocOperatoireDto): void {
+    this.editingBloc = bloc || null;
     if (bloc) {
-      this.editingBloc = bloc;
       this.blocForm = {
         nom: bloc.nom,
         description: bloc.description || '',
         localisation: bloc.localisation || '',
         capacite: bloc.capacite,
-        equipements: bloc.equipements || ''
+        equipements: bloc.equipements && bloc.equipements.length > 0 ? [...bloc.equipements] : ['']
       };
     } else {
-      this.editingBloc = null;
       this.blocForm = {
         nom: '',
         description: '',
         localisation: '',
         capacite: undefined,
-        equipements: ''
+        equipements: ['']
       };
     }
     this.showBlocModal = true;
@@ -133,13 +132,16 @@ export class BlocsOperatoiresComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
 
+    // Filtrer les équipements vides
+    const equipementsFiltres = this.blocForm.equipements?.filter(e => e.trim() !== '') || [];
+
     if (this.editingBloc) {
       const updateRequest: UpdateBlocOperatoireRequest = {
         nom: this.blocForm.nom,
         description: this.blocForm.description,
         localisation: this.blocForm.localisation,
         capacite: this.blocForm.capacite,
-        equipements: this.blocForm.equipements
+        equipements: equipementsFiltres
       };
 
       this.blocService.updateBloc(this.editingBloc.idBloc, updateRequest).subscribe({
@@ -156,7 +158,15 @@ export class BlocsOperatoiresComponent implements OnInit {
         }
       });
     } else {
-      this.blocService.createBloc(this.blocForm).subscribe({
+      const createRequest: CreateBlocOperatoireRequest = {
+        nom: this.blocForm.nom,
+        description: this.blocForm.description,
+        localisation: this.blocForm.localisation,
+        capacite: this.blocForm.capacite,
+        equipements: equipementsFiltres
+      };
+      
+      this.blocService.createBloc(createRequest).subscribe({
         next: () => {
           this.successMessage = 'Bloc opératoire créé avec succès';
           this.closeBlocModal();
@@ -318,6 +328,27 @@ export class BlocsOperatoiresComponent implements OnInit {
 
   selectAgendaBloc(idBloc: number): void {
     this.selectedAgendaBloc = this.selectedAgendaBloc === idBloc ? null : idBloc;
+  }
+
+  // ==================== GESTION DES ÉQUIPEMENTS ====================
+
+  addEquipement(): void {
+    if (!this.blocForm.equipements) {
+      this.blocForm.equipements = [];
+    }
+    this.blocForm.equipements.push('');
+  }
+
+  removeEquipement(index: number): void {
+    if (this.blocForm.equipements && index >= 0 && index < this.blocForm.equipements.length) {
+      this.blocForm.equipements.splice(index, 1);
+    }
+  }
+
+  updateEquipement(index: number, value: string): void {
+    if (this.blocForm.equipements && index >= 0 && index < this.blocForm.equipements.length) {
+      this.blocForm.equipements[index] = value;
+    }
   }
 
   // ==================== HELPERS ====================

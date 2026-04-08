@@ -10,7 +10,8 @@ export const MEDECIN_MENU_ITEMS: MenuItem[] = [
   { icon: 'calendar', label: 'Mon Planning', route: '/medecin/planning', implemented: true },
   { icon: 'calendar-check', label: 'Rendez-vous', route: '/medecin/rendez-vous', implemented: true },
   { icon: 'stethoscope', label: 'Consultations', route: '/medecin/consultations', implemented: true },
-  { icon: 'users', label: 'Mes patients', route: '/medecin/patients', implemented: true }
+  { icon: 'users', label: 'Mes patients', route: '/medecin/patients', implemented: true },
+  { icon: 'syringe', label: 'Interventions', route: '/medecin/interventions', implemented: true }
 ];
 
 /**
@@ -23,7 +24,8 @@ export const MEDECIN_SIDEBAR_ICONS = [
   'Calendar',
   'CalendarCheck',
   'Stethoscope',
-  'Users'
+  'Users',
+  'Syringe'
 ] as const;
 
 /**

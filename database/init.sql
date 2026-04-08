@@ -82,7 +82,6 @@ CREATE TABLE `email_confirmation_tokens` (
 CREATE TABLE `specialites` (
   `id_specialite` INT NOT NULL AUTO_INCREMENT,
   `nom_specialite` VARCHAR(100) NOT NULL,
-  `cout_consultation` DECIMAL(12,2) DEFAULT 5000,
   PRIMARY KEY (`id_specialite`),
   UNIQUE KEY `nom_specialite` (`nom_specialite`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -137,7 +136,7 @@ INSERT INTO `specialites` (`id_specialite`, `nom_specialite`) VALUES
 (47, 'Médecine du Travail et de l\'Environnement');
 
 -- --------------------------------------------------------
--- Tables de référence: Assurance
+-- Tables de référence: Assurance 
 -- --------------------------------------------------------
 
 CREATE TABLE `type_prestation` (
@@ -420,11 +419,16 @@ CREATE TABLE `patient` (
   `numero_contact` VARCHAR(50) DEFAULT NULL,
   `date_creation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `id_assurance` INT DEFAULT NULL,
+  `numero_carte_assurance` VARCHAR(50) DEFAULT NULL COMMENT 'Numéro de carte d assurance',
+  `declaration_honneur_acceptee` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Déclaration sur l honneur acceptée',
+  `declaration_honneur_at` DATETIME DEFAULT NULL COMMENT 'Date d acceptation de la déclaration sur l honneur',
   -- Clôture de dossier médical
   `dossier_cloture` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Dossier clôturé - prochaine consultation = première consultation',
   `date_cloture_dossier` TIMESTAMP NULL DEFAULT NULL COMMENT 'Date de clôture du dossier',
   `id_medecin_cloture` INT DEFAULT NULL COMMENT 'Médecin ayant clôturé le dossier',
   `taux_couverture_override` DECIMAL(5,2) DEFAULT NULL COMMENT 'Override manuel du taux de couverture assurance',
+  `date_debut_validite` DATETIME DEFAULT NULL COMMENT 'Date de début de validité de l assurance',
+  `date_fin_validite` DATETIME DEFAULT NULL COMMENT 'Date de fin de validité de l assurance',
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `numero_dossier` (`numero_dossier`),
   KEY `fk_patient_assurance` (`id_assurance`)
@@ -495,6 +499,31 @@ CREATE TABLE `infirmier` (
   CONSTRAINT `fk_infirmier_specialite` FOREIGN KEY (`id_specialite`) 
     REFERENCES `specialite_infirmier`(`id_specialite`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Table: affectation_service (historique des affectations)
+-- --------------------------------------------------------
+
+CREATE TABLE `affectation_service` (
+  `id_affectation` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_user` INT NOT NULL COMMENT 'ID de l''utilisateur (médecin ou infirmier)',
+  `type_user` VARCHAR(20) NOT NULL COMMENT 'Type: medecin ou infirmier',
+  `id_service` INT NOT NULL COMMENT 'ID du service affecté',
+  `date_debut` DATETIME NOT NULL COMMENT 'Date de début de l''affectation',
+  `date_fin` DATETIME NULL COMMENT 'Date de fin (NULL si affectation en cours)',
+  `motif_changement` VARCHAR(500) NULL COMMENT 'Motif du changement de service',
+  `id_admin_changement` INT NULL COMMENT 'ID de l''admin ayant effectué le changement',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_affectation_user` (`id_user`, `type_user`),
+  INDEX `idx_affectation_service` (`id_service`),
+  INDEX `idx_affectation_date_fin` (`date_fin`),
+  CONSTRAINT `fk_affectation_user` FOREIGN KEY (`id_user`) 
+    REFERENCES `utilisateurs`(`id_user`) ON DELETE CASCADE,
+  CONSTRAINT `fk_affectation_service` FOREIGN KEY (`id_service`) 
+    REFERENCES `service`(`id_service`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_affectation_admin` FOREIGN KEY (`id_admin_changement`) 
+    REFERENCES `utilisateurs`(`id_user`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 -- Table: administrateur
@@ -661,6 +690,7 @@ CREATE TABLE `consultation` (
   `questions_patient` TEXT DEFAULT NULL COMMENT 'Questions du patient et réponses',
   `consignes_patient` TEXT DEFAULT NULL COMMENT 'Consignes données au patient',
   `recommandations` TEXT DEFAULT NULL COMMENT 'Recommandations générales',
+  `etape_actuelle` VARCHAR(50) DEFAULT NULL COMMENT 'Étape actuelle de la consultation',
   PRIMARY KEY (`id_consultation`),
   KEY `id_medecin` (`id_medecin`),
   KEY `id_patient` (`id_patient`)
@@ -714,6 +744,87 @@ CREATE UNIQUE INDEX `IX_consultation_chirurgicale_consultation`
   ON `consultation_chirurgicale` (`id_consultation`);
 
 -- --------------------------------------------------------
+-- Table: consultation_anesthesique (extension 1-1 pour Anesthésie)
+-- --------------------------------------------------------
+
+CREATE TABLE `consultation_anesthesique` (
+  `id_consultation` INT NOT NULL,
+  `id_coordination` INT DEFAULT NULL COMMENT 'Lien avec coordination intervention',
+  -- Anamnèse spécifique
+  `antecedents_medicaux` TEXT DEFAULT NULL COMMENT 'Antécédents médicaux pertinents',
+  `problemes_cardiaques` TEXT DEFAULT NULL COMMENT 'Problèmes cardiaques',
+  `problemes_respiratoires` TEXT DEFAULT NULL COMMENT 'Problèmes respiratoires',
+  `allergies_anesthesie` TEXT DEFAULT NULL COMMENT 'Allergies connues',
+  `antecedents_chirurgicaux` TEXT DEFAULT NULL COMMENT 'Antécédents chirurgicaux',
+  `problemes_anesthesie_precedente` TEXT DEFAULT NULL COMMENT 'Problèmes lors d''anesthésies précédentes',
+  `medicaments_en_cours` TEXT DEFAULT NULL COMMENT 'Médicaments en cours',
+  `symptomes` TEXT DEFAULT NULL COMMENT 'Symptômes: douleurs, essoufflement, toux',
+  `apnee_sommeil` TINYINT(1) DEFAULT 0 COMMENT 'Apnée du sommeil',
+  `troubles_coagulation` TINYINT(1) DEFAULT 0 COMMENT 'Troubles de la coagulation',
+  `troubles_coagulation_details` TEXT DEFAULT NULL COMMENT 'Détails troubles coagulation',
+  -- Examen clinique
+  `poids` DECIMAL(5,2) DEFAULT NULL COMMENT 'Poids en kg',
+  `taille` DECIMAL(5,2) DEFAULT NULL COMMENT 'Taille en cm',
+  `imc` DECIMAL(5,2) DEFAULT NULL COMMENT 'IMC calculé',
+  `tension_systolique` INT DEFAULT NULL COMMENT 'Tension systolique',
+  `tension_diastolique` INT DEFAULT NULL COMMENT 'Tension diastolique',
+  `frequence_cardiaque` INT DEFAULT NULL COMMENT 'Fréquence cardiaque',
+  `saturation_oxygene` DECIMAL(5,2) DEFAULT NULL COMMENT 'Saturation O2',
+  `auscultation_cardiaque` TEXT DEFAULT NULL,
+  `auscultation_pulmonaire` TEXT DEFAULT NULL,
+  -- Voies aériennes
+  `ouverture_bouche` VARCHAR(50) DEFAULT NULL COMMENT 'normale, limitee, tres_limitee',
+  `mallampati` INT DEFAULT NULL COMMENT 'Score Mallampati 1-4',
+  `etat_dents` VARCHAR(255) DEFAULT NULL,
+  `mobilite_cou` VARCHAR(50) DEFAULT NULL COMMENT 'normale, limitee, tres_limitee',
+  `distance_thyro_mentonniere` DECIMAL(4,1) DEFAULT NULL COMMENT 'Distance en cm',
+  `intubation_difficile_prevue` TINYINT(1) DEFAULT 0,
+  `notes_voies_aeriennes` TEXT DEFAULT NULL,
+  -- Évaluation du risque
+  `classification_asa` INT DEFAULT NULL COMMENT 'Classification ASA 1-5',
+  `niveau_risque` VARCHAR(20) DEFAULT NULL COMMENT 'faible, moyen, eleve',
+  `risque_cardiaque` VARCHAR(20) DEFAULT NULL,
+  `risque_respiratoire` VARCHAR(20) DEFAULT NULL,
+  `risque_allergique` VARCHAR(20) DEFAULT NULL,
+  `risque_hemorragique` VARCHAR(20) DEFAULT NULL,
+  `notes_risques` TEXT DEFAULT NULL COMMENT 'Notes sur évaluation des risques',
+  -- Choix anesthésie
+  `type_anesthesie` VARCHAR(50) DEFAULT NULL COMMENT 'generale, locoregionale, locale, sedation',
+  `sous_type_anesthesie` VARCHAR(50) DEFAULT NULL COMMENT 'rachianesthesie, peridurale, bloc_peripherique',
+  `justification_anesthesie` TEXT DEFAULT NULL,
+  `explication_patient` TEXT DEFAULT NULL,
+  `consentement_obtenu` TINYINT(1) DEFAULT 0,
+  `date_consentement` DATETIME DEFAULT NULL COMMENT 'Date du consentement',
+  -- Consignes préopératoires
+  `duree_jeune` INT DEFAULT NULL COMMENT 'Durée de jeûne en heures',
+  `instructions_jeune` TEXT DEFAULT NULL,
+  `medicaments_a_arreter` TEXT DEFAULT NULL COMMENT 'Médicaments à arrêter (JSON)',
+  `medicaments_a_adapter` TEXT DEFAULT NULL COMMENT 'Médicaments à adapter (JSON)',
+  `medicaments_a_continuer` TEXT DEFAULT NULL COMMENT 'Médicaments à continuer (JSON)',
+  `arret_tabac` TINYINT(1) DEFAULT 0,
+  `delai_arret_tabac` INT DEFAULT NULL COMMENT 'Délai arrêt tabac en jours',
+  `instructions_hygiene` TEXT DEFAULT NULL,
+  `autres_consignes` TEXT DEFAULT NULL,
+  -- Conclusion
+  `resume_consultation` TEXT DEFAULT NULL COMMENT 'Résumé de la consultation',
+  `aptitude` VARCHAR(30) DEFAULT NULL COMMENT 'apte, apte_avec_reserve, non_apte',
+  `reserves` TEXT DEFAULT NULL,
+  `motif_non_aptitude` TEXT DEFAULT NULL,
+  `recommandations` TEXT DEFAULT NULL,
+  `date_intervention_prevue` DATETIME DEFAULT NULL COMMENT 'Date prévue de l''intervention',
+  -- Métadonnées
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_consultation`),
+  CONSTRAINT `fk_consultation_anesthesique_consultation`
+    FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE UNIQUE INDEX `IX_consultation_anesthesique_consultation`
+  ON `consultation_anesthesique` (`id_consultation`);
+
+-- --------------------------------------------------------
 -- Table: programmation_intervention
 -- --------------------------------------------------------
 
@@ -736,7 +847,8 @@ CREATE TABLE `programmation_intervention` (
   `notes_anesthesie` TEXT DEFAULT NULL,
   `bilan_preoperatoire` TEXT DEFAULT NULL,
   `instructions_patient` TEXT DEFAULT NULL,
-  `statut` VARCHAR(20) DEFAULT 'en_attente' COMMENT 'en_attente, validee, planifiee, realisee, annulee',
+  `statut` VARCHAR(30) DEFAULT 'en_attente_coordination' COMMENT 'en_attente_coordination, coordination_validee, validee, planifiee, realisee, annulee',
+  `id_anesthesiste` INT NULL COMMENT 'ID de l''anesthésiste assigné',
   `motif_annulation` TEXT DEFAULT NULL,
   `notes` TEXT DEFAULT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -745,11 +857,13 @@ CREATE TABLE `programmation_intervention` (
   KEY `IX_programmation_intervention_consultation` (`id_consultation`),
   KEY `IX_programmation_intervention_patient` (`id_patient`),
   KEY `IX_programmation_intervention_medecin` (`id_medecin`),
+  KEY `IX_programmation_intervention_anesthesiste` (`id_anesthesiste`),
   KEY `IX_programmation_intervention_statut` (`statut`),
   KEY `IX_programmation_intervention_indisponibilite` (`id_indisponibilite`),
   CONSTRAINT `fk_programmation_consultation` FOREIGN KEY (`id_consultation`) REFERENCES `consultation` (`id_consultation`) ON DELETE CASCADE,
   CONSTRAINT `fk_programmation_patient` FOREIGN KEY (`id_patient`) REFERENCES `patient` (`id_user`) ON DELETE CASCADE,
   CONSTRAINT `fk_programmation_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `medecin` (`id_user`) ON DELETE CASCADE,
+  CONSTRAINT `fk_programmation_anesthesiste` FOREIGN KEY (`id_anesthesiste`) REFERENCES `medecin` (`id_user`) ON DELETE SET NULL,
   CONSTRAINT `fk_programmation_indisponibilite` FOREIGN KEY (`id_indisponibilite`) REFERENCES `indisponibilite_medecin` (`id_indisponibilite`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -822,6 +936,9 @@ CREATE TABLE `hospitalisation` (
   `id_consultation` INT DEFAULT NULL COMMENT 'Consultation ayant généré hospitalisation',
   `id_service` INT DEFAULT NULL COMMENT 'Service concerné',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `date_lit_attribue` DATETIME DEFAULT NULL COMMENT 'Date d attribution du lit',
+  `id_lit_attribue_par` INT DEFAULT NULL COMMENT 'ID utilisateur ayant attribué le lit',
+  `role_lit_attribue_par` VARCHAR(20) DEFAULT NULL COMMENT 'Rôle de l utilisateur ayant attribué le lit',
   PRIMARY KEY (`id_admission`),
   KEY `id_patient` (`id_patient`),
   KEY `id_lit` (`id_lit`),
@@ -1488,12 +1605,23 @@ CREATE TABLE `inventaire_ligne` (
 
 CREATE TABLE `notifications` (
   `id_notification` INT NOT NULL AUTO_INCREMENT,
-  `nom_notification` VARCHAR(100) DEFAULT NULL,
-  `contenu` TEXT NOT NULL,
   `id_user` INT NOT NULL,
-  `date_heure` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `type` VARCHAR(50) NOT NULL DEFAULT 'systeme',
+  `titre` VARCHAR(200) NOT NULL DEFAULT '',
+  `message` TEXT NOT NULL,
+  `lien` VARCHAR(500) DEFAULT NULL,
+  `icone` VARCHAR(50) DEFAULT NULL,
+  `priorite` VARCHAR(20) DEFAULT 'normale',
+  `lu` BOOLEAN DEFAULT FALSE,
+  `date_lecture` DATETIME DEFAULT NULL,
+  `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `date_expiration` DATETIME DEFAULT NULL,
+  `metadata` TEXT DEFAULT NULL,
+  `supprime` BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (`id_notification`),
-  KEY `id_user` (`id_user`)
+  KEY `id_user` (`id_user`),
+  KEY `idx_notifications_lu` (`lu`),
+  KEY `idx_notifications_type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -3113,6 +3241,75 @@ INSERT INTO `medicament_voie` (`id_medicament`, `id_voie`, `est_defaut`)
 SELECT m.id_medicament, v.id_voie, 1 
 FROM `medicament` m, `voie_administration` v 
 WHERE m.nom = 'Cefixime' AND v.code = 'orale';
+
+-- --------------------------------------------------------
+-- Tables de coordination chirurgie-anesthésie
+-- --------------------------------------------------------
+
+-- Table: coordination_intervention
+CREATE TABLE IF NOT EXISTS `coordination_intervention` (
+    `id_coordination` INT AUTO_INCREMENT PRIMARY KEY,
+    `id_programmation` INT NOT NULL,
+    `id_chirurgien` INT NOT NULL,
+    `id_anesthesiste` INT NOT NULL,
+    `date_proposee` DATETIME NOT NULL,
+    `heure_proposee` VARCHAR(5) NOT NULL,
+    `duree_estimee` INT NOT NULL,
+    `statut` VARCHAR(20) NOT NULL DEFAULT 'proposee',
+    `date_contre_proposee` DATETIME NULL,
+    `heure_contre_proposee` VARCHAR(5) NULL,
+    `commentaire_anesthesiste` TEXT NULL,
+    `motif_refus` TEXT NULL,
+    `notes_chirurgien` TEXT NULL,
+    `id_rdv_consultation_anesthesiste` INT NULL,
+    `id_indisponibilite_chirurgien` INT NULL,
+    `id_indisponibilite_anesthesiste` INT NULL,
+    `id_reservation_bloc` INT NULL,
+    `date_validation` DATETIME NULL,
+    `date_reponse` DATETIME NULL,
+    `nb_modifications` INT NOT NULL DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL,
+    
+    INDEX `IX_coordination_programmation` (`id_programmation`),
+    INDEX `IX_coordination_chirurgien` (`id_chirurgien`),
+    INDEX `IX_coordination_anesthesiste` (`id_anesthesiste`),
+    INDEX `IX_coordination_statut` (`statut`),
+    INDEX `IX_coordination_date` (`date_proposee`),
+    
+    CONSTRAINT `fk_coordination_programmation` 
+        FOREIGN KEY (`id_programmation`) REFERENCES `programmation_intervention`(`id_programmation`) ON DELETE CASCADE,
+    CONSTRAINT `fk_coordination_chirurgien` 
+        FOREIGN KEY (`id_chirurgien`) REFERENCES `medecin`(`id_user`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_coordination_anesthesiste` 
+        FOREIGN KEY (`id_anesthesiste`) REFERENCES `medecin`(`id_user`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_coordination_rdv_consultation` 
+        FOREIGN KEY (`id_rdv_consultation_anesthesiste`) REFERENCES `rendez_vous`(`id_rendez_vous`) ON DELETE SET NULL,
+    CONSTRAINT `fk_coordination_indispo_chirurgien` 
+        FOREIGN KEY (`id_indisponibilite_chirurgien`) REFERENCES `indisponibilite_medecin`(`id_indisponibilite`) ON DELETE SET NULL,
+    CONSTRAINT `fk_coordination_indispo_anesthesiste` 
+        FOREIGN KEY (`id_indisponibilite_anesthesiste`) REFERENCES `indisponibilite_medecin`(`id_indisponibilite`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table: coordination_intervention_historique
+CREATE TABLE IF NOT EXISTS `coordination_intervention_historique` (
+    `id_historique` INT AUTO_INCREMENT PRIMARY KEY,
+    `id_coordination` INT NOT NULL,
+    `type_action` VARCHAR(30) NOT NULL,
+    `id_user_action` INT NOT NULL,
+    `role_user` VARCHAR(20) NOT NULL,
+    `details` TEXT NULL,
+    `date_proposee` DATETIME NULL,
+    `heure_proposee` VARCHAR(5) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX `IX_coordination_historique_coordination` (`id_coordination`),
+    
+    CONSTRAINT `fk_historique_coordination` 
+        FOREIGN KEY (`id_coordination`) REFERENCES `coordination_intervention`(`id_coordination`) ON DELETE CASCADE,
+    CONSTRAINT `fk_historique_user` 
+        FOREIGN KEY (`id_user_action`) REFERENCES `utilisateurs`(`id_user`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

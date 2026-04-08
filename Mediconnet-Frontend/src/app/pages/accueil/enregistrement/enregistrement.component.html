@@ -332,7 +332,7 @@
               <div class="recap-content">
                 <span class="recap-label">Tarif consultation</span>
                 <strong class="price-highlight">{{ coutConsultation | number }} FCFA</strong>
-                <span class="recap-detail">Tarif de la spécialité</span>
+                <span class="recap-detail">Tarif du service</span>
               </div>
             </div>
           </div>
@@ -370,12 +370,12 @@
             </div>
           </div>
 
-          <!-- Champ prix - lecture seule si pré-rempli par spécialité -->
+          <!-- Champ prix - lecture seule si pré-rempli par le service -->
           <div class="form-group" *ngIf="!paiementValide">
             <label for="prix">
               <lucide-icon name="banknote" [size]="16"></lucide-icon>
               Prix de la consultation (FCFA)
-              <span class="label-info" *ngIf="coutConsultation > 0">(tarif spécialité)</span>
+              <span class="label-info" *ngIf="coutConsultation > 0">(tarif du service)</span>
             </label>
             <div class="loading-check" *ngIf="isCheckingPaiement">
               <lucide-icon name="loader-2" [size]="16" class="spin"></lucide-icon>
@@ -392,7 +392,7 @@
               [class.readonly-input]="coutConsultation > 0">
             <div class="prix-info" *ngIf="coutConsultation > 0">
               <lucide-icon name="info" [size]="14"></lucide-icon>
-              <span>Ce tarif est défini par la spécialité du médecin</span>
+              <span>Ce tarif est défini par le service du médecin</span>
             </div>
           </div>
 

@@ -112,6 +112,61 @@ public class ExamenChirurgicalDto
     public string? NotesComplementaires { get; set; }
 }
 
+public class ExamenAnesthesiqueDto
+{
+    // Anamnèse spécifique
+    public string? AntecedentsMedicaux { get; set; }
+    public string? ProblemesCardiaques { get; set; }
+    public string? ProblemesRespiratoires { get; set; }
+    public string? AllergiesAnesthesie { get; set; }
+    public string? AntecedentsChirurgicaux { get; set; }
+    public string? ProblemesAnesthesiePrecedente { get; set; }
+    public string? MedicamentsEnCours { get; set; }
+    public bool? ApneeSommeil { get; set; }
+    public bool? TroublesCoagulation { get; set; }
+    
+    // Examen clinique
+    public string? AuscultationCardiaque { get; set; }
+    public string? AuscultationPulmonaire { get; set; }
+    
+    // Voies aériennes (critique)
+    public string? OuvertureBouche { get; set; }
+    public int? Mallampati { get; set; }
+    public string? EtatDents { get; set; }
+    public string? MobiliteCou { get; set; }
+    public decimal? DistanceThyroMentonniere { get; set; }
+    public bool? IntubationDifficilePrevue { get; set; }
+    public string? NotesVoiesAeriennes { get; set; }
+    
+    // Évaluation du risque
+    public int? ClassificationASA { get; set; }
+    public string? NiveauRisque { get; set; }
+    public string? RisqueCardiaque { get; set; }
+    public string? RisqueRespiratoire { get; set; }
+    public string? RisqueAllergique { get; set; }
+    public string? RisqueHemorragique { get; set; }
+    
+    // Choix anesthésie
+    public string? TypeAnesthesie { get; set; }
+    public string? SousTypeAnesthesie { get; set; }
+    public string? JustificationAnesthesie { get; set; }
+    public string? ExplicationPatient { get; set; }
+    public bool? ConsentementObtenu { get; set; }
+    
+    // Consignes préopératoires
+    public int? DureeJeune { get; set; }
+    public string? InstructionsJeune { get; set; }
+    public bool? ArretTabac { get; set; }
+    public string? InstructionsHygiene { get; set; }
+    public string? AutresConsignes { get; set; }
+    
+    // Conclusion
+    public string? Aptitude { get; set; }
+    public string? Reserves { get; set; }
+    public string? MotifNonAptitude { get; set; }
+    public string? Recommandations { get; set; }
+}
+
 // ==================== CONSULTATION MULTI-ETAPES ====================
 
 public class ConsultationEnCoursDto
@@ -134,6 +189,7 @@ public class ConsultationEnCoursDto
     public ExamenCliniqueDto? ExamenClinique { get; set; }
     public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
     public ExamenChirurgicalDto? ExamenChirurgical { get; set; }
+    public ExamenAnesthesiqueDto? ExamenAnesthesique { get; set; }
     public DiagnosticDto? Diagnostic { get; set; }
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? Conclusion { get; set; }
@@ -421,7 +477,6 @@ public class SpecialiteDto
 {
     public int IdSpecialite { get; set; }
     public string NomSpecialite { get; set; } = "";
-    public decimal CoutConsultation { get; set; }
 }
 
 public class MedecinSpecialisteDto
@@ -522,6 +577,7 @@ public class ConsultationDetailDto
     public ExamenCliniqueDto? ExamenClinique { get; set; }
     public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
     public ExamenChirurgicalDto? ExamenChirurgical { get; set; }
+    public ExamenAnesthesiqueDto? ExamenAnesthesique { get; set; }
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? ConclusionDetaillee { get; set; }
     /// <summary>

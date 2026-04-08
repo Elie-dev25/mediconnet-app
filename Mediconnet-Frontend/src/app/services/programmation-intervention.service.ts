@@ -106,8 +106,9 @@ export const RISQUES_OPERATOIRES = [
 ];
 
 export const STATUTS_PROGRAMMATION = [
-  { value: 'en_attente', label: 'En attente', color: '#f59e0b' },
-  { value: 'validee', label: 'Validée', color: '#3b82f6' },
+  { value: 'en_attente_coordination', label: 'En attente coordination', color: '#f59e0b' },
+  { value: 'coordination_validee', label: 'Coordination validée', color: '#3b82f6' },
+  { value: 'validee', label: 'Validée', color: '#0ea5e9' },
   { value: 'planifiee', label: 'Planifiée', color: '#8b5cf6' },
   { value: 'realisee', label: 'Réalisée', color: '#10b981' },
   { value: 'annulee', label: 'Annulée', color: '#ef4444' }

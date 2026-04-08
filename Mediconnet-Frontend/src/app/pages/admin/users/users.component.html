@@ -195,14 +195,14 @@
           <h3>Informations medicales</h3>
           <div class="form-row">
             <div class="form-group">
-              <label>Specialite *</label>
+              <label>Spécialité *</label>
               <select formControlName="idSpecialite">
                 <option [value]="null" disabled>Selectionnez une specialite</option>
                 <option *ngFor="let spec of specialites" [value]="spec.idSpecialite">
                   {{ spec.nomSpecialite }}
                 </option>
               </select>
-              <span class="error-text" *ngIf="hasError('idSpecialite')">Specialite requise</span>
+              <span class="error-text" *ngIf="hasError('idSpecialite')">Spécialité requise</span>
             </div>
             <div class="form-group">
               <label>Service *</label>
@@ -216,8 +216,9 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Numero d'ordre</label>
+            <label>Numero d'ordre *</label>
             <input type="text" formControlName="numeroOrdre" placeholder="Ex: ORD-12345" appVoiceInput>
+            <span class="error-text" *ngIf="hasError('numeroOrdre')">Numéro d'ordre requis</span>
           </div>
         </div>
 
@@ -236,19 +237,21 @@
               <span class="error-text" *ngIf="hasError('idService')">Service requis</span>
             </div>
             <div class="form-group">
-              <label>Spécialité</label>
+              <label>Spécialité *</label>
               <select formControlName="idSpecialiteInfirmier">
                 <option [value]="null">Sélectionnez une spécialité</option>
                 <option *ngFor="let spec of specialitesInfirmiers" [value]="spec.idSpecialite">
                   {{ spec.code ? spec.code + ' - ' : '' }}{{ spec.nom }}
                 </option>
               </select>
+              <span class="error-text" *ngIf="hasError('idSpecialiteInfirmier')">Spécialité requise</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Matricule</label>
+              <label>Matricule *</label>
               <input type="text" formControlName="matricule" placeholder="Ex: INF-12345" appVoiceInput>
+              <span class="error-text" *ngIf="hasError('matricule')">Matricule requis</span>
             </div>
           </div>
         </div>
@@ -268,13 +271,15 @@
               <span class="error-text" *ngIf="hasError('idLabo')">Laboratoire requis</span>
             </div>
             <div class="form-group">
-              <label>Matricule</label>
+              <label>Matricule *</label>
               <input type="text" formControlName="matricule" placeholder="Ex: LAB-12345" appVoiceInput>
+              <span class="error-text" *ngIf="hasError('matricule')">Matricule requis</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Spécialisation</label>
+            <label>Spécialisation *</label>
             <input type="text" formControlName="specialisation" placeholder="Ex: Microbiologie, Biochimie, Hématologie..." appVoiceInput>
+            <span class="error-text" *ngIf="hasError('specialisation')">Spécialisation requise</span>
           </div>
         </div>
       </div>
@@ -487,6 +492,19 @@
             </button>
           </div>
         </div>
+
+        <!-- Changement de service Infirmier -->
+        <div class="info-section actions-section">
+          <h4><lucide-icon name="building-2" [size]="16"></lucide-icon> Gestion du service</h4>
+          <div class="action-buttons">
+            <button 
+              class="btn-primary" 
+              (click)="openChangeServiceSidebar()">
+              <lucide-icon name="repeat" [size]="16"></lucide-icon>
+              Changer de service
+            </button>
+          </div>
+        </div>
       </ng-container>
 
       <!-- Section Médecin -->
@@ -506,6 +524,19 @@
               <label>Service</label>
               <span>{{ selectedUserDetails.medecin.nomService || '-' }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Actions Médecin - Changement de service -->
+        <div class="info-section actions-section">
+          <h4><lucide-icon name="building-2" [size]="16"></lucide-icon> Gestion du service</h4>
+          <div class="action-buttons">
+            <button 
+              class="btn-primary" 
+              (click)="openChangeServiceSidebar()">
+              <lucide-icon name="repeat" [size]="16"></lucide-icon>
+              Changer de service
+            </button>
           </div>
         </div>
       </ng-container>
@@ -600,6 +631,125 @@
         (click)="confirmNomination()">
         <lucide-icon name="check" [size]="16"></lucide-icon>
         {{ isNominating ? 'Nomination...' : 'Confirmer la nomination' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar Changement de Service -->
+<div class="nomination-sidebar change-service-sidebar" *ngIf="showChangeServiceSidebar" @slideIn>
+  <div class="sidebar-header">
+    <h2>
+      <lucide-icon name="repeat" [size]="24"></lucide-icon>
+      Changement de service
+    </h2>
+    <button class="close-btn" (click)="closeChangeServiceSidebar()">
+      <lucide-icon name="x" [size]="20"></lucide-icon>
+    </button>
+  </div>
+
+  <div class="sidebar-content">
+    <p class="nomination-info">
+      Modifier le service de 
+      <strong>{{ selectedUserDetails?.prenom }} {{ selectedUserDetails?.nom }}</strong>
+      ({{ selectedUserDetails?.role === 'medecin' ? 'Médecin' : 'Infirmier' }})
+    </p>
+
+    <!-- Service actuel -->
+    <div class="current-service-info" *ngIf="selectedUserDetails">
+      <label>Service actuel</label>
+      <span class="current-service">
+        {{ selectedUserDetails.role === 'medecin' 
+           ? selectedUserDetails.medecin?.nomService 
+           : selectedUserDetails.infirmier?.nomService || 'Non défini' }}
+      </span>
+    </div>
+
+    <!-- Sélection nouveau service -->
+    <div class="form-group">
+      <label>Nouveau service *</label>
+      <select [(ngModel)]="selectedServiceForChange" [ngModelOptions]="{standalone: true}">
+        <option [value]="null" disabled>Sélectionnez un service</option>
+        <option *ngFor="let service of services" [ngValue]="service.idService">
+          {{ service.nomService }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Motif du changement -->
+    <div class="form-group">
+      <label>Motif du changement (optionnel)</label>
+      <textarea 
+        [(ngModel)]="motifChangementService" 
+        [ngModelOptions]="{standalone: true}"
+        placeholder="Ex: Réorganisation des services, demande de mutation..."
+        rows="3">
+      </textarea>
+    </div>
+
+    <!-- Historique des affectations -->
+    <div class="historique-section">
+      <h4>
+        <lucide-icon name="history" [size]="16"></lucide-icon>
+        Historique des affectations
+      </h4>
+      
+      <div *ngIf="isLoadingHistorique" class="loading-historique">
+        <lucide-icon name="loader-2" [size]="20" class="spin"></lucide-icon>
+        Chargement...
+      </div>
+
+      <div *ngIf="!isLoadingHistorique && historiqueAffectations">
+        <!-- Affectation actuelle -->
+        <div class="affectation-item current" *ngIf="historiqueAffectations.affectationActuelle">
+          <div class="affectation-header">
+            <span class="service-name">{{ historiqueAffectations.affectationActuelle.nomService }}</span>
+            <span class="badge active">En cours</span>
+          </div>
+          <div class="affectation-dates">
+            <span>Depuis le {{ historiqueAffectations.affectationActuelle.dateDebut | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="affectation-motif" *ngIf="historiqueAffectations.affectationActuelle.motifChangement">
+            <small>{{ historiqueAffectations.affectationActuelle.motifChangement }}</small>
+          </div>
+        </div>
+
+        <!-- Historique passé -->
+        <div class="affectation-item past" *ngFor="let affectation of historiqueAffectations.historique">
+          <div class="affectation-header">
+            <span class="service-name">{{ affectation.nomService }}</span>
+          </div>
+          <div class="affectation-dates">
+            <span>Du {{ affectation.dateDebut | date:'dd/MM/yyyy' }} au {{ affectation.dateFin | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="affectation-motif" *ngIf="affectation.motifChangement">
+            <small>{{ affectation.motifChangement }}</small>
+          </div>
+        </div>
+
+        <div *ngIf="!historiqueAffectations.affectationActuelle && historiqueAffectations.historique.length === 0" class="no-historique">
+          <lucide-icon name="info" [size]="16"></lucide-icon>
+          Aucun historique d'affectation
+        </div>
+      </div>
+
+      <div *ngIf="!isLoadingHistorique && !historiqueAffectations" class="no-historique">
+        <lucide-icon name="info" [size]="16"></lucide-icon>
+        Aucun historique disponible
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="nomination-actions">
+      <button class="btn-secondary" (click)="closeChangeServiceSidebar()">
+        Annuler
+      </button>
+      <button 
+        class="btn-primary" 
+        [disabled]="!selectedServiceForChange || isChangingService"
+        (click)="changerService()">
+        <lucide-icon name="check" [size]="16"></lucide-icon>
+        {{ isChangingService ? 'Modification...' : 'Confirmer le changement' }}
       </button>
     </div>
   </div>
