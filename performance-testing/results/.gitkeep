@@ -1,0 +1,23 @@
+# Test Results Directory
+
+Test results will be saved here automatically when running performance tests.
+
+## Files Generated
+
+- `frontend-metrics-{timestamp}.json` - Frontend performance metrics (bundle size, build time)
+- `backend-metrics-{timestamp}.json` - Backend API performance metrics (response times)
+- `k6-results-{timestamp}.json` - Load testing results from k6
+- `performance-report-{timestamp}.md` - Formatted report summary
+
+## Usage
+
+Run tests from parent directory:
+```powershell
+cd ..
+.\run-all-tests.ps1 -All
+```
+
+Parse and view results:
+```powershell
+.\parse-results.ps1
+```

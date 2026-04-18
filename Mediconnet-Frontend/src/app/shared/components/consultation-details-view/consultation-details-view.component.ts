@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { ConsultationCompleteService, ConsultationDetailDto, ConsultationEnCoursDto, ConclusionDto, ExamenCliniqueDto, ExamenGynecologiqueDto, ExamenChirurgicalDto, ParametresVitauxDto, PlanTraitementDto, OrdonnanceDto, ExamenPrescritDetailDto } from '../../../services/consultation-complete.service';
+import { PrintService, PrintableConsultation } from '../../../services/print.service';
 
 export type ConsultationViewMode = 'patient' | 'medecin';
 
@@ -32,7 +33,8 @@ export class ConsultationDetailsViewComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private consultationService: ConsultationCompleteService
+    private consultationService: ConsultationCompleteService,
+    private printService: PrintService
   ) {}
 
   ngOnInit(): void {
@@ -312,8 +314,58 @@ export class ConsultationDetailsViewComponent implements OnInit {
     return classes[statut] || '';
   }
 
+  /**
+   * Imprime la fiche patient de manière professionnelle
+   */
   printConsultation(): void {
-    window.print();
+    if (!this.consultation) return;
+    
+    const printData = this.buildPrintableData();
+    this.printService.printConsultation(printData);
+  }
+
+  /**
+   * Télécharge la fiche patient en PDF
+   */
+  downloadPDF(): void {
+    if (!this.consultation) return;
+    
+    const printData = this.buildPrintableData();
+    this.printService.downloadConsultationPDF(printData);
+  }
+
+  /**
+   * Construit les données pour l'impression
+   */
+  private buildPrintableData(): PrintableConsultation {
+    const c = this.consultation!;
+    
+    // Extraire les infos médecin du RDV de suivi si disponible
+    const medecinNom = (c as any).medecinNom || c.rdvSuivi?.medecinNom || 'Médecin traitant';
+    const serviceNom = (c as any).serviceNom || c.rdvSuivi?.serviceNom;
+    
+    return {
+      etablissement: {
+        nom: 'MédiConnect',
+        adresse: 'Centre Hospitalier Universitaire',
+        telephone: '+237 6XX XXX XXX',
+        email: 'contact@mediconnect.cm'
+      },
+      patient: {
+        nom: c.patientNom || 'Non renseigné',
+        prenom: c.patientPrenom || '',
+        numeroDossier: c.numeroDossier,
+        age: (c as any).patientAge,
+        sexe: (c as any).patientSexe
+      },
+      medecin: {
+        nom: medecinNom,
+        prenom: (c as any).medecinPrenom,
+        specialite: (c as any).medecinSpecialite,
+        service: serviceNom
+      },
+      consultation: c
+    };
   }
 
   private loadConsultation(): void {

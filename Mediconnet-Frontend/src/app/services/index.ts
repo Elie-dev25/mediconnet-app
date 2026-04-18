@@ -52,6 +52,7 @@ export { PharmacieStockService } from './pharmacie-stock.service';
 // Services utilitaires
 export { LoadingService } from './loading.service';
 export { PhoneValidationService } from './phone-validation.service';
+export { PrintService } from './print.service';
 export { SignalRService } from './signalr.service';
 export { SpeechRecognitionService } from './speech-recognition.service';
 

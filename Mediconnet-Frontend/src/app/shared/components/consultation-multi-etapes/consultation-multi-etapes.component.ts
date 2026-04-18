@@ -35,6 +35,7 @@ import { CreneauxSelectorComponent, CreneauUnifie } from '../creneaux-selector/c
 import { SpeechRecognitionService, SupportedLanguage } from '../../../services/speech-recognition.service';
 import { PharmacieStockService, MedicamentStock, FormePharmaceutique, VoieAdministration } from '../../../services/pharmacie-stock.service';
 import { AuthService } from '../../../services/auth.service';
+import { PrintService, PrintableConsultation } from '../../../services/print.service';
 import { ProgrammationInterventionPanelComponent } from '../programmation-intervention-panel/programmation-intervention-panel.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -308,7 +309,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     private hospitalisationService: HospitalisationService,
     private speechService: SpeechRecognitionService,
     private pharmacieService: PharmacieStockService,
-    private authService: AuthService
+    private authService: AuthService,
+    private printService: PrintService
   ) {
     this.initForms();
     this.isVoiceSupported = this.speechService.isSupported;
@@ -1941,63 +1943,83 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     this.isSaving = false;
   }
 
+  /**
+   * Imprime le récapitulatif de consultation de manière professionnelle
+   */
   imprimerRecapitulatif(): void {
     this.consultationService.getRecapitulatif(this.consultationId).subscribe({
       next: (recap) => {
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(this.generatePrintContent(recap));
-          printWindow.document.close();
-          printWindow.print();
-        }
+        const printData = this.buildPrintableDataFromRecap(recap);
+        this.printService.printConsultation(printData);
       }
     });
   }
 
-  private generatePrintContent(recap: any): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Consultation - ${recap.patient.prenom} ${recap.patient.nom}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          h1, h2, h3 { color: #333; }
-          .header { border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }
-          .section { margin-bottom: 20px; }
-          .section-title { background: #f0f0f0; padding: 8px; margin-bottom: 10px; }
-          .medicament { padding: 5px 0; border-bottom: 1px solid #eee; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Compte-rendu de consultation</h1>
-          <p><strong>Patient:</strong> ${recap.patient.prenom} ${recap.patient.nom}</p>
-          <p><strong>Date:</strong> ${new Date(recap.consultation.dateHeure).toLocaleDateString('fr-FR')}</p>
-        </div>
-        <div class="section">
-          <h2 class="section-title">Motif</h2>
-          <p>${recap.consultation.motif || '-'}</p>
-        </div>
-        <div class="section">
-          <h2 class="section-title">Diagnostic</h2>
-          <p>${recap.consultation.diagnostic?.diagnosticPrincipal || '-'}</p>
-        </div>
-        ${recap.consultation.prescriptions?.ordonnance ? `
-        <div class="section">
-          <h2 class="section-title">Ordonnance</h2>
-          ${recap.consultation.prescriptions.ordonnance.medicaments.map((m: any) => `
-            <div class="medicament">
-              <strong>${m.nomMedicament}</strong> ${m.dosage || ''}<br>
-              ${m.frequence || ''} ${m.duree ? '- ' + m.duree : ''}<br>
-              <em>${m.instructions || ''}</em>
-            </div>
-          `).join('')}
-        </div>
-        ` : ''}
-      </body>
-      </html>
-    `;
+  /**
+   * Télécharge le récapitulatif en PDF
+   */
+  telechargerRecapitulatifPDF(): void {
+    this.consultationService.getRecapitulatif(this.consultationId).subscribe({
+      next: (recap) => {
+        const printData = this.buildPrintableDataFromRecap(recap);
+        this.printService.downloadConsultationPDF(printData);
+      }
+    });
+  }
+
+  /**
+   * Construit les données imprimables à partir du récapitulatif
+   */
+  private buildPrintableDataFromRecap(recap: any): PrintableConsultation {
+    return {
+      etablissement: {
+        nom: 'MédiConnect',
+        adresse: 'Centre Hospitalier Universitaire',
+        telephone: '+237 6XX XXX XXX',
+        email: 'contact@mediconnect.cm'
+      },
+      patient: {
+        nom: recap.patient?.nom || 'Non renseigné',
+        prenom: recap.patient?.prenom || '',
+        numeroDossier: recap.patient?.numeroDossier,
+        age: recap.patient?.age,
+        sexe: recap.patient?.sexe
+      },
+      medecin: {
+        nom: recap.medecin?.nom || 'Médecin traitant',
+        prenom: recap.medecin?.prenom,
+        specialite: recap.medecin?.specialite,
+        service: recap.medecin?.service
+      },
+      consultation: {
+        idConsultation: this.consultationId,
+        idPatient: recap.patient?.idPatient || 0,
+        patientNom: recap.patient?.nom || '',
+        patientPrenom: recap.patient?.prenom || '',
+        numeroDossier: recap.patient?.numeroDossier,
+        dateConsultation: recap.consultation?.dateHeure || new Date().toISOString(),
+        duree: recap.consultation?.duree,
+        motif: recap.consultation?.motif,
+        statut: recap.consultation?.statut || 'terminee',
+        anamnese: recap.consultation?.anamnese?.histoireMaladie,
+        notesCliniques: recap.consultation?.diagnostic?.notesCliniques,
+        diagnostic: recap.consultation?.diagnostic?.diagnosticPrincipal,
+        conclusion: recap.consultation?.conclusion?.resumeConsultation,
+        recommandations: recap.consultation?.conclusion?.recommandations,
+        ordonnance: recap.consultation?.prescriptions?.ordonnance,
+        examensPrescrits: recap.consultation?.prescriptions?.examens?.map((e: any) => ({
+          nomExamen: e.nomExamen,
+          instructions: e.notes
+        })),
+        questionnaire: recap.consultation?.anamnese?.questionsReponses,
+        parametresVitaux: recap.consultation?.examenClinique?.parametresVitaux || recap.consultation?.anamnese?.parametresVitaux,
+        examenClinique: recap.consultation?.examenClinique,
+        examenGynecologique: recap.consultation?.examenGynecologique,
+        examenChirurgical: recap.consultation?.examenChirurgical,
+        planTraitement: recap.consultation?.planTraitement,
+        conclusionDetaillee: recap.consultation?.conclusion
+      }
+    };
   }
 
   onCancel(): void {
