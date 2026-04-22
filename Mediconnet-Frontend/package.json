@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:coverage": "ng test --no-watch --coverage --coverage-reporters=text --coverage-reporters=lcov --coverage-reporters=lcovonly"
   },
   "prettier": {
     "printWidth": 100,
@@ -41,6 +42,7 @@
     "@angular/build": "^21.0.0",
     "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
