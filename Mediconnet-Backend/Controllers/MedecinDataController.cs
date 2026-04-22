@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Medecin;
 using Microsoft.AspNetCore.Mvc;
@@ -57,7 +57,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetConsultationStats: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetConsultationStats");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -133,7 +133,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetConsultations: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetConsultations");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -196,7 +196,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetConsultationsJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetConsultationsJour");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -249,7 +249,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetPatientStats: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetPatientStats");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -365,7 +365,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetPatients: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetPatients");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -495,7 +495,7 @@ public class MedecinDataController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetPatientDetail: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetPatientDetail");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

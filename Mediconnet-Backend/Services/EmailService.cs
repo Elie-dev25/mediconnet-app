@@ -1,4 +1,4 @@
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Options;
@@ -48,8 +48,8 @@ public class EmailService : IEmailService
             if (_emailSettings.DevMode)
             {
                 _logger.LogInformation("=== EMAIL (DEV MODE) ===");
-                _logger.LogInformation($"To: {toEmail}");
-                _logger.LogInformation($"Subject: {subject}");
+                _logger.LogInformation("To: {ToEmail}", toEmail);
+                _logger.LogInformation("Subject: {Subject}", subject);
                 _logger.LogInformation($"Body: {textBody ?? htmlBody}");
                 _logger.LogInformation("========================");
                 return true;
@@ -77,12 +77,12 @@ public class EmailService : IEmailService
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation($"Email sent successfully to {toEmail}");
+            _logger.LogInformation("Email sent successfully to {ToEmail}", toEmail);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Failed to send email to {toEmail}: {ex.Message}");
+            _logger.LogError("Failed to send email to {ToEmail}: {Message}", toEmail, ex.Message);
             return false;
         }
     }
@@ -730,7 +730,12 @@ public class EmailService : IEmailService
     /// </summary>
     private static string StripHtml(string html)
     {
-        return System.Text.RegularExpressions.Regex.Replace(html, "<[^>]*>", " ")
+        return System.Text.RegularExpressions.Regex.Replace(
+                html,
+                "<[^>]*>",
+                " ",
+                System.Text.RegularExpressions.RegexOptions.None,
+                TimeSpan.FromMilliseconds(200))
             .Replace("&nbsp;", " ")
             .Replace("  ", " ")
             .Trim();

@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Chirurgie;
 
@@ -42,7 +43,7 @@ public class CoordinationInterventionDto
 }
 
 /// <summary>
-/// DTO pour l'agenda d'un anesthésiste (créneaux disponibles)
+/// DTO pour l'agenda d'un anesthÃ©siste (crÃ©neaux disponibles)
 /// </summary>
 public class CreneauDisponibleDto
 {
@@ -55,7 +56,7 @@ public class CreneauDisponibleDto
 }
 
 /// <summary>
-/// DTO pour afficher un anesthésiste avec ses disponibilités
+/// DTO pour afficher un anesthÃ©siste avec ses disponibilitÃ©s
 /// </summary>
 public class AnesthesisteDisponibiliteDto
 {
@@ -83,20 +84,23 @@ public class CoordinationHistoriqueDto
     public DateTime CreatedAt { get; set; }
 }
 
-// ==================== DTOs de création/modification ====================
+// ==================== DTOs de crÃ©ation/modification ====================
 
 /// <summary>
-/// Requête pour proposer une coordination (par le chirurgien)
+/// RequÃªte pour proposer une coordination (par le chirurgien)
 /// </summary>
 public class ProposerCoordinationRequest
 {
     [Required]
+    [JsonRequired]
     public int IdProgrammation { get; set; }
 
     [Required]
+    [JsonRequired]
     public int IdAnesthesiste { get; set; }
 
     [Required]
+    [JsonRequired]
     public DateTime DateProposee { get; set; }
 
     [Required]
@@ -104,43 +108,46 @@ public class ProposerCoordinationRequest
     public string HeureProposee { get; set; } = string.Empty;
 
     [Required]
-    [Range(15, 720, ErrorMessage = "Durée entre 15 min et 12h")]
+    [Range(15, 720, ErrorMessage = "DurÃ©e entre 15 min et 12h")]
     public int DureeEstimee { get; set; }
 
     public string? NotesChirurgien { get; set; }
 }
 
 /// <summary>
-/// Requête pour valider une coordination (par l'anesthésiste)
+/// RequÃªte pour valider une coordination (par l'anesthÃ©siste)
 /// </summary>
 public class ValiderCoordinationRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     public string? CommentaireAnesthesiste { get; set; }
 
     /// <summary>
-    /// Date du RDV de consultation pré-opératoire (optionnel, l'anesthésiste peut le planifier plus tard)
+    /// Date du RDV de consultation prÃ©-opÃ©ratoire (optionnel, l'anesthÃ©siste peut le planifier plus tard)
     /// </summary>
     public DateTime? DateRdvConsultation { get; set; }
 
     /// <summary>
-    /// Heure du RDV de consultation pré-opératoire (format HH:mm)
+    /// Heure du RDV de consultation prÃ©-opÃ©ratoire (format HH:mm)
     /// </summary>
     [RegularExpression(@"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", ErrorMessage = "Format heure invalide (HH:mm)")]
     public string? HeureRdvConsultation { get; set; }
 }
 
 /// <summary>
-/// Requête pour modifier/contre-proposer une coordination (par l'anesthésiste)
+/// RequÃªte pour modifier/contre-proposer une coordination (par l'anesthÃ©siste)
 /// </summary>
 public class ModifierCoordinationRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     [Required]
+    [JsonRequired]
     public DateTime DateContreProposee { get; set; }
 
     [Required]
@@ -152,64 +159,68 @@ public class ModifierCoordinationRequest
 }
 
 /// <summary>
-/// Requête pour refuser une coordination (par l'anesthésiste)
+/// RequÃªte pour refuser une coordination (par l'anesthÃ©siste)
 /// </summary>
 public class RefuserCoordinationRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     [Required]
-    [MinLength(10, ErrorMessage = "Le motif de refus doit contenir au moins 10 caractères")]
+    [MinLength(10, ErrorMessage = "Le motif de refus doit contenir au moins 10 caractÃ¨res")]
     public string MotifRefus { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// Requête pour accepter une contre-proposition (par le chirurgien)
+/// RequÃªte pour accepter une contre-proposition (par le chirurgien)
 /// </summary>
 public class AccepterContrePropositionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     public string? NotesChirurgien { get; set; }
 }
 
 /// <summary>
-/// Requête pour refuser une contre-proposition (par le chirurgien)
+/// RequÃªte pour refuser une contre-proposition (par le chirurgien)
 /// </summary>
 public class RefuserContrePropositionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     [Required]
-    [MinLength(10, ErrorMessage = "Le motif de refus doit contenir au moins 10 caractères")]
+    [MinLength(10, ErrorMessage = "Le motif de refus doit contenir au moins 10 caractÃ¨res")]
     public string MotifRefus { get; set; } = string.Empty;
 
     /// <summary>
-    /// Si true, permet de relancer avec un autre anesthésiste
+    /// Si true, permet de relancer avec un autre anesthÃ©siste
     /// </summary>
     public bool RelancerAvecAutre { get; set; } = false;
 }
 
 /// <summary>
-/// Requête pour annuler une coordination
+/// RequÃªte pour annuler une coordination
 /// </summary>
 public class AnnulerCoordinationRequest
 {
     [Required]
+    [JsonRequired]
     public int IdCoordination { get; set; }
 
     [Required]
-    [MinLength(10, ErrorMessage = "Le motif d'annulation doit contenir au moins 10 caractères")]
+    [MinLength(10, ErrorMessage = "Le motif d'annulation doit contenir au moins 10 caractÃ¨res")]
     public string MotifAnnulation { get; set; } = string.Empty;
 }
 
-// ==================== DTOs de réponse ====================
+// ==================== DTOs de rÃ©ponse ====================
 
 /// <summary>
-/// Réponse après action sur une coordination
+/// RÃ©ponse aprÃ¨s action sur une coordination
 /// </summary>
 public class CoordinationActionResponse
 {
@@ -222,7 +233,7 @@ public class CoordinationActionResponse
 }
 
 /// <summary>
-/// DTO pour les statistiques de coordination d'un médecin
+/// DTO pour les statistiques de coordination d'un mÃ©decin
 /// </summary>
 public class CoordinationStatsDto
 {

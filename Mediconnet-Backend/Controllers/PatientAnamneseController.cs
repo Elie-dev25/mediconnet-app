@@ -1,9 +1,10 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -28,7 +29,7 @@ public class PatientAnamneseController : ControllerBase
     }
 
     /// <summary>
-    /// Récupérer les questions d'anamnèse pour une consultation
+    /// RÃ©cupÃ©rer les questions d'anamnÃ¨se pour une consultation
     /// </summary>
     [HttpGet("questions/{consultationId}")]
     public async Task<IActionResult> GetQuestions(int consultationId)
@@ -38,7 +39,7 @@ public class PatientAnamneseController : ControllerBase
             var userId = GetCurrentUserId();
             if (!userId.HasValue) return Unauthorized();
 
-            // Vérifier que la consultation appartient au patient
+            // VÃ©rifier que la consultation appartient au patient
             var consultation = await _context.Consultations
                 .FirstOrDefaultAsync(c => c.IdConsultation == consultationId && c.IdPatient == userId.Value);
 
@@ -49,13 +50,13 @@ public class PatientAnamneseController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetQuestions: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la récupération des questions" });
+            _logger.LogError(ex, "Erreur GetQuestions");
+            return StatusCode(500, new { message = "Erreur lors de la rÃ©cupÃ©ration des questions" });
         }
     }
 
     /// <summary>
-    /// Récupérer les questions d'anamnèse par ID de RDV (crée la consultation si nécessaire)
+    /// RÃ©cupÃ©rer les questions d'anamnÃ¨se par ID de RDV (crÃ©e la consultation si nÃ©cessaire)
     /// </summary>
     [HttpGet("questions-rdv/{rdvId}")]
     public async Task<IActionResult> GetQuestionsByRdv(int rdvId)
@@ -65,7 +66,7 @@ public class PatientAnamneseController : ControllerBase
             var userId = GetCurrentUserId();
             if (!userId.HasValue) return Unauthorized();
 
-            // Vérifier que le RDV appartient au patient
+            // VÃ©rifier que le RDV appartient au patient
             var rdv = await _context.RendezVous
                 .Include(r => r.Medecin)
                 .FirstOrDefaultAsync(r => r.IdRendezVous == rdvId && r.IdPatient == userId.Value);
@@ -73,11 +74,11 @@ public class PatientAnamneseController : ControllerBase
             if (rdv == null)
                 return NotFound(new { message = "Rendez-vous introuvable" });
 
-            // Chercher une consultation existante liée au RDV
+            // Chercher une consultation existante liÃ©e au RDV
             var consultation = await _context.Consultations
                 .FirstOrDefaultAsync(c => c.IdRendezVous == rdvId);
 
-            // Si pas de consultation, en créer une
+            // Si pas de consultation, en crÃ©er une
             if (consultation == null)
             {
                 consultation = new Consultation
@@ -92,15 +93,15 @@ public class PatientAnamneseController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            // Déterminer si c'est une première consultation (même logique que côté médecin)
-            // C'est une première consultation si le patient n'a aucune consultation terminée avec ce médecin
+            // DÃ©terminer si c'est une premiÃ¨re consultation (mÃªme logique que cÃ´tÃ© mÃ©decin)
+            // C'est une premiÃ¨re consultation si le patient n'a aucune consultation terminÃ©e avec ce mÃ©decin
             var isPremiereConsultation = !await _context.Consultations
                 .AnyAsync(c => c.IdPatient == userId.Value && 
                               c.IdMedecin == rdv.IdMedecin && 
                               c.Statut == "terminee" &&
                               c.IdConsultation != consultation.IdConsultation);
 
-            // Récupérer la spécialité du médecin
+            // RÃ©cupÃ©rer la spÃ©cialitÃ© du mÃ©decin
             var medecin = await _context.Medecins
                 .Where(m => m.IdUser == rdv.IdMedecin)
                 .Select(m => new { m.IdSpecialite })
@@ -114,14 +115,14 @@ public class PatientAnamneseController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetQuestionsByRdv: {ex.Message}");
-            return StatusCode(500, new { message = "Erreur lors de la récupération des questions" });
+            _logger.LogError(ex, "Erreur GetQuestionsByRdv");
+            return StatusCode(500, new { message = "Erreur lors de la rÃ©cupÃ©ration des questions" });
         }
     }
 
     private async Task<AnamneseQuestionsResponse> GetQuestionsForConsultation(int consultationId)
     {
-        // Récupérer les questions actives
+        // RÃ©cupÃ©rer les questions actives
         var questions = await _context.Questions
             .Where(q => q.Actif)
             .OrderBy(q => q.Ordre)
@@ -135,7 +136,7 @@ public class PatientAnamneseController : ControllerBase
             })
             .ToListAsync();
 
-        // Récupérer les réponses existantes
+        // RÃ©cupÃ©rer les rÃ©ponses existantes
         var consultationQuestions = await _context.ConsultationQuestions
             .Include(cq => cq.Reponses)
             .Where(cq => cq.ConsultationId == consultationId)
@@ -155,7 +156,7 @@ public class PatientAnamneseController : ControllerBase
     }
 
     /// <summary>
-    /// Enregistrer les réponses d'anamnèse du patient
+    /// Enregistrer les rÃ©ponses d'anamnÃ¨se du patient
     /// </summary>
     [HttpPost("reponses")]
     public async Task<IActionResult> SaveReponses([FromBody] SaveAnamneseRequest request)
@@ -165,19 +166,19 @@ public class PatientAnamneseController : ControllerBase
             var userId = GetCurrentUserId();
             if (!userId.HasValue) return Unauthorized();
 
-            // Vérifier que la consultation appartient au patient
+            // VÃ©rifier que la consultation appartient au patient
             var consultation = await _context.Consultations
                 .FirstOrDefaultAsync(c => c.IdConsultation == request.ConsultationId && c.IdPatient == userId.Value);
 
             if (consultation == null)
                 return NotFound(new { message = "Consultation introuvable" });
 
-            // Construire l'anamnèse à partir des réponses
+            // Construire l'anamnÃ¨se Ã  partir des rÃ©ponses
             var anamneseLines = new List<string>();
 
             foreach (var reponse in request.Reponses)
             {
-                // Récupérer ou créer la liaison consultation-question
+                // RÃ©cupÃ©rer ou crÃ©er la liaison consultation-question
                 var consultationQuestion = await _context.ConsultationQuestions
                     .Include(cq => cq.Question)
                     .FirstOrDefaultAsync(cq => cq.ConsultationId == request.ConsultationId && cq.QuestionId == reponse.QuestionId);
@@ -193,7 +194,7 @@ public class PatientAnamneseController : ControllerBase
                     await _context.SaveChangesAsync();
                 }
 
-                // Ajouter ou mettre à jour la réponse
+                // Ajouter ou mettre Ã  jour la rÃ©ponse
                 var existingReponse = await _context.Reponses
                     .FirstOrDefaultAsync(r => r.ConsultationQuestionId == consultationQuestion.Id);
 
@@ -212,7 +213,7 @@ public class PatientAnamneseController : ControllerBase
                     });
                 }
 
-                // Ajouter à l'anamnèse textuelle
+                // Ajouter Ã  l'anamnÃ¨se textuelle
                 var question = consultationQuestion.Question ?? await _context.Questions.FindAsync(reponse.QuestionId);
                 if (question != null && !string.IsNullOrEmpty(reponse.Reponse))
                 {
@@ -220,7 +221,7 @@ public class PatientAnamneseController : ControllerBase
                 }
             }
 
-            // Mettre à jour le champ Anamnese de la consultation
+            // Mettre Ã  jour le champ Anamnese de la consultation
             if (anamneseLines.Any())
             {
                 consultation.Anamnese = string.Join("\n", anamneseLines);
@@ -228,12 +229,12 @@ public class PatientAnamneseController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { success = true, message = "Réponses enregistrées avec succès" });
+            return Ok(new { success = true, message = "RÃ©ponses enregistrÃ©es avec succÃ¨s" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveReponses: {ex.Message}");
-            return StatusCode(500, new { success = false, message = "Erreur lors de l'enregistrement des réponses" });
+            _logger.LogError(ex, "Erreur SaveReponses");
+            return StatusCode(500, new { success = false, message = "Erreur lors de l'enregistrement des rÃ©ponses" });
         }
     }
 }
@@ -269,6 +270,7 @@ public class AnamneseReponseDto
 
 public class SaveAnamneseRequest
 {
+    [JsonRequired]
     public int ConsultationId { get; set; }
     public List<AnamneseReponseDto> Reponses { get; set; } = new();
 }

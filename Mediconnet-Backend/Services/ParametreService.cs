@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Consultation;
@@ -90,7 +90,7 @@ public class ParametreService : IParametreService
             existing.EnregistrePar = userId;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Paramètres mis à jour pour consultation {request.IdConsultation} par user {userId}");
+            _logger.LogInformation("Paramètres mis à jour pour consultation {IdConsultation} par user {UserId}", request.IdConsultation, userId);
 
             await _notificationService.NotifyVitalsRecordedAsync(
                 consultation.IdMedecin,
@@ -117,7 +117,7 @@ public class ParametreService : IParametreService
         _context.Parametres.Add(parametre);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Paramètres créés pour consultation {request.IdConsultation} par user {userId}");
+        _logger.LogInformation("Paramètres créés pour consultation {IdConsultation} par user {UserId}", request.IdConsultation, userId);
 
         // Recharger avec les relations
         await _context.Entry(parametre).Reference(p => p.UtilisateurEnregistrant).LoadAsync();
@@ -195,7 +195,7 @@ public class ParametreService : IParametreService
 
             _context.Consultations.Add(consultation);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Consultation créée (ID: {consultation.IdConsultation}) à partir du RDV {rdv.IdRendezVous} pour patient {request.IdPatient}");
+            _logger.LogInformation("Consultation créée (ID: {IdConsultation}) à partir du RDV {IdRendezVous} pour patient {IdPatient}", consultation.IdConsultation, rdv.IdRendezVous, request.IdPatient);
         }
 
         // Vérifier si des paramètres existent déjà pour cette consultation
@@ -214,7 +214,7 @@ public class ParametreService : IParametreService
             existingParametre.EnregistrePar = userId;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Paramètres mis à jour pour consultation {consultation.IdConsultation} par user {userId}");
+            _logger.LogInformation("Paramètres mis à jour pour consultation {IdConsultation} par user {UserId}", consultation.IdConsultation, userId);
 
             // Notifier le médecin
             await _notificationService.NotifyVitalsRecordedAsync(
@@ -243,7 +243,7 @@ public class ParametreService : IParametreService
         _context.Parametres.Add(parametre);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Paramètres créés pour consultation {consultation.IdConsultation} (patient {request.IdPatient}) par user {userId}");
+        _logger.LogInformation("Paramètres créés pour consultation {IdConsultation} (patient {IdPatient}) par user {UserId}", consultation.IdConsultation, request.IdPatient, userId);
 
         // Notifier le médecin
         await _notificationService.NotifyVitalsRecordedAsync(
@@ -279,7 +279,7 @@ public class ParametreService : IParametreService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Paramètres {parametreId} mis à jour par user {userId}");
+        _logger.LogInformation("Paramètres {ParametreId} mis à jour par user {UserId}", parametreId, userId);
 
         return MapToDto(parametre);
     }
@@ -295,7 +295,7 @@ public class ParametreService : IParametreService
         _context.Parametres.Remove(parametre);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Paramètres {parametreId} supprimés");
+        _logger.LogInformation("Paramètres {ParametreId} supprimés", parametreId);
 
         return true;
     }

@@ -39,263 +39,239 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
-        try
+        // Rechercher l'utilisateur par email OU telephone
+        var identifier = request.Identifier?.Trim();
+        var utilisateur = await _context.Utilisateurs
+            .FirstOrDefaultAsync(u => u.Email == identifier || u.Telephone == identifier);
+
+        if (utilisateur == null)
         {
-            // Rechercher l'utilisateur par email OU telephone
-            var identifier = request.Identifier?.Trim();
-            var utilisateur = await _context.Utilisateurs
-                .FirstOrDefaultAsync(u => u.Email == identifier || u.Telephone == identifier);
+            _logger.LogWarning("Login failed: User {Identifier} not found", identifier);
+            await _auditService.LogAuthFailureAsync(identifier ?? "unknown", null, "User not found");
+            return null;
+        }
 
-            if (utilisateur == null)
+        // Verifier le password
+        if (string.IsNullOrEmpty(utilisateur.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.Password, utilisateur.PasswordHash))
+        {
+            _logger.LogWarning("Login failed: Invalid password for user {Identifier}", identifier);
+            await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_FAILED", "Utilisateur", utilisateur.IdUser, "Invalid password", false);
+            return null;
+        }
+
+        // Vérifier si l'email est confirmé (si la confirmation est activée)
+        if (_emailSettings.EnableEmailConfirmation && !utilisateur.EmailConfirmed)
+        {
+            _logger.LogWarning("Login failed: Email not confirmed for user {Identifier}", identifier);
+            return new LoginResponse
             {
-                _logger.LogWarning("Login failed: User {Identifier} not found", identifier);
-                await _auditService.LogAuthFailureAsync(identifier ?? "unknown", null, "User not found");
-                return null;
-            }
-
-            // Verifier le password
-            if (string.IsNullOrEmpty(utilisateur.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.Password, utilisateur.PasswordHash))
-            {
-                _logger.LogWarning("Login failed: Invalid password for user {Identifier}", identifier);
-                await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_FAILED", "Utilisateur", utilisateur.IdUser, "Invalid password", false);
-                return null;
-            }
-
-            // Vérifier si l'email est confirmé (si la confirmation est activée)
-            if (_emailSettings.EnableEmailConfirmation && !utilisateur.EmailConfirmed)
-            {
-                _logger.LogWarning($"Login failed: Email not confirmed for user {identifier}");
-                return new LoginResponse
-                {
-                    Token = null,
-                    IdUser = utilisateur.IdUser,
-                    Email = utilisateur.Email,
-                    Message = "EMAIL_NOT_CONFIRMED",
-                    RequiresEmailConfirmation = true
-                };
-            }
-
-            // Generer token
-            var token = await _jwtTokenService.GenerateTokenAsync(utilisateur.IdUser, utilisateur.Role);
-
-            // Logger le login reussi
-            await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_SUCCESS", "Utilisateur", utilisateur.IdUser);
-
-            // Récupérer les infos du patient si c'est un patient
-            bool declarationHonneurAcceptee = false;
-            if (utilisateur.Role == "patient")
-            {
-                var patient = await _context.Patients.FirstOrDefaultAsync(p => p.IdUser == utilisateur.IdUser);
-                declarationHonneurAcceptee = patient?.DeclarationHonneurAcceptee ?? false;
-            }
-
-            // Récupérer le titre affiché et la spécialité selon le rôle
-            string? titreAffiche = null;
-            int? idSpecialite = null;
-            if (utilisateur.Role == "medecin")
-            {
-                var medecin = await _context.Medecins
-                    .Include(m => m.Specialite)
-                    .FirstOrDefaultAsync(m => m.IdUser == utilisateur.IdUser);
-                
-                if (medecin?.Specialite != null)
-                {
-                    titreAffiche = $"Médecin - {medecin.Specialite.NomSpecialite}";
-                    idSpecialite = medecin.IdSpecialite;
-                }
-            }
-            else if (utilisateur.Role == "infirmier")
-            {
-                var serviceMajor = await _context.Services
-                    .FirstOrDefaultAsync(s => s.IdMajor == utilisateur.IdUser);
-                
-                if (serviceMajor != null)
-                {
-                    titreAffiche = $"Major {serviceMajor.NomService}";
-                }
-            }
-
-            // Déterminer si première connexion requise
-            bool requiresFirstLogin = utilisateur.Role == "patient" && 
-                (utilisateur.MustChangePassword || !declarationHonneurAcceptee);
-
-            var response = new LoginResponse
-            {
-                Token = token,
+                Token = null,
                 IdUser = utilisateur.IdUser,
-                Nom = utilisateur.Nom,
-                Prenom = utilisateur.Prenom,
                 Email = utilisateur.Email,
-                Telephone = utilisateur.Telephone,
-                Role = utilisateur.Role,
-                TitreAffiche = titreAffiche,
-                IdSpecialite = idSpecialite,
-                Message = "Connexion reussie",
-                ExpiresIn = 3600,
-                EmailConfirmed = utilisateur.EmailConfirmed,
-                ProfileCompleted = utilisateur.ProfileCompleted,
-                MustChangePassword = utilisateur.MustChangePassword,
-                DeclarationHonneurAcceptee = declarationHonneurAcceptee,
-                RequiresFirstLogin = requiresFirstLogin
+                Message = "EMAIL_NOT_CONFIRMED",
+                RequiresEmailConfirmation = true
             };
+        }
 
-            _logger.LogInformation($"User {utilisateur.Email} logged in successfully");
-            return response;
-        }
-        catch (Exception ex)
+        // Generer token
+        var token = await _jwtTokenService.GenerateTokenAsync(utilisateur.IdUser, utilisateur.Role);
+
+        // Logger le login reussi
+        await _auditService.LogActionAsync(utilisateur.IdUser, "LOGIN_SUCCESS", "Utilisateur", utilisateur.IdUser);
+
+        // Récupérer les infos du patient si c'est un patient
+        bool declarationHonneurAcceptee = false;
+        if (utilisateur.Role == "patient")
         {
-            _logger.LogError($"Error during login: {ex.Message}");
-            throw;
+            var patient = await _context.Patients.FirstOrDefaultAsync(p => p.IdUser == utilisateur.IdUser);
+            declarationHonneurAcceptee = patient?.DeclarationHonneurAcceptee ?? false;
         }
+
+        // Récupérer le titre affiché et la spécialité selon le rôle
+        string? titreAffiche = null;
+        int? idSpecialite = null;
+        if (utilisateur.Role == "medecin")
+        {
+            var medecin = await _context.Medecins
+                .Include(m => m.Specialite)
+                .FirstOrDefaultAsync(m => m.IdUser == utilisateur.IdUser);
+            
+            if (medecin?.Specialite != null)
+            {
+                titreAffiche = $"Médecin - {medecin.Specialite.NomSpecialite}";
+                idSpecialite = medecin.IdSpecialite;
+            }
+        }
+        else if (utilisateur.Role == "infirmier")
+        {
+            var serviceMajor = await _context.Services
+                .FirstOrDefaultAsync(s => s.IdMajor == utilisateur.IdUser);
+            
+            if (serviceMajor != null)
+            {
+                titreAffiche = $"Major {serviceMajor.NomService}";
+            }
+        }
+
+        // Déterminer si première connexion requise
+        bool requiresFirstLogin = utilisateur.Role == "patient" && 
+            (utilisateur.MustChangePassword || !declarationHonneurAcceptee);
+
+        var response = new LoginResponse
+        {
+            Token = token,
+            IdUser = utilisateur.IdUser,
+            Nom = utilisateur.Nom,
+            Prenom = utilisateur.Prenom,
+            Email = utilisateur.Email,
+            Telephone = utilisateur.Telephone,
+            Role = utilisateur.Role,
+            TitreAffiche = titreAffiche,
+            IdSpecialite = idSpecialite,
+            Message = "Connexion reussie",
+            ExpiresIn = 3600,
+            EmailConfirmed = utilisateur.EmailConfirmed,
+            ProfileCompleted = utilisateur.ProfileCompleted,
+            MustChangePassword = utilisateur.MustChangePassword,
+            DeclarationHonneurAcceptee = declarationHonneurAcceptee,
+            RequiresFirstLogin = requiresFirstLogin
+        };
+
+        _logger.LogInformation("User {Email} logged in successfully", utilisateur.Email);
+        return response;
     }
 
     public async Task<UtilisateurDto?> RegisterAsync(RegisterRequest request)
     {
-        try
+        // Verifier si l'utilisateur existe deja (email ou telephone)
+        if (await _context.Utilisateurs.AnyAsync(u => u.Email == request.Email))
         {
-            // Verifier si l'utilisateur existe deja (email ou telephone)
-            if (await _context.Utilisateurs.AnyAsync(u => u.Email == request.Email))
-            {
-                _logger.LogWarning($"Registration failed: Email already exists");
-                return null;
-            }
-
-            if (await _context.Utilisateurs.AnyAsync(u => u.Telephone == request.Telephone))
-            {
-                _logger.LogWarning($"Registration failed: Phone number already exists");
-                return null;
-            }
-
-            // Creer l'utilisateur avec toutes les informations (inscription complète)
-            var utilisateur = new Utilisateur
-            {
-                Nom = request.LastName,
-                Prenom = request.FirstName,
-                Email = request.Email,
-                Telephone = request.Telephone,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = "patient",
-                CreatedAt = DateTime.UtcNow,
-                // Informations personnelles étendues
-                Naissance = request.DateNaissance,
-                Sexe = request.Sexe,
-                Nationalite = request.Nationalite ?? "Cameroun",
-                RegionOrigine = request.RegionOrigine,
-                Adresse = request.Adresse,
-                SituationMatrimoniale = request.SituationMatrimoniale,
-                // Marquer le profil comme complété si toutes les infos sont fournies
-                ProfileCompleted = request.DeclarationHonneurAcceptee,
-                ProfileCompletedAt = request.DeclarationHonneurAcceptee ? DateTime.UtcNow : null
-            };
-
-            _context.Utilisateurs.Add(utilisateur);
-            await _context.SaveChangesAsync();
-
-            // Generer un numero de dossier patient
-            string numeroDossier = "DOS_" + DateTime.UtcNow.ToString("yyyyMMdd") + "_" + utilisateur.IdUser.ToString().PadLeft(4, '0');
-
-            // Creer l'entree dans la table patient avec toutes les informations médicales
-            var patient = new Patient
-            {
-                IdUser = utilisateur.IdUser,
-                NumeroDossier = numeroDossier,
-                DateCreation = DateTime.UtcNow,
-                // Informations personnelles
-                Profession = request.Profession,
-                NbEnfants = request.NbEnfants,
-                Ethnie = request.Ethnie,
-                // Informations médicales
-                GroupeSanguin = request.GroupeSanguin,
-                MaladiesChroniques = request.MaladiesChroniques != null ? string.Join(", ", request.MaladiesChroniques) : null,
-                OperationsChirurgicales = request.OperationsChirurgicales,
-                OperationsDetails = request.OperationsDetails,
-                AllergiesConnues = request.AllergiesConnues,
-                AllergiesDetails = request.AllergiesDetails,
-                AntecedentsFamiliaux = request.AntecedentsFamiliaux,
-                AntecedentsFamiliauxDetails = request.AntecedentsFamiliauxDetails,
-                // Habitudes de vie
-                ConsommationAlcool = request.ConsommationAlcool,
-                FrequenceAlcool = request.FrequenceAlcool,
-                Tabagisme = request.Tabagisme,
-                ActivitePhysique = request.ActivitePhysique,
-                // Contact d'urgence
-                PersonneContact = request.PersonneContact,
-                NumeroContact = request.NumeroContact,
-                // Déclaration sur l'honneur
-                DeclarationHonneurAcceptee = request.DeclarationHonneurAcceptee,
-                DeclarationHonneurAt = request.DeclarationHonneurAcceptee ? DateTime.UtcNow : null
-            };
-
-            _context.Patients.Add(patient);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"User {utilisateur.Email} registered successfully with complete profile");
-
-            // Envoyer l'email de confirmation si activé
-            if (_emailSettings.EnableEmailConfirmation)
-            {
-                var userName = $"{utilisateur.Prenom} {utilisateur.Nom}";
-                var emailSent = await _emailConfirmationService.SendConfirmationEmailAsync(
-                    utilisateur.IdUser, 
-                    utilisateur.Email, 
-                    userName);
-
-                if (!emailSent)
-                {
-                    _logger.LogWarning($"Failed to send confirmation email to {utilisateur.Email}");
-                }
-            }
-            else
-            {
-                // Si la confirmation n'est pas requise, marquer comme confirmé
-                utilisateur.EmailConfirmed = true;
-                utilisateur.EmailConfirmedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-            }
-
-            return new UtilisateurDto
-            {
-                IdUser = utilisateur.IdUser,
-                Nom = utilisateur.Nom,
-                Prenom = utilisateur.Prenom,
-                Email = utilisateur.Email,
-                Role = utilisateur.Role,
-                CreatedAt = utilisateur.CreatedAt,
-                EmailConfirmed = utilisateur.EmailConfirmed
-            };
+            _logger.LogWarning("Registration failed: Email already exists");
+            return null;
         }
-        catch (Exception ex)
+
+        if (await _context.Utilisateurs.AnyAsync(u => u.Telephone == request.Telephone))
         {
-            _logger.LogError($"Error during registration: {ex.Message} - {ex.InnerException?.Message}");
-            throw;
+            _logger.LogWarning("Registration failed: Phone number already exists");
+            return null;
         }
+
+        // Creer l'utilisateur avec toutes les informations (inscription complète)
+        var utilisateur = new Utilisateur
+        {
+            Nom = request.LastName,
+            Prenom = request.FirstName,
+            Email = request.Email,
+            Telephone = request.Telephone,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Role = "patient",
+            CreatedAt = DateTime.UtcNow,
+            // Informations personnelles étendues
+            Naissance = request.DateNaissance,
+            Sexe = request.Sexe,
+            Nationalite = request.Nationalite ?? "Cameroun",
+            RegionOrigine = request.RegionOrigine,
+            Adresse = request.Adresse,
+            SituationMatrimoniale = request.SituationMatrimoniale,
+            // Marquer le profil comme complété si toutes les infos sont fournies
+            ProfileCompleted = request.DeclarationHonneurAcceptee,
+            ProfileCompletedAt = request.DeclarationHonneurAcceptee ? DateTime.UtcNow : null
+        };
+
+        _context.Utilisateurs.Add(utilisateur);
+        await _context.SaveChangesAsync();
+
+        // Generer un numero de dossier patient
+        string numeroDossier = "DOS_" + DateTime.UtcNow.ToString("yyyyMMdd") + "_" + utilisateur.IdUser.ToString().PadLeft(4, '0');
+
+        // Creer l'entree dans la table patient avec toutes les informations médicales
+        var patient = new Patient
+        {
+            IdUser = utilisateur.IdUser,
+            NumeroDossier = numeroDossier,
+            DateCreation = DateTime.UtcNow,
+            // Informations personnelles
+            Profession = request.Profession,
+            NbEnfants = request.NbEnfants,
+            Ethnie = request.Ethnie,
+            // Informations médicales
+            GroupeSanguin = request.GroupeSanguin,
+            MaladiesChroniques = request.MaladiesChroniques != null ? string.Join(", ", request.MaladiesChroniques) : null,
+            OperationsChirurgicales = request.OperationsChirurgicales,
+            OperationsDetails = request.OperationsDetails,
+            AllergiesConnues = request.AllergiesConnues,
+            AllergiesDetails = request.AllergiesDetails,
+            AntecedentsFamiliaux = request.AntecedentsFamiliaux,
+            AntecedentsFamiliauxDetails = request.AntecedentsFamiliauxDetails,
+            // Habitudes de vie
+            ConsommationAlcool = request.ConsommationAlcool,
+            FrequenceAlcool = request.FrequenceAlcool,
+            Tabagisme = request.Tabagisme,
+            ActivitePhysique = request.ActivitePhysique,
+            // Contact d'urgence
+            PersonneContact = request.PersonneContact,
+            NumeroContact = request.NumeroContact,
+            // Déclaration sur l'honneur
+            DeclarationHonneurAcceptee = request.DeclarationHonneurAcceptee,
+            DeclarationHonneurAt = request.DeclarationHonneurAcceptee ? DateTime.UtcNow : null
+        };
+
+        _context.Patients.Add(patient);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User {Email} registered successfully with complete profile", utilisateur.Email);
+
+        // Envoyer l'email de confirmation si activé
+        if (_emailSettings.EnableEmailConfirmation)
+        {
+            var userName = $"{utilisateur.Prenom} {utilisateur.Nom}";
+            var emailSent = await _emailConfirmationService.SendConfirmationEmailAsync(
+                utilisateur.IdUser, 
+                utilisateur.Email, 
+                userName);
+
+            if (!emailSent)
+            {
+                _logger.LogWarning("Failed to send confirmation email to {Email}", utilisateur.Email);
+            }
+        }
+        else
+        {
+            // Si la confirmation n'est pas requise, marquer comme confirmé
+            utilisateur.EmailConfirmed = true;
+            utilisateur.EmailConfirmedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        return new UtilisateurDto
+        {
+            IdUser = utilisateur.IdUser,
+            Nom = utilisateur.Nom,
+            Prenom = utilisateur.Prenom,
+            Email = utilisateur.Email,
+            Role = utilisateur.Role,
+            CreatedAt = utilisateur.CreatedAt,
+            EmailConfirmed = utilisateur.EmailConfirmed
+        };
     }
 
     public async Task<UtilisateurDto?> GetCurrentUserAsync(int userId)
     {
-        try
-        {
-            var utilisateur = await _context.Utilisateurs.FirstOrDefaultAsync(u => u.IdUser == userId);
+        var utilisateur = await _context.Utilisateurs.FirstOrDefaultAsync(u => u.IdUser == userId);
 
-            if (utilisateur == null)
-                return null;
+        if (utilisateur == null)
+            return null;
 
-            return new UtilisateurDto
-            {
-                IdUser = utilisateur.IdUser,
-                Nom = utilisateur.Nom,
-                Prenom = utilisateur.Prenom,
-                Email = utilisateur.Email,
-                Role = utilisateur.Role,
-                Telephone = utilisateur.Telephone,
-                CreatedAt = utilisateur.CreatedAt
-            };
-        }
-        catch (Exception ex)
+        return new UtilisateurDto
         {
-            _logger.LogError($"Error getting current user: {ex.Message}");
-            throw;
-        }
+            IdUser = utilisateur.IdUser,
+            Nom = utilisateur.Nom,
+            Prenom = utilisateur.Prenom,
+            Email = utilisateur.Email,
+            Role = utilisateur.Role,
+            Telephone = utilisateur.Telephone,
+            CreatedAt = utilisateur.CreatedAt
+        };
     }
 
     public async Task<bool> ValidateTokenAsync(string token)

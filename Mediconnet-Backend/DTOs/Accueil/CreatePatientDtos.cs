@@ -1,10 +1,11 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Accueil;
 
 /// <summary>
-/// DTO pour la création d'un patient complet par l'accueil
-/// Inclut toutes les informations du formulaire register + complétion profil
+/// DTO pour la crÃ©ation d'un patient complet par l'accueil
+/// Inclut toutes les informations du formulaire register + complÃ©tion profil
 /// </summary>
 public class CreatePatientByReceptionRequest
 {
@@ -14,19 +15,20 @@ public class CreatePatientByReceptionRequest
     [StringLength(100, MinimumLength = 2)]
     public string Nom { get; set; } = string.Empty;
     
-    [Required(ErrorMessage = "Le prénom est requis")]
+    [Required(ErrorMessage = "Le prÃ©nom est requis")]
     [StringLength(100, MinimumLength = 2)]
     public string Prenom { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "La date de naissance est requise")]
+    [JsonRequired]
     public DateTime DateNaissance { get; set; }
     
     [Required(ErrorMessage = "Le sexe est requis")]
-    [RegularExpression("^[MF]$", ErrorMessage = "Le sexe doit être M ou F")]
+    [RegularExpression("^[MF]$", ErrorMessage = "Le sexe doit Ãªtre M ou F")]
     public string Sexe { get; set; } = string.Empty;
     
-    [Required(ErrorMessage = "Le téléphone est requis")]
-    [Phone(ErrorMessage = "Format de téléphone invalide")]
+    [Required(ErrorMessage = "Le tÃ©lÃ©phone est requis")]
+    [Phone(ErrorMessage = "Format de tÃ©lÃ©phone invalide")]
     public string Telephone { get; set; } = string.Empty;
     
     // ========== Informations personnelles (optionnelles) ==========
@@ -47,11 +49,11 @@ public class CreatePatientByReceptionRequest
     
     public string? Profession { get; set; }
     
-    // ========== Informations médicales ==========
+    // ========== Informations mÃ©dicales ==========
     
     public string? GroupeSanguin { get; set; }
     
-    /// <summary>Liste des maladies chroniques (séparées par virgule)</summary>
+    /// <summary>Liste des maladies chroniques (sÃ©parÃ©es par virgule)</summary>
     public string? MaladiesChroniques { get; set; }
     
     public bool? OperationsChirurgicales { get; set; }
@@ -86,17 +88,17 @@ public class CreatePatientByReceptionRequest
     
     // ========== Assurance ==========
     
-    /// <summary>ID de l'assurance (null si non assuré)</summary>
+    /// <summary>ID de l'assurance (null si non assurÃ©)</summary>
     public int? AssuranceId { get; set; }
     
-    /// <summary>Numéro de carte d'assurance</summary>
+    /// <summary>NumÃ©ro de carte d'assurance</summary>
     [StringLength(100)]
     public string? NumeroCarteAssurance { get; set; }
     
-    /// <summary>Date de début de validité de l'assurance</summary>
+    /// <summary>Date de dÃ©but de validitÃ© de l'assurance</summary>
     public DateTime? DateDebutValidite { get; set; }
     
-    /// <summary>Date de fin de validité de l'assurance</summary>
+    /// <summary>Date de fin de validitÃ© de l'assurance</summary>
     public DateTime? DateFinValidite { get; set; }
     
     /// <summary>Taux de couverture propre au patient (0-100)</summary>
@@ -104,8 +106,8 @@ public class CreatePatientByReceptionRequest
     public decimal? TauxCouvertureOverride { get; set; }
 
     /// <summary>
-    /// Alias pour compatibilité avec l'ancien champ CouvertureAssurance.
-    /// Permet aux anciens formulaires de continuer à envoyer la valeur.
+    /// Alias pour compatibilitÃ© avec l'ancien champ CouvertureAssurance.
+    /// Permet aux anciens formulaires de continuer Ã  envoyer la valeur.
     /// </summary>
     [Range(0, 100)]
     public decimal? CouvertureAssurance
@@ -116,39 +118,40 @@ public class CreatePatientByReceptionRequest
 }
 
 /// <summary>
-/// Réponse après création d'un patient par l'accueil
+/// RÃ©ponse aprÃ¨s crÃ©ation d'un patient par l'accueil
 /// </summary>
 public class CreatePatientByReceptionResponse
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     
-    /// <summary>ID de l'utilisateur créé</summary>
+    /// <summary>ID de l'utilisateur crÃ©Ã©</summary>
     public int? IdUser { get; set; }
     
-    /// <summary>Numéro de dossier généré</summary>
+    /// <summary>NumÃ©ro de dossier gÃ©nÃ©rÃ©</summary>
     public string? NumeroDossier { get; set; }
     
-    /// <summary>Mot de passe temporaire généré (à communiquer au patient)</summary>
+    /// <summary>Mot de passe temporaire gÃ©nÃ©rÃ© (Ã  communiquer au patient)</summary>
     public string? TemporaryPassword { get; set; }
     
-    /// <summary>Instructions de première connexion</summary>
+    /// <summary>Instructions de premiÃ¨re connexion</summary>
     public string? LoginInstructions { get; set; }
     
-    /// <summary>Identifiant de connexion (téléphone ou email)</summary>
+    /// <summary>Identifiant de connexion (tÃ©lÃ©phone ou email)</summary>
     public string? LoginIdentifier { get; set; }
 }
 
 /// <summary>
-/// DTO pour la validation de première connexion (déclaration + changement mot de passe)
+/// DTO pour la validation de premiÃ¨re connexion (dÃ©claration + changement mot de passe)
 /// </summary>
 public class FirstLoginValidationRequest
 {
-    [Required(ErrorMessage = "La déclaration sur l'honneur est requise")]
+    [Required(ErrorMessage = "La dÃ©claration sur l'honneur est requise")]
+    [JsonRequired]
     public bool DeclarationHonneurAcceptee { get; set; }
     
     [Required(ErrorMessage = "Le nouveau mot de passe est requis")]
-    [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractères")]
+    [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractÃ¨res")]
     public string NewPassword { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
@@ -157,15 +160,16 @@ public class FirstLoginValidationRequest
 }
 
 /// <summary>
-/// Requête pour valider uniquement la déclaration sur l'honneur
+/// RequÃªte pour valider uniquement la dÃ©claration sur l'honneur
 /// </summary>
 public class AcceptDeclarationRequest
 {
+    [JsonRequired]
     public bool DeclarationHonneurAcceptee { get; set; }
 }
 
 /// <summary>
-/// Réponse de validation de la déclaration
+/// RÃ©ponse de validation de la dÃ©claration
 /// </summary>
 public class AcceptDeclarationResponse
 {
@@ -174,22 +178,22 @@ public class AcceptDeclarationResponse
 }
 
 /// <summary>
-/// Réponse de validation de première connexion
+/// RÃ©ponse de validation de premiÃ¨re connexion
 /// </summary>
 public class FirstLoginValidationResponse
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     
-    /// <summary>Nouveau token JWT après validation</summary>
+    /// <summary>Nouveau token JWT aprÃ¨s validation</summary>
     public string? Token { get; set; }
     
-    /// <summary>Durée de validité du token en secondes</summary>
+    /// <summary>DurÃ©e de validitÃ© du token en secondes</summary>
     public int ExpiresIn { get; set; }
 }
 
 /// <summary>
-/// DTO pour récupérer les informations du patient pour la page de première connexion
+/// DTO pour rÃ©cupÃ©rer les informations du patient pour la page de premiÃ¨re connexion
 /// </summary>
 public class FirstLoginPatientInfoResponse
 {
@@ -210,7 +214,7 @@ public class FirstLoginPatientInfoResponse
     public string? Ethnie { get; set; }
     public string? Profession { get; set; }
     
-    // Informations médicales
+    // Informations mÃ©dicales
     public string? GroupeSanguin { get; set; }
     public string? MaladiesChroniques { get; set; }
     public bool? OperationsChirurgicales { get; set; }
@@ -231,7 +235,7 @@ public class FirstLoginPatientInfoResponse
     public string? PersonneContact { get; set; }
     public string? NumeroContact { get; set; }
     
-    // Numéro de dossier
+    // NumÃ©ro de dossier
     public string? NumeroDossier { get; set; }
     
     // Statuts

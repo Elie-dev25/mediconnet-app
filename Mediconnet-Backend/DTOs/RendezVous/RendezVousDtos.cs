@@ -1,4 +1,5 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.RendezVous;
 
@@ -26,7 +27,7 @@ public class RendezVousDto
     public string TypeRdv { get; set; } = string.Empty;
     public DateTime DateCreation { get; set; }
     
-    // Informations d'orientation (si RDV créé depuis une orientation)
+    // Informations d'orientation (si RDV crÃ©Ã© depuis une orientation)
     public int? IdOrientation { get; set; }
     public string? MotifOrientation { get; set; }
     public string? MedecinOrienteur { get; set; }
@@ -34,7 +35,7 @@ public class RendezVousDto
 }
 
 /// <summary>
-/// DTO pour la liste des rendez-vous (vue simplifiée)
+/// DTO pour la liste des rendez-vous (vue simplifiÃ©e)
 /// </summary>
 public class RendezVousListDto
 {
@@ -51,16 +52,18 @@ public class RendezVousListDto
 }
 
 /// <summary>
-/// DTO pour créer un rendez-vous
+/// DTO pour crÃ©er un rendez-vous
 /// </summary>
 public class CreateRendezVousRequest
 {
     [Required]
+    [JsonRequired]
     public int IdMedecin { get; set; }
 
     public int? IdService { get; set; }
 
     [Required]
+    [JsonRequired]
     public DateTime DateHeure { get; set; }
 
     public int Duree { get; set; } = 30;
@@ -99,6 +102,7 @@ public class UpdateRendezVousRequest
 public class AnnulerRendezVousRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 
     [Required]
@@ -107,24 +111,24 @@ public class AnnulerRendezVousRequest
 }
 
 /// <summary>
-/// Statut possible d'un créneau horaire
+/// Statut possible d'un crÃ©neau horaire
 /// </summary>
 public enum SlotStatus
 {
-    /// <summary>Créneau disponible pour réservation</summary>
+    /// <summary>CrÃ©neau disponible pour rÃ©servation</summary>
     Disponible,
-    /// <summary>Créneau déjà réservé</summary>
+    /// <summary>CrÃ©neau dÃ©jÃ  rÃ©servÃ©</summary>
     Occupe,
-    /// <summary>Créneau indisponible (congés, pause, etc.)</summary>
+    /// <summary>CrÃ©neau indisponible (congÃ©s, pause, etc.)</summary>
     Indisponible,
-    /// <summary>Créneau temporairement verrouillé par un autre utilisateur</summary>
+    /// <summary>CrÃ©neau temporairement verrouillÃ© par un autre utilisateur</summary>
     Verrouille,
-    /// <summary>Créneau dans le passé</summary>
+    /// <summary>CrÃ©neau dans le passÃ©</summary>
     Passe
 }
 
 /// <summary>
-/// DTO pour les créneaux disponibles avec statut détaillé
+/// DTO pour les crÃ©neaux disponibles avec statut dÃ©taillÃ©
 /// </summary>
 public class CreneauDisponibleDto
 {
@@ -132,18 +136,18 @@ public class CreneauDisponibleDto
     public int Duree { get; set; }
     public bool Disponible { get; set; }
     
-    /// <summary>Statut détaillé du créneau</summary>
+    /// <summary>Statut dÃ©taillÃ© du crÃ©neau</summary>
     public string Statut { get; set; } = "disponible";
     
     /// <summary>Raison si indisponible</summary>
     public string? Raison { get; set; }
     
-    /// <summary>ID du rendez-vous si occupé</summary>
+    /// <summary>ID du rendez-vous si occupÃ©</summary>
     public int? IdRendezVous { get; set; }
 }
 
 /// <summary>
-/// Réponse avec créneaux et statut de disponibilité médecin
+/// RÃ©ponse avec crÃ©neaux et statut de disponibilitÃ© mÃ©decin
 /// </summary>
 public class CreneauxDisponiblesResponse
 {
@@ -151,18 +155,18 @@ public class CreneauxDisponiblesResponse
     public string? MessageIndisponibilite { get; set; }
     public List<CreneauDisponibleDto> Creneaux { get; set; } = new();
     
-    /// <summary>Nombre de créneaux disponibles</summary>
+    /// <summary>Nombre de crÃ©neaux disponibles</summary>
     public int TotalDisponibles => Creneaux.Count(c => c.Disponible);
     
-    /// <summary>Nombre de créneaux occupés</summary>
+    /// <summary>Nombre de crÃ©neaux occupÃ©s</summary>
     public int TotalOccupes => Creneaux.Count(c => c.Statut == "occupe");
     
-    /// <summary>Horodatage de la réponse</summary>
+    /// <summary>Horodatage de la rÃ©ponse</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
-/// DTO pour réserver un créneau (avec token de verrouillage)
+/// DTO pour rÃ©server un crÃ©neau (avec token de verrouillage)
 /// </summary>
 public class ReserverCreneauRequest
 {
@@ -172,7 +176,7 @@ public class ReserverCreneauRequest
 }
 
 /// <summary>
-/// Réponse de réservation de créneau
+/// RÃ©ponse de rÃ©servation de crÃ©neau
 /// </summary>
 public class ReserverCreneauResponse
 {
@@ -183,7 +187,7 @@ public class ReserverCreneauResponse
 }
 
 /// <summary>
-/// DTO pour rechercher des créneaux
+/// DTO pour rechercher des crÃ©neaux
 /// </summary>
 public class RechercheCreneauxRequest
 {
@@ -198,7 +202,7 @@ public class RechercheCreneauxRequest
 }
 
 /// <summary>
-/// DTO pour les médecins disponibles
+/// DTO pour les mÃ©decins disponibles
 /// </summary>
 public class MedecinDisponibleDto
 {
@@ -224,7 +228,7 @@ public class RendezVousStatsDto
 }
 
 /// <summary>
-/// Requête de mise à jour du statut d'un rendez-vous
+/// RequÃªte de mise Ã  jour du statut d'un rendez-vous
 /// </summary>
 public class UpdateStatutRequest
 {
@@ -234,20 +238,22 @@ public class UpdateStatutRequest
 }
 
 /// <summary>
-/// Requête pour valider un RDV (médecin)
+/// RequÃªte pour valider un RDV (mÃ©decin)
 /// </summary>
 public class ValiderRdvRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 }
 
 /// <summary>
-/// Requête pour annuler un RDV par le médecin
+/// RequÃªte pour annuler un RDV par le mÃ©decin
 /// </summary>
 public class AnnulerRdvMedecinRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 
     [Required]
@@ -256,14 +262,16 @@ public class AnnulerRdvMedecinRequest
 }
 
 /// <summary>
-/// Requête pour suggérer un nouveau créneau
+/// RequÃªte pour suggÃ©rer un nouveau crÃ©neau
 /// </summary>
 public class SuggererCreneauRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 
     [Required]
+    [JsonRequired]
     public DateTime NouveauCreneau { get; set; }
 
     [MaxLength(500)]
@@ -271,7 +279,7 @@ public class SuggererCreneauRequest
 }
 
 /// <summary>
-/// Réponse de validation/action sur RDV
+/// RÃ©ponse de validation/action sur RDV
 /// </summary>
 public class ActionRdvResponse
 {
@@ -282,20 +290,22 @@ public class ActionRdvResponse
 }
 
 /// <summary>
-/// Requête patient pour accepter une proposition de créneau
+/// RequÃªte patient pour accepter une proposition de crÃ©neau
 /// </summary>
 public class AccepterPropositionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 }
 
 /// <summary>
-/// Requête patient pour refuser une proposition de créneau
+/// RequÃªte patient pour refuser une proposition de crÃ©neau
 /// </summary>
 public class RefuserPropositionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 
     [MaxLength(500)]
@@ -324,11 +334,12 @@ public class FacturePatientDto
 }
 
 /// <summary>
-/// Requête pour payer une facture en ligne
+/// RequÃªte pour payer une facture en ligne
 /// </summary>
 public class PayerFactureEnLigneRequest
 {
     [Required]
+    [JsonRequired]
     public int IdFacture { get; set; }
 
     [Required]
@@ -343,7 +354,7 @@ public class PayerFactureEnLigneRequest
 }
 
 /// <summary>
-/// Réponse de paiement en ligne
+/// RÃ©ponse de paiement en ligne
 /// </summary>
 public class PayerFactureEnLigneResponse
 {

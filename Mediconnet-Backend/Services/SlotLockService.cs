@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Microsoft.EntityFrameworkCore;
@@ -122,7 +122,7 @@ public class SlotLockService : ISlotLockService
             await _context.SaveChangesAsync();
             if (transaction != null) await transaction.CommitAsync();
 
-            _logger.LogInformation($"Verrou acquis: Médecin {medecinId}, {dateHeure}, Token: {lockToken[..8]}...");
+            _logger.LogInformation("Verrou acquis: Médecin {MedecinId}, {DateHeure}, Token: {TokenPrefix}...", medecinId, dateHeure, lockToken[..8]);
 
             return new SlotLockResult
             {
@@ -136,7 +136,7 @@ public class SlotLockService : ISlotLockService
                                            ex.InnerException?.Message.Contains("UNIQUE") == true)
         {
             if (transaction != null) await transaction.RollbackAsync();
-            _logger.LogWarning($"Conflit de verrou détecté: {ex.Message}");
+            _logger.LogWarning(ex, "Conflit de verrou détecté");
 
             return new SlotLockResult
             {
@@ -144,10 +144,10 @@ public class SlotLockService : ISlotLockService
                 Message = "Ce créneau vient d'être réservé par un autre utilisateur"
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             if (transaction != null) await transaction.RollbackAsync();
-            _logger.LogError($"Erreur lors de l'acquisition du verrou: {ex.Message}");
+            // Let the exception propagate - logging is handled by the caller
             throw;
         }
         finally
@@ -213,7 +213,7 @@ public class SlotLockService : ISlotLockService
         {
             _context.SlotLocks.RemoveRange(expiredLocks);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Nettoyage: {expiredLocks.Count} verrous expirés supprimés");
+            _logger.LogInformation("Nettoyage: {Count} verrous expirés supprimés", expiredLocks.Count);
         }
 
         return expiredLocks.Count;

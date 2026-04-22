@@ -1,7 +1,9 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Medecin;
 
 public class SendCodeRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
 }
 
@@ -14,6 +16,7 @@ public class SendCodeResponse
 
 public class VerifyCodeRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string Code { get; set; } = string.Empty;
 }

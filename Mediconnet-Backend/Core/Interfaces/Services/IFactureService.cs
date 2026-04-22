@@ -1,28 +1,29 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.Core.Interfaces.Services;
 
 /// <summary>
-/// Service de facturation avancée
+/// Service de facturation avancÃ©e
 /// </summary>
 public interface IFactureService
 {
-    // Génération PDF
+    // GÃ©nÃ©ration PDF
     Task<byte[]> GenerateFacturePdfAsync(int idFacture);
     Task<byte[]> GenerateRecuPdfAsync(int idTransaction);
     
-    // Paiements échelonnés
+    // Paiements Ã©chelonnÃ©s
     Task<EcheancierDto> CreerEcheancierAsync(CreateEcheancierRequest request);
     Task<EcheancierDto?> GetEcheancierAsync(int idFacture);
     Task<List<EcheanceDto>> GetEcheancesEnRetardAsync();
     Task<bool> MarquerEcheancePayeeAsync(int idEcheance, int transactionId);
     
-    // Intégration assurances
+    // IntÃ©gration assurances
     Task<DemandeRemboursementDto> CreerDemandeRemboursementAsync(CreateDemandeRemboursementRequest request);
     Task<List<DemandeRemboursementDto>> GetDemandesRemboursementAsync(int? idAssurance = null, string? statut = null);
     Task<DemandeRemboursementDto> TraiterDemandeRemboursementAsync(int idDemande, TraiterDemandeRequest request);
     Task<decimal> CalculerCouvertureAssuranceAsync(int idPatient, decimal montantTotal, string typeActe);
 }
 
-// DTOs pour la facturation avancée
+// DTOs pour la facturation avancÃ©e
 public class EcheancierDto
 {
     public int IdEcheancier { get; set; }
@@ -51,8 +52,11 @@ public class EcheanceDto
 
 public class CreateEcheancierRequest
 {
+    [JsonRequired]
     public int IdFacture { get; set; }
+    [JsonRequired]
     public int NombreEcheances { get; set; }
+    [JsonRequired]
     public DateTime DatePremierPaiement { get; set; }
     public string Frequence { get; set; } = "mensuel";
 }
@@ -78,7 +82,9 @@ public class DemandeRemboursementDto
 
 public class CreateDemandeRemboursementRequest
 {
+    [JsonRequired]
     public int IdFacture { get; set; }
+    [JsonRequired]
     public decimal MontantDemande { get; set; }
     public string? Justificatif { get; set; }
 }

@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Admin;
 
 /// <summary>
@@ -31,13 +32,14 @@ public class HistoriqueAffectationsDto
 }
 
 /// <summary>
-/// Requête pour changer le service d'un utilisateur
+/// RequÃªte pour changer le service d'un utilisateur
 /// </summary>
 public class ChangerServiceRequest
 {
     /// <summary>
     /// ID du nouveau service
     /// </summary>
+    [JsonRequired]
     public int IdNouveauService { get; set; }
 
     /// <summary>
@@ -47,7 +49,7 @@ public class ChangerServiceRequest
 }
 
 /// <summary>
-/// Réponse après un changement de service
+/// RÃ©ponse aprÃ¨s un changement de service
 /// </summary>
 public class ChangerServiceResponse
 {

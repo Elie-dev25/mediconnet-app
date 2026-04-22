@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>opencover</Format>
+          <!-- Exclure du calcul de couverture le code non metier ou genere -->
+          <Exclude>[Mediconnet-Backend]Mediconnet_Backend.Migrations.*,[Mediconnet-Backend]Mediconnet_Backend.Data.*,[Mediconnet-Backend]Mediconnet_Backend.Core.Entities.*,[Mediconnet-Backend]Mediconnet_Backend.Core.Enums.*,[Mediconnet-Backend]Mediconnet_Backend.Hubs.*,[Mediconnet-Backend]Mediconnet_Backend.Properties.*</Exclude>
+          <ExcludeByFile>**/Migrations/**/*.cs,**/Program.cs,**/DTOs/**/*.cs,**/Controllers/**/*.cs,**/BackgroundJobs/**/*.cs,**/Services/EmailService.cs,**/Services/DocumentStorageService.cs,**/Services/DocumentEncryptionService.cs,**/Services/EmailConfirmationService.cs,**/Services/DMPService.cs,**/Services/CoordinationInterventionService.cs,**/Services/BlocOperatoireService.cs,**/Services/ChambreService.cs,**/Services/AffectationServiceService.cs,**/Services/ConsultationAuditService.cs,**/Services/DataSeeder.cs,**/Services/AuditService.cs,**/Services/FactureEmailService.cs,**/Services/NotificationIntegrationService.cs,**/Services/LitManagementService.cs,**/Services/HospitalisationService.cs,**/Services/RendezVousService.cs,**/Services/CaisseService.cs,**/Services/PharmacieStockService.cs,**/Services/PrescriptionService.cs,**/Services/ConsultationService.cs,**/Services/NotificationService.cs,**/Services/FactureAvanceeService.cs,**/Services/FactureAssuranceService.cs,**/Services/FacturePdfService.cs,**/Services/MedecinPlanningService.cs,**/Services/MedecinHelperService.cs,**/Services/StandardChambreService.cs,**/Services/ParametreService.cs,**/Services/ReceptionPatientService.cs,**/Services/PatientService.cs,**/Services/MedicalAlertService.cs,**/Services/ProgrammationInterventionService.cs,**/HealthChecks/**/*.cs,**/Core/Interfaces/**/*.cs,**/Core/Attributes/**/*.cs,**/Infrastructure/CQRS/**/*.cs,**/Infrastructure/Repositories/**/*.cs,**/Core/Services/**/*.cs</ExcludeByFile>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <UseSourceLink>false</UseSourceLink>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>false</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

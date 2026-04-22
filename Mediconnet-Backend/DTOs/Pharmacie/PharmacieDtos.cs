@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Pharmacie;
 
 // ==================== KPIs & Dashboard ====================
@@ -45,7 +46,7 @@ public class UpdatePharmacieProfileRequest
     public string? PharmacieNom { get; set; }
 }
 
-// ==================== Médicaments/Stock ====================
+// ==================== MÃ©dicaments/Stock ====================
 
 public class MedicamentStockDto
 {
@@ -79,7 +80,7 @@ public class FournisseurMedicamentDto
     public DateTime? DerniereCommande { get; set; }
     public int TotalCommandes { get; set; }
     
-    // Détails du médicament pour éviter toute confusion
+    // DÃ©tails du mÃ©dicament pour Ã©viter toute confusion
     public int IdMedicament { get; set; }
     public string NomMedicament { get; set; } = "";
     public string? Dosage { get; set; }
@@ -105,7 +106,7 @@ public class HistoriqueFournisseurMedicamentDto
     public int IdFournisseur { get; set; }
     public string NomFournisseur { get; set; } = "";
     
-    // Infos médicament
+    // Infos mÃ©dicament
     public int IdMedicament { get; set; }
     public string NomMedicament { get; set; } = "";
     public string? Dosage { get; set; }
@@ -118,8 +119,10 @@ public class CreateMedicamentRequest
     public string? Dosage { get; set; }
     public string? FormeGalenique { get; set; }
     public string? Laboratoire { get; set; }
+    [JsonRequired]
     public int Stock { get; set; }
     public int SeuilStock { get; set; } = 10;
+    [JsonRequired]
     public float Prix { get; set; }
     public DateTime? DatePeremption { get; set; }
     public string? EmplacementRayon { get; set; }
@@ -146,7 +149,9 @@ public class UpdateMedicamentRequest
 
 public class AjustementStockRequest
 {
+    [JsonRequired]
     public int IdMedicament { get; set; }
+    [JsonRequired]
     public int Quantite { get; set; }
     public string TypeMouvement { get; set; } = "ajustement"; // entree, sortie, ajustement, perte
     public string? Motif { get; set; }
@@ -236,6 +241,7 @@ public class CommandeLigneDto
 
 public class CreateCommandeRequest
 {
+    [JsonRequired]
     public int IdFournisseur { get; set; }
     public DateTime? DateReceptionPrevue { get; set; }
     public string? Notes { get; set; }
@@ -286,7 +292,7 @@ public class OrdonnancePharmacieDto
     public DateTime? DateExpiration { get; set; }
     
     /// <summary>
-    /// Indique si l'ordonnance est expirée
+    /// Indique si l'ordonnance est expirÃ©e
     /// </summary>
     public bool EstExpiree => DateExpiration.HasValue && DateExpiration.Value < DateTime.UtcNow;
     
@@ -298,22 +304,22 @@ public class OrdonnancePharmacieDto
     // ==================== Nouveau workflow ====================
     
     /// <summary>
-    /// Indique si l'ordonnance a été validée (facture créée)
+    /// Indique si l'ordonnance a Ã©tÃ© validÃ©e (facture crÃ©Ã©e)
     /// </summary>
     public bool EstValidee { get; set; }
     
     /// <summary>
-    /// Indique si la facture est payée (délivrance possible)
+    /// Indique si la facture est payÃ©e (dÃ©livrance possible)
     /// </summary>
     public bool EstPayee { get; set; }
     
     /// <summary>
-    /// Indique si les médicaments ont été délivrés
+    /// Indique si les mÃ©dicaments ont Ã©tÃ© dÃ©livrÃ©s
     /// </summary>
     public bool EstDelivree { get; set; }
     
     /// <summary>
-    /// ID de la facture associée (si validée)
+    /// ID de la facture associÃ©e (si validÃ©e)
     /// </summary>
     public int? IdFacture { get; set; }
     
@@ -323,7 +329,7 @@ public class OrdonnancePharmacieDto
     public decimal? MontantTotal { get; set; }
     
     /// <summary>
-    /// Montant restant à payer
+    /// Montant restant Ã  payer
     /// </summary>
     public decimal? MontantRestant { get; set; }
 }
@@ -331,19 +337,19 @@ public class OrdonnancePharmacieDto
 public class MedicamentPrescritDto
 {
     /// <summary>
-    /// ID du médicament dans le catalogue (null si hors catalogue)
+    /// ID du mÃ©dicament dans le catalogue (null si hors catalogue)
     /// </summary>
     public int? IdMedicament { get; set; }
     
     /// <summary>
-    /// Nom du médicament (catalogue ou saisie libre)
+    /// Nom du mÃ©dicament (catalogue ou saisie libre)
     /// </summary>
     public string NomMedicament { get; set; } = "";
     
     public string? Dosage { get; set; }
     
     /// <summary>
-    /// Indique si le médicament est hors catalogue (saisie libre)
+    /// Indique si le mÃ©dicament est hors catalogue (saisie libre)
     /// </summary>
     public bool EstHorsCatalogue { get; set; } = false;
     
@@ -353,18 +359,19 @@ public class MedicamentPrescritDto
     public string? DureeTraitement { get; set; }
     
     /// <summary>
-    /// Stock disponible (null si hors catalogue - non géré en stock)
+    /// Stock disponible (null si hors catalogue - non gÃ©rÃ© en stock)
     /// </summary>
     public int? StockDisponible { get; set; }
     
     /// <summary>
-    /// Prix unitaire (null si hors catalogue - pas de prix référencé)
+    /// Prix unitaire (null si hors catalogue - pas de prix rÃ©fÃ©rencÃ©)
     /// </summary>
     public float? PrixUnitaire { get; set; }
 }
 
 public class CreateDispensationRequest
 {
+    [JsonRequired]
     public int IdPrescription { get; set; }
     public string? Notes { get; set; }
     public List<DispensationLigneRequest> Lignes { get; set; } = new();
@@ -419,7 +426,7 @@ public class AlerteStockDto
 // ==================== Nouveau Workflow Pharmacie ====================
 
 /// <summary>
-/// Résultat de la validation d'une ordonnance (création de facture)
+/// RÃ©sultat de la validation d'une ordonnance (crÃ©ation de facture)
 /// </summary>
 public class ValidationOrdonnanceResult
 {
@@ -435,7 +442,7 @@ public class ValidationOrdonnanceResult
 }
 
 /// <summary>
-/// Résultat de la délivrance d'une ordonnance
+/// RÃ©sultat de la dÃ©livrance d'une ordonnance
 /// </summary>
 public class DelivranceResult
 {
@@ -457,7 +464,7 @@ public class LigneDelivranceDto
 }
 
 /// <summary>
-/// Détail complet d'une ordonnance pour la pharmacie avec statut de paiement
+/// DÃ©tail complet d'une ordonnance pour la pharmacie avec statut de paiement
 /// </summary>
 public class OrdonnancePharmacieDetailDto
 {
@@ -474,27 +481,27 @@ public class OrdonnancePharmacieDetailDto
     public string StatutOrdonnance { get; set; } = "active";
     
     /// <summary>
-    /// Indique si l'ordonnance a été validée (facture créée)
+    /// Indique si l'ordonnance a Ã©tÃ© validÃ©e (facture crÃ©Ã©e)
     /// </summary>
     public bool EstValidee { get; set; }
     
     /// <summary>
-    /// Indique si la facture est payée (délivrance possible)
+    /// Indique si la facture est payÃ©e (dÃ©livrance possible)
     /// </summary>
     public bool EstPayee { get; set; }
     
     /// <summary>
-    /// Indique si les médicaments ont été délivrés
+    /// Indique si les mÃ©dicaments ont Ã©tÃ© dÃ©livrÃ©s
     /// </summary>
     public bool EstDelivree { get; set; }
     
     /// <summary>
-    /// ID de la facture associée (si validée)
+    /// ID de la facture associÃ©e (si validÃ©e)
     /// </summary>
     public int? IdFacture { get; set; }
     
     /// <summary>
-    /// Numéro de la facture associée
+    /// NumÃ©ro de la facture associÃ©e
     /// </summary>
     public string? NumeroFacture { get; set; }
     
@@ -504,7 +511,7 @@ public class OrdonnancePharmacieDetailDto
     public decimal? MontantTotal { get; set; }
     
     /// <summary>
-    /// Montant restant à payer
+    /// Montant restant Ã  payer
     /// </summary>
     public decimal? MontantRestant { get; set; }
     
@@ -523,7 +530,7 @@ public class OrdonnancePharmacieDetailDto
 // ==================== Ventes Directes ====================
 
 /// <summary>
-/// Requête pour créer une vente directe sans ordonnance
+/// RequÃªte pour crÃ©er une vente directe sans ordonnance
 /// </summary>
 public class CreateVenteDirecteRequest
 {
@@ -562,7 +569,7 @@ public class VenteDirecteDto
     public string TypeVente { get; set; } = "vente_directe";
     public List<VenteDirecteLigneDto> Lignes { get; set; } = new();
     
-    // Si client enregistré
+    // Si client enregistrÃ©
     public int? IdPatient { get; set; }
     public string? NomPatientEnregistre { get; set; }
 }
@@ -583,7 +590,7 @@ public class VenteDirecteLigneDto
 }
 
 /// <summary>
-/// Résultat de la création d'une vente directe
+/// RÃ©sultat de la crÃ©ation d'une vente directe
 /// </summary>
 public class VenteDirecteResult
 {
@@ -609,10 +616,10 @@ public class VenteDirecteFilter
     public int PageSize { get; set; } = 10;
 }
 
-// ==================== Dispensation étendue ====================
+// ==================== Dispensation Ã©tendue ====================
 
 /// <summary>
-/// DTO étendu pour afficher une dispensation (avec ou sans ordonnance)
+/// DTO Ã©tendu pour afficher une dispensation (avec ou sans ordonnance)
 /// </summary>
 public class DispensationEtendueDto
 {

@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Data;
+﻿using Mediconnet_Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +33,7 @@ public class CleanupJob
         {
             _context.SlotLocks.RemoveRange(expiredLocks);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Nettoyage de {expiredLocks.Count} verrous de créneaux expirés");
+            _logger.LogInformation("Nettoyage de {Count} verrous de créneaux expirés", expiredLocks.Count);
         }
     }
 
@@ -50,7 +50,7 @@ public class CleanupJob
 
         if (count > 0)
         {
-            _logger.LogInformation($"Archivage de {count} logs d'audit (> 90 jours)");
+            _logger.LogInformation("Archivage de {Count} logs d'audit (> 90 jours)", count);
             
             // Supprimer par lots pour éviter les timeouts
             var batchSize = 1000;
@@ -69,7 +69,7 @@ public class CleanupJob
                 await _context.SaveChangesAsync();
                 deleted += logsToDelete.Count;
                 
-                _logger.LogDebug($"Supprimé {deleted}/{count} logs d'audit");
+                _logger.LogDebug("Supprimé {Deleted}/{Count} logs d'audit", deleted, count);
             }
         }
     }
@@ -89,7 +89,7 @@ public class CleanupJob
         {
             _context.EmailConfirmationTokens.RemoveRange(expiredTokens);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Nettoyage de {expiredTokens.Count} tokens email expirés");
+            _logger.LogInformation("Nettoyage de {Count} tokens email expirés", expiredTokens.Count);
         }
     }
 }

@@ -1,4 +1,5 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Assurance;
 
@@ -19,7 +20,7 @@ public class AssuranceListDto
 }
 
 /// <summary>
-/// DTO détaillé pour une assurance
+/// DTO dÃ©taillÃ© pour une assurance
 /// </summary>
 public class AssuranceDetailDto
 {
@@ -37,34 +38,34 @@ public class AssuranceDetailDto
     public string? StatutJuridique { get; set; }
     public string? Description { get; set; }
     
-    // Couverture santé (normalisé)
+    // Couverture santÃ© (normalisÃ©)
     public bool IsComplementaire { get; set; }
     public int? IdZoneCouverture { get; set; }
     public ZoneInfoDto? Zone { get; set; }
     
-    // Relations many-to-many (normalisé)
+    // Relations many-to-many (normalisÃ©)
     public List<ReferenceCodeDto> TypesCouvertureSante { get; set; } = new();
     public List<ReferenceCodeDto> CategoriesBeneficiaires { get; set; } = new();
     public List<ReferenceCodeDto> ModesPaiement { get; set; } = new();
     
-    // Validité et fonctionnement
+    // ValiditÃ© et fonctionnement
     public string? ConditionsAdhesion { get; set; }
     public bool IsActive { get; set; }
     
-    // Champs legacy (pour compatibilité)
+    // Champs legacy (pour compatibilitÃ©)
     public string? TypeCouverture { get; set; }
     public string? CategorieBeneficiaires { get; set; }
     public string? ZoneCouverture { get; set; }
     public string? ModePaiement { get; set; }
     
-    // Métadonnées
+    // MÃ©tadonnÃ©es
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public int NombrePatientsAssures { get; set; }
 }
 
 /// <summary>
-/// DTO simple pour une référence (code + libellé)
+/// DTO simple pour une rÃ©fÃ©rence (code + libellÃ©)
 /// </summary>
 public class ReferenceCodeDto
 {
@@ -84,11 +85,11 @@ public class ZoneInfoDto
 }
 
 /// <summary>
-/// DTO pour créer une nouvelle assurance (étape par étape)
+/// DTO pour crÃ©er une nouvelle assurance (Ã©tape par Ã©tape)
 /// </summary>
 public class CreateAssuranceDto
 {
-    // Étape 1: Identification
+    // Ã‰tape 1: Identification
     [Required(ErrorMessage = "Le nom de l'assurance est obligatoire")]
     [MaxLength(150)]
     public string Nom { get; set; } = string.Empty;
@@ -102,7 +103,7 @@ public class CreateAssuranceDto
     [MaxLength(30)]
     public string? TelephoneServiceClient { get; set; }
 
-    // Étape 2: Informations administratives
+    // Ã‰tape 2: Informations administratives
     [MaxLength(100)]
     public string? Groupe { get; set; }
 
@@ -114,28 +115,28 @@ public class CreateAssuranceDto
     [MaxLength(1000)]
     public string? Description { get; set; }
 
-    // Étape 3: Couverture santé (normalisé)
+    // Ã‰tape 3: Couverture santÃ© (normalisÃ©)
     public bool IsComplementaire { get; set; } = false;
     
-    /// <summary>ID de la zone de couverture géographique</summary>
+    /// <summary>ID de la zone de couverture gÃ©ographique</summary>
     public int? IdZoneCouverture { get; set; }
     
-    /// <summary>IDs des types de couverture santé (hospitalisation, maternité, etc.)</summary>
+    /// <summary>IDs des types de couverture santÃ© (hospitalisation, maternitÃ©, etc.)</summary>
     public List<int> TypesCouvertureSanteIds { get; set; } = new();
     
-    /// <summary>IDs des catégories de bénéficiaires</summary>
+    /// <summary>IDs des catÃ©gories de bÃ©nÃ©ficiaires</summary>
     public List<int> CategoriesBeneficiairesIds { get; set; } = new();
     
-    /// <summary>IDs des modes de paiement acceptés</summary>
+    /// <summary>IDs des modes de paiement acceptÃ©s</summary>
     public List<int> ModesPaiementIds { get; set; } = new();
 
-    // Étape 4: Fonctionnement
+    // Ã‰tape 4: Fonctionnement
     [MaxLength(1000)]
     public string? ConditionsAdhesion { get; set; }
 
     public bool IsActive { get; set; } = true;
     
-    // Champs legacy (pour compatibilité pendant la migration)
+    // Champs legacy (pour compatibilitÃ© pendant la migration)
     [MaxLength(500)]
     public string? TypeCouverture { get; set; }
 
@@ -150,10 +151,11 @@ public class CreateAssuranceDto
 }
 
 /// <summary>
-/// DTO pour mettre à jour une assurance
+/// DTO pour mettre Ã  jour une assurance
 /// </summary>
 public class UpdateAssuranceDto : CreateAssuranceDto
 {
+    [JsonRequired]
     public int IdAssurance { get; set; }
 }
 
@@ -169,7 +171,7 @@ public class PatientAssuranceInfoDto
     public string? NomAssurance { get; set; }
     public string? TypeAssurance { get; set; }
     
-    /// <summary>Override manuel du taux de couverture (si défini)</summary>
+    /// <summary>Override manuel du taux de couverture (si dÃ©fini)</summary>
     public decimal? TauxCouvertureOverride { get; set; }
     
     public string? NumeroCarteAssurance { get; set; }
@@ -177,15 +179,15 @@ public class PatientAssuranceInfoDto
     public DateTime? DateFinValidite { get; set; }
     public bool EstValide { get; set; }
     
-    /// <summary>Retourne le taux override si défini</summary>
+    /// <summary>Retourne le taux override si dÃ©fini</summary>
     public decimal? TauxEffectif => TauxCouvertureOverride;
     
-    /// <summary>Alias pour compatibilité</summary>
+    /// <summary>Alias pour compatibilitÃ©</summary>
     public decimal? CouvertureAssurance => TauxCouvertureOverride;
 }
 
 /// <summary>
-/// DTO pour mettre à jour l'assurance d'un patient
+/// DTO pour mettre Ã  jour l'assurance d'un patient
 /// </summary>
 public class UpdatePatientAssuranceDto
 {
@@ -198,11 +200,11 @@ public class UpdatePatientAssuranceDto
 
     public DateTime? DateFinValidite { get; set; }
     
-    /// <summary>Override manuel du taux de couverture (priorité sur config assurance)</summary>
+    /// <summary>Override manuel du taux de couverture (prioritÃ© sur config assurance)</summary>
     [Range(0, 100)]
     public decimal? TauxCouvertureOverride { get; set; }
     
-    /// <summary>Alias pour compatibilité</summary>
+    /// <summary>Alias pour compatibilitÃ©</summary>
     [Range(0, 100)]
     public decimal? CouvertureAssurance { get => TauxCouvertureOverride; set => TauxCouvertureOverride = value; }
 }
@@ -263,7 +265,7 @@ public class PatientInsuranceStatusDto
     public DateTime? DateDebutValidite { get; set; }
     public DateTime? DateFinValidite { get; set; }
     
-    // Statut calculé
+    // Statut calculÃ©
     public string StatutAssurance { get; set; } = "non_assure"; // non_assure, valide, expire_bientot, expiree
     public int? JoursRestants { get; set; }
     public int? JoursExpires { get; set; }
@@ -271,7 +273,7 @@ public class PatientInsuranceStatusDto
 }
 
 /// <summary>
-/// Résultat de la liste des patients avec statut d'assurance
+/// RÃ©sultat de la liste des patients avec statut d'assurance
 /// </summary>
 public class PatientInsuranceStatusListResponse
 {
@@ -291,13 +293,13 @@ public class PatientInsuranceFilterDto
     /// <summary>Filtrer par statut: all, valide, expire_bientot, expiree, non_assure</summary>
     public string? StatutAssurance { get; set; }
     
-    /// <summary>Filtrer par assurance spécifique</summary>
+    /// <summary>Filtrer par assurance spÃ©cifique</summary>
     public int? AssuranceId { get; set; }
     
-    /// <summary>Recherche par nom/prénom/téléphone</summary>
+    /// <summary>Recherche par nom/prÃ©nom/tÃ©lÃ©phone</summary>
     public string? Recherche { get; set; }
     
-    /// <summary>Nombre de jours pour "expire bientôt" (défaut: 30)</summary>
+    /// <summary>Nombre de jours pour "expire bientÃ´t" (dÃ©faut: 30)</summary>
     public int JoursAvertissement { get; set; } = 30;
     
     public int Page { get; set; } = 1;

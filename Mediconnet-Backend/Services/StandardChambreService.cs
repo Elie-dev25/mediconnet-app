@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs;
@@ -82,7 +82,7 @@ public class StandardChambreService : IStandardChambreService
         _context.StandardsChambres.Add(standard);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Standard de chambre créé: {standard.Nom} (ID: {standard.IdStandard})");
+        _logger.LogInformation("Standard de chambre créé: {Nom} (ID: {IdStandard})", standard.Nom, standard.IdStandard);
 
         return MapToDto(standard);
     }
@@ -114,7 +114,7 @@ public class StandardChambreService : IStandardChambreService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Standard de chambre mis à jour: {standard.Nom} (ID: {standard.IdStandard})");
+        _logger.LogInformation("Standard de chambre mis à jour: {Nom} (ID: {IdStandard})", standard.Nom, standard.IdStandard);
 
         return MapToDto(standard);
     }
@@ -137,7 +137,7 @@ public class StandardChambreService : IStandardChambreService
         _context.StandardsChambres.Remove(standard);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Standard de chambre supprimé: {standard.Nom} (ID: {id})");
+        _logger.LogInformation("Standard de chambre supprimé: {Nom} (ID: {Id})", standard.Nom, id);
 
         return true;
     }

@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Caisse;
@@ -65,7 +65,7 @@ public class CaisseService : ICaisseService
             rdv.Statut = "confirme";
             rdv.DateModification = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"RDV {rdv.IdRendezVous} confirmé après paiement facture {facture.IdFacture}");
+            _logger.LogInformation("RDV {IdRendezVous} confirmé après paiement facture {IdFacture}", rdv.IdRendezVous, facture.IdFacture);
         }
 
         return (true, "RDV confirmé après paiement", rdv.IdRendezVous);
@@ -411,12 +411,12 @@ public class CaisseService : ICaisseService
 
                 if (!confirmed)
                 {
-                    _logger.LogWarning($"Impossible de confirmer le RDV: Facture={facture.IdFacture}, Raison={confirmMessage}");
+                    _logger.LogWarning("Impossible de confirmer le RDV: Facture={IdFacture}, Raison={ConfirmMessage}", facture.IdFacture, confirmMessage);
                     // Ne pas bloquer le paiement, juste logger l'avertissement
                 }
                 else
                 {
-                    _logger.LogInformation($"RDV {idRdv} confirmé après paiement facture {facture.IdFacture}");
+                    _logger.LogInformation("RDV {IdRdv} confirmé après paiement facture {IdFacture}", idRdv, facture.IdFacture);
                 }
             }
 
@@ -439,7 +439,7 @@ public class CaisseService : ICaisseService
                 });
             }
 
-            _logger.LogInformation($"Transaction créée: {numeroTransaction} pour facture {facture.NumeroFacture}");
+            _logger.LogInformation("Transaction créée: {NumeroTransaction} pour facture {NumeroFacture}", numeroTransaction, facture.NumeroFacture);
 
             return (true, "Paiement enregistré avec succès", new TransactionDto
             {
@@ -463,7 +463,7 @@ public class CaisseService : ICaisseService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError($"Erreur création transaction: {ex.Message}");
+            _logger.LogError(ex, "Erreur création transaction");
             return (false, "Erreur lors de l'enregistrement du paiement", null);
         }
     }
@@ -502,13 +502,13 @@ public class CaisseService : ICaisseService
             await _context.SaveChangesAsync();
             await dbTransaction.CommitAsync();
 
-            _logger.LogInformation($"Transaction annulée: {trans.NumeroTransaction}");
+            _logger.LogInformation("Transaction annulée: {NumeroTransaction}", trans.NumeroTransaction);
             return (true, "Transaction annulée avec succès");
         }
         catch (Exception ex)
         {
             await dbTransaction.RollbackAsync();
-            _logger.LogError($"Erreur annulation transaction: {ex.Message}");
+            _logger.LogError(ex, "Erreur annulation transaction");
             return (false, "Erreur lors de l'annulation");
         }
     }
@@ -593,7 +593,7 @@ public class CaisseService : ICaisseService
         _context.SessionsCaisse.Add(session);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Caisse ouverte par utilisateur {caissierUserId}");
+        _logger.LogInformation("Caisse ouverte par utilisateur {CaissierUserId}", caissierUserId);
 
         return (true, "Caisse ouverte avec succès", new SessionCaisseDto
         {
@@ -630,7 +630,7 @@ public class CaisseService : ICaisseService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Caisse fermée par utilisateur {caissierUserId}, écart: {session.Ecart}");
+        _logger.LogInformation("Caisse fermée par utilisateur {CaissierUserId}, écart: {Ecart}", caissierUserId, session.Ecart);
 
         return (true, "Caisse fermée avec succès", new SessionCaisseDto
         {

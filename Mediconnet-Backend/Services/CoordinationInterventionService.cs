@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
@@ -161,7 +161,7 @@ public class CoordinationInterventionService : ICoordinationInterventionService
                     // Vérifier les interventions
                     var coord = coordinations.FirstOrDefault(c =>
                     {
-                        var debut = c.DateProposee.Date.Add(TimeSpan.Parse(c.HeureProposee));
+                        var debut = c.DateProposee.Date.Add(TimeSpan.Parse(c.HeureProposee, System.Globalization.CultureInfo.InvariantCulture));
                         var fin = debut.AddMinutes(c.DureeEstimee);
                         return dateHeure >= debut && dateHeure < fin;
                     });
@@ -404,7 +404,7 @@ public class CoordinationInterventionService : ICoordinationInterventionService
             var heureFinale = coordination.HeureContreProposee ?? coordination.HeureProposee;
 
             // Créer les indisponibilités pour bloquer les agendas
-            var dateHeureDebut = datefinale.Date.Add(TimeSpan.Parse(heureFinale));
+            var dateHeureDebut = datefinale.Date.Add(TimeSpan.Parse(heureFinale, System.Globalization.CultureInfo.InvariantCulture));
             var dateHeureFin = dateHeureDebut.AddMinutes(coordination.DureeEstimee);
 
             // Indisponibilité chirurgien
@@ -1105,7 +1105,7 @@ public class CoordinationInterventionService : ICoordinationInterventionService
         if (creneauDispo == null)
             return null;
 
-        return creneauDispo.Date.Add(TimeSpan.Parse(creneauDispo.HeureDebut));
+        return creneauDispo.Date.Add(TimeSpan.Parse(creneauDispo.HeureDebut, System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private async Task AddHistoriqueAsync(int idCoordination, string typeAction, int idUser, 

@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Admin;
@@ -84,7 +84,7 @@ public class ServiceManagementService : IServiceManagementService
         _context.Services.Add(service);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Service created: {request.NomService}");
+        _logger.LogInformation("Service created: {NomService}", request.NomService);
         return (true, "Service cree avec succes", service.IdService);
     }
 
@@ -110,7 +110,7 @@ public class ServiceManagementService : IServiceManagementService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Service updated: {id}");
+        _logger.LogInformation("Service updated: {Id}", id);
         return (true, "Service modifie avec succes");
     }
 
@@ -134,7 +134,7 @@ public class ServiceManagementService : IServiceManagementService
         _context.Services.Remove(service);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Service deleted: {id}");
+        _logger.LogInformation("Service deleted: {Id}", id);
         return (true, "Service supprime avec succes");
     }
 

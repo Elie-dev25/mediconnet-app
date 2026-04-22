@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Data;
@@ -287,7 +287,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting agenda: {ex.Message}");
+            _logger.LogError(ex, "Error getting agenda");
             return StatusCode(500, new { message = "Erreur lors de la récupération de l'agenda" });
         }
     }
@@ -367,7 +367,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting today's rdv: {ex.Message}");
+            _logger.LogError(ex, "Error getting today's rdv");
             return StatusCode(500, new { message = "Erreur lors de la récupération des RDV" });
         }
     }
@@ -410,7 +410,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting upcoming rdv: {ex.Message}");
+            _logger.LogError(ex, "Error getting upcoming rdv");
             return StatusCode(500, new { message = "Erreur lors de la récupération des prochains RDV" });
         }
     }
@@ -471,7 +471,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting hospitalized patients: {ex.Message}");
+            _logger.LogError(ex, "Error getting hospitalized patients");
             return StatusCode(500, new { message = "Erreur lors de la récupération des patients hospitalisés" });
         }
     }
@@ -544,7 +544,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting hospitalisation detail: {ex.Message}");
+            _logger.LogError(ex, "Error getting hospitalisation detail");
             return StatusCode(500, new { message = "Erreur lors de la récupération des détails" });
         }
     }
@@ -580,7 +580,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting standards for hospitalisation: {ex.Message}");
+            _logger.LogError(ex, "Error getting standards for hospitalisation");
             return StatusCode(500, new { message = "Erreur lors de la récupération des standards" });
         }
     }
@@ -617,7 +617,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting chambres by standard: {ex.Message}");
+            _logger.LogError(ex, "Error getting chambres by standard");
             return StatusCode(500, new { message = "Erreur lors de la récupération des chambres" });
         }
     }
@@ -654,7 +654,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AttribuerLit (médecin): {ex.Message}");
+            _logger.LogError(ex, "Erreur AttribuerLit (médecin)");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -692,7 +692,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error ordering hospitalisation: {ex.Message}");
+            _logger.LogError(ex, "Error ordering hospitalisation");
             return StatusCode(500, new { message = "Erreur lors de l'ordonnance de l'hospitalisation" });
         }
     }
@@ -729,7 +729,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error ordering complete hospitalisation: {ex.Message}");
+            _logger.LogError(ex, "Error ordering complete hospitalisation");
             return StatusCode(500, new { message = "Erreur lors de l'ordonnance de l'hospitalisation complète" });
         }
     }
@@ -803,7 +803,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error creating direct consultation: {ex.Message}");
+            _logger.LogError(ex, "Error creating direct consultation");
             return StatusCode(500, new { success = false, message = "Erreur lors de la création de la consultation" });
         }
     }
@@ -854,7 +854,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error creating spontaneous consultation: {ex.Message}");
+            _logger.LogError(ex, "Error creating spontaneous consultation");
             return StatusCode(500, new { success = false, message = "Erreur lors de la création de la consultation" });
         }
     }
@@ -1037,7 +1037,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting hospitalisation details: {ex.Message}");
+            _logger.LogError(ex, "Error getting hospitalisation details");
             return StatusCode(500, new { message = "Erreur lors de la récupération des détails" });
         }
     }
@@ -1132,7 +1132,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error adding soin: {ex.Message}");
+            _logger.LogError(ex, "Error adding soin");
             return StatusCode(500, new { message = "Erreur lors de l'ajout du soin" });
         }
     }
@@ -1273,7 +1273,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating soin status: {ex.Message}");
+            _logger.LogError(ex, "Error updating soin status");
             return StatusCode(500, new { message = "Erreur lors de la mise à jour du statut" });
         }
     }
@@ -1432,7 +1432,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error registering soin execution (medecin): {ex.Message}");
+            _logger.LogError(ex, "Error registering soin execution (medecin)");
             return StatusCode(500, new { message = "Erreur lors de l'enregistrement du soin" });
         }
     }
@@ -1484,7 +1484,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting soins: {ex.Message}");
+            _logger.LogError(ex, "Error getting soins");
             return StatusCode(500, new { message = "Erreur lors de la récupération des soins" });
         }
     }
@@ -1566,7 +1566,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting soin details: {ex.Message}");
+            _logger.LogError(ex, "Error getting soin details");
             return StatusCode(500, new { message = "Erreur lors de la récupération des détails du soin" });
         }
     }
@@ -1653,7 +1653,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error prescribing exams: {ex.Message}");
+            _logger.LogError(ex, "Error prescribing exams");
             return StatusCode(500, new { success = false, message = "Erreur lors de la prescription des examens" });
         }
     }
@@ -1715,7 +1715,7 @@ public class MedecinController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error creating ordonnance for hospitalisation: {ex.Message}");
+            _logger.LogError(ex, "Error creating ordonnance for hospitalisation");
             return StatusCode(500, new { success = false, message = "Erreur lors de la création de l'ordonnance" });
         }
     }

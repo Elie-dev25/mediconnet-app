@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.RendezVous;
@@ -321,7 +321,7 @@ public class RendezVousService : IRendezVousService
                     .Include(r => r.Service)
                     .FirstAsync(r => r.IdRendezVous == rdv.IdRendezVous);
 
-                _logger.LogInformation($"RDV en ligne créé: RDV={rdv.IdRendezVous}, Consultation={consultation.IdConsultation}, Facture={facture.IdFacture} pour patient {patientId}");
+                _logger.LogInformation("RDV en ligne créé: RDV={IdRendezVous}, Consultation={IdConsultation}, Facture={IdFacture} pour patient {PatientId}", rdv.IdRendezVous, consultation.IdConsultation, facture.IdFacture, patientId);
 
                 // Notification temps réel (SignalR)
                 var rdvDto = MapToDto(rdvComplet);
@@ -357,17 +357,17 @@ public class RendezVousService : IRendezVousService
             {
                 await transaction.RollbackAsync();
                 await _slotLockService.ReleaseLockAsync(lockResult.LockToken!, patientId);
-                _logger.LogWarning($"Conflit de concurrence: {ex.Message}");
+                _logger.LogWarning(ex, "Conflit de concurrence");
                 return (false, "Une modification simultanée a été détectée. Veuillez réessayer.", null);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // S'assurer de libérer le verrou en cas d'erreur
             if (lockResult.LockToken != null)
                 await _slotLockService.ReleaseLockAsync(lockResult.LockToken, patientId);
             
-            _logger.LogError($"Erreur lors de la création du RDV: {ex.Message}");
+            // Let the exception propagate - logging is handled by the caller
             throw;
         }
     }
@@ -416,7 +416,7 @@ public class RendezVousService : IRendezVousService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Rendez-vous modifié: {rdvId}");
+        _logger.LogInformation("Rendez-vous modifié: {RdvId}", rdvId);
 
         return (true, "Rendez-vous modifié avec succès");
     }
@@ -453,7 +453,7 @@ public class RendezVousService : IRendezVousService
         await _notificationService.NotifyAppointmentCancelledAsync(
             medecinId, patientId, request.IdRendezVous);
 
-        _logger.LogInformation($"Rendez-vous annulé: {request.IdRendezVous}");
+        _logger.LogInformation("Rendez-vous annulé: {IdRendezVous}", request.IdRendezVous);
 
         return (true, "Rendez-vous annulé avec succès");
     }
@@ -511,17 +511,17 @@ public class RendezVousService : IRendezVousService
     {
         var response = new CreneauxDisponiblesResponse();
 
-        _logger.LogInformation($"GetCreneauxDisponiblesAsync - MedecinId: {medecinId}, DateDebut: {dateDebut}, DateFin: {dateFin}");
+        _logger.LogInformation("GetCreneauxDisponiblesAsync - MedecinId: {MedecinId}, DateDebut: {DateDebut}, DateFin: {DateFin}", medecinId, dateDebut, dateFin);
 
         // Récupérer les créneaux configurés du médecin
         var creneauxConfigures = await _context.CreneauxDisponibles
             .Where(c => c.IdMedecin == medecinId && c.Actif)
             .ToListAsync();
 
-        _logger.LogInformation($"Créneaux configurés trouvés: {creneauxConfigures.Count}");
+        _logger.LogInformation("Créneaux configurés trouvés: {Count}", creneauxConfigures.Count);
         foreach (var c in creneauxConfigures)
         {
-            _logger.LogInformation($"  - Jour {c.JourSemaine}: {c.HeureDebut} - {c.HeureFin}");
+            _logger.LogInformation("  - Jour {JourSemaine}: {HeureDebut} - {HeureFin}", c.JourSemaine, c.HeureDebut, c.HeureFin);
         }
 
         // Si aucun créneau configuré, le médecin est indisponible
@@ -880,7 +880,7 @@ public class RendezVousService : IRendezVousService
         rdv.DateModification = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"RDV {rdvId} validé par médecin {medecinId}");
+        _logger.LogInformation("RDV {RdvId} validé par médecin {MedecinId}", rdvId, medecinId);
 
         // Envoyer notification email au patient
         await SendEmailNotificationAsync(rdv, "validation");
@@ -939,7 +939,7 @@ public class RendezVousService : IRendezVousService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"RDV {request.IdRendezVous} annulé par médecin {medecinId}");
+        _logger.LogInformation("RDV {IdRendezVous} annulé par médecin {MedecinId}", request.IdRendezVous, medecinId);
 
         // Envoyer notification email au patient
         await SendEmailNotificationAsync(rdv, "annulation", request.Motif);
@@ -1013,7 +1013,7 @@ public class RendezVousService : IRendezVousService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"RDV {request.IdRendezVous} - nouveau créneau suggéré par médecin {medecinId}");
+        _logger.LogInformation("RDV {IdRendezVous} - nouveau créneau suggéré par médecin {MedecinId}", request.IdRendezVous, medecinId);
 
         // Envoyer notification email au patient
         await SendEmailNotificationAsync(rdv, "suggestion", request.Message, ancienCreneau);
@@ -1034,7 +1034,7 @@ public class RendezVousService : IRendezVousService
             var patientEmail = rdv.Patient?.Utilisateur?.Email;
             if (string.IsNullOrEmpty(patientEmail))
             {
-                _logger.LogWarning($"Pas d'email pour le patient {rdv.IdPatient}");
+                _logger.LogWarning("Pas d'email pour le patient {IdPatient}", rdv.IdPatient);
                 return;
             }
 
@@ -1103,7 +1103,7 @@ public class RendezVousService : IRendezVousService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur envoi email notification: {ex.Message}");
+            _logger.LogError(ex, "Erreur envoi email notification");
         }
     }
 
@@ -1138,11 +1138,11 @@ public class RendezVousService : IRendezVousService
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation($"Email envoyé à {to}: {subject}");
+            _logger.LogInformation("Email envoyé à {To}: {Subject}", to, subject);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur envoi email: {ex.Message}");
+            _logger.LogError(ex, "Erreur envoi email");
         }
     }
 
@@ -1203,7 +1203,7 @@ public class RendezVousService : IRendezVousService
         rdv.DateModification = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Proposition RDV {rdvId} acceptée par patient {patientId}");
+        _logger.LogInformation("Proposition RDV {RdvId} acceptée par patient {PatientId}", rdvId, patientId);
 
         // Envoyer notification email au médecin
         if (rdv.Medecin?.Utilisateur?.Email != null)
@@ -1260,7 +1260,7 @@ public class RendezVousService : IRendezVousService
         rdv.DateModification = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Proposition RDV {request.IdRendezVous} refusée par patient {patientId}");
+        _logger.LogInformation("Proposition RDV {IdRendezVous} refusée par patient {PatientId}", request.IdRendezVous, patientId);
 
         // Envoyer notification email au médecin
         if (rdv.Medecin?.Utilisateur?.Email != null)
@@ -1425,7 +1425,7 @@ public class RendezVousService : IRendezVousService
                     rdv.DateModification = now;
                     idRdv = rdv.IdRendezVous;
                     statutRdv = "confirme";
-                    _logger.LogInformation($"RDV {rdv.IdRendezVous} confirmé après paiement en ligne");
+                    _logger.LogInformation("RDV {IdRendezVous} confirmé après paiement en ligne", rdv.IdRendezVous);
                 }
                 else if (rdv != null)
                 {
@@ -1452,7 +1452,7 @@ public class RendezVousService : IRendezVousService
                 paiementEnLigne = true
             });
 
-            _logger.LogInformation($"Paiement en ligne effectué: Transaction={numeroTransaction}, Facture={facture.NumeroFacture}, Patient={patientId}");
+            _logger.LogInformation("Paiement en ligne effectué: Transaction={NumeroTransaction}, Facture={NumeroFacture}, Patient={PatientId}", numeroTransaction, facture.NumeroFacture, patientId);
 
             response.Success = true;
             response.Message = "Paiement effectué avec succès. Votre rendez-vous est confirmé.";
@@ -1465,7 +1465,7 @@ public class RendezVousService : IRendezVousService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError($"Erreur paiement en ligne: {ex.Message}");
+            _logger.LogError(ex, "Erreur paiement en ligne");
             response.Message = "Erreur lors du paiement. Veuillez réessayer.";
             return response;
         }

@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Accueil;
 
 /// <summary>
@@ -5,18 +6,21 @@ namespace Mediconnet_Backend.DTOs.Accueil;
 /// </summary>
 public class EnregistrerConsultationRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string Motif { get; set; } = string.Empty;
+    [JsonRequired]
     public int IdMedecin { get; set; }
+    [JsonRequired]
     public decimal PrixConsultation { get; set; }
     /// <summary>
-    /// Heure du créneau sélectionné par l'agent d'accueil
+    /// Heure du crÃ©neau sÃ©lectionnÃ© par l'agent d'accueil
     /// </summary>
     public DateTime? DateHeureCreneau { get; set; }
 }
 
 /// <summary>
-/// DTO pour la réponse après enregistrement de consultation
+/// DTO pour la rÃ©ponse aprÃ¨s enregistrement de consultation
 /// </summary>
 public class EnregistrerConsultationResponse
 {
@@ -29,7 +33,7 @@ public class EnregistrerConsultationResponse
 }
 
 /// <summary>
-/// DTO pour les informations du patient dans la réponse
+/// DTO pour les informations du patient dans la rÃ©ponse
 /// </summary>
 public class PatientConsultationDto
 {
@@ -41,7 +45,7 @@ public class PatientConsultationDto
 }
 
 /// <summary>
-/// DTO pour un médecin disponible
+/// DTO pour un mÃ©decin disponible
 /// </summary>
 public class MedecinDisponibleDto
 {
@@ -65,7 +69,7 @@ public class ServiceDto
 }
 
 /// <summary>
-/// DTO pour une spécialité médicale
+/// DTO pour une spÃ©cialitÃ© mÃ©dicale
 /// </summary>
 public class SpecialiteDto
 {
@@ -74,7 +78,7 @@ public class SpecialiteDto
 }
 
 /// <summary>
-/// Requête pour filtrer les médecins
+/// RequÃªte pour filtrer les mÃ©decins
 /// </summary>
 public class FiltrerMedecinsRequest
 {
@@ -83,7 +87,7 @@ public class FiltrerMedecinsRequest
 }
 
 /// <summary>
-/// DTO pour un médecin avec son statut de disponibilité
+/// DTO pour un mÃ©decin avec son statut de disponibilitÃ©
 /// </summary>
 public class MedecinAvecDisponibiliteDto
 {
@@ -95,25 +99,25 @@ public class MedecinAvecDisponibiliteDto
     public int? IdService { get; set; }
     public int? IdSpecialite { get; set; }
     
-    // Statut de disponibilité
+    // Statut de disponibilitÃ©
     public string Statut { get; set; } = "disponible"; // disponible, occupe, absent
     public bool EstDisponible { get; set; } = true;
     
-    // Détails de charge
+    // DÃ©tails de charge
     public int PatientsEnAttente { get; set; } = 0;
     public int PatientsEnConsultation { get; set; } = 0;
     public int RendezVousAujourdhui { get; set; } = 0;
     
-    // Prochaine disponibilité
+    // Prochaine disponibilitÃ©
     public string? RaisonIndisponibilite { get; set; }
     public DateTime? ProchaineDisponibilite { get; set; }
     
-    // Temps d'attente estimé (en minutes)
+    // Temps d'attente estimÃ© (en minutes)
     public int? TempsAttenteEstime { get; set; }
 }
 
 /// <summary>
-/// Réponse pour la liste des médecins avec disponibilité
+/// RÃ©ponse pour la liste des mÃ©decins avec disponibilitÃ©
 /// </summary>
 public class MedecinsDisponibiliteResponse
 {
@@ -125,7 +129,7 @@ public class MedecinsDisponibiliteResponse
 }
 
 /// <summary>
-/// Réponse pour la vérification de paiement valide (règle des 14 jours)
+/// RÃ©ponse pour la vÃ©rification de paiement valide (rÃ¨gle des 14 jours)
 /// </summary>
 public class VerifierPaiementResponse
 {

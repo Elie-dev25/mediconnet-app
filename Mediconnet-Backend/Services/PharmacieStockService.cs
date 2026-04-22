@@ -341,7 +341,7 @@ public class PharmacieStockService : IPharmacieStockService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Médicament créé: {Nom} (ID: {Id})", medicament.Nom, medicament.IdMedicament);
-        return MapToMedicamentDto(medicament);
+        return await MapToMedicamentDtoAsync(medicament);
     }
 
     public async Task<MedicamentStockDto> UpdateMedicamentAsync(int id, UpdateMedicamentRequest request)
@@ -363,7 +363,7 @@ public class PharmacieStockService : IPharmacieStockService
         if (request.Actif.HasValue) medicament.Actif = request.Actif.Value;
 
         await _context.SaveChangesAsync();
-        return MapToMedicamentDto(medicament);
+        return await MapToMedicamentDtoAsync(medicament);
     }
 
     public async Task<bool> DeleteMedicamentAsync(int id)
@@ -738,10 +738,10 @@ public class PharmacieStockService : IPharmacieStockService
 
     private async Task<int> GetOrdonnancesEnAttenteCountAsync()
     {
-        var ordonnancesDispenseesIds = _context.Dispensations
+        var ordonnancesDispenseesIds = await _context.Dispensations
             .Where(d => d.Statut == "complete")
             .Select(d => d.IdPrescription)
-            .ToList();
+            .ToListAsync();
         
         return await _context.Ordonnances
             .Where(o => o.Medicaments != null && o.Medicaments.Any())
@@ -765,10 +765,10 @@ public class PharmacieStockService : IPharmacieStockService
             .AsQueryable();
 
         // Filtrer les ordonnances déjà dispensées (séparer pour éviter les problèmes EF Core)
-        var ordonnancesDispenseesIds = _context.Dispensations
+        var ordonnancesDispenseesIds = await _context.Dispensations
             .Where(d => d.Statut == "complete")
             .Select(d => d.IdPrescription)
-            .ToList();
+            .ToListAsync();
         
         query = query.Where(o => !ordonnancesDispenseesIds.Contains(o.IdOrdonnance));
 

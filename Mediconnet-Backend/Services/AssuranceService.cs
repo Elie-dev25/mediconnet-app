@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
@@ -160,7 +160,7 @@ public class AssuranceService : IAssuranceService
             _context.Assurances.Add(assurance);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Assurance créée: {assurance.Nom} (ID: {assurance.IdAssurance})");
+            _logger.LogInformation("Assurance créée: {Nom} (ID: {IdAssurance})", assurance.Nom, assurance.IdAssurance);
 
             return new AssuranceResponse
             {
@@ -214,7 +214,7 @@ public class AssuranceService : IAssuranceService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Assurance mise à jour: {assurance.Nom} (ID: {assurance.IdAssurance})");
+            _logger.LogInformation("Assurance mise à jour: {Nom} (ID: {IdAssurance})", assurance.Nom, assurance.IdAssurance);
 
             return new AssuranceResponse
             {
@@ -273,7 +273,7 @@ public class AssuranceService : IAssuranceService
         _context.Assurances.Remove(assurance);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Assurance supprimée: {assurance.Nom} (ID: {idAssurance})");
+        _logger.LogInformation("Assurance supprimée: {Nom} (ID: {IdAssurance})", assurance.Nom, idAssurance);
 
         return new AssuranceResponse { Success = true, Message = "Assurance supprimée avec succès" };
     }
@@ -333,7 +333,7 @@ public class AssuranceService : IAssuranceService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Assurance patient mise à jour: Patient {idPatient}, Assurance {dto.AssuranceId}");
+            _logger.LogInformation("Assurance patient mise à jour: Patient {IdPatient}, Assurance {AssuranceId}", idPatient, dto.AssuranceId);
 
             return new PatientAssuranceResponse
             {
@@ -365,7 +365,7 @@ public class AssuranceService : IAssuranceService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Assurance retirée du patient: {idPatient}");
+        _logger.LogInformation("Assurance retirée du patient: {IdPatient}", idPatient);
 
         return new PatientAssuranceResponse { Success = true, Message = "Assurance retirée du patient" };
     }

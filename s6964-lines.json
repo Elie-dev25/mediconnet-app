@@ -1,0 +1,426 @@
+﻿[
+    {
+        "file":  "Controllers/AssuranceCouvertureController.cs",
+        "line":  253
+    },
+    {
+        "file":  "Controllers/FacturationController.cs",
+        "line":  208
+    },
+    {
+        "file":  "Controllers/MedicalAlertController.cs",
+        "line":  186
+    },
+    {
+        "file":  "Controllers/MedicalAlertController.cs",
+        "line":  192
+    },
+    {
+        "file":  "Controllers/PatientAnamneseController.cs",
+        "line":  272
+    },
+    {
+        "file":  "Controllers/PrescriptionController.cs",
+        "line":  364
+    },
+    {
+        "file":  "Controllers/PrescriptionController.cs",
+        "line":  386
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  64
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  65
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  66
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  118
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  121
+    },
+    {
+        "file":  "Core/Interfaces/Services/IDMPService.cs",
+        "line":  140
+    },
+    {
+        "file":  "Core/Interfaces/Services/IFactureService.cs",
+        "line":  54
+    },
+    {
+        "file":  "Core/Interfaces/Services/IFactureService.cs",
+        "line":  55
+    },
+    {
+        "file":  "Core/Interfaces/Services/IFactureService.cs",
+        "line":  56
+    },
+    {
+        "file":  "Core/Interfaces/Services/IFactureService.cs",
+        "line":  81
+    },
+    {
+        "file":  "Core/Interfaces/Services/IFactureService.cs",
+        "line":  82
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  83
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  86
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  112
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  113
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  114
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  134
+    },
+    {
+        "file":  "Core/Interfaces/Services/ILitManagementService.cs",
+        "line":  135
+    },
+    {
+        "file":  "Core/Interfaces/Services/INotificationService.cs",
+        "line":  87
+    },
+    {
+        "file":  "DTOs/Accueil/AccueilDtos.cs",
+        "line":  130
+    },
+    {
+        "file":  "DTOs/Accueil/ConsultationDtos.cs",
+        "line":  8
+    },
+    {
+        "file":  "DTOs/Accueil/ConsultationDtos.cs",
+        "line":  10
+    },
+    {
+        "file":  "DTOs/Accueil/ConsultationDtos.cs",
+        "line":  11
+    },
+    {
+        "file":  "DTOs/Accueil/CreatePatientDtos.cs",
+        "line":  22
+    },
+    {
+        "file":  "DTOs/Accueil/CreatePatientDtos.cs",
+        "line":  148
+    },
+    {
+        "file":  "DTOs/Accueil/CreatePatientDtos.cs",
+        "line":  164
+    },
+    {
+        "file":  "DTOs/Admin/AffectationServiceDtos.cs",
+        "line":  41
+    },
+    {
+        "file":  "DTOs/Admin/UserDetailsDtos.cs",
+        "line":  109
+    },
+    {
+        "file":  "DTOs/Assurance/AssuranceDtos.cs",
+        "line":  157
+    },
+    {
+        "file":  "DTOs/Auth/AuthDtos.cs",
+        "line":  117
+    },
+    {
+        "file":  "DTOs/Auth/AuthDtos.cs",
+        "line":  119
+    },
+    {
+        "file":  "DTOs/Auth/AuthDtos.cs",
+        "line":  121
+    },
+    {
+        "file":  "DTOs/Auth/AuthDtos.cs",
+        "line":  135
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  94
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  95
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  96
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  98
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  141
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  143
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  148
+    },
+    {
+        "file":  "DTOs/BlocOperatoireDtos.cs",
+        "line":  150
+    },
+    {
+        "file":  "DTOs/Caisse/CaisseDtos.cs",
+        "line":  105
+    },
+    {
+        "file":  "DTOs/Caisse/CaisseDtos.cs",
+        "line":  132
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  94
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  97
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  100
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  119
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  141
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  144
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  160
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  173
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  184
+    },
+    {
+        "file":  "DTOs/Chirurgie/CoordinationInterventionDtos.cs",
+        "line":  202
+    },
+    {
+        "file":  "DTOs/Consultation/ConsultationCompleteDtos.cs",
+        "line":  241
+    },
+    {
+        "file":  "DTOs/Consultation/ConsultationCompleteDtos.cs",
+        "line":  448
+    },
+    {
+        "file":  "DTOs/Consultation/ConsultationCompleteDtos.cs",
+        "line":  449
+    },
+    {
+        "file":  "DTOs/Consultation/ConsultationCompleteDtos.cs",
+        "line":  544
+    },
+    {
+        "file":  "DTOs/Consultation/ConsultationCompleteDtos.cs",
+        "line":  546
+    },
+    {
+        "file":  "DTOs/Consultation/ParametreDtos.cs",
+        "line":  36
+    },
+    {
+        "file":  "DTOs/Consultation/ParametreDtos.cs",
+        "line":  62
+    },
+    {
+        "file":  "DTOs/Consultation/ProgrammationInterventionDtos.cs",
+        "line":  48
+    },
+    {
+        "file":  "DTOs/Consultation/ProgrammationInterventionDtos.cs",
+        "line":  52
+    },
+    {
+        "file":  "DTOs/Documents/DocumentMedicalDto.cs",
+        "line":  8
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  72
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  73
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  90
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  91
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  140
+    },
+    {
+        "file":  "DTOs/Hospitalisation/HospitalisationDtos.cs",
+        "line":  198
+    },
+    {
+        "file":  "DTOs/Medecin/DossierAccessDtos.cs",
+        "line":  5
+    },
+    {
+        "file":  "DTOs/Medecin/DossierAccessDtos.cs",
+        "line":  17
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  11
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  56
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  62
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  68
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  80
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  87
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  90
+    },
+    {
+        "file":  "DTOs/Patient/ProfileCompletionDtos.cs",
+        "line":  114
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  121
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  123
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  149
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  150
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  239
+    },
+    {
+        "file":  "DTOs/Pharmacie/PharmacieDtos.cs",
+        "line":  368
+    },
+    {
+        "file":  "DTOs/Planning/PlanningDtos.cs",
+        "line":  118
+    },
+    {
+        "file":  "DTOs/Planning/PlanningDtos.cs",
+        "line":  121
+    },
+    {
+        "file":  "DTOs/Prescription/PrescriptionDtos.cs",
+        "line":  13
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  59
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  64
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  102
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  242
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  251
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  264
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  267
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  290
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  299
+    },
+    {
+        "file":  "DTOs/RendezVous/RendezVousDtos.cs",
+        "line":  332
+    },
+    {
+        "file":  "DTOs/StandardChambreDto.cs",
+        "line":  26
+    }
+]

@@ -1,11 +1,12 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.Controllers;
 
 /// <summary>
-/// Contrôleur pour la facturation avancée : PDF, échéanciers, remboursements assurance
+/// ContrÃ´leur pour la facturation avancÃ©e : PDF, Ã©chÃ©anciers, remboursements assurance
 /// </summary>
 [Route("api/[controller]")]
 public class FacturationController : BaseApiController
@@ -22,7 +23,7 @@ public class FacturationController : BaseApiController
     // ==================== PDF ====================
 
     /// <summary>
-    /// Générer le PDF d'une facture
+    /// GÃ©nÃ©rer le PDF d'une facture
     /// </summary>
     [HttpGet("factures/{idFacture}/pdf")]
     public async Task<IActionResult> GetFacturePdf(int idFacture)
@@ -37,13 +38,13 @@ public class FacturationController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur génération PDF facture {IdFacture}", idFacture);
+            _logger.LogError(ex, "Erreur gÃ©nÃ©ration PDF facture {IdFacture}", idFacture);
             return NotFound(new { message = ex.Message });
         }
     }
 
     /// <summary>
-    /// Générer le PDF d'un reçu de transaction
+    /// GÃ©nÃ©rer le PDF d'un reÃ§u de transaction
     /// </summary>
     [HttpGet("transactions/{idTransaction}/recu")]
     public async Task<IActionResult> GetRecuPdf(int idTransaction)
@@ -58,15 +59,15 @@ public class FacturationController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur génération reçu transaction {IdTransaction}", idTransaction);
+            _logger.LogError(ex, "Erreur gÃ©nÃ©ration reÃ§u transaction {IdTransaction}", idTransaction);
             return NotFound(new { message = ex.Message });
         }
     }
 
-    // ==================== ÉCHÉANCIERS ====================
+    // ==================== Ã‰CHÃ‰ANCIERS ====================
 
     /// <summary>
-    /// Créer un échéancier de paiement pour une facture
+    /// CrÃ©er un Ã©chÃ©ancier de paiement pour une facture
     /// </summary>
     [HttpPost("echeanciers")]
     public async Task<IActionResult> CreerEcheancier([FromBody] CreateEcheancierRequest request)
@@ -81,13 +82,13 @@ public class FacturationController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur création échéancier pour facture {IdFacture}", request.IdFacture);
+            _logger.LogError(ex, "Erreur crÃ©ation Ã©chÃ©ancier pour facture {IdFacture}", request.IdFacture);
             return BadRequest(new { message = ex.Message });
         }
     }
 
     /// <summary>
-    /// Obtenir l'échéancier d'une facture
+    /// Obtenir l'Ã©chÃ©ancier d'une facture
     /// </summary>
     [HttpGet("factures/{idFacture}/echeancier")]
     public async Task<IActionResult> GetEcheancier(int idFacture)
@@ -96,12 +97,12 @@ public class FacturationController : BaseApiController
         if (accessCheck != null) return accessCheck;
 
         var result = await _factureService.GetEcheancierAsync(idFacture);
-        if (result == null) return NotFound(new { message = "Aucun échéancier actif pour cette facture" });
+        if (result == null) return NotFound(new { message = "Aucun Ã©chÃ©ancier actif pour cette facture" });
         return Ok(result);
     }
 
     /// <summary>
-    /// Obtenir les échéances en retard
+    /// Obtenir les Ã©chÃ©ances en retard
     /// </summary>
     [HttpGet("echeances/retard")]
     public async Task<IActionResult> GetEcheancesEnRetard()
@@ -114,7 +115,7 @@ public class FacturationController : BaseApiController
     }
 
     /// <summary>
-    /// Marquer une échéance comme payée
+    /// Marquer une Ã©chÃ©ance comme payÃ©e
     /// </summary>
     [HttpPut("echeances/{idEcheance}/payer")]
     public async Task<IActionResult> MarquerEcheancePayee(int idEcheance, [FromBody] MarquerEcheancePayeeRequest request)
@@ -123,14 +124,14 @@ public class FacturationController : BaseApiController
         if (accessCheck != null) return accessCheck;
 
         var success = await _factureService.MarquerEcheancePayeeAsync(idEcheance, request.IdTransaction);
-        if (!success) return NotFound(new { message = "Échéance non trouvée" });
-        return Ok(new { message = "Échéance marquée comme payée" });
+        if (!success) return NotFound(new { message = "Ã‰chÃ©ance non trouvÃ©e" });
+        return Ok(new { message = "Ã‰chÃ©ance marquÃ©e comme payÃ©e" });
     }
 
     // ==================== REMBOURSEMENTS ASSURANCE ====================
 
     /// <summary>
-    /// Créer une demande de remboursement assurance
+    /// CrÃ©er une demande de remboursement assurance
     /// </summary>
     [HttpPost("remboursements")]
     public async Task<IActionResult> CreerDemandeRemboursement([FromBody] CreateDemandeRemboursementRequest request)
@@ -145,7 +146,7 @@ public class FacturationController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur création demande remboursement pour facture {IdFacture}", request.IdFacture);
+            _logger.LogError(ex, "Erreur crÃ©ation demande remboursement pour facture {IdFacture}", request.IdFacture);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -201,9 +202,10 @@ public class FacturationController : BaseApiController
 }
 
 /// <summary>
-/// DTO pour marquer une échéance comme payée
+/// DTO pour marquer une Ã©chÃ©ance comme payÃ©e
 /// </summary>
 public class MarquerEcheancePayeeRequest
 {
+    [JsonRequired]
     public int IdTransaction { get; set; }
 }

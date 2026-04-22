@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Patient;
+using System.Security.Cryptography;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -261,7 +262,7 @@ public class ProfileController : BaseApiController
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Profile completed for user {userId}");
+            _logger.LogInformation("Profile completed for user {UserId}", userId);
 
             return Ok(new CompleteProfileResponse
             {
@@ -285,7 +286,7 @@ public class ProfileController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error completing profile: {ex.Message}");
+            _logger.LogError(ex, "Error completing profile");
             return StatusCode(500, new CompleteProfileResponse
             {
                 Success = false,
@@ -369,8 +370,7 @@ public class ProfileController : BaseApiController
     private string GenerateNumeroDossier()
     {
         var year = DateTime.Now.Year;
-        var random = new Random();
-        var number = random.Next(100000, 999999);
+        var number = RandomNumberGenerator.GetInt32(100000, 1000000);
         return $"PAT-{year}-{number}";
     }
 }

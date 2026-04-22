@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Caisse;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetKpis: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetKpis");
             return StatusCode(500, new { message = "Erreur lors de la récupération des KPIs" });
         }
     }
@@ -62,7 +62,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFacturesEnAttente: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFacturesEnAttente");
             return StatusCode(500, new { message = "Erreur lors de la récupération des factures" });
         }
     }
@@ -82,7 +82,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFacturesPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFacturesPatient");
             return StatusCode(500, new { message = "Erreur lors de la récupération des factures" });
         }
     }
@@ -105,7 +105,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFacture: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFacture");
             return StatusCode(500, new { message = "Erreur lors de la récupération de la facture" });
         }
     }
@@ -128,7 +128,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetTransactionsJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetTransactionsJour");
             return StatusCode(500, new { message = "Erreur lors de la récupération des transactions" });
         }
     }
@@ -151,7 +151,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetTransactions: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetTransactions");
             return StatusCode(500, new { message = "Erreur lors de la récupération des transactions" });
         }
     }
@@ -178,7 +178,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreerTransaction: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreerTransaction");
             return StatusCode(500, new { message = "Erreur lors de la création de la transaction" });
         }
     }
@@ -205,7 +205,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AnnulerTransaction: {ex.Message}");
+            _logger.LogError(ex, "Erreur AnnulerTransaction");
             return StatusCode(500, new { message = "Erreur lors de l'annulation de la transaction" });
         }
     }
@@ -230,7 +230,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetSessionActive: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetSessionActive");
             return StatusCode(500, new { message = "Erreur lors de la récupération de la session" });
         }
     }
@@ -253,7 +253,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetHistoriqueSessions: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetHistoriqueSessions");
             return StatusCode(500, new { message = "Erreur lors de la récupération de l'historique" });
         }
     }
@@ -280,7 +280,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur OuvrirCaisse: {ex.Message}");
+            _logger.LogError(ex, "Erreur OuvrirCaisse");
             return StatusCode(500, new { message = "Erreur lors de l'ouverture de la caisse" });
         }
     }
@@ -307,7 +307,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur FermerCaisse: {ex.Message}");
+            _logger.LogError(ex, "Erreur FermerCaisse");
             return StatusCode(500, new { message = "Erreur lors de la fermeture de la caisse" });
         }
     }
@@ -332,7 +332,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRecuTransaction: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRecuTransaction");
             return StatusCode(500, new { message = "Erreur lors de la génération du reçu" });
         }
     }
@@ -354,7 +354,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur RechercherPatients: {ex.Message}");
+            _logger.LogError(ex, "Erreur RechercherPatients");
             return StatusCode(500, new { message = "Erreur lors de la recherche" });
         }
     }
@@ -378,7 +378,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRepartitionPaiements: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRepartitionPaiements");
             return StatusCode(500, new { message = "Erreur lors de la récupération des statistiques" });
         }
     }
@@ -398,7 +398,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRevenusParService: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRevenusParService");
             return StatusCode(500, new { message = "Erreur lors de la récupération des revenus" });
         }
     }
@@ -418,7 +418,7 @@ public class CaisseController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFacturesEnRetard: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFacturesEnRetard");
             return StatusCode(500, new { message = "Erreur lors de la récupération des factures en retard" });
         }
     }

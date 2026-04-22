@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs;
 
 /// <summary>
@@ -17,19 +18,20 @@ public class StandardChambreDto
 }
 
 /// <summary>
-/// DTO pour créer un standard de chambre
+/// DTO pour crÃ©er un standard de chambre
 /// </summary>
 public class CreateStandardChambreRequest
 {
     public string Nom { get; set; } = "";
     public string? Description { get; set; }
+    [JsonRequired]
     public decimal PrixJournalier { get; set; }
     public List<string> Privileges { get; set; } = new();
     public string? Localisation { get; set; }
 }
 
 /// <summary>
-/// DTO pour mettre à jour un standard de chambre
+/// DTO pour mettre Ã  jour un standard de chambre
 /// </summary>
 public class UpdateStandardChambreRequest
 {
@@ -42,7 +44,7 @@ public class UpdateStandardChambreRequest
 }
 
 /// <summary>
-/// DTO pour la sélection de standard lors de l'hospitalisation
+/// DTO pour la sÃ©lection de standard lors de l'hospitalisation
 /// </summary>
 public class StandardChambreSelectDto
 {
@@ -51,5 +53,5 @@ public class StandardChambreSelectDto
     public decimal PrixJournalier { get; set; }
     public List<string> Privileges { get; set; } = new();
     public string? Localisation { get; set; }
-    public string DisplayText => $"{Nom} – {PrixJournalier:N0} FCFA";
+    public string DisplayText => $"{Nom} â€“ {PrixJournalier:N0} FCFA";
 }

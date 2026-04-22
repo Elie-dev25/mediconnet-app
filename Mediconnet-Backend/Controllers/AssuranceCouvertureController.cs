@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Core.Entities;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -23,7 +24,7 @@ public class AssuranceCouvertureController : ControllerBase
     // ==================== GET couvertures d'une assurance ====================
 
     /// <summary>
-    /// Récupérer toutes les couvertures d'une assurance
+    /// RÃ©cupÃ©rer toutes les couvertures d'une assurance
     /// </summary>
     [HttpGet("{idAssurance}/couvertures")]
     public async Task<IActionResult> GetCouvertures(int idAssurance)
@@ -33,7 +34,7 @@ public class AssuranceCouvertureController : ControllerBase
             .FirstOrDefaultAsync(a => a.IdAssurance == idAssurance);
 
         if (assurance == null)
-            return NotFound(new { success = false, message = "Assurance non trouvée" });
+            return NotFound(new { success = false, message = "Assurance non trouvÃ©e" });
 
         var couvertures = assurance.Couvertures.Select(c => new AssuranceCouvertureDto
         {
@@ -54,7 +55,7 @@ public class AssuranceCouvertureController : ControllerBase
     // ==================== GET toutes les assurances avec couvertures ====================
 
     /// <summary>
-    /// Récupérer toutes les assurances avec leurs couvertures
+    /// RÃ©cupÃ©rer toutes les assurances avec leurs couvertures
     /// </summary>
     [HttpGet("avec-couvertures")]
     public async Task<IActionResult> GetAssurancesAvecCouvertures()
@@ -91,21 +92,21 @@ public class AssuranceCouvertureController : ControllerBase
     // ==================== CREATE/UPDATE couverture ====================
 
     /// <summary>
-    /// Créer ou mettre à jour une couverture pour une assurance
+    /// CrÃ©er ou mettre Ã  jour une couverture pour une assurance
     /// </summary>
     [HttpPut("{idAssurance}/couvertures")]
     public async Task<IActionResult> UpsertCouverture(int idAssurance, [FromBody] UpsertCouvertureRequest request)
     {
         var assurance = await _context.Assurances.FindAsync(idAssurance);
         if (assurance == null)
-            return NotFound(new { success = false, message = "Assurance non trouvée" });
+            return NotFound(new { success = false, message = "Assurance non trouvÃ©e" });
 
         if (request.TauxCouverture < 0 || request.TauxCouverture > 100)
-            return BadRequest(new { success = false, message = "Le taux de couverture doit être entre 0 et 100" });
+            return BadRequest(new { success = false, message = "Le taux de couverture doit Ãªtre entre 0 et 100" });
 
         var validTypes = new[] { "consultation", "hospitalisation", "examen", "pharmacie" };
         if (!validTypes.Contains(request.TypePrestation))
-            return BadRequest(new { success = false, message = $"Type de prestation invalide. Valeurs acceptées: {string.Join(", ", validTypes)}" });
+            return BadRequest(new { success = false, message = $"Type de prestation invalide. Valeurs acceptÃ©es: {string.Join(", ", validTypes)}" });
 
         var existante = await _context.AssuranceCouvertures
             .FirstOrDefaultAsync(c => c.IdAssurance == idAssurance && c.TypePrestation == request.TypePrestation);
@@ -139,23 +140,23 @@ public class AssuranceCouvertureController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Couverture {Type} mise à jour pour assurance {IdAssurance}: taux={Taux}%",
+        _logger.LogInformation("Couverture {Type} mise Ã  jour pour assurance {IdAssurance}: taux={Taux}%",
             request.TypePrestation, idAssurance, request.TauxCouverture);
 
-        return Ok(new { success = true, message = "Couverture mise à jour" });
+        return Ok(new { success = true, message = "Couverture mise Ã  jour" });
     }
 
     // ==================== BATCH UPDATE couvertures ====================
 
     /// <summary>
-    /// Mettre à jour toutes les couvertures d'une assurance en une seule requête
+    /// Mettre Ã  jour toutes les couvertures d'une assurance en une seule requÃªte
     /// </summary>
     [HttpPut("{idAssurance}/couvertures/batch")]
     public async Task<IActionResult> BatchUpdateCouvertures(int idAssurance, [FromBody] List<UpsertCouvertureRequest> requests)
     {
         var assurance = await _context.Assurances.FindAsync(idAssurance);
         if (assurance == null)
-            return NotFound(new { success = false, message = "Assurance non trouvée" });
+            return NotFound(new { success = false, message = "Assurance non trouvÃ©e" });
 
         var validTypes = new[] { "consultation", "hospitalisation", "examen", "pharmacie" };
 
@@ -201,7 +202,7 @@ public class AssuranceCouvertureController : ControllerBase
 
         _logger.LogInformation("Batch update couvertures pour assurance {IdAssurance}: {Count} types", idAssurance, requests.Count);
 
-        return Ok(new { success = true, message = $"{requests.Count} couverture(s) mise(s) à jour" });
+        return Ok(new { success = true, message = $"{requests.Count} couverture(s) mise(s) Ã  jour" });
     }
 
     // ==================== DELETE couverture ====================
@@ -214,12 +215,12 @@ public class AssuranceCouvertureController : ControllerBase
     {
         var couverture = await _context.AssuranceCouvertures.FindAsync(idCouverture);
         if (couverture == null)
-            return NotFound(new { success = false, message = "Couverture non trouvée" });
+            return NotFound(new { success = false, message = "Couverture non trouvÃ©e" });
 
         _context.AssuranceCouvertures.Remove(couverture);
         await _context.SaveChangesAsync();
 
-        return Ok(new { success = true, message = "Couverture supprimée" });
+        return Ok(new { success = true, message = "Couverture supprimÃ©e" });
     }
 }
 
@@ -250,6 +251,7 @@ public class AssuranceAvecCouverturesDto
 public class UpsertCouvertureRequest
 {
     public string TypePrestation { get; set; } = "";
+    [JsonRequired]
     public decimal TauxCouverture { get; set; }
     public decimal? PlafondAnnuel { get; set; }
     public decimal? PlafondParActe { get; set; }

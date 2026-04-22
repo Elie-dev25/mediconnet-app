@@ -27,8 +27,13 @@ builder.Services.Configure<AppSettings>(
 
 // ==================== SERVICES ====================
 // Add Database - MySQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Port=3306;Database=mediconnect;User=app;Password=app;";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "La chaine de connexion 'DefaultConnection' n'est pas configuree. "
+        + "Definissez-la via la variable d'environnement ConnectionStrings__DefaultConnection ou user-secrets.");
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
@@ -331,7 +336,7 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
 });
 
 // ==================== RUN ====================
-app.Run();
+await app.RunAsync();
 
 static async Task<int> RunSeedAdminModeAsync(WebApplication app, string[] args)
 {
@@ -339,7 +344,7 @@ static async Task<int> RunSeedAdminModeAsync(WebApplication app, string[] args)
 
     if (!cliArgs.TryGetValue("email", out var email) || string.IsNullOrWhiteSpace(email))
     {
-        Console.Error.WriteLine("❌ Veuillez fournir l'email de l'administrateur avec --email");
+        await Console.Error.WriteLineAsync("❌ Veuillez fournir l'email de l'administrateur avec --email");
         return 1;
     }
 
@@ -371,7 +376,7 @@ static async Task<int> RunSeedAdminModeAsync(WebApplication app, string[] args)
     var (success, message, _) = await userService.CreateUserAsync(request);
     if (!success)
     {
-        Console.Error.WriteLine($"❌ {message}");
+        await Console.Error.WriteLineAsync($"❌ {message}");
         return 1;
     }
 

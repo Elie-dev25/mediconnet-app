@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Controllers.Base;
@@ -6,6 +6,7 @@ using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Medecin;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -63,9 +64,8 @@ public class DossierAccessController : BaseApiController
             if (string.IsNullOrEmpty(email))
                 return BadRequest(new SendCodeResponse { Success = false, Message = "Le patient n'a pas d'adresse email enregistrée" });
 
-            // Générer un code à 5 chiffres
-            var random = new Random();
-            var code = random.Next(10000, 99999).ToString();
+            // Générer un code à 5 chiffres avec un RNG cryptographique
+            var code = RandomNumberGenerator.GetInt32(10000, 100000).ToString();
             var expiresAt = DateTime.UtcNow.AddMinutes(10);
 
             // Stocker le code
@@ -89,7 +89,7 @@ public class DossierAccessController : BaseApiController
                 emailBody
             );
 
-            _logger.LogInformation($"Code de validation envoyé au patient {request.IdPatient} par le médecin {medecinId}");
+            _logger.LogInformation("Code de validation envoyé au patient {IdPatient} par le médecin {MedecinId}", request.IdPatient, medecinId);
 
             return Ok(new SendCodeResponse 
             { 
@@ -100,7 +100,7 @@ public class DossierAccessController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SendValidationCode: {ex.Message}");
+            _logger.LogError(ex, "Erreur SendValidationCode");
             return StatusCode(500, new SendCodeResponse { Success = false, Message = "Erreur lors de l'envoi du code" });
         }
     }
@@ -139,7 +139,7 @@ public class DossierAccessController : BaseApiController
             // Code valide - supprimer et autoriser l'accès
             _validationCodes.TryRemove(key, out _);
 
-            _logger.LogInformation($"Accès au dossier patient {request.IdPatient} autorisé pour le médecin {medecinId}");
+            _logger.LogInformation("Accès au dossier patient {IdPatient} autorisé pour le médecin {MedecinId}", request.IdPatient, medecinId);
 
             return Ok(new VerifyCodeResponse 
             { 
@@ -149,7 +149,7 @@ public class DossierAccessController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur VerifyCode: {ex.Message}");
+            _logger.LogError(ex, "Erreur VerifyCode");
             return StatusCode(500, new VerifyCodeResponse { Success = false, Message = "Erreur lors de la vérification" });
         }
     }

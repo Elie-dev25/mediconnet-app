@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Patient;
@@ -239,7 +239,7 @@ namespace Mediconnet_Backend.Services
                     })
                     .ToListAsync();
 
-                _logger.LogInformation($"Récupération de {patients.Count} patients récents");
+                _logger.LogInformation("Récupération de {Count} patients récents", patients.Count);
 
                 return new RecentPatientsResponse
                 {

@@ -1,7 +1,8 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Admin;
 
 /// <summary>
-/// DTO complet pour les détails d'un utilisateur (fiche latérale)
+/// DTO complet pour les dÃ©tails d'un utilisateur (fiche latÃ©rale)
 /// </summary>
 public class UserDetailsDto
 {
@@ -26,14 +27,14 @@ public class UserDetailsDto
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     
-    // Données spécifiques au rôle
+    // DonnÃ©es spÃ©cifiques au rÃ´le
     public InfirmierDetailsDto? Infirmier { get; set; }
     public MedecinDetailsDto? Medecin { get; set; }
     public PatientDetailsDto? Patient { get; set; }
 }
 
 /// <summary>
-/// Détails spécifiques à un infirmier
+/// DÃ©tails spÃ©cifiques Ã  un infirmier
 /// </summary>
 public class InfirmierDetailsDto
 {
@@ -51,20 +52,20 @@ public class InfirmierDetailsDto
     public string? Accreditations { get; set; }
     
     /// <summary>
-    /// Spécialité de l'infirmier
+    /// SpÃ©cialitÃ© de l'infirmier
     /// </summary>
     public int? IdSpecialite { get; set; }
     public string? CodeSpecialite { get; set; }
     public string? NomSpecialite { get; set; }
     
     /// <summary>
-    /// Titre affiché (ex: "Infirmier" ou "Major Pédiatrie")
+    /// Titre affichÃ© (ex: "Infirmier" ou "Major PÃ©diatrie")
     /// </summary>
     public string TitreAffiche { get; set; } = "Infirmier";
 }
 
 /// <summary>
-/// Détails spécifiques à un médecin
+/// DÃ©tails spÃ©cifiques Ã  un mÃ©decin
 /// </summary>
 public class MedecinDetailsDto
 {
@@ -76,7 +77,7 @@ public class MedecinDetailsDto
 }
 
 /// <summary>
-/// Détails spécifiques à un patient
+/// DÃ©tails spÃ©cifiques Ã  un patient
 /// </summary>
 public class PatientDetailsDto
 {
@@ -94,7 +95,7 @@ public class PatientDetailsDto
 }
 
 /// <summary>
-/// Request pour mettre à jour le statut d'un infirmier
+/// Request pour mettre Ã  jour le statut d'un infirmier
 /// </summary>
 public class UpdateInfirmierStatutRequest
 {
@@ -106,11 +107,12 @@ public class UpdateInfirmierStatutRequest
 /// </summary>
 public class NommerInfirmierMajorRequest
 {
+    [JsonRequired]
     public int IdService { get; set; }
 }
 
 /// <summary>
-/// Request pour révoquer la nomination Major
+/// Request pour rÃ©voquer la nomination Major
 /// </summary>
 public class RevoquerMajorRequest
 {
@@ -118,7 +120,7 @@ public class RevoquerMajorRequest
 }
 
 /// <summary>
-/// Request pour mettre à jour les accréditations
+/// Request pour mettre Ã  jour les accrÃ©ditations
 /// </summary>
 public class UpdateAccreditationsRequest
 {

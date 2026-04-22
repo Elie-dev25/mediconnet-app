@@ -1,15 +1,17 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Prescription;
 
-// ==================== Requêtes de création ====================
+// ==================== RequÃªtes de crÃ©ation ====================
 
 /// <summary>
-/// Requête de base pour créer une ordonnance avec médicaments
+/// RequÃªte de base pour crÃ©er une ordonnance avec mÃ©dicaments
 /// </summary>
 public class CreateOrdonnanceRequest
 {
     /// <summary>
     /// ID du patient (obligatoire)
     /// </summary>
+    [JsonRequired]
     public int IdPatient { get; set; }
 
     /// <summary>
@@ -28,14 +30,14 @@ public class CreateOrdonnanceRequest
     public string? Notes { get; set; }
 
     /// <summary>
-    /// Liste des médicaments à prescrire
+    /// Liste des mÃ©dicaments Ã  prescrire
     /// </summary>
     public List<MedicamentPrescriptionRequest> Medicaments { get; set; } = new();
 
-    // Fonctionnalités avancées (optionnelles)
+    // FonctionnalitÃ©s avancÃ©es (optionnelles)
     
     /// <summary>
-    /// Durée de validité en jours (défaut: 90 jours)
+    /// DurÃ©e de validitÃ© en jours (dÃ©faut: 90 jours)
     /// </summary>
     public int DureeValiditeJours { get; set; } = 90;
 
@@ -45,23 +47,23 @@ public class CreateOrdonnanceRequest
     public bool Renouvelable { get; set; } = false;
 
     /// <summary>
-    /// Nombre de renouvellements autorisés (si renouvelable)
+    /// Nombre de renouvellements autorisÃ©s (si renouvelable)
     /// </summary>
     public int? NombreRenouvellements { get; set; }
 }
 
 /// <summary>
-/// Détails d'un médicament à prescrire
+/// DÃ©tails d'un mÃ©dicament Ã  prescrire
 /// </summary>
 public class MedicamentPrescriptionRequest
 {
     /// <summary>
-    /// ID du médicament (si connu via autocomplete)
+    /// ID du mÃ©dicament (si connu via autocomplete)
     /// </summary>
     public int? IdMedicament { get; set; }
 
     /// <summary>
-    /// Nom du médicament (utilisé si IdMedicament non fourni)
+    /// Nom du mÃ©dicament (utilisÃ© si IdMedicament non fourni)
     /// </summary>
     public string NomMedicament { get; set; } = "";
 
@@ -71,22 +73,22 @@ public class MedicamentPrescriptionRequest
     public string? Dosage { get; set; }
 
     /// <summary>
-    /// Quantité prescrite
+    /// QuantitÃ© prescrite
     /// </summary>
     public int Quantite { get; set; } = 1;
 
     /// <summary>
-    /// Posologie (ex: "1 comprimé 3 fois par jour")
+    /// Posologie (ex: "1 comprimÃ© 3 fois par jour")
     /// </summary>
     public string? Posologie { get; set; }
 
     /// <summary>
-    /// Fréquence (ex: "3x/jour", "matin et soir")
+    /// FrÃ©quence (ex: "3x/jour", "matin et soir")
     /// </summary>
     public string? Frequence { get; set; }
 
     /// <summary>
-    /// Durée du traitement (ex: "7 jours", "1 mois")
+    /// DurÃ©e du traitement (ex: "7 jours", "1 mois")
     /// </summary>
     public string? DureeTraitement { get; set; }
 
@@ -96,20 +98,20 @@ public class MedicamentPrescriptionRequest
     public string? VoieAdministration { get; set; }
 
     /// <summary>
-    /// Forme pharmaceutique (ex: "comprimé", "sirop")
+    /// Forme pharmaceutique (ex: "comprimÃ©", "sirop")
     /// </summary>
     public string? FormePharmaceutique { get; set; }
 
     /// <summary>
-    /// Instructions spéciales
+    /// Instructions spÃ©ciales
     /// </summary>
     public string? Instructions { get; set; }
 }
 
-// ==================== Réponses ====================
+// ==================== RÃ©ponses ====================
 
 /// <summary>
-/// Résultat de la création d'une ordonnance
+/// RÃ©sultat de la crÃ©ation d'une ordonnance
 /// </summary>
 public class OrdonnanceResult
 {
@@ -152,7 +154,7 @@ public class OrdonnanceDto
     public DateTime CreatedAt { get; set; }
     public List<LignePrescriptionDto> Lignes { get; set; } = new();
     
-    // Fonctionnalités avancées (ex-OrdonnanceElectronique)
+    // FonctionnalitÃ©s avancÃ©es (ex-OrdonnanceElectronique)
     public DateTime? DateExpiration { get; set; }
     public bool Renouvelable { get; set; }
     public int? NombreRenouvellements { get; set; }
@@ -162,27 +164,27 @@ public class OrdonnanceDto
 }
 
 /// <summary>
-/// DTO d'une ligne de prescription (médicament prescrit)
-/// Supporte les médicaments du catalogue ET les médicaments en saisie libre (hors catalogue)
+/// DTO d'une ligne de prescription (mÃ©dicament prescrit)
+/// Supporte les mÃ©dicaments du catalogue ET les mÃ©dicaments en saisie libre (hors catalogue)
 /// </summary>
 public class LignePrescriptionDto
 {
     public int IdPrescriptionMed { get; set; }
     
     /// <summary>
-    /// ID du médicament dans le catalogue (null si hors catalogue)
+    /// ID du mÃ©dicament dans le catalogue (null si hors catalogue)
     /// </summary>
     public int? IdMedicament { get; set; }
     
     /// <summary>
-    /// Nom du médicament (catalogue ou saisie libre)
+    /// Nom du mÃ©dicament (catalogue ou saisie libre)
     /// </summary>
     public string NomMedicament { get; set; } = "";
     
     public string? Dosage { get; set; }
     
     /// <summary>
-    /// Indique si le médicament est hors catalogue (saisie libre par le médecin)
+    /// Indique si le mÃ©dicament est hors catalogue (saisie libre par le mÃ©decin)
     /// </summary>
     public bool EstHorsCatalogue { get; set; } = false;
     
@@ -217,7 +219,7 @@ public class FiltreOrdonnanceRequest
 }
 
 /// <summary>
-/// Requête pour annuler une ordonnance
+/// RequÃªte pour annuler une ordonnance
 /// </summary>
 public class AnnulerOrdonnanceRequest
 {
@@ -227,7 +229,7 @@ public class AnnulerOrdonnanceRequest
 // ==================== Validation ====================
 
 /// <summary>
-/// Résultat de validation d'une prescription
+/// RÃ©sultat de validation d'une prescription
 /// </summary>
 public class ValidationPrescriptionResult
 {

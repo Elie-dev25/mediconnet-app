@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Accueil;
 using Mediconnet_Backend.Core.Entities;
@@ -65,7 +65,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting accueil profile: {ex.Message}");
+            _logger.LogError(ex, "Error getting accueil profile");
             return StatusCode(500, new { message = "Erreur lors de la recuperation du profil" });
         }
     }
@@ -109,7 +109,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting accueil dashboard: {ex.Message}");
+            _logger.LogError(ex, "Error getting accueil dashboard");
             return StatusCode(500, new { message = "Erreur lors de la recuperation du dashboard" });
         }
     }
@@ -168,7 +168,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error searching patients: {ex.Message}");
+            _logger.LogError(ex, "Error searching patients");
             return StatusCode(500, new { message = "Erreur lors de la recherche" });
         }
     }
@@ -206,7 +206,7 @@ public class AccueilController : BaseApiController
             if (patientExistant != null)
             {
                 // Patient existant - marquer son arrivee
-                _logger.LogInformation($"Patient existant trouve: {patientExistant.IdUser}");
+                _logger.LogInformation("Patient existant trouve: {IdUser}", patientExistant.IdUser);
                 
                 // Si RDV specifie, le confirmer
                 if (request.IdRendezVous.HasValue)
@@ -275,7 +275,7 @@ public class AccueilController : BaseApiController
 
                 await transaction.CommitAsync();
 
-                _logger.LogInformation($"Nouveau patient enregistre: {utilisateur.IdUser}, Dossier: {numeroDossier}");
+                _logger.LogInformation("Nouveau patient enregistre: {IdUser}, Dossier: {NumeroDossier}", utilisateur.IdUser, numeroDossier);
 
                 return Ok(new EnregistrerArriveeResponse
                 {
@@ -294,7 +294,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error registering patient arrival: {ex.Message}");
+            _logger.LogError(ex, "Error registering patient arrival");
             return StatusCode(500, new { message = "Erreur lors de l'enregistrement" });
         }
     }
@@ -336,7 +336,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting today's rdv: {ex.Message}");
+            _logger.LogError(ex, "Error getting today's rdv");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des RDV" });
         }
     }
@@ -367,7 +367,7 @@ public class AccueilController : BaseApiController
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Arrivee marquee pour RDV {rdv.IdRendezVous}");
+            _logger.LogInformation("Arrivee marquee pour RDV {IdRendezVous}", rdv.IdRendezVous);
 
             return Ok(new 
             { 
@@ -379,7 +379,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error marking arrival: {ex.Message}");
+            _logger.LogError(ex, "Error marking arrival");
             return StatusCode(500, new { message = "Erreur lors de l'enregistrement de l'arrivee" });
         }
     }
@@ -417,12 +417,12 @@ public class AccueilController : BaseApiController
                 return BadRequest(result);
             }
 
-            _logger.LogInformation($"Consultation enregistrée: ID={result.IdConsultation}, Patient={request.IdPatient}");
+            _logger.LogInformation("Consultation enregistrée: ID={IdConsultation}, Patient={IdPatient}", result.IdConsultation, request.IdPatient);
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error registering consultation: {ex.Message}");
+            _logger.LogError(ex, "Error registering consultation");
             return StatusCode(500, new { message = "Erreur lors de l'enregistrement de la consultation" });
         }
     }
@@ -440,7 +440,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting available doctors: {ex.Message}");
+            _logger.LogError(ex, "Error getting available doctors");
             return StatusCode(500, new { message = "Erreur lors de la récupération des médecins" });
         }
     }
@@ -458,7 +458,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting filtered doctors: {ex.Message}");
+            _logger.LogError(ex, "Error getting filtered doctors");
             return StatusCode(500, new { message = "Erreur lors de la récupération des médecins" });
         }
     }
@@ -476,7 +476,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting services: {ex.Message}");
+            _logger.LogError(ex, "Error getting services");
             return StatusCode(500, new { message = "Erreur lors de la récupération des services" });
         }
     }
@@ -494,7 +494,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting specialties: {ex.Message}");
+            _logger.LogError(ex, "Error getting specialties");
             return StatusCode(500, new { message = "Erreur lors de la récupération des spécialités" });
         }
     }
@@ -512,7 +512,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting doctors availability: {ex.Message}");
+            _logger.LogError(ex, "Error getting doctors availability");
             return StatusCode(500, new { message = "Erreur lors de la récupération de la disponibilité des médecins" });
         }
     }
@@ -530,7 +530,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error checking payment validity: {ex.Message}");
+            _logger.LogError(ex, "Error checking payment validity");
             return StatusCode(500, new { message = "Erreur lors de la vérification du paiement" });
         }
     }
@@ -644,7 +644,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting doctor slots: {ex.Message}");
+            _logger.LogError(ex, "Error getting doctor slots");
             return StatusCode(500, new { message = "Erreur lors de la récupération des créneaux" });
         }
     }
@@ -698,7 +698,7 @@ public class AccueilController : BaseApiController
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"RDV #{idRdv} marqué comme absent par utilisateur #{userId}. Ancien statut: {ancienStatut}");
+            _logger.LogInformation("RDV #{IdRdv} marqué comme absent par utilisateur #{UserId}. Ancien statut: {AncienStatut}", idRdv, userId, ancienStatut);
 
             return Ok(new
             {
@@ -712,7 +712,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur MarquerAbsent RDV #{idRdv}: {ex.Message}");
+            _logger.LogError("Erreur MarquerAbsent RDV #{IdRdv}: {Message}", idRdv, ex.Message);
             return StatusCode(500, new { message = "Erreur lors du marquage de l'absence" });
         }
     }
@@ -786,7 +786,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRdvAujourdHui: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRdvAujourdHui");
             return StatusCode(500, new { message = "Erreur lors de la récupération des RDV" });
         }
     }
@@ -844,7 +844,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRdvEnRetard: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRdvEnRetard");
             return StatusCode(500, new { message = "Erreur lors de la récupération des RDV en retard" });
         }
     }
@@ -909,7 +909,7 @@ public class AccueilController : BaseApiController
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Marquage en lot: {successCount} RDV marqués absents, {errorCount} erreurs par utilisateur #{userId}");
+            _logger.LogInformation("Marquage en lot: {SuccessCount} RDV marqués absents, {ErrorCount} erreurs par utilisateur #{UserId}", successCount, errorCount, userId);
 
             return Ok(new
             {
@@ -922,7 +922,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur MarquerAbsentsEnLot: {ex.Message}");
+            _logger.LogError(ex, "Erreur MarquerAbsentsEnLot");
             return StatusCode(500, new { message = "Erreur lors du marquage en lot" });
         }
     }
@@ -1006,7 +1006,7 @@ public class AccueilController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetStatsAbsences: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetStatsAbsences");
             return StatusCode(500, new { message = "Erreur lors de la récupération des statistiques" });
         }
     }

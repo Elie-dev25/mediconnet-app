@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
@@ -57,7 +57,7 @@ public class ReceptionPatientController : BaseApiController
             return BadRequest(result);
         }
 
-        _logger.LogInformation($"Patient créé par accueil: {result.NumeroDossier}");
+        _logger.LogInformation("Patient créé par accueil: {NumeroDossier}", result.NumeroDossier);
         return Ok(result);
     }
 
@@ -120,7 +120,7 @@ public class ReceptionPatientController : BaseApiController
             return BadRequest(result);
         }
 
-        _logger.LogInformation($"Première connexion validée pour utilisateur {userId}");
+        _logger.LogInformation("Première connexion validée pour utilisateur {UserId}", userId);
         return Ok(result);
     }
 
@@ -147,7 +147,7 @@ public class ReceptionPatientController : BaseApiController
             return BadRequest(result);
         }
 
-        _logger.LogInformation($"Déclaration acceptée pour utilisateur {userId}");
+        _logger.LogInformation("Déclaration acceptée pour utilisateur {UserId}", userId);
         return Ok(result);
     }
 

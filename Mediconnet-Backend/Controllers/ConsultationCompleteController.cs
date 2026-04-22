@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mediconnet_Backend.Controllers.Base;
@@ -181,7 +181,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetDossierPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetDossierPatient");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -218,13 +218,13 @@ public class ConsultationCompleteController : BaseApiController
             // Audit trail
             await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut);
 
-            _logger.LogInformation($"Consultation {idConsultation} démarrée par médecin {medecinId}");
+            _logger.LogInformation("Consultation {IdConsultation} démarrée par médecin {MedecinId}", idConsultation, medecinId);
 
             return Ok(new { message = "Consultation démarrée", idConsultation, dateDebut = consultation.DateDebutEffective });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur DemarrerConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur DemarrerConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -464,7 +464,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -665,7 +665,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetConsultationDetails: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetConsultationDetails");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -772,12 +772,12 @@ public class ConsultationCompleteController : BaseApiController
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Anamnèse sauvegardée pour consultation {idConsultation} avec {anamnese.QuestionsReponses?.Count ?? 0} questions-réponses");
+            _logger.LogInformation("Anamnèse sauvegardée pour consultation {IdConsultation} avec {QuestionCount} questions-réponses", idConsultation, anamnese.QuestionsReponses?.Count ?? 0);
             return Ok(new { message = "Anamnèse sauvegardée" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveAnamnese: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveAnamnese");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -828,12 +828,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Examen clinique sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Examen clinique sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Examen clinique sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveExamenClinique: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveExamenClinique");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -883,7 +883,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetDernierExamenGynecologique: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetDernierExamenGynecologique");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -934,12 +934,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Examen gynécologique sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Examen gynécologique sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Examen gynécologique sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveExamenGynecologique: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveExamenGynecologique");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -997,12 +997,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Examen chirurgical sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Examen chirurgical sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Examen chirurgical sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveExamenChirurgical: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveExamenChirurgical");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1098,12 +1098,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Examen anesthésique sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Examen anesthésique sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Examen anesthésique sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveExamenAnesthesique: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveExamenAnesthesique");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1132,12 +1132,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Diagnostic sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Diagnostic sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Diagnostic sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveDiagnostic: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveDiagnostic");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1239,12 +1239,12 @@ public class ConsultationCompleteController : BaseApiController
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Plan de traitement sauvegardé pour consultation {idConsultation}");
+            _logger.LogInformation("Plan de traitement sauvegardé pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Plan de traitement sauvegardé" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SavePlanTraitement: {ex.Message}");
+            _logger.LogError(ex, "Erreur SavePlanTraitement");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1273,12 +1273,12 @@ public class ConsultationCompleteController : BaseApiController
             consultation.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Conclusion sauvegardée pour consultation {idConsultation}");
+            _logger.LogInformation("Conclusion sauvegardée pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Conclusion sauvegardée" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SaveConclusion: {ex.Message}");
+            _logger.LogError(ex, "Erreur SaveConclusion");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1304,12 +1304,12 @@ public class ConsultationCompleteController : BaseApiController
             
             consultation.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Prescriptions sauvegardées pour consultation {idConsultation}");
+            _logger.LogInformation("Prescriptions sauvegardées pour consultation {IdConsultation}", idConsultation);
             return Ok(new { message = "Prescriptions sauvegardées" });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SavePrescriptions: {ex.Message}");
+            _logger.LogError(ex, "Erreur SavePrescriptions");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1383,7 +1383,7 @@ public class ConsultationCompleteController : BaseApiController
                 consultation.Patient.DossierCloture = false;
                 consultation.Patient.DateClotureDossier = null;
                 consultation.Patient.IdMedecinCloture = null;
-                _logger.LogInformation($"Dossier réouvert pour patient {consultation.IdPatient} après première consultation");
+                _logger.LogInformation("Dossier réouvert pour patient {IdPatient} après première consultation", consultation.IdPatient);
             }
 
             await _context.SaveChangesAsync();
@@ -1411,7 +1411,7 @@ public class ConsultationCompleteController : BaseApiController
             }
             catch (Exception notifEx)
             {
-                _logger.LogWarning($"Erreur envoi notification patient: {notifEx.Message}");
+                _logger.LogWarning(notifEx, "Erreur envoi notification patient");
             }
 
             // Audit trail
@@ -1426,7 +1426,7 @@ public class ConsultationCompleteController : BaseApiController
                 Description = $"Consultation validée. Durée: {consultation.DureeMinutes} minutes"
             });
 
-            _logger.LogInformation($"Consultation {idConsultation} validée. Durée: {consultation.DureeMinutes} minutes");
+            _logger.LogInformation("Consultation {IdConsultation} validée. Durée: {DureeMinutes} minutes", idConsultation, consultation.DureeMinutes);
 
             return Ok(new { 
                 message = "Consultation validée", 
@@ -1437,7 +1437,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur ValiderConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur ValiderConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1506,7 +1506,7 @@ public class ConsultationCompleteController : BaseApiController
                 Description = $"Consultation annulée. Motif: {request.Motif}"
             });
 
-            _logger.LogInformation($"Consultation {idConsultation} annulée par médecin {medecinId}. Motif: {request.Motif}");
+            _logger.LogInformation("Consultation {IdConsultation} annulée par médecin {MedecinId}. Motif: {Motif}", idConsultation, medecinId, request.Motif);
 
             return Ok(new { 
                 message = "Consultation annulée", 
@@ -1516,7 +1516,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AnnulerConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur AnnulerConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1560,13 +1560,13 @@ public class ConsultationCompleteController : BaseApiController
             // Audit trail
             await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut, "Consultation mise en pause");
 
-            _logger.LogInformation($"Consultation {idConsultation} mise en pause par médecin {medecinId}");
+            _logger.LogInformation("Consultation {IdConsultation} mise en pause par médecin {MedecinId}", idConsultation, medecinId);
 
             return Ok(new { message = "Consultation mise en pause", idConsultation });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur PauseConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur PauseConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1604,13 +1604,13 @@ public class ConsultationCompleteController : BaseApiController
             // Audit trail
             await _auditService.LogStatutChangeAsync(idConsultation, medecinId.Value, ancienStatut, nouveauStatut, "Consultation reprise");
 
-            _logger.LogInformation($"Consultation {idConsultation} reprise par médecin {medecinId}");
+            _logger.LogInformation("Consultation {IdConsultation} reprise par médecin {MedecinId}", idConsultation, medecinId);
 
             return Ok(new { message = "Consultation reprise", idConsultation });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur ReprendreConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur ReprendreConsultation");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1655,7 +1655,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRecapitulatif: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRecapitulatif");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1742,7 +1742,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCreneauxDisponibles: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCreneauxDisponibles");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1767,7 +1767,7 @@ public class ConsultationCompleteController : BaseApiController
                 return NotFound(new { message = "Consultation non trouvée" });
 
             // Vérifier que le créneau est disponible
-            var dateRdv = DateTime.Parse(request.DateHeure);
+            var dateRdv = DateTime.Parse(request.DateHeure, System.Globalization.CultureInfo.InvariantCulture);
             var duree = request.Duree ?? 30;
             var dateFin = dateRdv.AddMinutes(duree);
 
@@ -1798,7 +1798,7 @@ public class ConsultationCompleteController : BaseApiController
             _context.RendezVous.Add(rdv);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"RDV de suivi créé: {rdv.IdRendezVous} pour patient {consultation.IdPatient}");
+            _logger.LogInformation("RDV de suivi créé: {IdRendezVous} pour patient {IdPatient}", rdv.IdRendezVous, consultation.IdPatient);
 
             return Ok(new
             {
@@ -1812,7 +1812,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreerRdvSuivi: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreerRdvSuivi");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1847,7 +1847,7 @@ public class ConsultationCompleteController : BaseApiController
                 await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation($"Dossier clôturé pour patient {consultation.IdPatient} par médecin {medecinId.Value}");
+            _logger.LogInformation("Dossier clôturé pour patient {IdPatient} par médecin {Value}", consultation.IdPatient, medecinId.Value);
 
             return Ok(new
             {
@@ -1857,7 +1857,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CloturerDossier: {ex.Message}");
+            _logger.LogError(ex, "Erreur CloturerDossier");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1940,7 +1940,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCreneauxAvecStatut: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCreneauxAvecStatut");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -1972,7 +1972,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetLaboratoires: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetLaboratoires");
             return StatusCode(500, new { message = "Erreur lors de la récupération des laboratoires" });
         }
     }
@@ -2000,7 +2000,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetSpecialites: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetSpecialites");
             return StatusCode(500, new { message = "Erreur lors de la récupération des spécialités" });
         }
     }
@@ -2031,7 +2031,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetMedecinsParSpecialite: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetMedecinsParSpecialite");
             return StatusCode(500, new { message = "Erreur lors de la récupération des médecins" });
         }
     }
@@ -2058,7 +2058,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetOrientations: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetOrientations");
             return StatusCode(500, new { message = "Erreur lors de la récupération des orientations" });
         }
     }
@@ -2151,7 +2151,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateOrientation: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreateOrientation");
             return StatusCode(500, new { message = "Erreur lors de la création de l'orientation" });
         }
     }
@@ -2191,7 +2191,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur UpdateOrientationStatut: {ex.Message}");
+            _logger.LogError(ex, "Erreur UpdateOrientationStatut");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -2220,7 +2220,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur DeleteOrientation: {ex.Message}");
+            _logger.LogError(ex, "Erreur DeleteOrientation");
             return StatusCode(500, new { message = "Erreur lors de la suppression de l'orientation" });
         }
     }
@@ -2252,7 +2252,7 @@ public class ConsultationCompleteController : BaseApiController
                 return BadRequest(new { message = "Aucun médecin n'est sélectionné pour cette orientation" });
 
             // Vérifier que le créneau est disponible
-            var dateHeure = DateTime.Parse(request.DateHeure);
+            var dateHeure = DateTime.Parse(request.DateHeure, System.Globalization.CultureInfo.InvariantCulture);
             var existingRdv = await _context.RendezVous
                 .AnyAsync(r => r.IdMedecin == orientation.IdMedecinOriente.Value 
                     && r.DateHeure == dateHeure 
@@ -2310,7 +2310,7 @@ public class ConsultationCompleteController : BaseApiController
             }
             catch (Exception notifEx)
             {
-                _logger.LogWarning($"Erreur envoi notification orientation RDV: {notifEx.Message}");
+                _logger.LogWarning(notifEx, "Erreur envoi notification orientation RDV");
             }
 
             _logger.LogInformation("RDV {RdvId} créé pour orientation {OrientationId}", rdv.IdRendezVous, idOrientation);
@@ -2324,7 +2324,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreerRdvPourOrientation: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreerRdvPourOrientation");
             return StatusCode(500, new { message = "Erreur lors de la création du rendez-vous" });
         }
     }
@@ -2434,7 +2434,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCreneauxMedecinDisponibles: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCreneauxMedecinDisponibles");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -2461,7 +2461,7 @@ public class ConsultationCompleteController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetOrientationsPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetOrientationsPatient");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

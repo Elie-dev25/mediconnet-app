@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs
 {
     // ==================== BLOC OPERATOIRE DTOs ====================
@@ -91,10 +92,14 @@ namespace Mediconnet_Backend.DTOs
 
     public class CreateReservationBlocRequest
     {
+        [JsonRequired]
         public int IdBloc { get; set; }
+        [JsonRequired]
         public int IdProgrammation { get; set; }
+        [JsonRequired]
         public DateTime DateReservation { get; set; }
         public string HeureDebut { get; set; } = string.Empty;
+        [JsonRequired]
         public int DureeMinutes { get; set; }
         public string? Notes { get; set; }
     }
@@ -138,15 +143,19 @@ namespace Mediconnet_Backend.DTOs
 
     public class VerifierDisponibiliteBlocRequest
     {
+        [JsonRequired]
         public DateTime Date { get; set; }
         public string HeureDebut { get; set; } = string.Empty;
+        [JsonRequired]
         public int DureeMinutes { get; set; }
     }
 
     public class ConfirmerAnnulationRdvRequest
     {
+        [JsonRequired]
         public DateTime Date { get; set; }
         public string HeureDebut { get; set; } = string.Empty;
+        [JsonRequired]
         public int DureeMinutes { get; set; }
         public string PatientIntervention { get; set; } = string.Empty;
         public string NomChirurgien { get; set; } = string.Empty;

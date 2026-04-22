@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Planning;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetDashboard: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetDashboard");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -63,7 +63,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetSemaineType: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetSemaineType");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -85,7 +85,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetSemainePlanning: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetSemainePlanning");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -109,7 +109,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCreneauxJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCreneauxJour");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -134,7 +134,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateCreneau: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreateCreneau");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -159,7 +159,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur UpdateCreneau: {ex.Message}");
+            _logger.LogError(ex, "Erreur UpdateCreneau");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -184,7 +184,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur DeleteCreneau: {ex.Message}");
+            _logger.LogError(ex, "Erreur DeleteCreneau");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -209,7 +209,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur ToggleCreneau: {ex.Message}");
+            _logger.LogError(ex, "Erreur ToggleCreneau");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -234,7 +234,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetIndisponibilites: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetIndisponibilites");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -259,7 +259,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateIndisponibilite: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreateIndisponibilite");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -284,7 +284,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur DeleteIndisponibilite: {ex.Message}");
+            _logger.LogError(ex, "Erreur DeleteIndisponibilite");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -308,7 +308,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCalendrierSemaine: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCalendrierSemaine");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -329,7 +329,7 @@ public class MedecinPlanningController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCalendrierJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCalendrierJour");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

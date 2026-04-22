@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Interfaces.Services;
+﻿using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -53,7 +53,7 @@ public class ExpiredInsuranceJob
                 .Where(p => p.DateFinValidite.Value.Date >= today.AddDays(-7)) // Expirées dans les 7 derniers jours
                 .ToListAsync();
 
-            _logger.LogInformation($"[ExpiredInsuranceJob] {expiredInsurances.Count} assurance(s) expirée(s) détectée(s)");
+            _logger.LogInformation("[ExpiredInsuranceJob] {Count} assurance(s) expirée(s) détectée(s)", expiredInsurances.Count);
 
             foreach (var patient in expiredInsurances)
             {
@@ -73,7 +73,7 @@ public class ExpiredInsuranceJob
                 .Where(p => p.DateFinValidite.Value.Date <= warningDate)
                 .ToListAsync();
 
-            _logger.LogInformation($"[ExpiredInsuranceJob] {expiringInsurances.Count} assurance(s) expirant dans les {WARNING_DAYS_BEFORE_EXPIRY} jours");
+            _logger.LogInformation("[ExpiredInsuranceJob] {Count} assurance(s) expirant dans les {WARNING_DAYS_BEFORE_EXPIRY} jours", expiringInsurances.Count, WARNING_DAYS_BEFORE_EXPIRY);
 
             foreach (var patient in expiringInsurances)
             {
@@ -107,7 +107,7 @@ public class ExpiredInsuranceJob
     {
         var today = DateTimeHelper.Now.Date;
 
-        _logger.LogInformation($"[ExpiredInsuranceJob] Génération du rapport des assurances expirées");
+        _logger.LogInformation("[ExpiredInsuranceJob] Génération du rapport des assurances expirées");
 
         try
         {
@@ -153,7 +153,7 @@ public class ExpiredInsuranceJob
 
             if (expiredPatients.Any() || expiringPatients.Any())
             {
-                _logger.LogInformation($"[ExpiredInsuranceJob] Rapport: {expiredPatients.Count} expirées, {expiringPatients.Count} expirant bientôt");
+                _logger.LogInformation("[ExpiredInsuranceJob] Rapport: {Count} expirées, {Count2} expirant bientôt", expiredPatients.Count, expiringPatients.Count);
 
                 // Notifier les administrateurs
                 var admins = await _context.Utilisateurs
@@ -223,7 +223,7 @@ public class ExpiredInsuranceJob
                 })
             });
 
-            _logger.LogInformation($"[ExpiredInsuranceJob] Notification envoyée: assurance expirée pour patient #{patient.IdUser} ({patientNom})");
+            _logger.LogInformation("[ExpiredInsuranceJob] Notification envoyée: assurance expirée pour patient #{IdUser} ({PatientNom})", patient.IdUser, patientNom);
         }
         catch (Exception ex)
         {
@@ -273,7 +273,7 @@ public class ExpiredInsuranceJob
                 })
             });
 
-            _logger.LogInformation($"[ExpiredInsuranceJob] Notification envoyée: assurance expire dans {daysUntilExpiry}j pour patient #{patient.IdUser}");
+            _logger.LogInformation("[ExpiredInsuranceJob] Notification envoyée: assurance expire dans {DaysUntilExpiry}j pour patient #{IdUser}", daysUntilExpiry, patient.IdUser);
         }
         catch (Exception ex)
         {

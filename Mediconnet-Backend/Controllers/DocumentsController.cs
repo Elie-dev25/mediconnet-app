@@ -672,7 +672,7 @@ public class DocumentsController : ControllerBase
                 Autorise = autorise,
                 MotifRefus = motifRefus,
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = Request.Headers["User-Agent"].ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString(),
                 EndpointApi = $"{Request.Method} {Request.Path}",
                 Timestamp = DateTime.UtcNow
             };

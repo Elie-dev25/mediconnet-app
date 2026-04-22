@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Hospitalisation;
 
@@ -64,12 +64,14 @@ public class HospitalisationDto
 }
 
 /// <summary>
-/// Requête pour ordonner une hospitalisation depuis une consultation (médecin)
-/// Le médecin ne choisit PAS la chambre/lit - c'est le Major qui l'attribue
+/// RequÃªte pour ordonner une hospitalisation depuis une consultation (mÃ©decin)
+/// Le mÃ©decin ne choisit PAS la chambre/lit - c'est le Major qui l'attribue
 /// </summary>
 public class OrdonnerHospitalisationRequest
 {
+    [JsonRequired]
     public int IdConsultation { get; set; }
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string Motif { get; set; } = string.Empty;
     public string? Urgence { get; set; }
@@ -77,23 +79,25 @@ public class OrdonnerHospitalisationRequest
     public List<SoinComplementaireDto>? Soins { get; set; }
     public DateTime? DateSortiePrevue { get; set; }
     /// <summary>
-    /// Service cible pour l'hospitalisation (optionnel, par défaut = service du médecin)
+    /// Service cible pour l'hospitalisation (optionnel, par dÃ©faut = service du mÃ©decin)
     /// </summary>
     public int? IdServiceCible { get; set; }
 }
 
 /// <summary>
-/// Requête pour attribuer un lit à une hospitalisation en attente (Major)
+/// RequÃªte pour attribuer un lit Ã  une hospitalisation en attente (Major)
 /// </summary>
 public class AttribuerLitRequest
 {
+    [JsonRequired]
     public int IdAdmission { get; set; }
+    [JsonRequired]
     public int IdLit { get; set; }
     public string? Notes { get; set; }
 }
 
 /// <summary>
-/// DTO pour un soin complémentaire
+/// DTO pour un soin complÃ©mentaire
 /// </summary>
 public class SoinComplementaireDto
 {
@@ -118,7 +122,7 @@ public class ExamenPrescriptionDto
 }
 
 /// <summary>
-/// DTO pour une prescription de médicament dans le contexte hospitalisation
+/// DTO pour une prescription de mÃ©dicament dans le contexte hospitalisation
 /// </summary>
 public class MedicamentPrescriptionDto
 {
@@ -133,10 +137,11 @@ public class MedicamentPrescriptionDto
 }
 
 /// <summary>
-/// Requête complète pour ordonner une hospitalisation avec prescriptions (workflow multi-étapes)
+/// RequÃªte complÃ¨te pour ordonner une hospitalisation avec prescriptions (workflow multi-Ã©tapes)
 /// </summary>
 public class OrdonnerHospitalisationCompleteRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public int? IdConsultation { get; set; }
     public string Motif { get; set; } = string.Empty;
@@ -148,13 +153,13 @@ public class OrdonnerHospitalisationCompleteRequest
     public List<ExamenPrescriptionDto>? Examens { get; set; }
     public List<MedicamentPrescriptionDto>? Medicaments { get; set; }
     /// <summary>
-    /// Service cible pour l'hospitalisation (optionnel, par défaut = service du médecin)
+    /// Service cible pour l'hospitalisation (optionnel, par dÃ©faut = service du mÃ©decin)
     /// </summary>
     public int? IdServiceCible { get; set; }
 }
 
 /// <summary>
-/// Réponse après création d'une hospitalisation (enrichie avec détails facturation)
+/// RÃ©ponse aprÃ¨s crÃ©ation d'une hospitalisation (enrichie avec dÃ©tails facturation)
 /// </summary>
 public class HospitalisationResponse
 {
@@ -166,7 +171,7 @@ public class HospitalisationResponse
 }
 
 /// <summary>
-/// Données détaillées après création d'une hospitalisation
+/// DonnÃ©es dÃ©taillÃ©es aprÃ¨s crÃ©ation d'une hospitalisation
 /// </summary>
 public class HospitalisationCreatedData
 {
@@ -191,10 +196,11 @@ public class HospitalisationCreatedData
 }
 
 /// <summary>
-/// Requête pour terminer une hospitalisation
+/// RequÃªte pour terminer une hospitalisation
 /// </summary>
 public class TerminerHospitalisationRequest
 {
+    [JsonRequired]
     public int IdAdmission { get; set; }
     public DateTime? DateSortie { get; set; }
     public string? MotifSortie { get; set; }

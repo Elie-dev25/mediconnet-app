@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Mediconnet_Backend.Core.Interfaces.Services;
@@ -19,47 +19,39 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<string> GenerateTokenAsync(int userId, string role)
     {
-        try
+        var jwtSecret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrWhiteSpace(jwtSecret))
         {
-            var jwtSecret = _configuration["Jwt:Secret"];
-            if (string.IsNullOrWhiteSpace(jwtSecret))
-            {
-                throw new InvalidOperationException("JWT secret is not configured. Please set Jwt__Secret in the environment variables.");
-            }
-
-            var jwtIssuer = _configuration["Jwt:Issuer"] ?? "MediConnect";
-            var jwtAudience = _configuration["Jwt:Audience"] ?? "MediConnectUsers";
-            var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
-
-            var key = Encoding.ASCII.GetBytes(jwtSecret);
-            var userIdStr = userId.ToString();
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userIdStr),
-                    new Claim(ClaimTypes.Role, role),
-                    new Claim("userId", userIdStr),
-                    new Claim("role", role)
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
-                Issuer = jwtIssuer,
-                Audience = jwtAudience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-
-            _logger.LogInformation($"JWT token generated for user {userId}");
-            return await Task.FromResult(tokenString);
+            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt__Secret in the environment variables.");
         }
-        catch (Exception ex)
+
+        var jwtIssuer = _configuration["Jwt:Issuer"] ?? "MediConnect";
+        var jwtAudience = _configuration["Jwt:Audience"] ?? "MediConnectUsers";
+        var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
+
+        var key = Encoding.ASCII.GetBytes(jwtSecret);
+        var userIdStr = userId.ToString();
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            _logger.LogError($"Error generating JWT token: {ex.Message}");
-            throw;
-        }
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userIdStr),
+                new Claim(ClaimTypes.Role, role),
+                new Claim("userId", userIdStr),
+                new Claim("role", role)
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
+            Issuer = jwtIssuer,
+            Audience = jwtAudience,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        _logger.LogInformation("JWT token generated for user {UserId}", userId);
+        return await Task.FromResult(tokenString);
     }
 
     public string? GetUserIdFromToken(string token)
@@ -91,7 +83,7 @@ public class JwtTokenService : IJwtTokenService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error extracting user ID from token: {ex.Message}");
+            _logger.LogError(ex, "Error extracting user ID from token");
             return null;
         }
     }

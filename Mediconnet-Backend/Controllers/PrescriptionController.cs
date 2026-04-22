@@ -1,14 +1,15 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Prescription;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.Controllers;
 
 /// <summary>
-/// Contrôleur centralisé pour la gestion des prescriptions médicamenteuses
-/// Unifie tous les points d'entrée de prescription :
+/// ContrÃ´leur centralisÃ© pour la gestion des prescriptions mÃ©dicamenteuses
+/// Unifie tous les points d'entrÃ©e de prescription :
 /// - Consultation classique
 /// - Hospitalisation
 /// - Prescription directe (fiche patient)
@@ -18,6 +19,8 @@ namespace Mediconnet_Backend.Controllers;
 [Authorize]
 public class PrescriptionController : ControllerBase
 {
+    private const string UnauthorizedMessage = "Utilisateur non authentifiÃ©";
+
     private readonly IPrescriptionService _prescriptionService;
     private readonly ILogger<PrescriptionController> _logger;
 
@@ -35,10 +38,10 @@ public class PrescriptionController : ControllerBase
         return int.TryParse(userIdClaim, out var id) ? id : null;
     }
 
-    // ==================== Création ====================
+    // ==================== CrÃ©ation ====================
 
     /// <summary>
-    /// Crée une ordonnance générique
+    /// CrÃ©e une ordonnance gÃ©nÃ©rique
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "medecin")]
@@ -46,7 +49,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         var result = await _prescriptionService.CreerOrdonnanceAsync(request, medecinId.Value);
 
@@ -69,7 +72,7 @@ public class PrescriptionController : ControllerBase
     }
 
     /// <summary>
-    /// Crée une ordonnance dans le contexte d'une consultation
+    /// CrÃ©e une ordonnance dans le contexte d'une consultation
     /// </summary>
     [HttpPost("consultation/{idConsultation}")]
     [Authorize(Roles = "medecin")]
@@ -79,7 +82,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         var result = await _prescriptionService.CreerOrdonnanceConsultationAsync(
             idConsultation, 
@@ -106,7 +109,7 @@ public class PrescriptionController : ControllerBase
     }
 
     /// <summary>
-    /// Crée une ordonnance dans le contexte d'une hospitalisation
+    /// CrÃ©e une ordonnance dans le contexte d'une hospitalisation
     /// </summary>
     [HttpPost("hospitalisation/{idHospitalisation}")]
     [Authorize(Roles = "medecin")]
@@ -116,7 +119,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         var result = await _prescriptionService.CreerOrdonnanceHospitalisationAsync(
             idHospitalisation, 
@@ -143,7 +146,7 @@ public class PrescriptionController : ControllerBase
     }
 
     /// <summary>
-    /// Crée une ordonnance directe (hors consultation/hospitalisation)
+    /// CrÃ©e une ordonnance directe (hors consultation/hospitalisation)
     /// Utile pour les renouvellements ou prescriptions depuis la fiche patient
     /// </summary>
     [HttpPost("directe")]
@@ -152,7 +155,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         var result = await _prescriptionService.CreerOrdonnanceDirecteAsync(
             request.IdPatient, 
@@ -184,7 +187,7 @@ public class PrescriptionController : ControllerBase
     // ==================== Lecture ====================
 
     /// <summary>
-    /// Récupère une ordonnance par son ID
+    /// RÃ©cupÃ¨re une ordonnance par son ID
     /// </summary>
     [HttpGet("{idOrdonnance}")]
     public async Task<IActionResult> GetOrdonnance(int idOrdonnance)
@@ -192,13 +195,13 @@ public class PrescriptionController : ControllerBase
         var ordonnance = await _prescriptionService.GetOrdonnanceAsync(idOrdonnance);
 
         if (ordonnance == null)
-            return NotFound(new { message = "Ordonnance non trouvée" });
+            return NotFound(new { message = "Ordonnance non trouvÃ©e" });
 
         return Ok(ordonnance);
     }
 
     /// <summary>
-    /// Récupère l'ordonnance d'une consultation
+    /// RÃ©cupÃ¨re l'ordonnance d'une consultation
     /// </summary>
     [HttpGet("consultation/{idConsultation}")]
     public async Task<IActionResult> GetOrdonnanceByConsultation(int idConsultation)
@@ -212,7 +215,7 @@ public class PrescriptionController : ControllerBase
     }
 
     /// <summary>
-    /// Récupère les ordonnances d'un patient
+    /// RÃ©cupÃ¨re les ordonnances d'un patient
     /// </summary>
     [HttpGet("patient/{idPatient}")]
     public async Task<IActionResult> GetOrdonnancesPatient(int idPatient)
@@ -222,7 +225,7 @@ public class PrescriptionController : ControllerBase
     }
 
     /// <summary>
-    /// Récupère les ordonnances d'une hospitalisation
+    /// RÃ©cupÃ¨re les ordonnances d'une hospitalisation
     /// </summary>
     [HttpGet("hospitalisation/{idHospitalisation}")]
     public async Task<IActionResult> GetOrdonnancesHospitalisation(int idHospitalisation)
@@ -252,7 +255,7 @@ public class PrescriptionController : ControllerBase
     // ==================== Modification ====================
 
     /// <summary>
-    /// Met à jour une ordonnance existante
+    /// Met Ã  jour une ordonnance existante
     /// </summary>
     [HttpPut("{idOrdonnance}")]
     [Authorize(Roles = "medecin")]
@@ -262,7 +265,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         var result = await _prescriptionService.MettreAJourOrdonnanceAsync(
             idOrdonnance, 
@@ -298,7 +301,7 @@ public class PrescriptionController : ControllerBase
     {
         var medecinId = GetCurrentUserId();
         if (!medecinId.HasValue)
-            return Unauthorized(new { message = "Utilisateur non authentifié" });
+            return Unauthorized(new { message = UnauthorizedMessage });
 
         if (string.IsNullOrWhiteSpace(request.Motif))
             return BadRequest(new { message = "Le motif d'annulation est obligatoire" });
@@ -309,15 +312,15 @@ public class PrescriptionController : ControllerBase
             medecinId.Value);
 
         if (!success)
-            return NotFound(new { message = "Ordonnance non trouvée ou impossible à annuler" });
+            return NotFound(new { message = "Ordonnance non trouvÃ©e ou impossible Ã  annuler" });
 
-        return Ok(new { success = true, message = "Ordonnance annulée avec succès" });
+        return Ok(new { success = true, message = "Ordonnance annulÃ©e avec succÃ¨s" });
     }
 
     // ==================== Validation ====================
 
     /// <summary>
-    /// Valide une prescription avant création (vérifie stock, interactions, etc.)
+    /// Valide une prescription avant crÃ©ation (vÃ©rifie stock, interactions, etc.)
     /// </summary>
     [HttpPost("valider")]
     [Authorize(Roles = "medecin")]
@@ -336,10 +339,10 @@ public class PrescriptionController : ControllerBase
     }
 }
 
-// ==================== DTOs spécifiques au contrôleur ====================
+// ==================== DTOs spÃ©cifiques au contrÃ´leur ====================
 
 /// <summary>
-/// Requête pour créer une ordonnance dans une consultation
+/// RequÃªte pour crÃ©er une ordonnance dans une consultation
 /// </summary>
 public class CreateOrdonnanceConsultationRequest
 {
@@ -348,7 +351,7 @@ public class CreateOrdonnanceConsultationRequest
 }
 
 /// <summary>
-/// Requête pour créer une ordonnance dans une hospitalisation
+/// RequÃªte pour crÃ©er une ordonnance dans une hospitalisation
 /// </summary>
 public class CreateOrdonnanceHospitalisationRequest
 {
@@ -357,10 +360,11 @@ public class CreateOrdonnanceHospitalisationRequest
 }
 
 /// <summary>
-/// Requête pour créer une ordonnance directe
+/// RequÃªte pour crÃ©er une ordonnance directe
 /// </summary>
 public class CreateOrdonnanceDirecteRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string? Notes { get; set; }
     public List<MedicamentPrescriptionRequest> Medicaments { get; set; } = new();
@@ -370,7 +374,7 @@ public class CreateOrdonnanceDirecteRequest
 }
 
 /// <summary>
-/// Requête pour mettre à jour une ordonnance
+/// RequÃªte pour mettre Ã  jour une ordonnance
 /// </summary>
 public class UpdateOrdonnanceRequest
 {
@@ -379,10 +383,11 @@ public class UpdateOrdonnanceRequest
 }
 
 /// <summary>
-/// Requête pour valider une prescription
+/// RequÃªte pour valider une prescription
 /// </summary>
 public class ValiderPrescriptionRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public List<MedicamentPrescriptionRequest> Medicaments { get; set; } = new();
 }

@@ -1,11 +1,12 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.Core.Interfaces.Services;
 
 /// <summary>
-/// Service de gestion des lits - Suivi temps réel et affectation automatique
+/// Service de gestion des lits - Suivi temps rÃ©el et affectation automatique
 /// </summary>
 public interface ILitManagementService
 {
-    // Dashboard temps réel
+    // Dashboard temps rÃ©el
     Task<OccupationDashboardDto> GetOccupationDashboardAsync();
     Task<List<ChambreOccupationDto>> GetOccupationParChambreAsync();
     
@@ -13,7 +14,7 @@ public interface ILitManagementService
     Task<AffectationResult> AffecterLitAutomatiqueAsync(AffectationRequest request);
     Task<List<LitSuggestionDto>> GetLitsSuggeresAsync(int idPatient, string? criteres = null);
     
-    // Gestion des réservations
+    // Gestion des rÃ©servations
     Task<ReservationLitDto> ReserverLitAsync(ReservationLitRequest request);
     Task<bool> AnnulerReservationAsync(int idReservation);
     Task<List<ReservationLitDto>> GetReservationsEnCoursAsync();
@@ -80,9 +81,11 @@ public class LitOccupationDto
 
 public class AffectationRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string? TypeChambre { get; set; } // standard, isolement, soins_intensifs
     public string? ServicePrefere { get; set; }
+    [JsonRequired]
     public bool Urgence { get; set; }
     public DateTime? DateEntreePrevue { get; set; }
 }
@@ -109,8 +112,11 @@ public class LitSuggestionDto
 
 public class ReservationLitRequest
 {
+    [JsonRequired]
     public int IdLit { get; set; }
+    [JsonRequired]
     public int IdPatient { get; set; }
+    [JsonRequired]
     public DateTime DateReservation { get; set; }
     public DateTime? DateExpiration { get; set; }
     public string? Notes { get; set; }
@@ -131,7 +137,9 @@ public class ReservationLitDto
 
 public class TransfertRequest
 {
+    [JsonRequired]
     public int IdAdmission { get; set; }
+    [JsonRequired]
     public int IdNouveauLit { get; set; }
     public string Motif { get; set; } = string.Empty;
 }

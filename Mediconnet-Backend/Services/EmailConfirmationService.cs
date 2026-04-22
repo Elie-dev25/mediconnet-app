@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Mediconnet_Backend.Core.Configuration;
@@ -63,7 +63,7 @@ public class EmailConfirmationService : IEmailConfirmationService
         _context.EmailConfirmationTokens.Add(confirmationToken);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Generated confirmation token for user {userId}, expires at {expiresAt}");
+        _logger.LogInformation("Generated confirmation token for user {UserId}, expires at {ExpiresAt}", userId, expiresAt);
 
         return token;
     }
@@ -80,18 +80,18 @@ public class EmailConfirmationService : IEmailConfirmationService
 
             if (sent)
             {
-                _logger.LogInformation($"Confirmation email sent to {email}");
+                _logger.LogInformation("Confirmation email sent to {Email}", email);
             }
             else
             {
-                _logger.LogWarning($"Failed to send confirmation email to {email}");
+                _logger.LogWarning("Failed to send confirmation email to {Email}", email);
             }
 
             return sent;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error sending confirmation email: {ex.Message}");
+            _logger.LogError(ex, "Error sending confirmation email");
             return false;
         }
     }
@@ -107,7 +107,7 @@ public class EmailConfirmationService : IEmailConfirmationService
 
             if (confirmationToken == null)
             {
-                _logger.LogWarning($"Invalid confirmation token attempted");
+                _logger.LogWarning("Invalid confirmation token attempted");
                 return new EmailConfirmationResult
                 {
                     Success = false,
@@ -119,7 +119,7 @@ public class EmailConfirmationService : IEmailConfirmationService
             // Vérifier si déjà utilisé
             if (confirmationToken.IsUsed)
             {
-                _logger.LogWarning($"Token already used for user {confirmationToken.IdUser}");
+                _logger.LogWarning("Token already used for user {IdUser}", confirmationToken.IdUser);
                 return new EmailConfirmationResult
                 {
                     Success = false,
@@ -131,7 +131,7 @@ public class EmailConfirmationService : IEmailConfirmationService
             // Vérifier l'expiration
             if (DateTime.UtcNow > confirmationToken.ExpiresAt)
             {
-                _logger.LogWarning($"Expired token for user {confirmationToken.IdUser}");
+                _logger.LogWarning("Expired token for user {IdUser}", confirmationToken.IdUser);
                 return new EmailConfirmationResult
                 {
                     Success = false,
@@ -156,7 +156,7 @@ public class EmailConfirmationService : IEmailConfirmationService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Email confirmed for user {confirmationToken.IdUser}");
+            _logger.LogInformation("Email confirmed for user {IdUser}", confirmationToken.IdUser);
 
             // Envoyer l'email de bienvenue
             if (user != null)
@@ -173,7 +173,7 @@ public class EmailConfirmationService : IEmailConfirmationService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error confirming email: {ex.Message}");
+            _logger.LogError(ex, "Error confirming email");
             return new EmailConfirmationResult
             {
                 Success = false,
@@ -193,13 +193,13 @@ public class EmailConfirmationService : IEmailConfirmationService
 
             if (user == null)
             {
-                _logger.LogWarning($"Resend attempt for non-existent email: {email}");
+                _logger.LogWarning("Resend attempt for non-existent email: {Email}", email);
                 return false; // Ne pas révéler si l'email existe ou non
             }
 
             if (user.EmailConfirmed)
             {
-                _logger.LogInformation($"Resend attempt for already confirmed email: {email}");
+                _logger.LogInformation("Resend attempt for already confirmed email: {Email}", email);
                 return true; // L'email est déjà confirmé
             }
 
@@ -212,7 +212,7 @@ public class EmailConfirmationService : IEmailConfirmationService
             if (recentToken != null && 
                 (DateTime.UtcNow - recentToken.CreatedAt).TotalMinutes < 2)
             {
-                _logger.LogWarning($"Rate limit hit for email resend: {email}");
+                _logger.LogWarning("Rate limit hit for email resend: {Email}", email);
                 return false;
             }
 
@@ -220,7 +220,7 @@ public class EmailConfirmationService : IEmailConfirmationService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error resending confirmation email: {ex.Message}");
+            _logger.LogError(ex, "Error resending confirmation email");
             return false;
         }
     }

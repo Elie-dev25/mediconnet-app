@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Interfaces.Services;
+﻿using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -41,7 +41,7 @@ public class ReminderJob
             .Where(r => r.Statut == "confirmé" || r.Statut == "en_attente")
             .ToListAsync();
 
-        _logger.LogInformation($"Envoi de {appointments.Count} rappels de RDV pour demain");
+        _logger.LogInformation("Envoi de {Count} rappels de RDV pour demain", appointments.Count);
 
         foreach (var rdv in appointments)
         {
@@ -66,7 +66,7 @@ public class ReminderJob
                     "
                 );
 
-                _logger.LogDebug($"Rappel envoyé pour RDV #{rdv.IdRendezVous}");
+                _logger.LogDebug("Rappel envoyé pour RDV #{IdRendezVous}", rdv.IdRendezVous);
             }
             catch (Exception ex)
             {
@@ -93,7 +93,7 @@ public class ReminderJob
             .Where(r => r.Statut == "confirmé")
             .ToListAsync();
 
-        _logger.LogInformation($"Envoi de {appointments.Count} rappels imminents");
+        _logger.LogInformation("Envoi de {Count} rappels imminents", appointments.Count);
 
         foreach (var rdv in appointments)
         {

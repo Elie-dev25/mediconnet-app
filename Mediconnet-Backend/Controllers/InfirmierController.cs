@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Hospitalisation;
 using Mediconnet_Backend.Core.Interfaces.Services;
@@ -92,7 +92,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFileAttente infirmier: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFileAttente infirmier");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -155,7 +155,7 @@ public class InfirmierController : BaseApiController
                 ? $"{rdv.Patient.Utilisateur.Prenom} {rdv.Patient.Utilisateur.Nom}" 
                 : "Patient";
 
-            _logger.LogInformation($"Patient {patientNom} marqué comme arrivé pour RDV {idRendezVous}");
+            _logger.LogInformation("Patient {PatientNom} marqué comme arrivé pour RDV {IdRendezVous}", patientNom, idRendezVous);
 
             return Ok(new { 
                 success = true, 
@@ -166,7 +166,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur MarquerArriveePatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur MarquerArriveePatient");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -211,7 +211,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRdvConfirmesJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRdvConfirmesJour");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -270,7 +270,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetHospitalisationsEnAttente: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetHospitalisationsEnAttente");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -307,7 +307,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AttribuerLit: {ex.Message}");
+            _logger.LogError(ex, "Erreur AttribuerLit");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -358,7 +358,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetHospitalisationsService: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetHospitalisationsService");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -405,7 +405,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetAllPatients: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetAllPatients");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -538,7 +538,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetPatientsHospitalises: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetPatientsHospitalises");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -556,7 +556,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetLitsDisponibles: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetLitsDisponibles");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -574,7 +574,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetChambres: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetChambres");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -607,7 +607,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting standards: {ex.Message}");
+            _logger.LogError(ex, "Error getting standards");
             return StatusCode(500, new { message = "Erreur lors de la récupération des standards" });
         }
     }
@@ -644,7 +644,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting chambres by standard: {ex.Message}");
+            _logger.LogError(ex, "Error getting chambres by standard");
             return StatusCode(500, new { message = "Erreur lors de la récupération des chambres" });
         }
     }
@@ -777,7 +777,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting hospitalisation details: {ex.Message}");
+            _logger.LogError(ex, "Error getting hospitalisation details");
             return StatusCode(500, new { message = "Erreur lors de la récupération des détails" });
         }
     }
@@ -860,7 +860,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting soins jour: {ex.Message}");
+            _logger.LogError(ex, "Error getting soins jour");
             return StatusCode(500, new { message = "Erreur lors de la récupération des soins" });
         }
     }
@@ -924,7 +924,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error marking execution as done: {ex.Message}");
+            _logger.LogError(ex, "Error marking execution as done");
             return StatusCode(500, new { message = "Erreur lors de la mise à jour" });
         }
     }
@@ -1016,7 +1016,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting soins à faire: {ex.Message}");
+            _logger.LogError(ex, "Error getting soins à faire");
             return StatusCode(500, new { message = "Erreur lors de la récupération des soins" });
         }
     }
@@ -1220,7 +1220,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error registering soin execution: {ex.Message}");
+            _logger.LogError(ex, "Error registering soin execution");
             return StatusCode(500, new { message = "Erreur lors de l'enregistrement du soin" });
         }
     }
@@ -1255,7 +1255,7 @@ public class InfirmierController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error marking execution as missed: {ex.Message}");
+            _logger.LogError(ex, "Error marking execution as missed");
             return StatusCode(500, new { message = "Erreur lors de la mise à jour" });
         }
     }

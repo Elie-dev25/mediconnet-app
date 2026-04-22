@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.RendezVous;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +38,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetStats: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetStats");
             return StatusCode(500, new { message = "Erreur lors de la récupération des statistiques" });
         }
     }
@@ -61,7 +61,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetUpcoming: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetUpcoming");
             return StatusCode(500, new { message = "Erreur lors de la récupération des rendez-vous" });
         }
     }
@@ -82,7 +82,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetHistory: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetHistory");
             return StatusCode(500, new { message = "Erreur lors de la récupération de l'historique" });
         }
     }
@@ -106,7 +106,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRendezVous: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRendezVous");
             return StatusCode(500, new { message = "Erreur lors de la récupération du rendez-vous" });
         }
     }
@@ -133,7 +133,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Create: {ex.Message}");
+            _logger.LogError(ex, "Erreur Create");
             return StatusCode(500, new { message = "Erreur lors de la création du rendez-vous" });
         }
     }
@@ -158,7 +158,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Update: {ex.Message}");
+            _logger.LogError(ex, "Erreur Update");
             return StatusCode(500, new { message = "Erreur lors de la modification du rendez-vous" });
         }
     }
@@ -183,7 +183,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Annuler: {ex.Message}");
+            _logger.LogError(ex, "Erreur Annuler");
             return StatusCode(500, new { message = "Erreur lors de l'annulation du rendez-vous" });
         }
     }
@@ -203,7 +203,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetServices: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetServices");
             return StatusCode(500, new { message = "Erreur lors de la récupération des services" });
         }
     }
@@ -223,7 +223,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetMedecins: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetMedecins");
             return StatusCode(500, new { message = "Erreur lors de la récupération des médecins" });
         }
     }
@@ -250,7 +250,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetCreneaux: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetCreneaux");
             return StatusCode(500, new { message = "Erreur lors de la récupération des créneaux" });
         }
     }
@@ -276,7 +276,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetMedecinRdvList: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetMedecinRdvList");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -298,7 +298,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetMedecinRdvJour: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetMedecinRdvJour");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -323,7 +323,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur UpdateStatutRdv: {ex.Message}");
+            _logger.LogError(ex, "Erreur UpdateStatutRdv");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -344,7 +344,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetRdvEnAttente: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetRdvEnAttente");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -373,7 +373,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur ValiderRdv: {ex.Message}");
+            _logger.LogError(ex, "Erreur ValiderRdv");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -398,7 +398,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AnnulerRdvMedecin: {ex.Message}");
+            _logger.LogError(ex, "Erreur AnnulerRdvMedecin");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -427,7 +427,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur SuggererCreneau: {ex.Message}");
+            _logger.LogError(ex, "Erreur SuggererCreneau");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -450,7 +450,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetPropositionsPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetPropositionsPatient");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -479,7 +479,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur AccepterProposition: {ex.Message}");
+            _logger.LogError(ex, "Erreur AccepterProposition");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -504,7 +504,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur RefuserProposition: {ex.Message}");
+            _logger.LogError(ex, "Erreur RefuserProposition");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -527,7 +527,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetFacturesPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetFacturesPatient");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }
@@ -552,7 +552,7 @@ public class RendezVousController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur PayerFactureEnLigne: {ex.Message}");
+            _logger.LogError(ex, "Erreur PayerFactureEnLigne");
             return StatusCode(500, new { message = "Erreur serveur" });
         }
     }

@@ -68,7 +68,8 @@ public class MemoryCacheService : ICacheService
     {
         var regex = new System.Text.RegularExpressions.Regex(
             "^" + pattern.Replace("*", ".*") + "$",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+            TimeSpan.FromMilliseconds(200));
 
         List<string> keysToRemove;
         lock (_lock)
@@ -99,10 +100,10 @@ public class MemoryCacheService : ICacheService
         CancellationToken cancellationToken = default)
     {
         var value = await GetAsync<T>(key, cancellationToken);
-        
-        if (value != null)
+
+        if (!EqualityComparer<T>.Default.Equals(value, default!))
         {
-            return value;
+            return value!;
         }
 
         value = await factory();

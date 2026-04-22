@@ -12,11 +12,14 @@ public class PasswordValidationService : IPasswordValidationService
     private const int MinLength = 8;
     private const int MaxLength = 128;
     
+    // Timeout de securite pour prevenir les attaques ReDoS
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+
     // Regex patterns
-    private static readonly Regex UppercaseRegex = new(@"[A-Z]", RegexOptions.Compiled);
-    private static readonly Regex LowercaseRegex = new(@"[a-z]", RegexOptions.Compiled);
-    private static readonly Regex DigitRegex = new(@"\d", RegexOptions.Compiled);
-    private static readonly Regex SpecialCharRegex = new(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?~`]", RegexOptions.Compiled);
+    private static readonly Regex UppercaseRegex = new(@"[A-Z]", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex LowercaseRegex = new(@"[a-z]", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex DigitRegex = new(@"\d", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex SpecialCharRegex = new(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?~`]", RegexOptions.Compiled, RegexTimeout);
 
     public PasswordValidationResult ValidatePassword(string password)
     {

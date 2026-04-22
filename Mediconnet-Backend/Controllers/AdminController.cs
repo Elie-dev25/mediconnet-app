@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Admin;
@@ -54,7 +54,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting users: {ex.Message}");
+            _logger.LogError(ex, "Error getting users");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des utilisateurs" });
         }
     }
@@ -73,7 +73,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error creating user: {ex.Message}");
+            _logger.LogError(ex, "Error creating user");
             return StatusCode(500, new { message = "Erreur lors de la creation de l'utilisateur" });
         }
     }
@@ -92,7 +92,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error deleting user: {ex.Message}");
+            _logger.LogError(ex, "Error deleting user");
             return StatusCode(500, new { message = "Erreur lors de la suppression de l'utilisateur" });
         }
     }
@@ -109,7 +109,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting specialites: {ex.Message}");
+            _logger.LogError(ex, "Error getting specialites");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des specialites" });
         }
     }
@@ -126,7 +126,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting services: {ex.Message}");
+            _logger.LogError(ex, "Error getting services");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des services" });
         }
     }
@@ -152,7 +152,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting laboratoires: {ex.Message}");
+            _logger.LogError(ex, "Error getting laboratoires");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des laboratoires" });
         }
     }
@@ -171,7 +171,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting service: {ex.Message}");
+            _logger.LogError(ex, "Error getting service");
             return StatusCode(500, new { message = "Erreur lors de la recuperation du service" });
         }
     }
@@ -190,7 +190,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error creating service: {ex.Message}");
+            _logger.LogError(ex, "Error creating service");
             return StatusCode(500, new { message = "Erreur lors de la creation du service" });
         }
     }
@@ -209,7 +209,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating service: {ex.Message}");
+            _logger.LogError(ex, "Error updating service");
             return StatusCode(500, new { message = "Erreur lors de la modification du service" });
         }
     }
@@ -228,7 +228,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error deleting service: {ex.Message}");
+            _logger.LogError(ex, "Error deleting service");
             return StatusCode(500, new { message = "Erreur lors de la suppression du service" });
         }
     }
@@ -246,7 +246,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting responsables: {ex.Message}");
+            _logger.LogError(ex, "Error getting responsables");
             return StatusCode(500, new { message = "Erreur lors de la recuperation des responsables" });
         }
     }
@@ -272,7 +272,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting user details: {ex.Message}");
+            _logger.LogError(ex, "Error getting user details");
             return StatusCode(500, new { success = false, message = "Erreur lors de la récupération des détails" });
         }
     }
@@ -298,7 +298,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating infirmier statut: {ex.Message}");
+            _logger.LogError(ex, "Error updating infirmier statut");
             return StatusCode(500, new { success = false, message = "Erreur lors de la mise à jour du statut" });
         }
     }
@@ -322,7 +322,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error nominating infirmier major: {ex.Message}");
+            _logger.LogError(ex, "Error nominating infirmier major");
             return StatusCode(500, new { success = false, message = "Erreur lors de la nomination" });
         }
     }
@@ -346,7 +346,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error revoking infirmier major: {ex.Message}");
+            _logger.LogError(ex, "Error revoking infirmier major");
             return StatusCode(500, new { success = false, message = "Erreur lors de la révocation" });
         }
     }
@@ -370,7 +370,7 @@ public class AdminController : BaseAdminController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating infirmier accreditations: {ex.Message}");
+            _logger.LogError(ex, "Error updating infirmier accreditations");
             return StatusCode(500, new { success = false, message = "Erreur lors de la mise à jour des accréditations" });
         }
     }

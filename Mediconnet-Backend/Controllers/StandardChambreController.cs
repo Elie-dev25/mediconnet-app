@@ -1,4 +1,4 @@
-using Mediconnet_Backend.DTOs;
+﻿using Mediconnet_Backend.DTOs;
 using Mediconnet_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +33,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetAll: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetAll");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -52,7 +52,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetForSelect: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetForSelect");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -74,7 +74,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetById: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetById");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -99,7 +99,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Create: {ex.Message}");
+            _logger.LogError(ex, "Erreur Create");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -121,7 +121,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Update: {ex.Message}");
+            _logger.LogError(ex, "Erreur Update");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -147,7 +147,7 @@ public class StandardChambreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Delete: {ex.Message}");
+            _logger.LogError(ex, "Erreur Delete");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }

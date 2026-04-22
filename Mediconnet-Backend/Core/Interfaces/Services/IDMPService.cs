@@ -1,7 +1,8 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.Core.Interfaces.Services;
 
 /// <summary>
-/// Service Dossier Médical Partagé (DMP) - Interopérabilité avec systèmes nationaux de santé
+/// Service Dossier MÃ©dical PartagÃ© (DMP) - InteropÃ©rabilitÃ© avec systÃ¨mes nationaux de santÃ©
 /// </summary>
 public interface IDMPService
 {
@@ -11,24 +12,24 @@ public interface IDMPService
     Task<bool> ActivateDMPAsync(int idPatient);
     Task<bool> DesactiverDMPAsync(int idPatient, string motif);
     
-    // Synchronisation avec le système national
+    // Synchronisation avec le systÃ¨me national
     Task<SyncResult> SynchroniserAvecDMPNationalAsync(int idPatient);
     Task<SyncResult> ExporterVersDMPNationalAsync(int idPatient, List<string> documentsAExporter);
     Task<ImportResult> ImporterDepuisDMPNationalAsync(int idPatient);
     
-    // Documents médicaux
+    // Documents mÃ©dicaux
     Task<List<DocumentDMPDto>> GetDocumentsPatientAsync(int idPatient, string? typeDocument = null);
     Task<DocumentDMPDto> AjouterDocumentAsync(int idPatient, AjoutDocumentDMPRequest request);
     Task<byte[]> TelechargerDocumentAsync(int idDocument);
     Task<bool> SupprimerDocumentAsync(int idDocument, string motif);
     
-    // Accès et autorisations
+    // AccÃ¨s et autorisations
     Task<List<AccesDMPDto>> GetHistoriqueAccesAsync(int idPatient);
     Task<bool> AccorderAccesAsync(int idPatient, AccorderAccesRequest request);
     Task<bool> RevoquerAccesAsync(int idPatient, int idProfessionnel);
     Task<List<AutorisationDMPDto>> GetAutorisationsAsync(int idPatient);
     
-    // Interopérabilité HL7 FHIR
+    // InteropÃ©rabilitÃ© HL7 FHIR
     Task<string> ExportFHIRPatientAsync(int idPatient);
     Task<string> ExportFHIRDocumentAsync(int idDocument);
     Task<ImportResult> ImportFHIRBundleAsync(string fhirBundle, int idPatient);
@@ -61,8 +62,11 @@ public class DMPStatsDto
 public class CreateDMPRequest
 {
     public string? IdentifiantNational { get; set; }
+    [JsonRequired]
     public bool ConsentementPatient { get; set; }
+    [JsonRequired]
     public DateTime DateConsentement { get; set; }
+    [JsonRequired]
     public bool SyncAvecNational { get; set; }
 }
 
@@ -115,9 +119,11 @@ public class AjoutDocumentDMPRequest
     public string TypeDocument { get; set; } = string.Empty;
     public string Titre { get; set; } = string.Empty;
     public string? Description { get; set; }
+    [JsonRequired]
     public DateTime DateDocument { get; set; }
     public byte[] Contenu { get; set; } = Array.Empty<byte>();
     public string Format { get; set; } = "pdf";
+    [JsonRequired]
     public bool Confidentiel { get; set; }
     public int? IdConsultation { get; set; }
     public int? IdOrdonnance { get; set; }
@@ -137,6 +143,7 @@ public class AccesDMPDto
 
 public class AccorderAccesRequest
 {
+    [JsonRequired]
     public int IdProfessionnel { get; set; }
     public string TypeAcces { get; set; } = "lecture"; // lecture, ecriture, complet
     public DateTime? DateExpiration { get; set; }

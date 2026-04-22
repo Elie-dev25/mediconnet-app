@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Interfaces.Services;
+﻿using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -61,7 +61,7 @@ public class ExpiredAppointmentJob
                 return;
             }
 
-            _logger.LogInformation($"[ExpiredAppointmentJob] {expiredAppointments.Count} RDV expirés détectés");
+            _logger.LogInformation("[ExpiredAppointmentJob] {Count} RDV expirés détectés", expiredAppointments.Count);
 
             var processedCount = 0;
             var errorCount = 0;
@@ -80,7 +80,7 @@ public class ExpiredAppointmentJob
                         // La consultation a été faite, mettre à jour le RDV comme terminé
                         rdv.Statut = "termine";
                         rdv.DateModification = now;
-                        _logger.LogDebug($"[ExpiredAppointmentJob] RDV #{rdv.IdRendezVous} marqué comme terminé (consultation existante)");
+                        _logger.LogDebug("[ExpiredAppointmentJob] RDV #{IdRendezVous} marqué comme terminé (consultation existante)", rdv.IdRendezVous);
                     }
                     else
                     {
@@ -104,7 +104,7 @@ public class ExpiredAppointmentJob
                         // Créer une notification pour le personnel
                         await CreateAbsenceNotificationAsync(rdv);
 
-                        _logger.LogInformation($"[ExpiredAppointmentJob] RDV #{rdv.IdRendezVous} marqué comme absent - Patient: {rdv.Patient?.Utilisateur?.Nom} {rdv.Patient?.Utilisateur?.Prenom}");
+                        _logger.LogInformation("[ExpiredAppointmentJob] RDV #{IdRendezVous} marqué comme absent - Patient: {PatientNom} {PatientPrenom}", rdv.IdRendezVous, rdv.Patient?.Utilisateur?.Nom, rdv.Patient?.Utilisateur?.Prenom);
                     }
 
                     processedCount++;
@@ -118,7 +118,7 @@ public class ExpiredAppointmentJob
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"[ExpiredAppointmentJob] Traitement terminé: {processedCount} RDV traités, {errorCount} erreurs");
+            _logger.LogInformation("[ExpiredAppointmentJob] Traitement terminé: {ProcessedCount} RDV traités, {ErrorCount} erreurs", processedCount, errorCount);
         }
         catch (Exception ex)
         {
@@ -148,7 +148,7 @@ public class ExpiredAppointmentJob
 
             if (absentToday > 0)
             {
-                _logger.LogInformation($"[ExpiredAppointmentJob] {absentToday} créneaux libérés suite à des absences aujourd'hui");
+                _logger.LogInformation("[ExpiredAppointmentJob] {AbsentToday} créneaux libérés suite à des absences aujourd'hui", absentToday);
             }
         }
         catch (Exception ex)
@@ -202,7 +202,7 @@ public class ExpiredAppointmentJob
 
             foreach (var service in absencesByService)
             {
-                _logger.LogInformation($"  - {service.Service}: {service.Count} absence(s)");
+                _logger.LogInformation("  - {Service}: {Count} absence(s)", service.Service, service.Count);
             }
 
             // Notifier les administrateurs
@@ -257,7 +257,7 @@ public class ExpiredAppointmentJob
                 return;
             }
 
-            _logger.LogWarning($"[ExpiredAppointmentJob] {repeatNoShows.Count} patient(s) avec 3+ absences en 3 mois");
+            _logger.LogWarning("[ExpiredAppointmentJob] {Count} patient(s) avec 3+ absences en 3 mois", repeatNoShows.Count);
 
             foreach (var noShow in repeatNoShows)
             {
@@ -267,7 +267,7 @@ public class ExpiredAppointmentJob
 
                 if (patient != null)
                 {
-                    _logger.LogWarning($"  - Patient #{noShow.PatientId} ({patient.Utilisateur?.Prenom} {patient.Utilisateur?.Nom}): {noShow.AbsenceCount} absences");
+                    _logger.LogWarning("  - Patient #{PatientId} ({PatientPrenom} {PatientNom}): {AbsenceCount} absences", noShow.PatientId, patient.Utilisateur?.Prenom, patient.Utilisateur?.Nom, noShow.AbsenceCount);
 
                     // Créer une alerte pour le personnel
                     await _notificationService.CreateAsync(new CreateNotificationRequest

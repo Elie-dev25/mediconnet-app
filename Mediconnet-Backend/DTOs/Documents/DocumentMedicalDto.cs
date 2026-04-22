@@ -1,10 +1,12 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Documents;
 
 /// <summary>
-/// DTO pour l'upload d'un document médical
+/// DTO pour l'upload d'un document mÃ©dical
 /// </summary>
 public class UploadDocumentRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public string TypeDocument { get; set; } = "autre";
     public string? SousType { get; set; }
@@ -20,7 +22,7 @@ public class UploadDocumentRequest
 }
 
 /// <summary>
-/// DTO de réponse pour un document médical
+/// DTO de rÃ©ponse pour un document mÃ©dical
 /// </summary>
 public class DocumentMedicalDto
 {
@@ -75,7 +77,7 @@ public class DocumentStatsDto
 }
 
 /// <summary>
-/// DTO pour le résultat de vérification d'intégrité
+/// DTO pour le rÃ©sultat de vÃ©rification d'intÃ©gritÃ©
 /// </summary>
 public class IntegrityVerificationDto
 {

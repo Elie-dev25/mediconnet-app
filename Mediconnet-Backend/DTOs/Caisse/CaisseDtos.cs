@@ -1,4 +1,5 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Caisse;
 
@@ -102,10 +103,11 @@ public class TransactionDto
 public class CreateTransactionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdFacture { get; set; }
 
     [Required]
-    [Range(0.01, double.MaxValue, ErrorMessage = "Le montant doit être positif")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Le montant doit Ãªtre positif")]
     public decimal Montant { get; set; }
 
     [Required]
@@ -121,7 +123,7 @@ public class CreateTransactionRequest
     public string? Notes { get; set; }
 
     /// <summary>
-    /// Token unique pour éviter les doublons (idempotence)
+    /// Token unique pour Ã©viter les doublons (idempotence)
     /// </summary>
     public string? IdempotencyToken { get; set; }
 }
@@ -129,6 +131,7 @@ public class CreateTransactionRequest
 public class AnnulerTransactionRequest
 {
     [Required]
+    [JsonRequired]
     public int IdTransaction { get; set; }
 
     [Required]
@@ -210,7 +213,7 @@ public class FactureRetardDto
     public int JoursRetard { get; set; }
 }
 
-// ==================== REÇU DTOs ====================
+// ==================== REÃ‡U DTOs ====================
 
 public class RecuTransactionDto
 {
@@ -240,7 +243,7 @@ public class RecuTransactionDto
     public decimal? MontantAssurance { get; set; }
     public decimal MontantPatient { get; set; }
     
-    // Détails facture
+    // DÃ©tails facture
     public string? TypeFacture { get; set; }
     public string? ServiceNom { get; set; }
     public string? MedecinNom { get; set; }
@@ -249,8 +252,8 @@ public class RecuTransactionDto
     // Informations caissier
     public string CaissierNom { get; set; } = string.Empty;
     
-    // Établissement
-    public string NomEtablissement { get; set; } = "Centre Médical Mediconnet";
-    public string AdresseEtablissement { get; set; } = "Adresse de l'établissement";
+    // Ã‰tablissement
+    public string NomEtablissement { get; set; } = "Centre MÃ©dical Mediconnet";
+    public string AdresseEtablissement { get; set; } = "Adresse de l'Ã©tablissement";
     public string TelephoneEtablissement { get; set; } = "+XXX XX XX XX XX";
 }

@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Consultation;
 
 /// <summary>
@@ -19,7 +20,7 @@ public class ProgrammationInterventionDto
     public string? ChirurgienPrenom { get; set; }
     public string? Specialite { get; set; }
     
-    // Détails intervention
+    // DÃ©tails intervention
     public string TypeIntervention { get; set; } = "programmee";
     public string? ClassificationAsa { get; set; }
     public string? RisqueOperatoire { get; set; }
@@ -41,14 +42,16 @@ public class ProgrammationInterventionDto
 }
 
 /// <summary>
-/// DTO pour créer une programmation d'intervention
+/// DTO pour crÃ©er une programmation d'intervention
 /// </summary>
 public class CreateProgrammationInterventionRequest
 {
+    [JsonRequired]
     public int IdConsultation { get; set; }
     public string TypeIntervention { get; set; } = "programmee";
     public string? ClassificationAsa { get; set; }
     public string? RisqueOperatoire { get; set; }
+    [JsonRequired]
     public bool ConsentementEclaire { get; set; }
     public DateTime? DateConsentement { get; set; }
     public string? IndicationOperatoire { get; set; }
@@ -63,7 +66,7 @@ public class CreateProgrammationInterventionRequest
 }
 
 /// <summary>
-/// DTO pour mettre à jour une programmation d'intervention
+/// DTO pour mettre Ã  jour une programmation d'intervention
 /// </summary>
 public class UpdateProgrammationInterventionRequest
 {
@@ -86,7 +89,7 @@ public class UpdateProgrammationInterventionRequest
 }
 
 /// <summary>
-/// DTO simplifié pour les listes
+/// DTO simplifiÃ© pour les listes
 /// </summary>
 public class ProgrammationInterventionListDto
 {

@@ -1,11 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Planning;
 
-// ==================== CRÉNEAUX DISPONIBLES ====================
+// ==================== CRÃ‰NEAUX DISPONIBLES ====================
 
 /// <summary>
-/// DTO pour afficher un créneau horaire configuré
+/// DTO pour afficher un crÃ©neau horaire configurÃ©
 /// </summary>
 public class CreneauHoraireDto
 {
@@ -22,12 +23,12 @@ public class CreneauHoraireDto
 }
 
 /// <summary>
-/// DTO pour créer/modifier un créneau horaire
+/// DTO pour crÃ©er/modifier un crÃ©neau horaire
 /// </summary>
 public class CreateCreneauRequest
 {
     [Required]
-    [Range(1, 7, ErrorMessage = "Le jour doit être entre 1 (Lundi) et 7 (Dimanche)")]
+    [Range(1, 7, ErrorMessage = "Le jour doit Ãªtre entre 1 (Lundi) et 7 (Dimanche)")]
     public int JourSemaine { get; set; }
 
     [Required]
@@ -38,27 +39,27 @@ public class CreateCreneauRequest
     [RegularExpression(@"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", ErrorMessage = "Format heure invalide (HH:mm)")]
     public string HeureFin { get; set; } = "";
 
-    [Range(10, 120, ErrorMessage = "La durée doit être entre 10 et 120 minutes")]
+    [Range(10, 120, ErrorMessage = "La durÃ©e doit Ãªtre entre 10 et 120 minutes")]
     public int DureeParDefaut { get; set; } = 30;
 
     /// <summary>
-    /// Date de début de validité (null = semaine type récurrente)
+    /// Date de dÃ©but de validitÃ© (null = semaine type rÃ©currente)
     /// </summary>
     public DateTime? DateDebutValidite { get; set; }
 
     /// <summary>
-    /// Date de fin de validité (null = valide indéfiniment)
+    /// Date de fin de validitÃ© (null = valide indÃ©finiment)
     /// </summary>
     public DateTime? DateFinValidite { get; set; }
 
     /// <summary>
-    /// Si true, crée un créneau de semaine type (récurrent). Si false, créneau spécifique à la période.
+    /// Si true, crÃ©e un crÃ©neau de semaine type (rÃ©current). Si false, crÃ©neau spÃ©cifique Ã  la pÃ©riode.
     /// </summary>
     public bool EstSemaineType { get; set; } = true;
 }
 
 /// <summary>
-/// DTO pour la semaine type du médecin
+/// DTO pour la semaine type du mÃ©decin
 /// </summary>
 public class SemaineTypeDto
 {
@@ -68,7 +69,7 @@ public class SemaineTypeDto
 }
 
 /// <summary>
-/// DTO pour une semaine spécifique avec ses créneaux
+/// DTO pour une semaine spÃ©cifique avec ses crÃ©neaux
 /// </summary>
 public class SemainePlanningDto
 {
@@ -92,10 +93,10 @@ public class JourSemaineDto
     public bool EstIndisponible { get; set; }
 }
 
-// ==================== INDISPONIBILITÉS ====================
+// ==================== INDISPONIBILITÃ‰S ====================
 
 /// <summary>
-/// DTO pour afficher une indisponibilité
+/// DTO pour afficher une indisponibilitÃ©
 /// </summary>
 public class IndisponibiliteDto
 {
@@ -110,14 +111,16 @@ public class IndisponibiliteDto
 }
 
 /// <summary>
-/// DTO pour créer une indisponibilité
+/// DTO pour crÃ©er une indisponibilitÃ©
 /// </summary>
 public class CreateIndisponibiliteRequest
 {
     [Required]
+    [JsonRequired]
     public DateTime DateDebut { get; set; }
 
     [Required]
+    [JsonRequired]
     public DateTime DateFin { get; set; }
 
     [Required]
@@ -133,7 +136,7 @@ public class CreateIndisponibiliteRequest
 // ==================== PLANNING GLOBAL ====================
 
 /// <summary>
-/// DTO pour le tableau de bord planning du médecin
+/// DTO pour le tableau de bord planning du mÃ©decin
 /// </summary>
 public class PlanningDashboardDto
 {
@@ -146,7 +149,7 @@ public class PlanningDashboardDto
 }
 
 /// <summary>
-/// DTO simplifié pour afficher un RDV dans le planning
+/// DTO simplifiÃ© pour afficher un RDV dans le planning
 /// </summary>
 public class RdvPlanningDto
 {

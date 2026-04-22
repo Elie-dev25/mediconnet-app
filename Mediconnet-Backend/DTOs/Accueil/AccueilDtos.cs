@@ -1,4 +1,5 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.DTOs.Accueil;
 
@@ -46,19 +47,19 @@ public class PatientFileAttenteDto
 }
 
 /// <summary>
-/// Requête d'enregistrement rapide d'un patient à l'arrivée
+/// RequÃªte d'enregistrement rapide d'un patient Ã  l'arrivÃ©e
 /// </summary>
 public class EnregistrerArriveePatientRequest
 {
     [Required(ErrorMessage = "Le nom est requis")]
-    [StringLength(100, ErrorMessage = "Le nom ne peut dépasser 100 caractères")]
+    [StringLength(100, ErrorMessage = "Le nom ne peut dÃ©passer 100 caractÃ¨res")]
     public string Nom { get; set; } = "";
 
-    [Required(ErrorMessage = "Le prénom est requis")]
-    [StringLength(100, ErrorMessage = "Le prénom ne peut dépasser 100 caractères")]
+    [Required(ErrorMessage = "Le prÃ©nom est requis")]
+    [StringLength(100, ErrorMessage = "Le prÃ©nom ne peut dÃ©passer 100 caractÃ¨res")]
     public string Prenom { get; set; } = "";
 
-    [Phone(ErrorMessage = "Numéro de téléphone invalide")]
+    [Phone(ErrorMessage = "NumÃ©ro de tÃ©lÃ©phone invalide")]
     public string? Telephone { get; set; }
 
     [EmailAddress(ErrorMessage = "Email invalide")]
@@ -71,7 +72,7 @@ public class EnregistrerArriveePatientRequest
     public string? Motif { get; set; }
 
     /// <summary>
-    /// ID du médecin si RDV prévu
+    /// ID du mÃ©decin si RDV prÃ©vu
     /// </summary>
     public int? IdMedecinCible { get; set; }
 
@@ -82,7 +83,7 @@ public class EnregistrerArriveePatientRequest
 }
 
 /// <summary>
-/// Réponse après enregistrement d'une arrivée
+/// RÃ©ponse aprÃ¨s enregistrement d'une arrivÃ©e
 /// </summary>
 public class EnregistrerArriveeResponse
 {
@@ -94,7 +95,7 @@ public class EnregistrerArriveeResponse
 }
 
 /// <summary>
-/// Requête de recherche de patient
+/// RequÃªte de recherche de patient
 /// </summary>
 public class RecherchePatientRequest
 {
@@ -122,10 +123,11 @@ public class RdvAccueilDto
 }
 
 /// <summary>
-/// Requête pour marquer l'arrivée d'un patient pour un RDV
+/// RequÃªte pour marquer l'arrivÃ©e d'un patient pour un RDV
 /// </summary>
 public class MarquerArriveeRdvRequest
 {
     [Required]
+    [JsonRequired]
     public int IdRendezVous { get; set; }
 }

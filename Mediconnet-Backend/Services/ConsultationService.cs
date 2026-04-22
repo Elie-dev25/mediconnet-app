@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Core.Enums;
 using Mediconnet_Backend.Core.Constants;
@@ -209,7 +209,7 @@ public class ConsultationService : IConsultationService
                 dateCreation = facture.DateCreation
             });
 
-            _logger.LogInformation($"Consultation enregistrée: ID={consultation.IdConsultation}, Patient={request.IdPatient}, Médecin={request.IdMedecin}");
+            _logger.LogInformation("Consultation enregistrée: ID={IdConsultation}, Patient={IdPatient}, Médecin={IdMedecin}", consultation.IdConsultation, request.IdPatient, request.IdMedecin);
 
             return new EnregistrerConsultationResponse
             {
@@ -310,7 +310,7 @@ public class ConsultationService : IConsultationService
                 .ThenBy(m => m.Prenom)
                 .ToListAsync();
 
-            _logger.LogInformation($"Médecins filtrés: {medecins.Count} résultats (Service={idService}, Spécialité={idSpecialite})");
+            _logger.LogInformation("Médecins filtrés: {Count} résultats (Service={IdService}, Spécialité={IdSpecialite})", medecins.Count, idService, idSpecialite);
             return medecins;
         }
         catch (Exception ex)
@@ -334,7 +334,7 @@ public class ConsultationService : IConsultationService
                 })
                 .ToListAsync();
 
-            _logger.LogInformation($"Services récupérés: {services.Count}");
+            _logger.LogInformation("Services récupérés: {Count}", services.Count);
             return services;
         }
         catch (Exception ex)
@@ -357,7 +357,7 @@ public class ConsultationService : IConsultationService
                 })
                 .ToListAsync();
 
-            _logger.LogInformation($"Spécialités récupérées: {specialites.Count}");
+            _logger.LogInformation("Spécialités récupérées: {Count}", specialites.Count);
             return specialites;
         }
         catch (Exception ex)
@@ -492,7 +492,7 @@ public class ConsultationService : IConsultationService
             result.TotalOccupes = result.Medecins.Count(m => m.Statut == "occupe");
             result.TotalAbsents = result.Medecins.Count(m => m.Statut == "absent");
 
-            _logger.LogInformation($"Médecins avec disponibilité: {result.Medecins.Count} total, {result.TotalDisponibles} disponibles");
+            _logger.LogInformation("Médecins avec disponibilité: {Count} total, {TotalDisponibles} disponibles", result.Medecins.Count, result.TotalDisponibles);
             return result;
         }
         catch (Exception ex)
@@ -582,7 +582,7 @@ public class ConsultationService : IConsultationService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur vérification paiement: {ex.Message}");
+            _logger.LogError(ex, "Erreur vérification paiement");
             return new VerifierPaiementResponse
             {
                 PaiementValide = false,

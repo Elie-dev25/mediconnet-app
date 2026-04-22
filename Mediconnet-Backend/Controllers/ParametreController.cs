@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.DTOs.Consultation;
@@ -49,7 +49,7 @@ public class ParametreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetByConsultation: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetByConsultation");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -74,7 +74,7 @@ public class ParametreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur GetHistoriquePatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur GetHistoriquePatient");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -112,7 +112,7 @@ public class ParametreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateOrUpdate: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreateOrUpdate");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -151,12 +151,12 @@ public class ParametreController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning($"CreateByPatient validation: {ex.Message}");
+            _logger.LogWarning(ex, "CreateByPatient validation");
             return BadRequest(new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur CreateByPatient: {ex.Message}");
+            _logger.LogError(ex, "Erreur CreateByPatient");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -192,7 +192,7 @@ public class ParametreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Update: {ex.Message}");
+            _logger.LogError(ex, "Erreur Update");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }
@@ -221,7 +221,7 @@ public class ParametreController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Erreur Delete: {ex.Message}");
+            _logger.LogError(ex, "Erreur Delete");
             return StatusCode(500, new { success = false, message = "Erreur serveur" });
         }
     }

@@ -1,7 +1,8 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Consultation;
 
 /// <summary>
-/// DTO pour afficher les paramètres vitaux
+/// DTO pour afficher les paramÃ¨tres vitaux
 /// </summary>
 public class ParametreDto
 {
@@ -16,7 +17,7 @@ public class ParametreDto
     public int? EnregistrePar { get; set; }
     public string? NomEnregistrant { get; set; }
     
-    // Propriétés calculées
+    // PropriÃ©tÃ©s calculÃ©es
     public string? TensionFormatee => 
         TensionSystolique.HasValue && TensionDiastolique.HasValue 
             ? $"{TensionSystolique}/{TensionDiastolique}" 
@@ -29,10 +30,11 @@ public class ParametreDto
 }
 
 /// <summary>
-/// DTO pour créer ou mettre à jour les paramètres vitaux
+/// DTO pour crÃ©er ou mettre Ã  jour les paramÃ¨tres vitaux
 /// </summary>
 public class CreateParametreRequest
 {
+    [JsonRequired]
     public int IdConsultation { get; set; }
     public decimal? Poids { get; set; }
     public decimal? Temperature { get; set; }
@@ -42,7 +44,7 @@ public class CreateParametreRequest
 }
 
 /// <summary>
-/// DTO pour mettre à jour les paramètres vitaux
+/// DTO pour mettre Ã  jour les paramÃ¨tres vitaux
 /// </summary>
 public class UpdateParametreRequest
 {
@@ -54,11 +56,12 @@ public class UpdateParametreRequest
 }
 
 /// <summary>
-/// DTO pour créer des paramètres vitaux directement pour un patient (sans consultation existante)
-/// Utilisé par l'infirmière depuis la liste des patients
+/// DTO pour crÃ©er des paramÃ¨tres vitaux directement pour un patient (sans consultation existante)
+/// UtilisÃ© par l'infirmiÃ¨re depuis la liste des patients
 /// </summary>
 public class CreateParametreByPatientRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public decimal? Poids { get; set; }
     public decimal? Temperature { get; set; }
@@ -68,7 +71,7 @@ public class CreateParametreByPatientRequest
 }
 
 /// <summary>
-/// DTO pour afficher une consultation avec ses paramètres
+/// DTO pour afficher une consultation avec ses paramÃ¨tres
 /// </summary>
 public class ConsultationWithParametresDto
 {
@@ -79,7 +82,7 @@ public class ConsultationWithParametresDto
     public string? Statut { get; set; }
     public string? TypeConsultation { get; set; }
     
-    // Infos médecin
+    // Infos mÃ©decin
     public int IdMedecin { get; set; }
     public string? NomMedecin { get; set; }
     public string? PrenomMedecin { get; set; }
@@ -89,6 +92,6 @@ public class ConsultationWithParametresDto
     public string? NomPatient { get; set; }
     public string? PrenomPatient { get; set; }
     
-    // Paramètres vitaux
+    // ParamÃ¨tres vitaux
     public ParametreDto? Parametres { get; set; }
 }

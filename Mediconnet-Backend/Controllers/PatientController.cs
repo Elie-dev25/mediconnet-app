@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Controllers.Base;
+﻿using Mediconnet_Backend.Controllers.Base;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Patient;
@@ -199,7 +199,7 @@ public class PatientController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting patient dashboard: {ex.Message}");
+            _logger.LogError(ex, "Error getting patient dashboard");
             return StatusCode(500, new { message = "Erreur lors de la récupération du dashboard" });
         }
     }
@@ -613,7 +613,7 @@ public class PatientController : BaseApiController
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting patient medical record: {ex.Message}");
+            _logger.LogError(ex, "Error getting patient medical record");
             return StatusCode(500, new { message = "Erreur lors de la récupération du dossier médical" });
         }
     }

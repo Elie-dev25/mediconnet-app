@@ -1,3 +1,4 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.DTOs.Consultation;
 
 // ==================== DOSSIER PATIENT ====================
@@ -23,7 +24,7 @@ public class DossierPatientDto
     public string? Ethnie { get; set; }
     public int? NbEnfants { get; set; }
     
-    // Informations médicales
+    // Informations mÃ©dicales
     public string? GroupeSanguin { get; set; }
     public string? MaladiesChroniques { get; set; }
     public bool? AllergiesConnues { get; set; }
@@ -50,7 +51,7 @@ public class DossierPatientDto
     public DateTime? DateDebutValidite { get; set; }
     public DateTime? DateFinValidite { get; set; }
     
-    // Dates système
+    // Dates systÃ¨me
     public DateTime? DateCreation { get; set; }
     
     // Historique
@@ -114,7 +115,7 @@ public class ExamenChirurgicalDto
 
 public class ExamenAnesthesiqueDto
 {
-    // Anamnèse spécifique
+    // AnamnÃ¨se spÃ©cifique
     public string? AntecedentsMedicaux { get; set; }
     public string? ProblemesCardiaques { get; set; }
     public string? ProblemesRespiratoires { get; set; }
@@ -129,7 +130,7 @@ public class ExamenAnesthesiqueDto
     public string? AuscultationCardiaque { get; set; }
     public string? AuscultationPulmonaire { get; set; }
     
-    // Voies aériennes (critique)
+    // Voies aÃ©riennes (critique)
     public string? OuvertureBouche { get; set; }
     public int? Mallampati { get; set; }
     public string? EtatDents { get; set; }
@@ -138,7 +139,7 @@ public class ExamenAnesthesiqueDto
     public bool? IntubationDifficilePrevue { get; set; }
     public string? NotesVoiesAeriennes { get; set; }
     
-    // Évaluation du risque
+    // Ã‰valuation du risque
     public int? ClassificationASA { get; set; }
     public string? NiveauRisque { get; set; }
     public string? RisqueCardiaque { get; set; }
@@ -146,14 +147,14 @@ public class ExamenAnesthesiqueDto
     public string? RisqueAllergique { get; set; }
     public string? RisqueHemorragique { get; set; }
     
-    // Choix anesthésie
+    // Choix anesthÃ©sie
     public string? TypeAnesthesie { get; set; }
     public string? SousTypeAnesthesie { get; set; }
     public string? JustificationAnesthesie { get; set; }
     public string? ExplicationPatient { get; set; }
     public bool? ConsentementObtenu { get; set; }
     
-    // Consignes préopératoires
+    // Consignes prÃ©opÃ©ratoires
     public int? DureeJeune { get; set; }
     public string? InstructionsJeune { get; set; }
     public bool? ArretTabac { get; set; }
@@ -181,10 +182,10 @@ public class ConsultationEnCoursDto
     public bool IsPremiereConsultation { get; set; }
     public int SpecialiteId { get; set; }
     
-    /// <summary>Étape actuelle de la consultation (pour reprise après pause)</summary>
+    /// <summary>Ã‰tape actuelle de la consultation (pour reprise aprÃ¨s pause)</summary>
     public string? EtapeActuelle { get; set; }
     
-    // Données de la consultation (workflow mis à jour)
+    // DonnÃ©es de la consultation (workflow mis Ã  jour)
     public AnamneseDto? Anamnese { get; set; }
     public ExamenCliniqueDto? ExamenClinique { get; set; }
     public ExamenGynecologiqueDto? ExamenGynecologique { get; set; }
@@ -194,11 +195,11 @@ public class ConsultationEnCoursDto
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? Conclusion { get; set; }
     
-    // Conservé pour compatibilité
+    // ConservÃ© pour compatibilitÃ©
     public PrescriptionsDto? Prescriptions { get; set; }
 }
 
-// Étape 1: Anamnèse
+// Ã‰tape 1: AnamnÃ¨se
 public class AnamneseDto
 {
     public string? MotifConsultation { get; set; }
@@ -210,7 +211,7 @@ public class AnamneseDto
     public string? HabitudesVie { get; set; }
     public List<QuestionReponseDto> QuestionsReponses { get; set; } = new();
     
-    // Paramètres vitaux
+    // ParamÃ¨tres vitaux
     public ParametresVitauxDto? ParametresVitaux { get; set; }
 }
 
@@ -233,11 +234,12 @@ public class ParametresVitauxDto
     public decimal? Glycemie { get; set; }
 }
 
-// Étape 2: Examen Clinique (NOUVEAU)
+// Ã‰tape 2: Examen Clinique (NOUVEAU)
 public class ExamenCliniqueDto
 {
-    // Constantes vitales (affichées si prises par infirmier, sinon saisies par médecin)
+    // Constantes vitales (affichÃ©es si prises par infirmier, sinon saisies par mÃ©decin)
     public ParametresVitauxDto? ParametresVitaux { get; set; }
+    [JsonRequired]
     public bool ParametresPrisParInfirmier { get; set; }
     public string? InfirmierNom { get; set; }
     public DateTime? DatePriseParametres { get; set; }
@@ -250,7 +252,7 @@ public class ExamenCliniqueDto
     public string? AutresObservations { get; set; }
 }
 
-// Étape 3: Diagnostic et Orientation
+// Ã‰tape 3: Diagnostic et Orientation
 public class DiagnosticDto
 {
     public string? ExamenClinique { get; set; }
@@ -259,11 +261,11 @@ public class DiagnosticDto
     public string? HypothesesDiagnostiques { get; set; }
     public string? NotesCliniques { get; set; }
     
-    // Récapitulatif patient (données du compte)
+    // RÃ©capitulatif patient (donnÃ©es du compte)
     public RecapitulatifPatientDto? RecapitulatifPatient { get; set; }
 }
 
-// Récapitulatif des données patient pour l'étape diagnostic
+// RÃ©capitulatif des donnÃ©es patient pour l'Ã©tape diagnostic
 public class RecapitulatifPatientDto
 {
     // Informations personnelles
@@ -272,7 +274,7 @@ public class RecapitulatifPatientDto
     public string? Profession { get; set; }
     public int? NbEnfants { get; set; }
     public string? Ethnie { get; set; }
-    // Informations médicales
+    // Informations mÃ©dicales
     public string? GroupeSanguin { get; set; }
     public string? MaladiesChroniques { get; set; }
     public bool? AllergiesConnues { get; set; }
@@ -286,11 +288,11 @@ public class RecapitulatifPatientDto
     public string? FrequenceAlcool { get; set; }
     public bool? Tabagisme { get; set; }
     public bool? ActivitePhysique { get; set; }
-    // Diagnostics précédents
+    // Diagnostics prÃ©cÃ©dents
     public List<DiagnosticPrecedentDto> DiagnosticsPrecedents { get; set; } = new();
 }
 
-// Diagnostic précédent pour l'historique
+// Diagnostic prÃ©cÃ©dent pour l'historique
 public class DiagnosticPrecedentDto
 {
     public DateTime Date { get; set; }
@@ -300,22 +302,22 @@ public class DiagnosticPrecedentDto
     public string? Specialite { get; set; }
 }
 
-// Étape 4: Plan de Traitement (NOUVEAU)
+// Ã‰tape 4: Plan de Traitement (NOUVEAU)
 public class PlanTraitementDto
 {
     public string? ExplicationDiagnostic { get; set; }
     public string? OptionsTraitement { get; set; }
     public OrdonnanceDto? Ordonnance { get; set; }
     public List<ExamenPrescritDto> ExamensPrescrits { get; set; } = new();
-    // Orientation spécialiste
+    // Orientation spÃ©cialiste
     public string? OrientationSpecialiste { get; set; }
     public string? MotifOrientation { get; set; }
     public int? IdSpecialisteOriente { get; set; }
-    // Décision chirurgicale (uniquement pour les chirurgiens)
+    // DÃ©cision chirurgicale (uniquement pour les chirurgiens)
     public string? DecisionChirurgicale { get; set; }
 }
 
-// Étape 5: Conclusion (NOUVEAU)
+// Ã‰tape 5: Conclusion (NOUVEAU)
 public class ConclusionDto
 {
     public string? ResumeConsultation { get; set; }
@@ -328,7 +330,7 @@ public class ConclusionDto
     public string? NotesSuivi { get; set; }
 }
 
-// Étape 3: Prescriptions
+// Ã‰tape 3: Prescriptions
 public class PrescriptionsDto
 {
     public OrdonnanceDto? Ordonnance { get; set; }
@@ -383,7 +385,7 @@ public class LaboratoireDto
     public string? Type { get; set; }
 }
 
-// ==================== ORIENTATION PRE-CONSULTATION (UNIFIÉ) ====================
+// ==================== ORIENTATION PRE-CONSULTATION (UNIFIÃ‰) ====================
 
 /// <summary>
 /// DTO pour afficher une orientation (lecture)
@@ -407,7 +409,7 @@ public class OrientationPreConsultationDto
     public string? AdresseDestinataire { get; set; }
     public string? TelephoneDestinataire { get; set; }
     
-    // Détails
+    // DÃ©tails
     public string Motif { get; set; } = "";
     public string? Notes { get; set; }
     public bool Urgence { get; set; }
@@ -419,40 +421,42 @@ public class OrientationPreConsultationDto
     public DateTime? DateRdvPropose { get; set; }
     public int? IdRdvCree { get; set; }
     
-    // Métadonnées
+    // MÃ©tadonnÃ©es
     public string? MedecinPrescripteur { get; set; }
     public DateTime? CreatedAt { get; set; }
 }
 
 /// <summary>
-/// Requête pour créer une orientation
+/// RequÃªte pour crÃ©er une orientation
 /// </summary>
 public class CreateOrientationRequest
 {
     /// <summary>Type: medecin_interne, medecin_externe, hopital, service_interne, laboratoire</summary>
     public string TypeOrientation { get; set; } = "medecin_interne";
     
-    // Pour médecin interne
+    // Pour mÃ©decin interne
     public int? IdSpecialite { get; set; }
     public int? IdMedecinOriente { get; set; }
     
-    // Pour médecin externe / hôpital
+    // Pour mÃ©decin externe / hÃ´pital
     public string? NomDestinataire { get; set; }
     public string? SpecialiteTexte { get; set; }
     public string? AdresseDestinataire { get; set; }
     public string? TelephoneDestinataire { get; set; }
     
-    // Détails (obligatoires)
+    // DÃ©tails (obligatoires)
     public string Motif { get; set; } = "";
     public string? Notes { get; set; }
+    [JsonRequired]
     public bool Urgence { get; set; }
+    [JsonRequired]
     public bool Prioritaire { get; set; }
     
     public DateTime? DateRdvPropose { get; set; }
 }
 
 /// <summary>
-/// Requête pour mettre à jour le statut d'une orientation
+/// RequÃªte pour mettre Ã  jour le statut d'une orientation
 /// </summary>
 public class UpdateOrientationStatutRequest
 {
@@ -463,7 +467,7 @@ public class UpdateOrientationStatutRequest
 }
 
 /// <summary>
-/// Requête pour créer un RDV lié à une orientation
+/// RequÃªte pour crÃ©er un RDV liÃ© Ã  une orientation
 /// </summary>
 public class CreerRdvOrientationRequest
 {
@@ -541,8 +545,10 @@ public class SavePrescriptionsRequest
 
 public class ValiderConsultationRequest
 {
+    [JsonRequired]
     public int IdConsultation { get; set; }
     public string? Conclusion { get; set; }
+    [JsonRequired]
     public bool Imprimer { get; set; }
 }
 
@@ -581,13 +587,13 @@ public class ConsultationDetailDto
     public PlanTraitementDto? PlanTraitement { get; set; }
     public ConclusionDto? ConclusionDetaillee { get; set; }
     /// <summary>
-    /// RDV de suivi créé après cette consultation
+    /// RDV de suivi crÃ©Ã© aprÃ¨s cette consultation
     /// </summary>
     public RdvSuiviDetailDto? RdvSuivi { get; set; }
 }
 
 /// <summary>
-/// Détails d'un RDV de suivi créé après une consultation
+/// DÃ©tails d'un RDV de suivi crÃ©Ã© aprÃ¨s une consultation
 /// </summary>
 public class RdvSuiviDetailDto
 {
@@ -610,10 +616,10 @@ public class ExamenPrescritDetailDto
     public bool Disponible { get; set; } = true;
 }
 
-// ==================== REQUÊTES D'ACTION ====================
+// ==================== REQUÃŠTES D'ACTION ====================
 
 /// <summary>
-/// Requête pour annuler une consultation
+/// RequÃªte pour annuler une consultation
 /// </summary>
 public class AnnulerConsultationRequest
 {

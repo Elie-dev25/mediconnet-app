@@ -1,31 +1,32 @@
+﻿using System.Text.Json.Serialization;
 namespace Mediconnet_Backend.Core.Interfaces.Services;
 
 /// <summary>
-/// Interface du service centralisé de notifications
+/// Interface du service centralisÃ© de notifications
 /// </summary>
 public interface INotificationService
 {
-    // ==================== CRÉATION ====================
-    /// <summary>Créer une notification pour un utilisateur</summary>
+    // ==================== CRÃ‰ATION ====================
+    /// <summary>CrÃ©er une notification pour un utilisateur</summary>
     Task<NotificationDto> CreateAsync(CreateNotificationRequest request);
 
-    /// <summary>Créer une notification pour plusieurs utilisateurs</summary>
+    /// <summary>CrÃ©er une notification pour plusieurs utilisateurs</summary>
     Task<List<NotificationDto>> CreateBulkAsync(CreateBulkNotificationRequest request);
 
-    /// <summary>Créer une notification pour tous les utilisateurs d'un rôle</summary>
+    /// <summary>CrÃ©er une notification pour tous les utilisateurs d'un rÃ´le</summary>
     Task<int> CreateForRoleAsync(string role, CreateNotificationRequest request);
 
     // ==================== LECTURE ====================
-    /// <summary>Récupérer les notifications d'un utilisateur</summary>
+    /// <summary>RÃ©cupÃ©rer les notifications d'un utilisateur</summary>
     Task<NotificationListResult> GetUserNotificationsAsync(int userId, NotificationFilter? filter = null);
 
-    /// <summary>Récupérer une notification par ID</summary>
+    /// <summary>RÃ©cupÃ©rer une notification par ID</summary>
     Task<NotificationDto?> GetByIdAsync(int notificationId);
 
     /// <summary>Compter les notifications non lues</summary>
     Task<int> GetUnreadCountAsync(int userId);
 
-    // ==================== MISE À JOUR ====================
+    // ==================== MISE Ã€ JOUR ====================
     /// <summary>Marquer une notification comme lue</summary>
     Task<bool> MarkAsReadAsync(int notificationId, int userId);
 
@@ -42,14 +43,14 @@ public interface INotificationService
     /// <summary>Supprimer toutes les notifications lues</summary>
     Task<int> DeleteAllReadAsync(int userId);
 
-    /// <summary>Nettoyer les notifications expirées</summary>
+    /// <summary>Nettoyer les notifications expirÃ©es</summary>
     Task<int> CleanupExpiredAsync();
 
-    // ==================== TEMPS RÉEL ====================
-    /// <summary>Envoyer une notification en temps réel via SignalR</summary>
+    // ==================== TEMPS RÃ‰EL ====================
+    /// <summary>Envoyer une notification en temps rÃ©el via SignalR</summary>
     Task SendRealTimeNotificationAsync(int userId, NotificationDto notification);
 
-    /// <summary>Envoyer une notification à un groupe</summary>
+    /// <summary>Envoyer une notification Ã  un groupe</summary>
     Task SendRealTimeNotificationToGroupAsync(string group, NotificationDto notification);
 }
 
@@ -74,7 +75,7 @@ public class NotificationDto
     private string GetTempsEcoule()
     {
         var diff = DateTime.UtcNow - DateCreation;
-        if (diff.TotalMinutes < 1) return "À l'instant";
+        if (diff.TotalMinutes < 1) return "Ã€ l'instant";
         if (diff.TotalMinutes < 60) return $"Il y a {(int)diff.TotalMinutes} min";
         if (diff.TotalHours < 24) return $"Il y a {(int)diff.TotalHours}h";
         if (diff.TotalDays < 7) return $"Il y a {(int)diff.TotalDays}j";
@@ -84,6 +85,7 @@ public class NotificationDto
 
 public class CreateNotificationRequest
 {
+    [JsonRequired]
     public int IdUser { get; set; }
     public string Type { get; set; } = string.Empty;
     public string Titre { get; set; } = string.Empty;

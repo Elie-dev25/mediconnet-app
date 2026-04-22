@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Entities;
+﻿using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
 using Mediconnet_Backend.DTOs.Admin;
@@ -84,7 +84,7 @@ public class UserManagementService : IUserManagementService
         await CreateRoleSpecificEntityAsync(utilisateur, request);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"User created: {request.Email} with role {request.Role}");
+        _logger.LogInformation("User created: {Email} with role {Role}", request.Email, request.Role);
         return (true, "Utilisateur cree avec succes", utilisateur.IdUser);
     }
 
@@ -105,7 +105,7 @@ public class UserManagementService : IUserManagementService
         _context.Utilisateurs.Remove(utilisateur);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"User deleted: {userId}");
+        _logger.LogInformation("User deleted: {UserId}", userId);
         return (true, "Utilisateur supprime avec succes");
     }
 

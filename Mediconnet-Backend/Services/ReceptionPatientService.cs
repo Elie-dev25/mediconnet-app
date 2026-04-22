@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Mediconnet_Backend.Core.Entities;
 using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Data;
@@ -204,7 +204,7 @@ public class ReceptionPatientService : IReceptionPatientService
                 $"Patient {utilisateur.Nom} {utilisateur.Prenom} créé avec dossier {numeroDossier}"
             );
             
-            _logger.LogInformation($"Patient créé par accueil: {numeroDossier} - {utilisateur.Nom} {utilisateur.Prenom}");
+            _logger.LogInformation("Patient créé par accueil: {NumeroDossier} - {Nom} {Prenom}", numeroDossier, utilisateur.Nom, utilisateur.Prenom);
             
             // Construire les instructions de connexion
             var loginIdentifier = request.Telephone;
@@ -403,7 +403,7 @@ Numéro de dossier : {numeroDossier}
                 "Première connexion validée, mot de passe changé, déclaration acceptée"
             );
             
-            _logger.LogInformation($"Première connexion validée pour l'utilisateur {userId}");
+            _logger.LogInformation("Première connexion validée pour l'utilisateur {UserId}", userId);
             
             return new FirstLoginValidationResponse
             {
@@ -475,7 +475,7 @@ Numéro de dossier : {numeroDossier}
                 "Déclaration sur l'honneur acceptée"
             );
 
-            _logger.LogInformation($"Déclaration acceptée pour l'utilisateur {userId}");
+            _logger.LogInformation("Déclaration acceptée pour l'utilisateur {UserId}", userId);
 
             return new AcceptDeclarationResponse
             {

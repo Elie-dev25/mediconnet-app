@@ -1,4 +1,4 @@
-using Mediconnet_Backend.Core.Interfaces.Services;
+﻿using Mediconnet_Backend.Core.Interfaces.Services;
 using Mediconnet_Backend.Core.Configuration;
 using Mediconnet_Backend.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -63,7 +63,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Login error: {ex.Message}");
+            _logger.LogError(ex, "Login error");
             return StatusCode(500, new { message = "Une erreur s'est produite lors de la connexion" });
         }
     }
@@ -144,7 +144,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Registration error: {ex.Message}");
+            _logger.LogError(ex, "Registration error");
             return StatusCode(500, new { message = "Une erreur s'est produite lors de l'enregistrement" });
         }
     }
@@ -173,7 +173,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting profile: {ex.Message}");
+            _logger.LogError(ex, "Error getting profile");
             return StatusCode(500, new { message = "Une erreur s'est produite" });
         }
     }
@@ -191,7 +191,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error during logout: {ex.Message}");
+            _logger.LogError(ex, "Error during logout");
             return StatusCode(500, new { message = "Une erreur s'est produite lors de la deconnexion" });
         }
     }
@@ -214,7 +214,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error validating token: {ex.Message}");
+            _logger.LogError(ex, "Error validating token");
             return StatusCode(500, new { message = "Une erreur s'est produite" });
         }
     }
@@ -262,7 +262,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error confirming email: {ex.Message}");
+            _logger.LogError(ex, "Error confirming email");
             return StatusCode(500, new ConfirmEmailResponse
             {
                 Success = false,
@@ -297,7 +297,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error confirming email via GET: {ex.Message}");
+            _logger.LogError(ex, "Error confirming email via GET");
             return Redirect($"{GetFrontendUrl()}/auth/confirm-email?error=server_error");
         }
     }
@@ -330,7 +330,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error resending confirmation: {ex.Message}");
+            _logger.LogError(ex, "Error resending confirmation");
             return StatusCode(500, new ResendConfirmationResponse
             {
                 Success = false,
@@ -358,7 +358,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error getting email status: {ex.Message}");
+            _logger.LogError(ex, "Error getting email status");
             return StatusCode(500, new { message = "Une erreur s'est produite" });
         }
     }
@@ -459,7 +459,7 @@ public class AuthController : ControllerBase
                 });
             }
 
-            _logger.LogInformation($"Password changed successfully for user {userId}");
+            _logger.LogInformation("Password changed successfully for user {UserId}", userId);
 
             return Ok(new ChangePasswordResponse
             {
@@ -469,7 +469,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error changing password: {ex.Message}");
+            _logger.LogError(ex, "Error changing password");
             return StatusCode(500, new ChangePasswordResponse
             {
                 Success = false,

@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mediconnet_Backend.Core.Interfaces.Services;
+using System.Text.Json.Serialization;
 
 namespace Mediconnet_Backend.Controllers;
 
@@ -19,7 +20,7 @@ public class MedicalAlertController : ControllerBase
     }
 
     /// <summary>
-    /// Vérifie les interactions médicamenteuses entre plusieurs médicaments
+    /// VÃ©rifie les interactions mÃ©dicamenteuses entre plusieurs mÃ©dicaments
     /// </summary>
     [HttpPost("interactions/check")]
     public async Task<IActionResult> CheckInteractions([FromBody] CheckInteractionsRequest request)
@@ -31,13 +32,13 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur vérification interactions");
-            return StatusCode(500, new { message = "Erreur lors de la vérification des interactions" });
+            _logger.LogError(ex, "Erreur vÃ©rification interactions");
+            return StatusCode(500, new { message = "Erreur lors de la vÃ©rification des interactions" });
         }
     }
 
     /// <summary>
-    /// Vérifie les interactions avec le traitement en cours du patient
+    /// VÃ©rifie les interactions avec le traitement en cours du patient
     /// </summary>
     [HttpGet("interactions/traitement/{idPatient}/{idMedicament}")]
     public async Task<IActionResult> CheckInteractionTraitement(int idPatient, int idMedicament)
@@ -49,13 +50,13 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur vérification interaction traitement");
-            return StatusCode(500, new { message = "Erreur lors de la vérification" });
+            _logger.LogError(ex, "Erreur vÃ©rification interaction traitement");
+            return StatusCode(500, new { message = "Erreur lors de la vÃ©rification" });
         }
     }
 
     /// <summary>
-    /// Vérifie les allergies du patient pour un médicament
+    /// VÃ©rifie les allergies du patient pour un mÃ©dicament
     /// </summary>
     [HttpGet("allergies/check/{idPatient}/{idMedicament}")]
     public async Task<IActionResult> CheckAllergies(int idPatient, int idMedicament)
@@ -67,13 +68,13 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur vérification allergies");
-            return StatusCode(500, new { message = "Erreur lors de la vérification des allergies" });
+            _logger.LogError(ex, "Erreur vÃ©rification allergies");
+            return StatusCode(500, new { message = "Erreur lors de la vÃ©rification des allergies" });
         }
     }
 
     /// <summary>
-    /// Récupère les allergies d'un patient
+    /// RÃ©cupÃ¨re les allergies d'un patient
     /// </summary>
     [HttpGet("allergies/{idPatient}")]
     public async Task<IActionResult> GetAllergiesPatient(int idPatient)
@@ -85,13 +86,13 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur récupération allergies");
-            return StatusCode(500, new { message = "Erreur lors de la récupération des allergies" });
+            _logger.LogError(ex, "Erreur rÃ©cupÃ©ration allergies");
+            return StatusCode(500, new { message = "Erreur lors de la rÃ©cupÃ©ration des allergies" });
         }
     }
 
     /// <summary>
-    /// Ajoute une allergie à un patient
+    /// Ajoute une allergie Ã  un patient
     /// </summary>
     [HttpPost("allergies/{idPatient}")]
     public async Task<IActionResult> AjouterAllergie(int idPatient, [FromBody] CreateAllergieRequest request)
@@ -117,7 +118,7 @@ public class MedicalAlertController : ControllerBase
         try
         {
             var result = await _alertService.SupprimerAllergieAsync(idAllergie);
-            return result ? Ok(new { message = "Allergie supprimée" }) : NotFound();
+            return result ? Ok(new { message = "Allergie supprimÃ©e" }) : NotFound();
         }
         catch (Exception ex)
         {
@@ -127,7 +128,7 @@ public class MedicalAlertController : ControllerBase
     }
 
     /// <summary>
-    /// Vérifie les contre-indications pour un médicament
+    /// VÃ©rifie les contre-indications pour un mÃ©dicament
     /// </summary>
     [HttpGet("contre-indications/{idPatient}/{idMedicament}")]
     public async Task<IActionResult> CheckContreIndications(int idPatient, int idMedicament)
@@ -139,13 +140,13 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur vérification contre-indications");
-            return StatusCode(500, new { message = "Erreur lors de la vérification" });
+            _logger.LogError(ex, "Erreur vÃ©rification contre-indications");
+            return StatusCode(500, new { message = "Erreur lors de la vÃ©rification" });
         }
     }
 
     /// <summary>
-    /// Valide une prescription complète
+    /// Valide une prescription complÃ¨te
     /// </summary>
     [HttpPost("prescription/validate")]
     public async Task<IActionResult> ValidatePrescription([FromBody] ValidatePrescriptionRequest request)
@@ -163,7 +164,7 @@ public class MedicalAlertController : ControllerBase
     }
 
     /// <summary>
-    /// Récupère l'historique des alertes d'un patient
+    /// RÃ©cupÃ¨re l'historique des alertes d'un patient
     /// </summary>
     [HttpGet("historique/{idPatient}")]
     public async Task<IActionResult> GetHistoriqueAlertes(int idPatient)
@@ -175,20 +176,22 @@ public class MedicalAlertController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erreur récupération historique alertes");
-            return StatusCode(500, new { message = "Erreur lors de la récupération" });
+            _logger.LogError(ex, "Erreur rÃ©cupÃ©ration historique alertes");
+            return StatusCode(500, new { message = "Erreur lors de la rÃ©cupÃ©ration" });
         }
     }
 }
 
 public class CheckInteractionsRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public List<int> MedicamentIds { get; set; } = new();
 }
 
 public class ValidatePrescriptionRequest
 {
+    [JsonRequired]
     public int IdPatient { get; set; }
     public List<PrescriptionItemRequest> Items { get; set; } = new();
 }

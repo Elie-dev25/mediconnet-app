@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -62,7 +62,7 @@ public class AppointmentHub : Hub
                 await Groups.AddToGroupAsync(Context.ConnectionId, "infirmiers");
             }
 
-            _logger.LogInformation($"User {userId} ({role}) connected to AppointmentHub");
+            _logger.LogInformation("User {UserId} ({Role}) connected to AppointmentHub", userId, role);
         }
 
         await base.OnConnectedAsync();
@@ -77,7 +77,7 @@ public class AppointmentHub : Hub
         
         if (!string.IsNullOrEmpty(userId))
         {
-            _logger.LogInformation($"User {userId} disconnected from AppointmentHub");
+            _logger.LogInformation("User {UserId} disconnected from AppointmentHub", userId);
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -89,7 +89,7 @@ public class AppointmentHub : Hub
     public async Task SubscribeToMedecin(int medecinId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"medecin_{medecinId}_updates");
-        _logger.LogInformation($"Connection {Context.ConnectionId} subscribed to medecin_{medecinId}_updates");
+        _logger.LogInformation("Connection {ConnectionId} subscribed to medecin_{MedecinId}_updates", Context.ConnectionId, medecinId);
     }
 
     /// <summary>
@@ -179,7 +179,7 @@ public class AppointmentNotificationService : IAppointmentNotificationService
         await _hubContext.Clients.Group($"medecin_{medecinId}")
             .SendAsync("NewPendingAppointment", appointment);
 
-        _logger.LogInformation($"Notification: RDV créé pour médecin {medecinId}, patient {patientId}");
+        _logger.LogInformation("Notification: RDV créé pour médecin {MedecinId}, patient {PatientId}", medecinId, patientId);
     }
 
     public async Task NotifyAppointmentUpdatedAsync(int medecinId, int patientId, object appointment)
@@ -193,7 +193,7 @@ public class AppointmentNotificationService : IAppointmentNotificationService
         await _hubContext.Clients.Group($"medecin_{medecinId}_updates")
             .SendAsync("SlotsUpdated", new { medecinId, action = "updated" });
 
-        _logger.LogInformation($"Notification: RDV modifié pour médecin {medecinId}, patient {patientId}");
+        _logger.LogInformation("Notification: RDV modifié pour médecin {MedecinId}, patient {PatientId}", medecinId, patientId);
     }
 
     public async Task NotifyAppointmentCancelledAsync(int medecinId, int patientId, int appointmentId)
@@ -209,7 +209,7 @@ public class AppointmentNotificationService : IAppointmentNotificationService
         await _hubContext.Clients.Group($"medecin_{medecinId}_updates")
             .SendAsync("SlotsUpdated", new { medecinId, action = "cancelled" });
 
-        _logger.LogInformation($"Notification: RDV {appointmentId} annulé");
+        _logger.LogInformation("Notification: RDV {AppointmentId} annulé", appointmentId);
     }
 
     public async Task NotifySlotLockedAsync(int medecinId, DateTime dateHeure)
@@ -261,7 +261,7 @@ public class AppointmentNotificationService : IAppointmentNotificationService
         await _hubContext.Clients.Group("infirmiers")
             .SendAsync("VitalsRecorded", payload);
 
-        _logger.LogInformation($"Notification: VitalsRecorded consultation={consultationId}, rdv={rendezVousId}, medecin={medecinId}");
+        _logger.LogInformation("Notification: VitalsRecorded consultation={ConsultationId}, rdv={RendezVousId}, medecin={MedecinId}", consultationId, rendezVousId, medecinId);
     }
 
     public async Task NotifyNurseQueueRefreshAsync()
