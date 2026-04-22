@@ -146,7 +146,7 @@ export class PatientRendezVousComponent implements OnInit {
         // Vérifier si on doit ouvrir le questionnaire (redirect depuis nouveau-rdv)
         this.route.queryParams.subscribe(params => {
           if (params['questionnaire']) {
-            const rdvId = parseInt(params['questionnaire']);
+            const rdvId = Number.parseInt(params['questionnaire']);
             if (rdvId) {
               setTimeout(() => this.openQuestionnaireByRdvId(rdvId), 300);
             }

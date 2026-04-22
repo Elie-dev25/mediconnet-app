@@ -39,7 +39,7 @@ export class ExportCsvService {
           // Escape quotes and wrap in quotes if contains separator or quotes
           const stringValue = String(value);
           if (stringValue.includes(separator) || stringValue.includes('"') || stringValue.includes('\n')) {
-            return `"${stringValue.replace(/"/g, '""')}"`;
+            return `"${stringValue.replaceAll('"', '""')}"`;
           }
           return stringValue;
         }).join(separator)
@@ -94,6 +94,6 @@ export class ExportCsvService {
 
   private getDateString(): string {
     const now = new Date();
-    return now.toISOString().split('T')[0].replace(/-/g, '');
+    return now.toISOString().split('T')[0].replaceAll('-', '');
   }
 }

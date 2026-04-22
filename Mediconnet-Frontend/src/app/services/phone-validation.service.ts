@@ -43,7 +43,7 @@ export class PhoneValidationService {
       length: 9,
       placeholder: '6 XX XX XX XX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 1) return cleaned;
         if (cleaned.length <= 3) return `${cleaned.slice(0, 1)} ${cleaned.slice(1)}`;
         if (cleaned.length <= 5) return `${cleaned.slice(0, 1)} ${cleaned.slice(1, 3)} ${cleaned.slice(3)}`;
@@ -60,7 +60,7 @@ export class PhoneValidationService {
       length: 9,
       placeholder: 'X XX XX XX XX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 1) return cleaned;
         if (cleaned.length <= 3) return `${cleaned.slice(0, 1)} ${cleaned.slice(1)}`;
         if (cleaned.length <= 5) return `${cleaned.slice(0, 1)} ${cleaned.slice(1, 3)} ${cleaned.slice(3)}`;
@@ -77,7 +77,7 @@ export class PhoneValidationService {
       length: 10,
       placeholder: 'XX XX XX XX XX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 2) return cleaned;
         if (cleaned.length <= 4) return `${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
         if (cleaned.length <= 6) return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4)}`;
@@ -94,7 +94,7 @@ export class PhoneValidationService {
       length: 9,
       placeholder: '7X XXX XX XX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 2) return cleaned;
         if (cleaned.length <= 5) return `${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
         if (cleaned.length <= 7) return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5)}`;
@@ -110,7 +110,7 @@ export class PhoneValidationService {
       length: 8,
       placeholder: 'XX XX XX XX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 2) return cleaned;
         if (cleaned.length <= 4) return `${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
         if (cleaned.length <= 6) return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4)}`;
@@ -126,7 +126,7 @@ export class PhoneValidationService {
       length: 9,
       placeholder: 'X XX XXX XXXX',
       format: (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replaceAll(/\D/g, '');
         if (cleaned.length <= 1) return cleaned;
         if (cleaned.length <= 3) return `${cleaned.slice(0, 1)} ${cleaned.slice(1)}`;
         if (cleaned.length <= 6) return `${cleaned.slice(0, 1)} ${cleaned.slice(1, 3)} ${cleaned.slice(3)}`;
@@ -172,7 +172,7 @@ export class PhoneValidationService {
     }
 
     // Nettoyer le numéro (garder uniquement les chiffres)
-    const cleaned = phoneNumber.replace(/\D/g, '');
+    const cleaned = phoneNumber.replaceAll(/\D/g, '');
 
     // Vérifier la longueur
     if (cleaned.length === 0) {
@@ -217,7 +217,7 @@ export class PhoneValidationService {
     const country = this.getCountryByCode(countryCode);
     if (!country) return phoneNumber;
     
-    const cleaned = phoneNumber.replace(/\D/g, '');
+    const cleaned = phoneNumber.replaceAll(/\D/g, '');
     return country.format(cleaned);
   }
 
@@ -228,7 +228,7 @@ export class PhoneValidationService {
     const country = this.getCountryByCode(countryCode);
     if (!country) return phoneNumber;
     
-    const cleaned = phoneNumber.replace(/\D/g, '');
+    const cleaned = phoneNumber.replaceAll(/\D/g, '');
     return `${country.dialCode}${cleaned}`;
   }
 

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mediconnet-Backend.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f4449bce4bd8c6a02c2d31f6b3788f1c02d9b58")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+326da0f54b8268877ffc8d1500c4233b64667c01")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mediconnet-Backend.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mediconnet-Backend.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

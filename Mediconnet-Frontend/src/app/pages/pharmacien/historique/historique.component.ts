@@ -17,12 +17,6 @@ import { ExportPdfService } from '../../../shared/services/export-pdf.service';
 import { FormatService } from '../../../shared/services/format.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
-declare var Blob: any;
-declare var URL: any;
-declare var document: any;
-declare var JSON: any;
-declare var Array: any;
-declare var console: any;
 
 export enum HistoriqueTab {
   MOUVEMENTS = 'mouvements',

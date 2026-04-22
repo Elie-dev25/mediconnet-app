@@ -1,0 +1,6 @@
+projectKey=mediconnect
+serverUrl=http://host.docker.internal:9000
+serverVersion=26.4.0.121862
+dashboardUrl=http://host.docker.internal:9000/dashboard?id=mediconnect
+ceTaskId=02cd1172-1772-4887-b5c2-4e5e45268e7e
+ceTaskUrl=http://host.docker.internal:9000/api/ce/task?id=02cd1172-1772-4887-b5c2-4e5e45268e7e

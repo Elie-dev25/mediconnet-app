@@ -1,0 +1,1 @@
+/work/.sonarqube/out/1

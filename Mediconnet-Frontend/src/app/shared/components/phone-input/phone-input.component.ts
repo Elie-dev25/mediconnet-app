@@ -152,7 +152,7 @@ export class PhoneInputComponent implements ControlValueAccessor, Validator, OnI
     let value = input.value;
     
     // Garder uniquement les chiffres pour le traitement
-    const cleaned = value.replace(/\D/g, '');
+    const cleaned = value.replaceAll(/\D/g, '');
     
     // Limiter à la longueur maximale du pays
     const maxLength = this.selectedCountry?.length || 15;
@@ -192,7 +192,7 @@ export class PhoneInputComponent implements ControlValueAccessor, Validator, OnI
     
     // Reformater le numéro avec le nouveau pays
     if (this.phoneNumber) {
-      const cleaned = this.phoneNumber.replace(/\D/g, '');
+      const cleaned = this.phoneNumber.replaceAll(/\D/g, '');
       this.phoneNumber = this.phoneService.format(cleaned, country.code);
       
       // Émettre la nouvelle valeur

@@ -175,8 +175,8 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
   getFullDayName(date: string): string {
     const parts = date.split('T')[0].split('-');
     if (parts.length !== 3) return '---';
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    if (isNaN(d.getTime())) return '---';
+    const d = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
+    if (Number.isNaN(d.getTime())) return '---';
     const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     return dayNames[d.getDay()];
   }
@@ -185,8 +185,8 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
   getFormattedDate(date: string): string {
     const parts = date.split('T')[0].split('-');
     if (parts.length !== 3) return '---';
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    if (isNaN(d.getTime())) return '---';
+    const d = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
+    if (Number.isNaN(d.getTime())) return '---';
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
@@ -352,8 +352,8 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
     if (parts.length !== 3) {
       return '---';
     }
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    if (isNaN(d.getTime())) {
+    const d = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
+    if (Number.isNaN(d.getTime())) {
       return '---';
     }
     const dayNames = ['DIM.', 'LUN.', 'MAR.', 'MER.', 'JEU.', 'VEN.', 'SAM.'];
@@ -366,7 +366,7 @@ export class MiniAgendaComponent implements OnInit, OnDestroy {
     if (parts.length !== 3) {
       return '--';
     }
-    return parseInt(parts[2]).toString();
+    return Number.parseInt(parts[2]).toString();
   }
 
   isToday(date: string): boolean {

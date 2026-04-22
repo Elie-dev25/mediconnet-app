@@ -1,13 +1,8 @@
 import { Injectable } from '@angular/core';
 
-declare var jsPDF: any;
-declare var document: any;
-declare var window: any;
-declare var console: any;
-declare var Object: any;
-declare var Array: any;
-declare var String: any;
-declare var Date: any;
+declare global {
+  interface Window { jsPDF: any; }
+}
 
 export interface ExportPdfOptions {
   filename?: string;
@@ -47,7 +42,7 @@ export class ExportPdfService {
     
     // Ajouter la date
     doc.setFontSize(10);
-    doc.text(`Généré le: ${new window.Date().toLocaleDateString('fr-FR')}`, 14, 30);
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
     
     // Préparer les données
     const pdfHeaders = Array.from(headers).length > 0 ? headers : Object.keys(Array.from(data)[0]);
@@ -135,7 +130,7 @@ export class ExportPdfService {
   }
 
   private getDateString(): string {
-    const now = new window.Date();
-    return now.toISOString().split('T')[0].replace(/-/g, '');
+    const now = new Date();
+    return now.toISOString().split('T')[0].replaceAll('-', '');
   }
 }

@@ -49,7 +49,7 @@ function emergencyContactDifferentValidator(mainPhone: () => string): (control: 
     if (!emergencyPhone || !mainPhoneValue) return null;
     
     // Normaliser les numéros (enlever espaces, tirets, +)
-    const normalizePhone = (phone: string) => phone.replace(/[\s\-+]/g, '');
+    const normalizePhone = (phone: string) => phone.replaceAll(/[\s\-+]/g, '');
     
     if (normalizePhone(emergencyPhone) === normalizePhone(mainPhoneValue)) {
       return { sameAsMainContact: true };

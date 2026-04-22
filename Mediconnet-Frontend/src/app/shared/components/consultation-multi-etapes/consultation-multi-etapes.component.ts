@@ -867,7 +867,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
         const parts = controlPath.split('.');
         if (parts[0] === 'questionsReponses' || parts[0] === 'questionsLibres') {
           const arrayName = parts[0];
-          const index = parseInt(parts[1], 10);
+          const index = Number.parseInt(parts[1], 10);
           const fieldKey = parts[2];
           const formArray = this.anamneseForm.get(arrayName) as FormArray;
           if (formArray && formArray.at(index)) {
@@ -1529,7 +1529,7 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       ...form.questionsLibres
         .filter((q: any) => q.question && q.reponse && q.question.trim() !== '' && q.reponse.trim() !== '')
         .map((q: any) => ({
-          questionId: 'libre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+          questionId: 'libre-' + Date.now() + '-' + crypto.randomUUID(),
           question: q.question,
           reponse: q.reponse
         }))

@@ -122,7 +122,7 @@ export class AuditService {
       'PASSWORD_CHANGED': 'Mot de passe modifié',
       'PROFILE_UPDATED': 'Profil mis à jour'
     };
-    return actionLabels[action] || action.replace(/_/g, ' ');
+    return actionLabels[action] || action.replaceAll('_', ' ');
   }
 
   /**

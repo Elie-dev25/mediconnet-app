@@ -525,17 +525,17 @@ export class ProgrammationInterventionPanelComponent implements OnInit {
 
   // Helper methods for time-based styling
   isMorning(heure: string): boolean {
-    const hour = parseInt(heure.split(':')[0]);
+    const hour = Number.parseInt(heure.split(':')[0]);
     return hour >= 6 && hour < 12;
   }
 
   isAfternoon(heure: string): boolean {
-    const hour = parseInt(heure.split(':')[0]);
+    const hour = Number.parseInt(heure.split(':')[0]);
     return hour >= 12 && hour < 18;
   }
 
   isEvening(heure: string): boolean {
-    const hour = parseInt(heure.split(':')[0]);
+    const hour = Number.parseInt(heure.split(':')[0]);
     return hour >= 18 && hour < 22;
   }
 

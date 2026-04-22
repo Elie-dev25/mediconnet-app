@@ -267,7 +267,7 @@ export class InterventionsComponent implements OnInit, OnDestroy {
 
   getAsaClass(asa: string | undefined): string {
     if (!asa) return '';
-    const num = parseInt(asa.replace('ASA', '').trim());
+    const num = Number.parseInt(asa.replace('ASA', '').trim());
     if (num >= 4) return 'asa-high';
     if (num >= 3) return 'asa-medium';
     return 'asa-low';

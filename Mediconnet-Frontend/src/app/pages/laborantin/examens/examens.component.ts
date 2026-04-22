@@ -86,10 +86,10 @@ export class LaborantinExamensComponent implements OnInit, OnDestroy {
         this.filters.urgence = true;
       }
       if (params['id']) {
-        this.openDetails(parseInt(params['id']));
+        this.openDetails(Number.parseInt(params['id']));
       }
       if (params['action'] === 'resultat' && params['id']) {
-        this.openResultatSidebar(parseInt(params['id']));
+        this.openResultatSidebar(Number.parseInt(params['id']));
       }
       this.loadExamens();
     });
@@ -303,7 +303,7 @@ export class LaborantinExamensComponent implements OnInit, OnDestroy {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   calculateAge(dateNaissance: string | undefined): string {

@@ -1,7 +1,6 @@
-import { Component, Input, SecurityContext } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
-import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-auth-layout-wrapper',
@@ -31,18 +30,4 @@ import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 export class AuthLayoutWrapperComponent {
   @Input() showDecorative = true;
   @Input() backgroundImage = 'assets/images/accueil.jpeg';
-  
-  backgroundImageStyle: SafeStyle;
-
-  constructor(private sanitizer: DomSanitizer) {
-    this.backgroundImageStyle = this.sanitizer.bypassSecurityTrustStyle(
-      `url(${this.backgroundImage})`
-    );
-  }
-
-  ngOnChanges() {
-    this.backgroundImageStyle = this.sanitizer.bypassSecurityTrustStyle(
-      `url(${this.backgroundImage})`
-    );
-  }
 }

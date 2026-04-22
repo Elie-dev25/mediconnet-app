@@ -326,7 +326,7 @@ export class SpeechRecognitionService {
    * Génère un ID de session unique
    */
   private generateSessionId(): string {
-    return `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `voice_${Date.now()}_${crypto.randomUUID()}`;
   }
 
   /**

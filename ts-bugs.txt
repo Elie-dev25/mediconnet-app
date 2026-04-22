@@ -1,0 +1,51 @@
+﻿typescript:S7781|src/app/pages/auth/register/register.component.ts:52|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7773|src/app/pages/laborantin/examens/examens.component.ts:89|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/pages/laborantin/examens/examens.component.ts:92|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/pages/laborantin/examens/examens.component.ts:306|Prefer `Number.parseFloat` over `parseFloat`.
+typescript:S7773|src/app/pages/medecin/interventions/interventions.component.ts:270|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/pages/patient/rendez-vous/rendez-vous.component.ts:149|Prefer `Number.parseInt` over `parseInt`.
+typescript:S2137|src/app/pages/pharmacien/historique/historique.component.ts:23|Do not use "JSON" to declare a variable - use another name.
+typescript:S2137|src/app/pages/pharmacien/historique/historique.component.ts:24|Do not use "Array" to declare a variable - use another name.
+typescript:S7781|src/app/services/audit.service.ts:125|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7773|src/app/services/examen-resultats.service.ts:117|Prefer `Number.parseFloat` over `parseFloat`.
+typescript:S7781|src/app/services/phone-validation.service.ts:46|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:63|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:80|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:97|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:113|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:129|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:175|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:220|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/services/phone-validation.service.ts:231|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7773|src/app/shared/components/consultation-multi-etapes/consultation-multi-etapes.component.ts:870|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:178|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:178|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:178|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:179|Prefer `Number.isNaN` over `isNaN`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:188|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:188|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:188|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:189|Prefer `Number.isNaN` over `isNaN`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:355|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:355|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:355|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:356|Prefer `Number.isNaN` over `isNaN`.
+typescript:S7773|src/app/shared/components/mini-agenda/mini-agenda.component.ts:369|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7781|src/app/shared/components/phone-input/phone-input.component.ts:155|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/components/phone-input/phone-input.component.ts:195|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7773|src/app/shared/components/programmation-intervention-panel/programmation-intervention-panel.component.ts:528|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/programmation-intervention-panel/programmation-intervention-panel.component.ts:533|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/programmation-intervention-panel/programmation-intervention-panel.component.ts:538|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/soin-executions-popup/soin-executions-popup.component.ts:290|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7773|src/app/shared/components/soin-executions-popup/soin-executions-popup.component.ts:290|Prefer `Number.parseInt` over `parseInt`.
+typescript:S7781|src/app/shared/data/examens-par-specialite.ts:733|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/data/examens-par-specialite.ts:734|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/data/examens-par-specialite.ts:735|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/data/examens-par-specialite.ts:736|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/services/export-csv.service.ts:42|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S7781|src/app/shared/services/export-csv.service.ts:97|Prefer `String#replaceAll()` over `String#replace()`.
+typescript:S2137|src/app/shared/services/export-pdf.service.ts:7|Do not use "Object" to declare a variable - use another name.
+typescript:S2137|src/app/shared/services/export-pdf.service.ts:8|Do not use "Array" to declare a variable - use another name.
+typescript:S2137|src/app/shared/services/export-pdf.service.ts:9|Do not use "String" to declare a variable - use another name.
+typescript:S2137|src/app/shared/services/export-pdf.service.ts:10|Do not use "Date" to declare a variable - use another name.
+typescript:S7781|src/app/shared/services/export-pdf.service.ts:139|Prefer `String#replaceAll()` over `String#replace()`.

@@ -730,10 +730,10 @@ export function normalizeSpecialite(specialite: string): string {
   return specialite
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
-    .replace(/[^a-z0-9]/g, '_')      // Remplace les caractères spéciaux par _
-    .replace(/_+/g, '_')             // Supprime les _ multiples
-    .replace(/^_|_$/g, '');          // Supprime les _ en début/fin
+    .replaceAll(/[\u0300-\u036f]/g, '') // Supprime les accents
+    .replaceAll(/[^a-z0-9]/g, '_')      // Remplace les caractères spéciaux par _
+    .replaceAll(/_+/g, '_')             // Supprime les _ multiples
+    .replaceAll(/^_|_$/g, '');          // Supprime les _ en début/fin
 }
 
 /**
