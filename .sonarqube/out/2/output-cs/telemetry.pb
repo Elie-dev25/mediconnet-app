@@ -1,1 +1,0 @@
-KR>/work/Mediconnet-Backend.Tests/Mediconnet-Backend.Tests.csprojòCSharp12
