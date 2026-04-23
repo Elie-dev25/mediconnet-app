@@ -14,12 +14,10 @@ import {
   MedecinDisponibleDto,
   CreneauDisponibleDto,
   CreateRendezVousRequest,
-  ServiceDto,
-  ActionRdvResponse
+  ServiceDto
 } from '../../../services/rendez-vous.service';
 import { 
   PatientAnamneseService, 
-  AnamneseQuestionDto, 
   AnamneseQuestionsResponse 
 } from '../../../services/patient-anamnese.service';
 import { QuestionsPredefiniesService, QuestionPredefinie } from '../../../services/questions-predefinies.service';

@@ -1,0 +1,1 @@
+{"errors":[{"msg":"Value of parameter \u0027severities\u0027 (HIGH) must be one of: [INFO, MINOR, MAJOR, CRITICAL, BLOCKER]"}]}

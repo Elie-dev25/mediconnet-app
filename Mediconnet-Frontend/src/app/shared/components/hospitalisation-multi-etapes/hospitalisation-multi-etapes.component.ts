@@ -5,7 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { PrescriptionMedicamentsComponent, MedicamentPrescription } from '../prescription-medicaments/prescription-medicaments.component';
 import { PrescriptionExamensComponent, ExamenPrescription } from '../prescription-examens/prescription-examens.component';
 import { SoinsComplementairesComponent, SoinComplementaire } from '../soins-complementaires/soins-complementaires.component';
-import { HospitalisationService, HospitalisationResponse, OrdonnerHospitalisationCompleteRequest } from '../../../services/hospitalisation.service';
+import { HospitalisationService, OrdonnerHospitalisationCompleteRequest } from '../../../services/hospitalisation.service';
 import { ConsultationCompleteService, MedicamentDto, ExamenPrescritDto } from '../../../services/consultation-complete.service';
 import { AuthService } from '../../../services/auth.service';
 

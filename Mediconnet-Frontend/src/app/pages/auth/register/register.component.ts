@@ -1,6 +1,5 @@
 import { 
   Component, 
-  OnInit, 
   ChangeDetectionStrategy, 
   OnDestroy,
   ChangeDetectorRef
@@ -81,7 +80,7 @@ function emergencyContactDifferentValidator(mainPhone: () => string): (control: 
     ])
   ]
 })
-export class RegisterComponent implements OnInit, OnDestroy {
+export class RegisterComponent implements OnDestroy {
   currentStep = 1;
   totalSteps = 5;
   isLoading = false;
@@ -127,8 +126,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
   ) {
     this.initializeForms();
   }
-
-  ngOnInit(): void {}
 
   ngOnDestroy(): void {
     this.destroy$.next();

@@ -40,11 +40,9 @@ export class ReferenceDataService {
    * Récupère toutes les données de référence en une seule requête (avec cache)
    */
   getAllReferenceData(): Observable<AllReferenceData> {
-    if (!this.allDataCache$) {
-      this.allDataCache$ = this.http.get<AllReferenceData>(`${this.apiUrl}/all`).pipe(
-        shareReplay(1)
-      );
-    }
+    this.allDataCache$ ??= this.http.get<AllReferenceData>(`${this.apiUrl}/all`).pipe(
+      shareReplay(1)
+    );
     return this.allDataCache$;
   }
 

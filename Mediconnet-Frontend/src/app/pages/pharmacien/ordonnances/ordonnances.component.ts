@@ -8,10 +8,7 @@ import {
   OrdonnancePharmacie,
   MedicamentPrescrit,
   CreateDispensationRequest,
-  DispensationLigneRequest,
-  PagedResult,
-  ValidationOrdonnanceResult,
-  DelivranceResult
+  DispensationLigneRequest
 } from '../../../services/pharmacie-stock.service';
 import { FormatService } from '../../../shared/services/format.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';

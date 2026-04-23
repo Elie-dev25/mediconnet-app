@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } 
 import { trigger, transition, style, animate } from '@angular/animations';
 import { finalize } from 'rxjs/operators';
 import { DashboardLayoutComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
-import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto, SpecialiteInfirmierDto, HistoriqueAffectationsDto, AffectationServiceDto } from '../../../services/user.service';
+import { UserService, CreateUserRequest, UserDto, UserDetailsDto, Specialite, ServiceDto, SpecialiteInfirmierDto, HistoriqueAffectationsDto } from '../../../services/user.service';
 import { ADMIN_MENU_ITEMS, ADMIN_SIDEBAR_TITLE } from '../shared';
 import { PatientAssurancePanelComponent, PatientBasicInfo } from '../../../shared/components/patient-assurance-panel/patient-assurance-panel.component';
 

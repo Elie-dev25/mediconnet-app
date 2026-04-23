@@ -9,8 +9,6 @@ import {
   CreateCommandeRequest,
   CreateCommandeLigneRequest,
   ReceptionCommandeRequest,
-  ReceptionLigneRequest,
-  PagedResult,
   Fournisseur,
   MedicamentStock,
   CommandeLigne

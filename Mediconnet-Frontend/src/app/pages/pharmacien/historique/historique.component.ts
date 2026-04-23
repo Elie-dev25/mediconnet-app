@@ -8,7 +8,6 @@ import {
   PharmacieStockService, 
   MouvementStock,
   MouvementStockFilter,
-  PagedResult,
   CommandePharmacie,
   Dispensation
 } from '../../../services/pharmacie-stock.service';

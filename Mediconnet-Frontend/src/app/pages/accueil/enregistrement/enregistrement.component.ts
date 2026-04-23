@@ -10,10 +10,8 @@ import {
   ConsultationService, 
   ServiceHospitalier, 
   MedecinAvecDisponibilite,
-  MedecinsDisponibiliteResponse,
   VerifierPaiementResponse,
-  CreneauJourDto,
-  CreneauxMedecinJourResponse
+  CreneauJourDto
 } from '../../../services/consultation.service';
 import { CreneauxSelectorComponent, CreneauUnifie } from '../../../shared/components/creneaux-selector/creneaux-selector.component';
 

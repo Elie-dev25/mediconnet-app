@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -12,7 +12,7 @@ import { PrescriptionMedicamentsComponent, MedicamentPrescription } from '../pre
   templateUrl: './ordonnance-directe-panel.component.html',
   styleUrls: ['./ordonnance-directe-panel.component.scss']
 })
-export class OrdonnanceDirectePanelComponent implements OnInit, OnChanges {
+export class OrdonnanceDirectePanelComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() patientId: number | null = null;
   @Input() patientNom = '';
@@ -34,8 +34,6 @@ export class OrdonnanceDirectePanelComponent implements OnInit, OnChanges {
   success = false;
 
   constructor(private prescriptionService: PrescriptionService) {}
-
-  ngOnInit(): void {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {

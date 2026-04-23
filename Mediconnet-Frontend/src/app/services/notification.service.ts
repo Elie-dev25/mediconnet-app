@@ -1,7 +1,7 @@
-import { Injectable, OnDestroy, Inject, forwardRef } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { takeUntil, tap, catchError } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
 import { NotificationSoundService } from './notification-sound.service';

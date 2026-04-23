@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { LucideAngularModule } from 'lucide-angular';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { DashboardLayoutComponent, formatDate, formatDateShort, formatTimeRange } from '../../../shared';
-import { PatientService, PatientProfile, DossierMedicalDto, PatientDashboardDto, VisiteDto, TraitementDto } from '../../../services/patient.service';
+import { PatientService, PatientProfile, DossierMedicalDto, VisiteDto, TraitementDto } from '../../../services/patient.service';
 import { AuthService } from '../../../services/auth.service';
 import { PATIENT_MENU_ITEMS, PATIENT_SIDEBAR_TITLE } from '../shared';
 import { ChangePasswordComponent } from '../../../shared/components/change-password/change-password.component';

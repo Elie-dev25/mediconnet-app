@@ -40,16 +40,14 @@ export class QuestionsPredefiniesService {
    * Charge l'index des spécialités disponibles
    */
   private loadIndex(): Observable<SpecialiteIndex[]> {
-    if (!this.indexCache$) {
-      this.indexCache$ = this.http.get<{ specialites: SpecialiteIndex[] }>(`${this.baseUrl}/index.json?${this.cacheVersion}`).pipe(
-        map(data => data.specialites),
-        shareReplay(1),
-        catchError(err => {
-          console.error('Erreur chargement index spécialités:', err);
-          return of([]);
-        })
-      );
-    }
+    this.indexCache$ ??= this.http.get<{ specialites: SpecialiteIndex[] }>(`${this.baseUrl}/index.json?${this.cacheVersion}`).pipe(
+      map(data => data.specialites),
+      shareReplay(1),
+      catchError(err => {
+        console.error('Erreur chargement index spécialités:', err);
+        return of([]);
+      })
+    );
     return this.indexCache$;
   }
 

@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
-import { CaisseService, CaisseKpi, FactureListItem, Transaction, PatientSearchResult, SessionCaisse, RepartitionPaiement, FactureRetard, Facture, LigneFacture } from '../../../services/caisse.service';
+import { CaisseService, CaisseKpi, FactureListItem, Transaction, PatientSearchResult, SessionCaisse, RepartitionPaiement, FactureRetard, Facture } from '../../../services/caisse.service';
 import { SignalRService } from '../../../services/signalr.service';
 import { DashboardLayoutComponent, ModalComponent, LucideAngularModule, ALL_ICONS_PROVIDER } from '../../../shared';
 import { CAISSIER_MENU_ITEMS, CAISSIER_SIDEBAR_TITLE } from '../shared';

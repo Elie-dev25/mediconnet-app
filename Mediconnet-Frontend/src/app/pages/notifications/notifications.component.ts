@@ -10,7 +10,7 @@ import {
   Calendar, CreditCard, Stethoscope, AlertTriangle, HeartPulse,
   Package, Settings, MessageCircle, CheckCircle, Filter
 } from 'lucide-angular';
-import { NotificationService, Notification, NotificationFilter } from '../../services/notification.service';
+import { NotificationService, Notification } from '../../services/notification.service';
 
 @Component({
   selector: 'app-notifications',

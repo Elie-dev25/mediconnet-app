@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -13,7 +13,7 @@ import { PrescriptionMedicamentsComponent, MedicamentPrescription } from '../pre
   templateUrl: './ordonnance-hospitalisation-panel.component.html',
   styleUrls: ['./ordonnance-hospitalisation-panel.component.scss']
 })
-export class OrdonnanceHospitalisationPanelComponent implements OnInit {
+export class OrdonnanceHospitalisationPanelComponent {
   @Input() isOpen = false;
   @Input() hospitalisationId: number | null = null;
   @Input() patientNom = '';
@@ -35,8 +35,6 @@ export class OrdonnanceHospitalisationPanelComponent implements OnInit {
   private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {}
 
   onMedicamentsChange(medicaments: MedicamentPrescription[]): void {
     this.medicaments = medicaments;

@@ -8,8 +8,7 @@ import {
   MedicamentStock, 
   CreateMedicamentRequest,
   UpdateMedicamentRequest,
-  AjustementStockRequest,
-  PagedResult 
+  AjustementStockRequest
 } from '../../../services/pharmacie-stock.service';
 import { FormatService } from '../../../shared/services/format.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';

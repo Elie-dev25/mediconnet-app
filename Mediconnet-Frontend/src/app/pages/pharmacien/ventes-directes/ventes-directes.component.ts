@@ -6,13 +6,10 @@ import { PHARMACIEN_MENU_ITEMS, PHARMACIEN_SIDEBAR_TITLE } from '../shared';
 import { 
   PharmacieStockService, 
   VenteDirecte,
-  VenteDirecteLigne,
   CreateVenteDirecteRequest,
-  VenteDirecteLigneRequest,
   VenteDirecteResult,
   VenteDirecteFilter,
-  MedicamentStock,
-  PagedResult
+  MedicamentStock
 } from '../../../services/pharmacie-stock.service';
 import { FormatService } from '../../../shared/services/format.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';

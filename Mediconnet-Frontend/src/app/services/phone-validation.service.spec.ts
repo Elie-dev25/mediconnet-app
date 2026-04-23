@@ -134,4 +134,63 @@ describe('PhoneValidationService', () => {
       expect(result?.['phoneInvalid']).toBe(true);
     });
   });
+
+  describe('country-specific format and validation branches', () => {
+    it('CM format handles progressive lengths', () => {
+      expect(service.format('6', 'CM')).toBe('6');
+      expect(service.format('61', 'CM')).toBe('6 1');
+      expect(service.format('6123', 'CM')).toBe('6 12 3');
+      expect(service.format('612345', 'CM')).toBe('6 12 34 5');
+    });
+
+    it('FR format progressive lengths', () => {
+      expect(service.format('6', 'FR')).toBe('6');
+      expect(service.format('61', 'FR')).toBe('6 1');
+      expect(service.format('6123', 'FR')).toBe('6 12 3');
+      expect(service.format('612345', 'FR')).toBe('6 12 34 5');
+      expect(service.format('612345678', 'FR')).toBe('6 12 34 56 78');
+    });
+
+    it('CI format progressive lengths and validates', () => {
+      expect(service.format('1', 'CI')).toBe('1');
+      expect(service.format('12', 'CI')).toBe('12');
+      expect(service.format('123', 'CI')).toBe('12 3');
+      expect(service.format('12345', 'CI')).toBe('12 34 5');
+      expect(service.format('1234567', 'CI')).toBe('12 34 56 7');
+      expect(service.format('1234567890', 'CI')).toBe('12 34 56 78 90');
+      expect(service.validate('0123456789', 'CI').isValid).toBe(true);
+    });
+
+    it('SN format progressive and validates', () => {
+      expect(service.format('7', 'SN')).toBe('7');
+      expect(service.format('70', 'SN')).toBe('70');
+      expect(service.format('703', 'SN')).toBe('70 3');
+      expect(service.format('703456', 'SN')).toBe('70 345 6');
+      expect(service.format('703456789', 'SN')).toBe('70 345 67 89');
+      expect(service.validate('701234567', 'SN').isValid).toBe(true);
+      expect(service.validate('601234567', 'SN').errorMessage).toContain('commencer par 7');
+    });
+
+    it('GA format progressive and validates', () => {
+      expect(service.format('1', 'GA')).toBe('1');
+      expect(service.format('12', 'GA')).toBe('12');
+      expect(service.format('123', 'GA')).toBe('12 3');
+      expect(service.format('12345', 'GA')).toBe('12 34 5');
+      expect(service.format('12345678', 'GA')).toBe('12 34 56 78');
+      expect(service.validate('12345678', 'GA').isValid).toBe(true);
+    });
+
+    it('CD format progressive and validates', () => {
+      expect(service.format('8', 'CD')).toBe('8');
+      expect(service.format('81', 'CD')).toBe('8 1');
+      expect(service.format('8123', 'CD')).toBe('8 12 3');
+      expect(service.format('812345678', 'CD')).toBe('8 12 345 678');
+      expect(service.validate('812345678', 'CD').isValid).toBe(true);
+      expect(service.validate('712345678', 'CD').errorMessage).toContain('8 ou 9');
+    });
+
+    it('default error message for countries with no specific message', () => {
+      expect(service.validate('xxxx', 'CI').errorMessage).toBeDefined();
+    });
+  });
 });

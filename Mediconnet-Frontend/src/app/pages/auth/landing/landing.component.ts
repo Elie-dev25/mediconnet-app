@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthNavigationService } from '../../../services/auth-navigation.service';
 import { AuthLayoutWrapperComponent } from '../../../shared/components/auth-layout-wrapper/auth-layout-wrapper.component';
@@ -36,13 +36,9 @@ import { trigger, transition, style, animate } from '@angular/animations';
     ])
   ]
 })
-export class LandingComponent implements OnInit {
+export class LandingComponent {
 
   constructor(private authNavigation: AuthNavigationService) {}
-
-  ngOnInit(): void {
-    // Logique d'initialisation si nécessaire
-  }
 
   /**
    * Navigation vers la page de connexion

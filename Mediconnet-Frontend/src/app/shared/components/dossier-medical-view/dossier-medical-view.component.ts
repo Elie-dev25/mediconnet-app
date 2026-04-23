@@ -38,11 +38,6 @@ import type {
   ExamenItem
 } from '../../../models/dossier-medical.models';
 
-import {
-  getStatutLabel as getStatutLabelFn,
-  getStatutClass as getStatutClassFn
-} from '../../../models/dossier-medical.models';
-
 @Component({
   selector: 'app-dossier-medical-view',
   standalone: true,

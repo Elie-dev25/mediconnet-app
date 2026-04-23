@@ -28,13 +28,13 @@ export class ExportPdfService {
     }
 
     // Vérifier si jsPDF est disponible
-    if (typeof window.jsPDF === 'undefined') {
+    if (typeof (globalThis as any).jsPDF === 'undefined') {
       console.error('jsPDF n\'est pas disponible. Veuillez inclure la bibliothèque jsPDF.');
       return;
     }
 
     // Créer le document PDF
-    const doc = new window.jsPDF();
+    const doc = new (globalThis as any).jsPDF();
     
     // Ajouter le titre
     doc.setFontSize(16);
