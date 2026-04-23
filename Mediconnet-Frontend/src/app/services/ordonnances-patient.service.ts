@@ -93,20 +93,22 @@ export class OrdonnancesPatientService {
    * Construit les paramètres HTTP à partir des filtres
    */
   private buildParams(filtre?: FiltreOrdonnancesPatientRequest): HttpParams {
-    let params = new HttpParams();
+    if (!filtre) return new HttpParams();
 
-    if (filtre) {
-      if (filtre.statut) params = params.set('statut', filtre.statut);
-      if (filtre.typeContexte) params = params.set('typeContexte', filtre.typeContexte);
-      if (filtre.dateDebut) params = params.set('dateDebut', filtre.dateDebut);
-      if (filtre.dateFin) params = params.set('dateFin', filtre.dateFin);
-      if (filtre.idMedecin) params = params.set('idMedecin', filtre.idMedecin.toString());
-      if (filtre.tri) params = params.set('tri', filtre.tri);
-      if (filtre.page) params = params.set('page', filtre.page.toString());
-      if (filtre.pageSize) params = params.set('pageSize', filtre.pageSize.toString());
-    }
+    const paramMap: Record<string, string | number | undefined> = {
+      statut: filtre.statut,
+      typeContexte: filtre.typeContexte,
+      dateDebut: filtre.dateDebut,
+      dateFin: filtre.dateFin,
+      idMedecin: filtre.idMedecin,
+      tri: filtre.tri,
+      page: filtre.page,
+      pageSize: filtre.pageSize
+    };
 
-    return params;
+    return Object.entries(paramMap)
+      .filter(([, value]) => value !== undefined && value !== null)
+      .reduce((params, [key, value]) => params.set(key, String(value)), new HttpParams());
   }
 
   /**

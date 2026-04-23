@@ -164,101 +164,121 @@ export class PrintService {
    * Génère le corps du document avec toutes les sections
    */
   private generateBody(consultation: ConsultationDetailDto): string {
-    let sections = '';
+    const sectionGenerators = [
+      () => this.generateAnamneseSection(consultation),
+      () => this.generateExamenCliniqueSection(consultation),
+      () => this.generateExamenGynecoSection(consultation),
+      () => this.generateExamenChirurgicalSection(consultation),
+      () => this.generateDiagnosticSection(consultation),
+      () => this.generateTraitementSection(consultation),
+      () => this.generateRecommandationsSection(consultation),
+      () => this.generateSuiviSection(consultation),
+      () => this.generateConclusionSection(consultation)
+    ];
+
     let sectionNumber = 1;
-
-    // 1. Anamnèse
-    if (consultation.motif || consultation.anamnese) {
-      sections += this.generateSection(sectionNumber++, 'ANAMNÈSE', `
-        ${consultation.motif ? `<div class="field"><span class="field-label">Motif de consultation:</span><p>${consultation.motif}</p></div>` : ''}
-        ${consultation.anamnese ? `<div class="field"><span class="field-label">Histoire de la maladie:</span><p>${consultation.anamnese}</p></div>` : ''}
-        ${this.generateQuestionnaire(consultation.questionnaire)}
-      `);
-    }
-
-    // 2. Examen clinique
-    const examenClinique = consultation.examenClinique;
-    const parametresVitaux = examenClinique?.parametresVitaux || consultation.parametresVitaux;
-    const hasExamenClinique = consultation.notesCliniques || examenClinique || parametresVitaux;
-    if (hasExamenClinique) {
-      sections += this.generateSection(sectionNumber++, 'EXAMEN CLINIQUE', `
-        ${this.generateParametresVitaux(consultation)}
-        ${this.generateExamenClinique(examenClinique)}
-        ${consultation.notesCliniques ? `<div class="field"><span class="field-label">Notes cliniques:</span><p>${consultation.notesCliniques}</p></div>` : ''}
-      `);
-    }
-
-    // 3. Examen gynécologique (si applicable)
-    if (consultation.examenGynecologique && this.hasExamenGynecoData(consultation.examenGynecologique)) {
-      sections += this.generateSection(sectionNumber++, 'EXAMEN GYNÉCOLOGIQUE', 
-        this.generateExamenGynecologique(consultation.examenGynecologique)
-      );
-    }
-
-    // 3bis. Examen chirurgical (si applicable)
-    if (consultation.examenChirurgical && this.hasExamenChirurgicalData(consultation.examenChirurgical)) {
-      sections += this.generateSection(sectionNumber++, 'EXAMEN CHIRURGICAL',
-        this.generateExamenChirurgical(consultation.examenChirurgical)
-      );
-    }
-
-    // 4. Diagnostic
-    if (consultation.diagnostic || consultation.conclusion) {
-      sections += this.generateSection(sectionNumber++, 'DIAGNOSTIC', `
-        ${consultation.diagnostic ? `<div class="field diagnostic-field"><span class="field-label">Diagnostic principal:</span><p class="diagnostic-text">${consultation.diagnostic}</p></div>` : ''}
-      `);
-    }
-
-    // 5. Traitement
-    const hasTraitement = consultation.ordonnance?.medicaments?.length || 
-                          consultation.planTraitement?.ordonnance?.medicaments?.length ||
-                          consultation.examensPrescrits?.length ||
-                          consultation.planTraitement?.examensPrescrits?.length;
-    if (hasTraitement) {
-      sections += this.generateSection(sectionNumber++, 'TRAITEMENT', `
-        ${this.generateOrdonnance(consultation)}
-        ${this.generateExamensPrescrits(consultation)}
-        ${this.generatePlanTraitement(consultation.planTraitement)}
-      `);
-    }
-
-    // 6. Recommandations / Orientation
-    const hasRecommandations = consultation.recommandations || 
-                               consultation.planTraitement?.orientationSpecialiste ||
-                               consultation.planTraitement?.motifOrientation;
-    if (hasRecommandations) {
-      sections += this.generateSection(sectionNumber++, 'RECOMMANDATIONS / ORIENTATION', `
-        ${consultation.recommandations ? `<div class="field"><span class="field-label">Recommandations:</span><p>${consultation.recommandations}</p></div>` : ''}
-        ${consultation.planTraitement?.orientationSpecialiste ? `<div class="field"><span class="field-label">Orientation spécialiste:</span><p>${consultation.planTraitement.orientationSpecialiste}</p></div>` : ''}
-        ${consultation.planTraitement?.motifOrientation ? `<div class="field"><span class="field-label">Motif d'orientation:</span><p>${consultation.planTraitement.motifOrientation}</p></div>` : ''}
-      `);
-    }
-
-    // 7. Suivi
-    const conclusionDetaillee = consultation.conclusionDetaillee;
-    const hasSuivi = conclusionDetaillee?.typeSuivi || 
-                     conclusionDetaillee?.dateSuiviPrevue || 
-                     conclusionDetaillee?.notesSuivi ||
-                     consultation.rdvSuivi;
-    if (hasSuivi) {
-      sections += this.generateSection(sectionNumber++, 'SUIVI', `
-        ${conclusionDetaillee?.typeSuivi ? `<div class="field"><span class="field-label">Type de suivi:</span><p>${conclusionDetaillee.typeSuivi}</p></div>` : ''}
-        ${conclusionDetaillee?.dateSuiviPrevue ? `<div class="field"><span class="field-label">Date de suivi prévue:</span><p>${new Date(conclusionDetaillee.dateSuiviPrevue).toLocaleDateString('fr-FR')}</p></div>` : ''}
-        ${conclusionDetaillee?.notesSuivi ? `<div class="field"><span class="field-label">Notes de suivi:</span><p>${conclusionDetaillee.notesSuivi}</p></div>` : ''}
-        ${this.generateRdvSuivi(consultation.rdvSuivi)}
-      `);
-    }
-
-    // 8. Conclusion
-    if (consultation.conclusion || conclusionDetaillee?.resumeConsultation) {
-      sections += this.generateSection(sectionNumber++, 'CONCLUSION', `
-        ${consultation.conclusion ? `<div class="field"><span class="field-label">Conclusion:</span><p>${consultation.conclusion}</p></div>` : ''}
-        ${conclusionDetaillee?.resumeConsultation ? `<div class="field"><span class="field-label">Résumé:</span><p>${conclusionDetaillee.resumeConsultation}</p></div>` : ''}
-        ${conclusionDetaillee?.consignesPatient ? `<div class="field"><span class="field-label">Consignes au patient:</span><p>${conclusionDetaillee.consignesPatient}</p></div>` : ''}
-      `);
-    }
+    const sections = sectionGenerators
+      .map(generator => generator())
+      .filter((section): section is { title: string; content: string } => section !== null)
+      .map(section => this.generateSection(sectionNumber++, section.title, section.content))
+      .join('');
 
     return `<main class="document-body">${sections}</main>`;
+  }
+
+  private generateAnamneseSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    if (!c.motif && !c.anamnese) return null;
+    return {
+      title: 'ANAMNÈSE',
+      content: `
+        ${c.motif ? `<div class="field"><span class="field-label">Motif de consultation:</span><p>${c.motif}</p></div>` : ''}
+        ${c.anamnese ? `<div class="field"><span class="field-label">Histoire de la maladie:</span><p>${c.anamnese}</p></div>` : ''}
+        ${this.generateQuestionnaire(c.questionnaire)}
+      `
+    };
+  }
+
+  private generateExamenCliniqueSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    const examenClinique = c.examenClinique;
+    const parametresVitaux = examenClinique?.parametresVitaux || c.parametresVitaux;
+    if (!c.notesCliniques && !examenClinique && !parametresVitaux) return null;
+    return {
+      title: 'EXAMEN CLINIQUE',
+      content: `
+        ${this.generateParametresVitaux(c)}
+        ${this.generateExamenClinique(examenClinique)}
+        ${c.notesCliniques ? `<div class="field"><span class="field-label">Notes cliniques:</span><p>${c.notesCliniques}</p></div>` : ''}
+      `
+    };
+  }
+
+  private generateExamenGynecoSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    if (!c.examenGynecologique || !this.hasExamenGynecoData(c.examenGynecologique)) return null;
+    return { title: 'EXAMEN GYNÉCOLOGIQUE', content: this.generateExamenGynecologique(c.examenGynecologique) };
+  }
+
+  private generateExamenChirurgicalSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    if (!c.examenChirurgical || !this.hasExamenChirurgicalData(c.examenChirurgical)) return null;
+    return { title: 'EXAMEN CHIRURGICAL', content: this.generateExamenChirurgical(c.examenChirurgical) };
+  }
+
+  private generateDiagnosticSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    if (!c.diagnostic && !c.conclusion) return null;
+    return {
+      title: 'DIAGNOSTIC',
+      content: c.diagnostic ? `<div class="field diagnostic-field"><span class="field-label">Diagnostic principal:</span><p class="diagnostic-text">${c.diagnostic}</p></div>` : ''
+    };
+  }
+
+  private generateTraitementSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    const hasTraitement = c.ordonnance?.medicaments?.length || c.planTraitement?.ordonnance?.medicaments?.length ||
+                          c.examensPrescrits?.length || c.planTraitement?.examensPrescrits?.length;
+    if (!hasTraitement) return null;
+    return {
+      title: 'TRAITEMENT',
+      content: `${this.generateOrdonnance(c)}${this.generateExamensPrescrits(c)}${this.generatePlanTraitement(c.planTraitement)}`
+    };
+  }
+
+  private generateRecommandationsSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    const hasRecommandations = c.recommandations || c.planTraitement?.orientationSpecialiste || c.planTraitement?.motifOrientation;
+    if (!hasRecommandations) return null;
+    return {
+      title: 'RECOMMANDATIONS / ORIENTATION',
+      content: `
+        ${c.recommandations ? `<div class="field"><span class="field-label">Recommandations:</span><p>${c.recommandations}</p></div>` : ''}
+        ${c.planTraitement?.orientationSpecialiste ? `<div class="field"><span class="field-label">Orientation spécialiste:</span><p>${c.planTraitement.orientationSpecialiste}</p></div>` : ''}
+        ${c.planTraitement?.motifOrientation ? `<div class="field"><span class="field-label">Motif d'orientation:</span><p>${c.planTraitement.motifOrientation}</p></div>` : ''}
+      `
+    };
+  }
+
+  private generateSuiviSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    const cd = c.conclusionDetaillee;
+    const hasSuivi = cd?.typeSuivi || cd?.dateSuiviPrevue || cd?.notesSuivi || c.rdvSuivi;
+    if (!hasSuivi) return null;
+    return {
+      title: 'SUIVI',
+      content: `
+        ${cd?.typeSuivi ? `<div class="field"><span class="field-label">Type de suivi:</span><p>${cd.typeSuivi}</p></div>` : ''}
+        ${cd?.dateSuiviPrevue ? `<div class="field"><span class="field-label">Date de suivi prévue:</span><p>${new Date(cd.dateSuiviPrevue).toLocaleDateString('fr-FR')}</p></div>` : ''}
+        ${cd?.notesSuivi ? `<div class="field"><span class="field-label">Notes de suivi:</span><p>${cd.notesSuivi}</p></div>` : ''}
+        ${this.generateRdvSuivi(c.rdvSuivi)}
+      `
+    };
+  }
+
+  private generateConclusionSection(c: ConsultationDetailDto): { title: string; content: string } | null {
+    const cd = c.conclusionDetaillee;
+    if (!c.conclusion && !cd?.resumeConsultation) return null;
+    return {
+      title: 'CONCLUSION',
+      content: `
+        ${c.conclusion ? `<div class="field"><span class="field-label">Conclusion:</span><p>${c.conclusion}</p></div>` : ''}
+        ${cd?.resumeConsultation ? `<div class="field"><span class="field-label">Résumé:</span><p>${cd.resumeConsultation}</p></div>` : ''}
+        ${cd?.consignesPatient ? `<div class="field"><span class="field-label">Consignes au patient:</span><p>${cd.consignesPatient}</p></div>` : ''}
+      `
+    };
   }
 
   /**

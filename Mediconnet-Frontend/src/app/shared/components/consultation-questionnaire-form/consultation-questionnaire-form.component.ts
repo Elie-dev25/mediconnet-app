@@ -5,10 +5,9 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { LucideAngularModule } from 'lucide-angular';
 import { ALL_ICONS_PROVIDER } from '../../icons';
 import {
-  ConsultationQuestionnaireService,
-  UpsertReponseItem
+  ConsultationQuestionnaireService
 } from '../../../services/consultation-questionnaire.service';
-import { QuestionPredefinie, QuestionsPredefiniesService } from '../../../services/questions-predefinies.service';
+import { QuestionsPredefiniesService } from '../../../services/questions-predefinies.service';
 
 export interface QuestionDisplay {
   id: string;
@@ -70,90 +69,85 @@ export class ConsultationQuestionnaireFormComponent implements OnInit {
     this.errorMessage = null;
     this.successMessage = null;
 
-    // Charger les questions prédéfinies depuis le JSON
     this.questionsPredefiniesService.getQuestionsParSpecialite(this.specialiteId, this.typeVisite).subscribe({
-      next: (questionsPredefinies) => {
-        this.questions = questionsPredefinies.map(q => ({
-          id: q.id,
-          texte: q.texte,
-          type: q.type,
-          options: q.options,
-          obligatoire: q.obligatoire,
-          reponse: '',
-          isLibre: false
-        }));
-
-        // Charger TOUTES les questions prédéfinies (première + suivante) pour filtrage
-        this.questionsPredefiniesService.getToutesQuestionsSpecialite(this.specialiteId).subscribe({
-          next: (toutesQuestionsPredefinies) => {
-            const tousTextesPredefinis = new Set(toutesQuestionsPredefinies.map(q => q.texte));
-
-            // Charger les réponses existantes et questions libres depuis la DB
-            this.questionnaireService.getQuestions(this.consultationId).subscribe({
-              next: (res) => {
-                this.isLoading = false;
-                const dbData = res.data || [];
-                
-                // Mapper les réponses existantes aux questions prédéfinies affichées
-                for (const q of this.questions) {
-                  const dbQuestion = dbData.find(d => d.texteQuestion === q.texte);
-                  if (dbQuestion) {
-                    q.reponse = dbQuestion.valeurReponse || '';
-                    q.questionIdDb = dbQuestion.questionId;
-                  }
-                }
-
-                // Ajouter uniquement les vraies questions libres
-                // (celles qui ne sont dans AUCUNE des deux vagues de questions prédéfinies)
-                this.questionsLibres = dbData
-                  .filter(d => !tousTextesPredefinis.has(d.texteQuestion))
-                  .map(d => ({
-                    id: `libre_${d.questionId}`,
-                    texte: d.texteQuestion,
-                    type: 'texte' as const,
-                    obligatoire: false,
-                    reponse: d.valeurReponse || '',
-                    isLibre: true,
-                    questionIdDb: d.questionId
-                  }));
-
-                this.rebuildControls();
-              },
-              error: () => {
-                this.isLoading = false;
-                this.rebuildControls();
-              }
-            });
-          },
-          error: () => {
-            // Fallback: charger sans filtrage avancé
-            this.questionnaireService.getQuestions(this.consultationId).subscribe({
-              next: (res) => {
-                this.isLoading = false;
-                const dbData = res.data || [];
-                for (const q of this.questions) {
-                  const dbQuestion = dbData.find(d => d.texteQuestion === q.texte);
-                  if (dbQuestion) {
-                    q.reponse = dbQuestion.valeurReponse || '';
-                    q.questionIdDb = dbQuestion.questionId;
-                  }
-                }
-                this.questionsLibres = [];
-                this.rebuildControls();
-              },
-              error: () => {
-                this.isLoading = false;
-                this.rebuildControls();
-              }
-            });
-          }
-        });
-      },
-      error: (err) => {
+      next: (questionsPredefinies) => this.handleQuestionsPredefinies(questionsPredefinies),
+      error: () => {
         this.isLoading = false;
         this.errorMessage = 'Impossible de charger les questions';
       }
     });
+  }
+
+  private handleQuestionsPredefinies(questionsPredefinies: { id: string; texte: string; type: string; options?: string[]; obligatoire: boolean }[]): void {
+    this.questions = questionsPredefinies.map(q => ({
+      id: q.id,
+      texte: q.texte,
+      type: q.type as 'texte' | 'choix',
+      options: q.options,
+      obligatoire: q.obligatoire,
+      reponse: '',
+      isLibre: false as const
+    }));
+
+    this.questionsPredefiniesService.getToutesQuestionsSpecialite(this.specialiteId).subscribe({
+      next: (toutesQuestionsPredefinies) => this.loadDbQuestions(new Set(toutesQuestionsPredefinies.map(q => q.texte))),
+      error: () => this.loadDbQuestionsFallback()
+    });
+  }
+
+  private loadDbQuestions(tousTextesPredefinis: Set<string>): void {
+    this.questionnaireService.getQuestions(this.consultationId).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        const dbData = res.data || [];
+        this.mapDbResponsesToQuestions(dbData);
+        this.questionsLibres = this.extractQuestionsLibres(dbData, tousTextesPredefinis);
+        this.rebuildControls();
+      },
+      error: () => {
+        this.isLoading = false;
+        this.rebuildControls();
+      }
+    });
+  }
+
+  private loadDbQuestionsFallback(): void {
+    this.questionnaireService.getQuestions(this.consultationId).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        this.mapDbResponsesToQuestions(res.data || []);
+        this.questionsLibres = [];
+        this.rebuildControls();
+      },
+      error: () => {
+        this.isLoading = false;
+        this.rebuildControls();
+      }
+    });
+  }
+
+  private mapDbResponsesToQuestions(dbData: { texteQuestion: string; valeurReponse?: string | null; questionId: number }[]): void {
+    for (const q of this.questions) {
+      const dbQuestion = dbData.find(d => d.texteQuestion === q.texte);
+      if (dbQuestion) {
+        q.reponse = dbQuestion.valeurReponse || '';
+        q.questionIdDb = dbQuestion.questionId;
+      }
+    }
+  }
+
+  private extractQuestionsLibres(dbData: { texteQuestion: string; valeurReponse?: string | null; questionId: number }[], tousTextesPredefinis: Set<string>): QuestionDisplay[] {
+    return dbData
+      .filter(d => !tousTextesPredefinis.has(d.texteQuestion))
+      .map(d => ({
+        id: `libre_${d.questionId}`,
+        texte: d.texteQuestion,
+        type: 'texte' as const,
+        obligatoire: false,
+        reponse: d.valeurReponse || '',
+        isLibre: true,
+        questionIdDb: d.questionId
+      }));
   }
 
   private rebuildControls(): void {

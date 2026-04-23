@@ -19,10 +19,8 @@ import {
   MedecinSpecialisteDto,
   OrientationPreConsultationDto,
   CreateOrientationRequest,
-  UpdateOrientationStatutRequest,
   ExamenGynecologiqueDto,
   TYPES_ORIENTATION,
-  STATUTS_ORIENTATION,
   TypeOrientation,
   CreneauMedecinDto,
   CreerRdvOrientationRequest
@@ -855,40 +853,8 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Déterminer le formulaire et le champ
-    let control: any = null;
-    let controlPath = '';
-
-    if (fieldName.startsWith('anamnese.')) {
-      controlPath = fieldName.replace('anamnese.', '');
-      
-      // Gérer les chemins imbriqués pour les questions (ex: questionsReponses.0.reponse)
-      if (controlPath.includes('.')) {
-        const parts = controlPath.split('.');
-        if (parts[0] === 'questionsReponses' || parts[0] === 'questionsLibres') {
-          const arrayName = parts[0];
-          const index = Number.parseInt(parts[1], 10);
-          const fieldKey = parts[2];
-          const formArray = this.anamneseForm.get(arrayName) as FormArray;
-          if (formArray && formArray.at(index)) {
-            control = formArray.at(index).get(fieldKey);
-          }
-        }
-      } else {
-        control = this.anamneseForm.get(controlPath);
-      }
-    } else if (fieldName.startsWith('examenGynecologique.')) {
-      controlPath = fieldName.replace('examenGynecologique.', '');
-      control = this.examenGynecologiqueForm.get(controlPath);
-    } else if (fieldName.startsWith('diagnostic.')) {
-      controlPath = fieldName.replace('diagnostic.', '');
-      control = this.diagnosticForm.get(controlPath);
-    } else if (fieldName.startsWith('prescriptions.')) {
-      controlPath = fieldName.replace('prescriptions.', '');
-      control = this.prescriptionsForm.get(controlPath);
-    }
-
-    console.log('[ConsultationVoice] Form control lookup:', { controlPath, found: !!control });
+    const control = this.resolveFormControl(fieldName);
+    console.log('[ConsultationVoice] Form control lookup:', { fieldName, found: !!control });
 
     if (control) {
       const currentValue = control.value || '';
@@ -899,6 +865,37 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
     } else {
       console.error('[ConsultationVoice] Control not found for:', fieldName);
     }
+  }
+
+  private resolveFormControl(fieldName: string): any {
+    const formMappings: Record<string, { form: FormGroup; prefix: string }> = {
+      'anamnese.': { form: this.anamneseForm, prefix: 'anamnese.' },
+      'examenGynecologique.': { form: this.examenGynecologiqueForm, prefix: 'examenGynecologique.' },
+      'diagnostic.': { form: this.diagnosticForm, prefix: 'diagnostic.' },
+      'prescriptions.': { form: this.prescriptionsForm, prefix: 'prescriptions.' }
+    };
+
+    for (const [prefix, mapping] of Object.entries(formMappings)) {
+      if (fieldName.startsWith(prefix)) {
+        const controlPath = fieldName.replace(mapping.prefix, '');
+        return this.getControlFromPath(mapping.form, controlPath);
+      }
+    }
+    return null;
+  }
+
+  private getControlFromPath(form: FormGroup, controlPath: string): any {
+    if (!controlPath.includes('.')) {
+      return form.get(controlPath);
+    }
+
+    const parts = controlPath.split('.');
+    if (parts[0] === 'questionsReponses' || parts[0] === 'questionsLibres') {
+      const formArray = form.get(parts[0]) as FormArray;
+      const index = Number.parseInt(parts[1], 10);
+      return formArray?.at(index)?.get(parts[2]) ?? null;
+    }
+    return form.get(controlPath);
   }
 
   isVoiceActive(fieldName: string): boolean {
@@ -1121,128 +1118,128 @@ export class ConsultationMultiEtapesComponent implements OnInit, OnDestroy {
   populateForms(): void {
     if (!this.consultation) return;
 
-    // Étape 1: Anamnèse
-    if (this.consultation.anamnese) {
-      const a = this.consultation.anamnese;
-      this.anamneseForm.patchValue({
-        motifConsultation: a.motifConsultation,
-        histoireMaladie: a.histoireMaladie,
-        traitementsEnCours: a.traitementsEnCours
+    this.populateAnamneseForm();
+    this.populateExamenCliniqueForm();
+    this.populateSpecializedExamForms();
+    this.populateDiagnosticForm();
+    this.populatePlanTraitementForm();
+    this.populateConclusionForm();
+    this.populatePrescriptionsForm();
+  }
+
+  private populateAnamneseForm(): void {
+    if (!this.consultation?.anamnese) return;
+    const a = this.consultation.anamnese;
+    this.anamneseForm.patchValue({
+      motifConsultation: a.motifConsultation,
+      histoireMaladie: a.histoireMaladie,
+      traitementsEnCours: a.traitementsEnCours
+    });
+    this.loadPatientResponses(a.questionsReponses);
+  }
+
+  private loadPatientResponses(questionsReponses?: Array<{ question: string; reponse: string; questionId?: string }>): void {
+    if (!questionsReponses?.length) return;
+    this.reponsesPatientMap.clear();
+    questionsReponses
+      .filter(qr => qr.reponse?.trim())
+      .forEach(qr => {
+        this.reponsesPatientMap.set(qr.question, qr.reponse);
+        if (qr.questionId) this.reponsesPatientMap.set(qr.questionId, qr.reponse);
       });
+    this.hasReponsesPatient = this.reponsesPatientMap.size > 0;
+    console.log('[Anamnèse] Réponses patient chargées:', this.reponsesPatientMap.size, 'réponses');
+  }
 
-      // Stocker les réponses du patient pour préremplissage du formulaire
-      // Note: initQuestionsFormArray() sera appelé par loadQuestions() après le chargement des questions prédéfinies
-      if (a.questionsReponses && a.questionsReponses.length > 0) {
-        this.reponsesPatientMap.clear();
-        a.questionsReponses
-          .filter(qr => qr.reponse && qr.reponse.trim() !== '')
-          .forEach(qr => {
-            this.reponsesPatientMap.set(qr.question, qr.reponse);
-            if (qr.questionId) {
-              this.reponsesPatientMap.set(qr.questionId, qr.reponse);
-            }
-          });
-        this.hasReponsesPatient = this.reponsesPatientMap.size > 0;
-        console.log('[Anamnèse] Réponses patient chargées:', this.reponsesPatientMap.size, 'réponses');
-      }
-    }
-
-    // Étape 2: Examen Clinique
-    if (this.consultation.examenClinique) {
-      const ec = this.consultation.examenClinique;
-      if (ec.parametresVitaux) {
-        this.examenCliniqueForm.patchValue({
-          poids: ec.parametresVitaux.poids,
-          taille: ec.parametresVitaux.taille,
-          temperature: ec.parametresVitaux.temperature,
-          tensionArterielle: ec.parametresVitaux.tensionArterielle,
-          frequenceCardiaque: ec.parametresVitaux.frequenceCardiaque,
-          frequenceRespiratoire: ec.parametresVitaux.frequenceRespiratoire,
-          saturationOxygene: ec.parametresVitaux.saturationOxygene,
-          glycemie: ec.parametresVitaux.glycemie
-        });
-      }
+  private populateExamenCliniqueForm(): void {
+    const ec = this.consultation?.examenClinique;
+    if (!ec) return;
+    if (ec.parametresVitaux) {
       this.examenCliniqueForm.patchValue({
-        inspection: ec.inspection,
-        palpation: ec.palpation,
-        auscultation: ec.auscultation,
-        percussion: ec.percussion,
-        autresObservations: ec.autresObservations
+        poids: ec.parametresVitaux.poids,
+        taille: ec.parametresVitaux.taille,
+        temperature: ec.parametresVitaux.temperature,
+        tensionArterielle: ec.parametresVitaux.tensionArterielle,
+        frequenceCardiaque: ec.parametresVitaux.frequenceCardiaque,
+        frequenceRespiratoire: ec.parametresVitaux.frequenceRespiratoire,
+        saturationOxygene: ec.parametresVitaux.saturationOxygene,
+        glycemie: ec.parametresVitaux.glycemie
       });
     }
+    this.examenCliniqueForm.patchValue({
+      inspection: ec.inspection,
+      palpation: ec.palpation,
+      auscultation: ec.auscultation,
+      percussion: ec.percussion,
+      autresObservations: ec.autresObservations
+    });
+  }
 
-    // Étape 2bis: Examen Gynécologique (si gynécologue)
-    if (this.isGynecoConsultation() && this.consultation.examenGynecologique) {
+  private populateSpecializedExamForms(): void {
+    if (this.isGynecoConsultation() && this.consultation?.examenGynecologique) {
       this.patchGynecologiqueForm(this.consultation.examenGynecologique);
     }
-
-    // Étape 2ter: Examen Chirurgical (si chirurgien)
-    if (this.isChirurgieConsultation() && this.consultation.examenChirurgical) {
+    if (this.isChirurgieConsultation() && this.consultation?.examenChirurgical) {
       this.patchChirurgicalForm(this.consultation.examenChirurgical);
     }
-
-    // Étape 2quater: Examen Anesthésique (si anesthésiste)
-    if (this.isAnesthesisteConsultation() && this.consultation.examenAnesthesique) {
+    if (this.isAnesthesisteConsultation() && this.consultation?.examenAnesthesique) {
       this.patchAnesthesiqueForm(this.consultation.examenAnesthesique);
     }
+  }
 
-    // Étape 3: Diagnostic
-    if (this.consultation.diagnostic) {
-      this.diagnosticForm.patchValue({
-        diagnosticPrincipal: this.consultation.diagnostic.diagnosticPrincipal,
-        diagnosticsSecondaires: this.consultation.diagnostic.diagnosticsSecondaires,
-        hypothesesDiagnostiques: this.consultation.diagnostic.hypothesesDiagnostiques,
-        notesCliniques: this.consultation.diagnostic.notesCliniques
-      });
-      // Stocker le récapitulatif patient
-      this.recapitulatifPatient = this.consultation.diagnostic.recapitulatifPatient;
-    }
+  private populateDiagnosticForm(): void {
+    const d = this.consultation?.diagnostic;
+    if (!d) return;
+    this.diagnosticForm.patchValue({
+      diagnosticPrincipal: d.diagnosticPrincipal,
+      diagnosticsSecondaires: d.diagnosticsSecondaires,
+      hypothesesDiagnostiques: d.hypothesesDiagnostiques,
+      notesCliniques: d.notesCliniques
+    });
+    this.recapitulatifPatient = d.recapitulatifPatient;
+  }
 
-    // Étape 4: Plan de Traitement
-    if (this.consultation.planTraitement) {
-      const pt = this.consultation.planTraitement;
+  private populatePlanTraitementForm(): void {
+    const pt = this.consultation?.planTraitement;
+    if (!pt) return;
+    this.planTraitementForm.patchValue({
+      explicationDiagnostic: pt.explicationDiagnostic,
+      optionsTraitement: pt.optionsTraitement,
+      orientationSpecialiste: pt.orientationSpecialiste,
+      motifOrientation: pt.motifOrientation
+    });
+    if (pt.ordonnance) {
       this.planTraitementForm.patchValue({
-        explicationDiagnostic: pt.explicationDiagnostic,
-        optionsTraitement: pt.optionsTraitement,
-        orientationSpecialiste: pt.orientationSpecialiste,
-        motifOrientation: pt.motifOrientation
+        ordonnanceNotes: pt.ordonnance.notes,
+        dureeTraitement: pt.ordonnance.dureeTraitement
       });
-      if (pt.ordonnance) {
-        this.planTraitementForm.patchValue({
-          ordonnanceNotes: pt.ordonnance.notes,
-          dureeTraitement: pt.ordonnance.dureeTraitement
-        });
-        pt.ordonnance.medicaments.forEach(m => this.addMedicament(m));
-      }
-      // Initialiser les examens pour le composant PrescriptionExamensComponent
-      if (pt.examensPrescrits && pt.examensPrescrits.length > 0) {
-        this.examensPrescriptions = pt.examensPrescrits.map(e => ({
-          typeExamen: e.typeExamen || '',
-          nomExamen: e.nomExamen || '',
-          description: e.description,
-          urgence: e.urgence || false,
-          notes: e.notes,
-          idLaboratoire: e.idLaboratoire
-        } as ExamenPrescription));
-      }
+      pt.ordonnance.medicaments.forEach(m => this.addMedicament(m));
     }
+    if (pt.examensPrescrits?.length) {
+      this.examensPrescriptions = pt.examensPrescrits.map(e => ({
+        typeExamen: e.typeExamen || '',
+        nomExamen: e.nomExamen || '',
+        description: e.description,
+        urgence: e.urgence || false,
+        notes: e.notes,
+        idLaboratoire: e.idLaboratoire
+      } as ExamenPrescription));
+    }
+  }
 
-    // Étape 5: Conclusion
-    if (this.consultation.conclusion) {
+  private populateConclusionForm(): void {
+    if (this.consultation?.conclusion) {
       this.conclusionForm.patchValue(this.consultation.conclusion);
     }
+  }
 
-    // Compatibilité: Prescriptions
-    if (this.consultation.prescriptions) {
-      const p = this.consultation.prescriptions;
-      if (p.ordonnance) {
-        this.prescriptionsForm.patchValue({
-          ordonnanceNotes: p.ordonnance.notes,
-          dureeTraitement: p.ordonnance.dureeTraitement
-        });
-      }
-      // Les orientations sont chargées séparément via loadOrientations()
-    }
+  private populatePrescriptionsForm(): void {
+    const p = this.consultation?.prescriptions;
+    if (!p?.ordonnance) return;
+    this.prescriptionsForm.patchValue({
+      ordonnanceNotes: p.ordonnance.notes,
+      dureeTraitement: p.ordonnance.dureeTraitement
+    });
   }
 
   // Getters pour FormArrays

@@ -68,55 +68,43 @@ export const ErrorMessages = {
   }
 } as const;
 
+const HTTP_STATUS_MESSAGES: Record<number, string> = {
+  400: 'Requête invalide',
+  401: ErrorMessages.AUTH.NON_CONNECTE,
+  403: ErrorMessages.AUTH.NON_AUTORISE,
+  404: 'Ressource non trouvée',
+  408: ErrorMessages.RESEAU.TIMEOUT,
+  500: ErrorMessages.RESEAU.ERREUR_SERVEUR,
+  503: 'Service temporairement indisponible'
+};
+
+function extractFromErrorBody(errorBody: any): string | null {
+  if (typeof errorBody === 'string') return errorBody;
+  if (errorBody.message) return errorBody.message;
+  if (errorBody.errors) {
+    const firstKey = Object.keys(errorBody.errors)[0];
+    if (firstKey && Array.isArray(errorBody.errors[firstKey])) {
+      return errorBody.errors[firstKey][0];
+    }
+  }
+  return null;
+}
+
 /**
  * Extrait un message d'erreur lisible depuis une réponse HTTP
  */
 export function extractErrorMessage(error: any, defaultMessage: string = ErrorMessages.RESEAU.ERREUR_SERVEUR): string {
   if (!error) return defaultMessage;
 
-  // Erreur HTTP avec body
   if (error.error) {
-    if (typeof error.error === 'string') {
-      return error.error;
-    }
-    if (error.error.message) {
-      return error.error.message;
-    }
-    if (error.error.errors) {
-      // Erreurs de validation .NET
-      const errors = error.error.errors;
-      const firstKey = Object.keys(errors)[0];
-      if (firstKey && Array.isArray(errors[firstKey])) {
-        return errors[firstKey][0];
-      }
-    }
+    const bodyMessage = extractFromErrorBody(error.error);
+    if (bodyMessage) return bodyMessage;
   }
 
-  // Message direct
-  if (error.message) {
-    return error.message;
-  }
+  if (error.message) return error.message;
 
-  // Codes HTTP standards
-  if (error.status) {
-    switch (error.status) {
-      case 400:
-        return 'Requête invalide';
-      case 401:
-        return ErrorMessages.AUTH.NON_CONNECTE;
-      case 403:
-        return ErrorMessages.AUTH.NON_AUTORISE;
-      case 404:
-        return 'Ressource non trouvée';
-      case 408:
-        return ErrorMessages.RESEAU.TIMEOUT;
-      case 500:
-        return ErrorMessages.RESEAU.ERREUR_SERVEUR;
-      case 503:
-        return 'Service temporairement indisponible';
-      default:
-        return defaultMessage;
-    }
+  if (error.status && HTTP_STATUS_MESSAGES[error.status]) {
+    return HTTP_STATUS_MESSAGES[error.status];
   }
 
   return defaultMessage;
