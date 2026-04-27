@@ -223,6 +223,14 @@ git push origin v1.0.0
 
 Mediconnet est un produit de **Saaje Engineering & Consulting**.
 
-Développé par **Elie Njine** — pour toute question technique ou collaboration, n'hésitez pas à nous contacter.
+## Auteur
 
-🔗 [LinkedIn](https://www.linkedin.com/in/elie-njine-736b04274) · [GitHub](https://github.com/Elie-dev25)
+**Elie NJINE TIENCHEU**
+
+📞 +237 656 440 786  
+📧 contact@elie-njine.online  
+🔗 [LinkedIn](https://linkedin.com/in/elie-njine-736b04274)  
+🌐 [Portfolio](https://www.elie-njine.online)  
+💻 [GitHub](https://github.com/Elie-dev25)
+
+Pour toute question technique ou collaboration, n'hésitez pas à me contacter.
