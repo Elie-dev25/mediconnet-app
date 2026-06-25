@@ -1,0 +1,8 @@
+# Corriger la détection PureBasic
+*.pbp linguist-detectable=false
+*.pb linguist-detectable=false
+*.generated.cs linguist-generated=true
+
+# Forcer les bonnes langues
+*.cs linguist-language=C#
+*.ts linguist-language=TypeScript
